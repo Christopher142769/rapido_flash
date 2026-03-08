@@ -1,0 +1,153 @@
+.commandes-page {
+  min-height: 100vh;
+  background-color: var(--gray);
+}
+
+.commandes-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 30px 20px;
+}
+
+.commandes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.commandes-header h1 {
+  font-size: 32px;
+  color: var(--primary-brown);
+  font-weight: 700;
+}
+
+.restaurant-select {
+  padding: 12px 20px;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
+  font-size: 16px;
+  background-color: var(--primary-white);
+  color: var(--dark-brown);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.restaurant-select:focus {
+  outline: none;
+  border-color: var(--primary-brown);
+}
+
+.no-commandes {
+  text-align: center;
+  padding: 100px 20px;
+  background-color: var(--primary-white);
+  border-radius: 16px;
+  color: var(--dark-gray);
+  font-size: 18px;
+}
+
+.commandes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.commande-card {
+  background-color: var(--primary-white);
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.commande-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #E0E0E0;
+}
+
+.commande-info h3 {
+  font-size: 24px;
+  color: var(--primary-brown);
+  margin-bottom: 5px;
+  font-weight: 700;
+}
+
+.commande-date {
+  color: var(--dark-gray);
+  font-size: 14px;
+}
+
+.commande-statut {
+  padding: 8px 16px;
+  border-radius: 20px;
+  color: var(--primary-white);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.commande-client,
+.commande-plats,
+.commande-livraison {
+  margin-bottom: 20px;
+}
+
+.commande-client h4,
+.commande-plats h4,
+.commande-livraison h4 {
+  font-size: 16px;
+  color: var(--primary-brown);
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.commande-client p {
+  color: var(--dark-gray);
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.plat-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #F0F0F0;
+  font-size: 14px;
+  color: var(--dark-gray);
+}
+
+.commande-total {
+  text-align: right;
+  font-size: 20px;
+  color: var(--primary-brown);
+  font-weight: 700;
+  margin-bottom: 20px;
+  padding-top: 20px;
+  border-top: 2px solid #E0E0E0;
+}
+
+.commande-actions {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .commande-header {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .commande-actions {
+    flex-direction: column;
+  }
+  
+  .commande-actions .btn {
+    width: 100%;
+  }
+}

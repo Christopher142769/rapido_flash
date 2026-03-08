@@ -1,0 +1,79 @@
+:root {
+  --primary-brown: #8B4513;
+  --primary-yellow: #FFD700;
+  --primary-white: #FFFFFF;
+  --light-brown: #A0522D;
+  --dark-brown: #654321;
+  --light-yellow: #FFF8DC;
+  --gray: #F5F5F5;
+  --dark-gray: #333;
+}
+
+.App {
+  min-height: 100vh;
+}
+
+/* Utilitaires */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background-color: var(--primary-brown);
+  color: var(--primary-white);
+}
+
+.btn-primary:hover {
+  background-color: var(--dark-brown);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
+}
+
+.btn-secondary {
+  background-color: var(--primary-yellow);
+  color: var(--dark-brown);
+}
+
+.btn-secondary:hover {
+  background-color: #FFC700;
+  transform: translateY(-2px);
+}
+
+.btn-outline {
+  background-color: transparent;
+  border: 2px solid var(--primary-brown);
+  color: var(--primary-brown);
+}
+
+.btn-outline:hover {
+  background-color: var(--primary-brown);
+  color: var(--primary-white);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 15px;
+  }
+  
+  .btn {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+}

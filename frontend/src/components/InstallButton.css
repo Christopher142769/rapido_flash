@@ -1,0 +1,585 @@
+/* Bouton d'installation - Variant icône (navbar du haut) */
+.install-button-icon {
+  background: linear-gradient(135deg, var(--primary-brown) 0%, var(--dark-brown) 100%);
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(139, 69, 19, 0.3);
+  color: white;
+  position: relative;
+  animation: installButtonPulse 2s ease-in-out infinite;
+}
+
+.install-button-icon.waiting {
+  opacity: 0.6;
+  cursor: not-allowed;
+  animation: none;
+}
+
+.install-button-icon.checking {
+  opacity: 0.8;
+  cursor: wait;
+  animation: installButtonPulse 1s ease-in-out infinite;
+}
+
+@keyframes installButtonPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 15px rgba(139, 69, 19, 0.3);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(139, 69, 19, 0.5);
+  }
+}
+
+.install-button-icon:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 25px rgba(139, 69, 19, 0.5);
+}
+
+.install-button-icon:active {
+  transform: scale(0.95);
+}
+
+.install-button-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Bouton d'installation - Variant navbar (navbar du bas mobile) */
+.install-button-navbar {
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 8px;
+  color: var(--dark-gray);
+  position: relative;
+  min-width: 60px;
+}
+
+.install-button-navbar::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139, 69, 19, 0.15) 0%, transparent 70%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 0;
+}
+
+.install-button-navbar:hover {
+  color: var(--primary-brown);
+  transform: translateY(-2px);
+}
+
+.install-button-navbar:hover::before {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.install-button-navbar:active {
+  transform: translateY(0);
+}
+
+.install-button-navbar.active {
+  color: var(--primary-brown);
+}
+
+.install-button-navbar.active::before {
+  transform: translate(-50%, -50%) scale(1);
+  background: radial-gradient(circle, rgba(139, 69, 19, 0.25) 0%, transparent 70%);
+}
+
+.install-button-navbar .nav-icon-svg {
+  width: 24px;
+  height: 24px;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.install-button-navbar:hover .nav-icon-svg {
+  transform: scale(1.1);
+}
+
+.install-button-navbar .nav-label {
+  font-size: 11px;
+  font-weight: 600;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.install-button-navbar.waiting {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.install-button-navbar.waiting:hover {
+  transform: none;
+  color: var(--dark-gray);
+}
+
+/* État d'installation */
+.install-button-icon.installing {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.install-button-navbar.installing {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Spinner d'installation */
+.install-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.install-spinner-small {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(139, 69, 19, 0.3);
+  border-top-color: var(--primary-brown);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Modal de chargement */
+.install-loading-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  animation: fadeIn 0.3s ease-out;
+  padding: 20px;
+}
+
+.install-loading-modal {
+  background: linear-gradient(135deg, #FFFFFF 0%, #FFF8DC 100%);
+  border-radius: 30px;
+  box-shadow: 0 20px 60px rgba(139, 69, 19, 0.4);
+  max-width: 400px;
+  width: 100%;
+  position: relative;
+  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 3px solid var(--primary-brown);
+  overflow: hidden;
+  padding: 50px 30px;
+  text-align: center;
+}
+
+.install-loading-icon {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 30px;
+  background: white;
+  border-radius: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 25px rgba(139, 69, 19, 0.2);
+  border: 3px solid var(--primary-brown);
+  padding: 15px;
+  animation: iconBounce 0.8s ease-out 0.3s both;
+}
+
+.install-loading-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.install-loading-spinner {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 25px;
+  border: 5px solid rgba(139, 69, 19, 0.1);
+  border-top-color: var(--primary-brown);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.install-loading-modal h3 {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--primary-brown);
+  margin: 0 0 15px;
+}
+
+.install-loading-modal p {
+  font-size: 16px;
+  color: var(--dark-gray);
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Modal de succès */
+.install-success-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10001;
+  animation: fadeIn 0.3s ease-out;
+  padding: 20px;
+}
+
+.install-success-modal {
+  background: linear-gradient(135deg, #FFFFFF 0%, #FFF8DC 100%);
+  border-radius: 30px;
+  box-shadow: 0 20px 60px rgba(139, 69, 19, 0.4);
+  max-width: 450px;
+  width: 100%;
+  position: relative;
+  animation: successPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 3px solid var(--primary-brown);
+  overflow: hidden;
+  padding: 50px 30px;
+  text-align: center;
+}
+
+@keyframes successPop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.success-icon-wrapper {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 30px;
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 30px rgba(37, 211, 102, 0.4);
+  animation: successIconBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+}
+
+@keyframes successIconBounce {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.success-checkmark {
+  color: white;
+  animation: checkmarkDraw 0.5s ease-out 0.4s both;
+}
+
+@keyframes checkmarkDraw {
+  0% {
+    stroke-dasharray: 0 100;
+    opacity: 0;
+  }
+  100% {
+    stroke-dasharray: 100 0;
+    opacity: 1;
+  }
+}
+
+.install-success-modal h2 {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--primary-brown);
+  margin: 0 0 15px;
+}
+
+.install-success-modal p {
+  font-size: 16px;
+  color: var(--dark-gray);
+  margin: 0 0 10px;
+  line-height: 1.6;
+}
+
+.success-redirect {
+  font-size: 14px;
+  color: var(--primary-brown);
+  font-weight: 600;
+  margin-top: 20px !important;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Modal iOS avec instructions */
+.ios-install-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10002;
+  animation: fadeIn 0.3s ease-out;
+  padding: 20px;
+}
+
+.ios-install-modal {
+  background: linear-gradient(135deg, #FFFFFF 0%, #FFF8DC 100%);
+  border-radius: 30px;
+  box-shadow: 0 20px 60px rgba(139, 69, 19, 0.4);
+  max-width: 450px;
+  width: 100%;
+  position: relative;
+  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 3px solid var(--primary-brown);
+  overflow: hidden;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.ios-modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(139, 69, 19, 0.1);
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 24px;
+  color: var(--primary-brown);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 10;
+  line-height: 1;
+  font-weight: bold;
+}
+
+.ios-modal-close:hover {
+  background: var(--primary-brown);
+  color: white;
+  transform: rotate(90deg) scale(1.1);
+}
+
+.ios-modal-content {
+  padding: 40px 30px 30px;
+  text-align: center;
+}
+
+.ios-modal-icon {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 25px;
+  background: white;
+  border-radius: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 25px rgba(139, 69, 19, 0.2);
+  border: 3px solid var(--primary-brown);
+  padding: 15px;
+  animation: iconBounce 0.8s ease-out 0.3s both;
+}
+
+.ios-modal-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ios-modal-content h3 {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--primary-brown);
+  margin: 0 0 10px;
+}
+
+.ios-modal-description {
+  font-size: 16px;
+  color: var(--dark-gray);
+  margin: 0 0 30px;
+  line-height: 1.5;
+}
+
+.ios-instructions-container {
+  text-align: left;
+  margin: 0 0 30px;
+}
+
+.ios-instruction-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  margin-bottom: 25px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 15px;
+  border-left: 4px solid var(--primary-brown);
+  transition: all 0.3s ease;
+}
+
+.ios-instruction-step:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateX(5px);
+}
+
+.ios-step-number {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-brown) 0%, var(--dark-brown) 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 18px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(139, 69, 19, 0.3);
+}
+
+.ios-step-content {
+  flex: 1;
+}
+
+.ios-step-content p {
+  margin: 0;
+  font-size: 15px;
+  color: var(--dark-gray);
+  line-height: 1.6;
+}
+
+.ios-step-content p:first-child {
+  font-weight: 600;
+  color: var(--primary-brown);
+  margin-bottom: 5px;
+}
+
+.ios-step-hint {
+  font-size: 13px !important;
+  color: var(--dark-gray) !important;
+  font-style: italic;
+  opacity: 0.8;
+}
+
+.ios-icon {
+  font-size: 18px;
+  margin: 0 3px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.ios-modal-got-it {
+  background: linear-gradient(135deg, var(--primary-brown) 0%, var(--dark-brown) 100%);
+  color: white;
+  padding: 15px 40px;
+  border-radius: 30px;
+  font-size: 18px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(139, 69, 19, 0.4);
+  width: 100%;
+  max-width: 300px;
+}
+
+.ios-modal-got-it:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(139, 69, 19, 0.5);
+}
+
+.ios-modal-got-it:active {
+  transform: translateY(-1px);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .install-button-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .install-button-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+}

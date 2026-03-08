@@ -1,0 +1,241 @@
+.orders-page {
+  min-height: 100vh;
+  background-color: var(--gray);
+  padding-bottom: 80px;
+}
+
+.orders-header-mobile {
+  background: linear-gradient(135deg, var(--primary-white) 0%, #FFF8DC 100%);
+  padding: 16px 20px;
+  box-shadow: 0 2px 15px rgba(139, 69, 19, 0.12);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  position: relative;
+  z-index: 1;
+  border-bottom: 2px solid rgba(139, 69, 19, 0.1);
+  animation: slideDownHeader 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideDownHeader {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.orders-header-mobile::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-brown) 0%, var(--primary-yellow) 50%, var(--primary-brown) 100%);
+}
+
+.orders-header-mobile h1 {
+  font-size: 24px;
+  color: var(--primary-brown);
+  font-weight: 700;
+  flex: 1;
+  text-align: center;
+  margin: 0;
+  letter-spacing: 0.3px;
+  animation: titleFadeIn 0.5s ease-out 0.2s both;
+}
+
+@keyframes titleFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.back-btn-icon {
+  background: transparent;
+  border: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  padding: 0;
+  position: relative;
+}
+
+.back-btn-icon:hover {
+  background: rgba(139, 69, 19, 0.08);
+  border-radius: 12px;
+}
+
+.back-btn-icon:active {
+  background: rgba(139, 69, 19, 0.15);
+  transform: scale(0.95);
+}
+
+.back-btn-icon svg {
+  width: 28px;
+  height: 28px;
+  stroke: var(--primary-brown);
+  stroke-width: 2.5;
+  transition: transform 0.2s ease;
+}
+
+.back-btn-icon:hover svg {
+  transform: translateX(-3px);
+}
+
+.back-btn-icon:active svg {
+  transform: translateX(-1px);
+}
+
+@media (min-width: 769px) {
+  .orders-header-mobile {
+    display: none;
+  }
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--primary-brown);
+  padding: 5px;
+}
+
+.orders-header h1 {
+  font-size: 22px;
+  color: var(--primary-brown);
+  font-weight: 700;
+  margin: 0;
+}
+
+.orders-content {
+  padding: 20px;
+}
+
+.no-orders {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.no-orders-icon {
+  font-size: 80px;
+  margin-bottom: 20px;
+}
+
+.no-orders h2 {
+  font-size: 24px;
+  color: var(--primary-brown);
+  margin-bottom: 10px;
+}
+
+.no-orders p {
+  color: var(--dark-gray);
+  margin-bottom: 30px;
+}
+
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.order-card {
+  background-color: var(--primary-white);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #E0E0E0;
+}
+
+.order-restaurant {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex: 1;
+}
+
+.order-restaurant img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.order-restaurant h3 {
+  font-size: 18px;
+  color: var(--primary-brown);
+  margin-bottom: 5px;
+  font-weight: 700;
+}
+
+.order-date {
+  font-size: 12px;
+  color: var(--dark-gray);
+  margin: 0;
+}
+
+.order-statut {
+  padding: 6px 12px;
+  border-radius: 15px;
+  color: var(--primary-white);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.order-plats {
+  margin-bottom: 15px;
+}
+
+.order-plat-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 14px;
+  color: var(--dark-gray);
+  border-bottom: 1px solid #F0F0F0;
+}
+
+.order-plat-item:last-child {
+  border-bottom: none;
+}
+
+.order-total {
+  text-align: right;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary-brown);
+  padding-top: 15px;
+  border-top: 2px solid #E0E0E0;
+}
+
+.loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-size: 18px;
+  color: var(--primary-brown);
+}

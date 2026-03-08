@@ -1,0 +1,167 @@
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const path = require('path');
+require('dotenv').config();
+
+const app = express();
+
+// Middleware CORS - Configuré pour accepter les requêtes depuis plusieurs frontends
+const getAllowedOrigins = () => {
+  const origins = [];
+  
+  // Frontend 1
+  if (process.env.FRONTEND_URL_1) {
+    origins.push(process.env.FRONTEND_URL_1);
+  }
+  
+  // Frontend 2
+  if (process.env.FRONTEND_URL_2) {
+    origins.push(process.env.FRONTEND_URL_2);
+  }
+  
+  // Frontend 3
+  if (process.env.FRONTEND_URL_3) {
+    origins.push(process.env.FRONTEND_URL_3);
+  }
+  
+  // Frontend 4
+  if (process.env.FRONTEND_URL_4) {
+    origins.push(process.env.FRONTEND_URL_4);
+  }
+  
+  // URL de développement local
+  if (process.env.NODE_ENV !== 'production') {
+    origins.push('http://localhost:3000');
+    origins.push('http://localhost:3001');
+    origins.push('http://localhost:3002');
+    origins.push('http://localhost:3003');
+  }
+  
+  // Si aucune URL n'est définie, autoriser toutes les origines (développement uniquement)
+  return origins.length > 0 ? origins : '*';
+};
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = getAllowedOrigins();
+    
+    // Autoriser les requêtes sans origine (mobile apps, Postman, etc.)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // Si toutes les origines sont autorisées (développement)
+    if (allowedOrigins === '*') {
+      return callback(null, true);
+    }
+    
+    // Vérifier si l'origine est autorisée
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+};
+app.use(cors(corsOptions));
+
+// IMPORTANT: express.json() et express.urlencoded() ne doivent PAS être appliqués globalement
+// car ils consomment le body stream et empêchent Multer de parser multipart/form-data
+// On les applique seulement aux routes qui n'utilisent pas Multer via un middleware conditionnel
+// Pour les routes avec Multer, Multer parse automatiquement les champs texte dans req.body
+
+// Servir les fichiers statiques avec les bons headers
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res, filepath) => {
+    if (filepath.endsWith('.jpg') || filepath.endsWith('.jpeg') || filepath.endsWith('.png')) {
+      res.setHeader('Content-Type', 'image/jpeg');
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
+    }
+  }
+}));
+
+// Servir les images de restaurants
+app.use('/uploads/restaurants', express.static(path.join(__dirname, 'uploads/restaurants')));
+// Servir les images de plats
+app.use('/uploads/plats', express.static(path.join(__dirname, 'uploads/plats')));
+
+// Routes
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/restaurants', require('./routes/restaurants'));
+app.use('/api/plats', require('./routes/plats'));
+app.use('/api/commandes', require('./routes/commandes'));
+app.use('/api/users', require('./routes/users'));
+app.use('/api/bannieres', require('./routes/bannieres'));
+app.use('/api/admin', require('./routes/admin'));
+
+// Gestionnaire d'erreur global pour Multer
+app.use((error, req, res, next) => {
+  if (error instanceof require('multer').MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ message: 'Fichier trop volumineux (max 100MB)' });
+    }
+    return res.status(400).json({ message: `Erreur upload: ${error.message}` });
+  }
+  if (error) {
+    console.error('Erreur serveur:', error);
+    return res.status(500).json({ message: error.message || 'Erreur serveur' });
+  }
+  next();
+});
+
+// Import de la fonction d'initialisation des plats par défaut
+const initDefaultPlats = require('./utils/initDefaultPlats');
+
+// MongoDB Connection
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/rapido_flash';
+
+mongoose.connect(MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(async () => {
+  console.log('✅ MongoDB Atlas connecté avec succès');
+  console.log('📊 Base de données:', mongoose.connection.name);
+  
+  // Initialiser les plats par défaut après la connexion MongoDB
+  // Attendre un peu pour s'assurer que la connexion est stable
+  setTimeout(async () => {
+    try {
+      await initDefaultPlats();
+      console.log('✅ Plats par défaut initialisés');
+    } catch (error) {
+      console.error('❌ Erreur lors de l\'initialisation des plats par défaut:', error);
+    }
+  }, 2000);
+})
+.catch(err => {
+  console.error('❌ Erreur de connexion MongoDB:', err.message);
+  console.error('💡 Vérifiez votre chaîne de connexion dans le fichier .env');
+  process.exit(1);
+});
+
+const PORT = process.env.PORT || 5000;
+
+const server = app.listen(PORT, () => {
+  console.log(`✅ Serveur démarré sur le port ${PORT}`);
+  console.log(`🌐 URL: http://localhost:${PORT}`);
+});
+
+// Gestion d'erreur pour le port déjà utilisé
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`❌ Erreur: Le port ${PORT} est déjà utilisé`);
+    console.error(`💡 Solutions:`);
+    console.error(`   1. Arrêter le processus qui utilise le port: kill -9 $(lsof -ti:${PORT})`);
+    console.error(`   2. Changer le port dans le fichier .env: PORT=5001`);
+    process.exit(1);
+  } else {
+    console.error('❌ Erreur serveur:', err);
+    process.exit(1);
+  }
+});

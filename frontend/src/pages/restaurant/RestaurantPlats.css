@@ -1,0 +1,213 @@
+.plats-page {
+  min-height: 100vh;
+  background-color: var(--gray);
+}
+
+/* Utiliser les styles du dashboard */
+.plats-content {
+  margin-left: 0;
+}
+
+.plats-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 30px 20px;
+}
+
+.plats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.plats-header h1 {
+  font-size: 32px;
+  color: var(--primary-brown);
+  font-weight: 700;
+}
+
+.plat-form-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background-color: var(--primary-white);
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-content h2 {
+  font-size: 24px;
+  color: var(--primary-brown);
+  margin-bottom: 30px;
+  font-weight: 700;
+}
+
+.modal-content .form-group {
+  margin-bottom: 20px;
+}
+
+.modal-content .form-group label {
+  display: block;
+  font-weight: 600;
+  color: var(--dark-brown);
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.modal-content .form-group input,
+.modal-content .form-group textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: all 0.3s;
+  font-family: inherit;
+}
+
+.modal-content .form-group input:focus,
+.modal-content .form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-brown);
+  box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.1);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.plats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 25px;
+}
+
+.plat-card-admin {
+  background-color: var(--primary-white);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.plat-card-admin:hover {
+  transform: translateY(-5px);
+}
+
+.plat-image-admin {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.plat-info-admin {
+  padding: 20px;
+}
+
+.plat-info-admin h3 {
+  font-size: 20px;
+  color: var(--primary-brown);
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.plat-info-admin p {
+  color: var(--dark-gray);
+  font-size: 14px;
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+.plat-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.plat-prix-admin {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary-brown);
+}
+
+.plat-categorie {
+  background-color: var(--light-yellow);
+  color: var(--primary-brown);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.plat-actions {
+  border-top: 1px solid #E0E0E0;
+  padding-top: 15px;
+}
+
+.toggle-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  cursor: pointer;
+}
+
+.toggle-switch input[type="checkbox"] {
+  width: 40px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.toggle-switch span {
+  font-size: 14px;
+  color: var(--dark-gray);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-small {
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .plats-header {
+    flex-direction: column;
+    gap: 20px;
+    align-items: stretch;
+  }
+  
+  .plats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-content {
+    padding: 20px;
+  }
+}

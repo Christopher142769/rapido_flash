@@ -1,0 +1,362 @@
+.welcome-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #FFF8DC 0%, #FFFFFF 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  position: relative;
+}
+
+/* Conteneur des boutons en haut (mobile) */
+.welcome-top-buttons-mobile {
+  display: none;
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  z-index: 10;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+/* Bouton Passer en haut à gauche (mobile uniquement) */
+.skip-btn-mobile {
+  display: block;
+  position: static;
+  background: linear-gradient(135deg, var(--primary-yellow) 0%, #FFC700 100%);
+  border: none;
+  color: var(--primary-brown);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 12px 20px;
+  border-radius: 25px;
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.skip-btn-mobile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+  background: linear-gradient(135deg, #FFC700 0%, var(--primary-yellow) 100%);
+}
+
+.skip-btn-mobile:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
+}
+
+.welcome-content {
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+  animation: fadeIn 0.8s ease-in;
+  position: relative;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.welcome-illustration {
+  margin-bottom: 40px;
+  position: relative;
+}
+
+.illustration-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.illustration-image {
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  object-fit: contain;
+  animation: illustrationFloat 3s ease-in-out infinite;
+  filter: drop-shadow(0 10px 30px rgba(139, 69, 19, 0.2));
+  transition: transform 0.5s ease;
+}
+
+.illustration-image:hover {
+  transform: scale(1.05);
+}
+
+@keyframes illustrationFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-15px) rotate(2deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-15px) rotate(-2deg);
+  }
+}
+
+/* Stickers retirés - illustrations propres */
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+.welcome-text {
+  margin-bottom: 50px;
+  animation: slideUp 0.8s ease-out 0.3s both;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.welcome-title {
+  font-size: 36px;
+  color: var(--primary-brown);
+  margin-bottom: 10px;
+  font-weight: 800;
+  animation: titlePop 0.6s ease-out 0.5s both;
+}
+
+@keyframes titlePop {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.welcome-subtitle {
+  font-size: 24px;
+  color: var(--light-brown);
+  margin-bottom: 20px;
+  font-weight: 400;
+  animation: subtitleFade 0.6s ease-out 0.7s both;
+}
+
+@keyframes subtitleFade {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.welcome-description {
+  font-size: 16px;
+  color: var(--dark-gray);
+  line-height: 1.6;
+  animation: descriptionFade 0.6s ease-out 0.9s both;
+}
+
+@keyframes descriptionFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.welcome-navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.steps-indicator {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.step-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #D3D3D3;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  position: relative;
+}
+
+.step-dot:hover {
+  transform: scale(1.3);
+  background-color: var(--light-brown);
+}
+
+.step-dot.active {
+  background-color: var(--primary-brown);
+  width: 32px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(139, 69, 19, 0.4);
+  animation: dotPulse 2s ease-in-out infinite;
+}
+
+@keyframes dotPulse {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(139, 69, 19, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(139, 69, 19, 0.6);
+  }
+}
+
+.welcome-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.skip-btn-desktop {
+  display: inline-flex;
+}
+
+.next-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.next-text {
+  display: inline;
+}
+
+.next-icon {
+  display: none;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* Bouton Précédent (mobile uniquement) */
+.prev-btn-mobile {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.prev-text {
+  display: inline;
+}
+
+.prev-icon {
+  display: none;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .welcome-page {
+    padding: 60px 20px 20px 20px;
+  }
+
+  /* Afficher le bouton Passer en haut à gauche sur mobile */
+  .welcome-top-buttons-mobile {
+    display: flex;
+  }
+
+  /* Cacher le bouton Passer dans les boutons sur mobile */
+  .skip-btn-desktop {
+    display: none !important;
+  }
+
+  .welcome-title {
+    font-size: 28px;
+  }
+  
+  .welcome-subtitle {
+    font-size: 20px;
+  }
+  
+  .illustration-image {
+    max-width: 250px;
+  }
+  
+  .welcome-buttons {
+    flex-direction: row;
+    justify-content: center;
+    gap: 15px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  
+  .welcome-buttons .btn {
+    width: auto;
+    min-width: 50px;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  .welcome-illustration {
+    margin-bottom: 30px;
+  }
+
+  /* Afficher le bouton Précédent sur mobile */
+  .prev-btn-mobile {
+    display: flex !important;
+  }
+
+  /* Sur mobile, remplacer le texte "Précédent" par l'icône */
+  .prev-btn-mobile .prev-text {
+    display: none;
+  }
+
+  .prev-btn-mobile .prev-icon {
+    display: inline-block;
+  }
+
+  /* Sur mobile, remplacer le texte "Suivant" par l'icône */
+  .next-btn.has-icon .next-text {
+    display: none;
+  }
+
+  .next-btn.has-icon .next-icon {
+    display: inline-block;
+  }
+
+  /* Si c'est le dernier step (no-icon), afficher "Commencer" */
+  .next-btn.no-icon .next-text {
+    display: inline;
+  }
+
+  .next-btn.no-icon .next-icon {
+    display: none;
+  }
+}
