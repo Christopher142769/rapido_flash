@@ -116,6 +116,8 @@ app.use((error, req, res, next) => {
 
 // Import de la fonction d'initialisation des plats par défaut
 const initDefaultPlats = require('./utils/initDefaultPlats');
+// Import de la fonction d'initialisation de l'admin par défaut
+const initDefaultAdmin = require('./utils/initDefaultAdmin');
 
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/rapido_flash';
@@ -128,14 +130,18 @@ mongoose.connect(MONGODB_URI, {
   console.log('✅ MongoDB Atlas connecté avec succès');
   console.log('📊 Base de données:', mongoose.connection.name);
   
-  // Initialiser les plats par défaut après la connexion MongoDB
+  // Initialiser l'admin et les plats par défaut après la connexion MongoDB
   // Attendre un peu pour s'assurer que la connexion est stable
   setTimeout(async () => {
     try {
+      // Créer l'admin par défaut
+      await initDefaultAdmin();
+      
+      // Initialiser les plats par défaut
       await initDefaultPlats();
       console.log('✅ Plats par défaut initialisés');
     } catch (error) {
-      console.error('❌ Erreur lors de l\'initialisation des plats par défaut:', error);
+      console.error('❌ Erreur lors de l\'initialisation:', error);
     }
   }, 2000);
 })

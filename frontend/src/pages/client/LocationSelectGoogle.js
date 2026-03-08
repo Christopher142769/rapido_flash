@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LeafletMap from '../../components/LeafletMap';
+import AuthContext from '../../context/AuthContext';
 import axios from 'axios';
 import './LocationSelect.css';
 
@@ -192,7 +193,14 @@ const LocationSelect = () => {
   const handleModalOk = () => {
     setShowModal(false);
     window.dispatchEvent(new Event('locationUpdated'));
-    navigate('/home');
+    
+    // Si l'utilisateur est connecté, aller à la page d'accueil
+    // Sinon, rediriger vers la page d'inscription
+    if (isAuthenticated) {
+      navigate('/home');
+    } else {
+      navigate('/register');
+    }
   };
 
   return (

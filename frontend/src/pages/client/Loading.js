@@ -26,8 +26,9 @@ const Loading = () => {
         if (isAuthenticated && user) {
           navigate('/home');
         } else {
-          // Si l'utilisateur n'est pas connecté, rediriger vers la page de connexion
-          navigate('/login');
+          // Si l'utilisateur n'est pas connecté, rediriger vers la page de bienvenue (onboarding)
+          // Le flow sera : welcome → location → register/login → home
+          navigate('/welcome');
         }
       }, 3000);
 
