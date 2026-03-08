@@ -5,6 +5,7 @@ import AuthContext from '../../context/AuthContext';
 import BottomNavbar from '../../components/BottomNavbar';
 import TopNavbar from '../../components/TopNavbar';
 import LocationEditor from '../../components/LocationEditor';
+import PageLoader from '../../components/PageLoader';
 import { getImageUrl, generateBannerPlaceholderSVG } from '../../utils/imagePlaceholder';
 import './Home.css';
 
@@ -146,7 +147,7 @@ const Home = () => {
   );
 
   if (loading) {
-    return <div className="loading-state">Chargement...</div>;
+    return <PageLoader message="Chargement des plats..." />;
   }
 
   return (

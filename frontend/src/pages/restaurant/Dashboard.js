@@ -6,6 +6,7 @@ import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
 import { useModal } from '../../context/ModalContext';
 import DashboardSidebar from '../../components/DashboardSidebar';
+import PageLoader from '../../components/PageLoader';
 import './Dashboard.css';
 
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
@@ -264,7 +265,7 @@ const Dashboard = () => {
   };
 
   if (loading) {
-    return <div className="loading-state">Chargement...</div>;
+    return <PageLoader message="Chargement du dashboard..." />;
   }
 
   return (

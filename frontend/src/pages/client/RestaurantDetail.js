@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import TopNavbar from '../../components/TopNavbar';
+import PageLoader from '../../components/PageLoader';
 import { getImageUrl, generateBannerPlaceholderSVG } from '../../utils/imagePlaceholder';
 import './RestaurantDetail.css';
 
@@ -151,22 +152,7 @@ const RestaurantDetail = () => {
   };
 
   if (loading) {
-    return (
-      <div className="restaurant-detail-page" style={{ minHeight: '100vh', display: 'block', width: '100%', background: '#f5f5f5' }}>
-        <TopNavbar />
-        <div className="loading-state" style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          minHeight: 'calc(100vh - 80px)',
-          fontSize: '24px',
-          color: '#8B4513',
-          fontWeight: 'bold'
-        }}>
-          Chargement du restaurant...
-        </div>
-      </div>
-    );
+    return <PageLoader message="Chargement du restaurant..." />;
   }
 
   if (!restaurant) {

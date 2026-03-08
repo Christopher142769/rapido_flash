@@ -1,0 +1,339 @@
+.page-loader {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #F5E6D3 0%, #FAF0E6 50%, #FFF8DC 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+/* Particules de fond animées */
+.page-loader::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 50%, rgba(139, 69, 19, 0.1) 0%, transparent 50%),
+              radial-gradient(circle at 80% 80%, rgba(255, 215, 0, 0.1) 0%, transparent 50%);
+  animation: pageLoaderBackgroundShift 8s ease-in-out infinite;
+}
+
+@keyframes pageLoaderBackgroundShift {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+.page-loader-content {
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.page-loader-logo-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.page-loader-logo {
+  width: 220px;
+  height: 220px;
+  object-fit: contain;
+  position: absolute;
+  bottom: -150px;
+  animation: pageLoaderLogoRocket 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+             pageLoaderLogoGlow 2s ease-in-out 1.2s infinite,
+             pageLoaderLogoPulse 3s ease-in-out 1.2s infinite,
+             pageLoaderLogoShine 4s ease-in-out 1.2s infinite;
+  filter: drop-shadow(0 0 30px rgba(139, 69, 19, 0.5)) 
+          drop-shadow(0 0 60px rgba(255, 215, 0, 0.3));
+  z-index: 10;
+  transform-origin: center;
+}
+
+/* Animation principale : logo monte du bas vers le centre */
+@keyframes pageLoaderLogoRocket {
+  0% {
+    bottom: -150px;
+    transform: scale(0.2) rotate(-20deg);
+    opacity: 0;
+    filter: blur(15px) brightness(0.5);
+  }
+  20% {
+    transform: scale(0.5) rotate(10deg);
+    opacity: 0.5;
+    filter: blur(8px) brightness(0.8);
+  }
+  40% {
+    transform: scale(0.9) rotate(-5deg);
+    opacity: 0.8;
+    filter: blur(4px) brightness(1);
+  }
+  60% {
+    transform: scale(1.15) rotate(3deg);
+    opacity: 1;
+    filter: blur(1px) brightness(1.2);
+  }
+  75% {
+    transform: scale(1.05) rotate(-1deg);
+    filter: blur(0px) brightness(1.1);
+  }
+  90% {
+    transform: scale(0.98) rotate(0.5deg);
+  }
+  100% {
+    bottom: 50%;
+    transform: translateY(50%) scale(1) rotate(0deg);
+    opacity: 1;
+    filter: drop-shadow(0 0 30px rgba(139, 69, 19, 0.5)) 
+            drop-shadow(0 0 60px rgba(255, 215, 0, 0.3))
+            brightness(1);
+  }
+}
+
+/* Effet de brillance */
+@keyframes pageLoaderLogoShine {
+  0% {
+    filter: drop-shadow(0 0 30px rgba(139, 69, 19, 0.5)) 
+            drop-shadow(0 0 60px rgba(255, 215, 0, 0.3));
+  }
+  25% {
+    filter: drop-shadow(0 0 40px rgba(139, 69, 19, 0.7)) 
+            drop-shadow(0 0 80px rgba(255, 215, 0, 0.5))
+            drop-shadow(0 0 100px rgba(255, 215, 0, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 50px rgba(139, 69, 19, 0.8)) 
+            drop-shadow(0 0 100px rgba(255, 215, 0, 0.6))
+            drop-shadow(0 0 120px rgba(255, 215, 0, 0.5));
+  }
+  75% {
+    filter: drop-shadow(0 0 40px rgba(139, 69, 19, 0.7)) 
+            drop-shadow(0 0 80px rgba(255, 215, 0, 0.5))
+            drop-shadow(0 0 100px rgba(255, 215, 0, 0.4));
+  }
+  100% {
+    filter: drop-shadow(0 0 30px rgba(139, 69, 19, 0.5)) 
+            drop-shadow(0 0 60px rgba(255, 215, 0, 0.3));
+  }
+}
+
+/* Effet de lueur */
+@keyframes pageLoaderLogoGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 30px rgba(139, 69, 19, 0.5)) 
+            drop-shadow(0 0 60px rgba(255, 215, 0, 0.3))
+            drop-shadow(0 0 90px rgba(255, 215, 0, 0.2));
+    transform: translateY(50%) scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 40px rgba(139, 69, 19, 0.7)) 
+            drop-shadow(0 0 80px rgba(255, 215, 0, 0.5))
+            drop-shadow(0 0 120px rgba(255, 215, 0, 0.3));
+    transform: translateY(50%) scale(1.05);
+  }
+}
+
+/* Pulsation subtile */
+@keyframes pageLoaderLogoPulse {
+  0%, 100% {
+    transform: translateY(50%) scale(1);
+  }
+  50% {
+    transform: translateY(50%) scale(1.02);
+  }
+}
+
+/* Traînée de particules */
+.page-loader-logo-container::before {
+  content: '';
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.4) 0%, rgba(139, 69, 19, 0.2) 40%, transparent 70%);
+  bottom: -150px;
+  animation: pageLoaderTrailFollow 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+             pageLoaderTrailFade 0.6s ease-out 1.2s forwards;
+  border-radius: 50%;
+  z-index: 5;
+  box-shadow: 0 0 40px rgba(255, 215, 0, 0.3);
+}
+
+.page-loader-logo-container::after {
+  content: '';
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, rgba(139, 69, 19, 0.3) 0%, transparent 60%);
+  bottom: -150px;
+  animation: pageLoaderTrailFollow2 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s forwards,
+             pageLoaderTrailFade 0.5s ease-out 1.3s forwards;
+  border-radius: 50%;
+  z-index: 4;
+}
+
+@keyframes pageLoaderTrailFollow {
+  0% {
+    bottom: -150px;
+    opacity: 0.9;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    bottom: 50%;
+    transform: translateY(50%) scale(1.2);
+    opacity: 0;
+  }
+}
+
+@keyframes pageLoaderTrailFollow2 {
+  0% {
+    bottom: -150px;
+    opacity: 0.6;
+    transform: scale(0.4);
+  }
+  100% {
+    bottom: 50%;
+    transform: translateY(50%) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes pageLoaderTrailFade {
+  to {
+    opacity: 0;
+    transform: translateY(50%) scale(1.8);
+  }
+}
+
+.page-loader-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(139, 69, 19, 0.2);
+  border-top-color: var(--primary-brown);
+  border-radius: 50%;
+  animation: pageLoaderSpin 1s linear infinite, pageLoaderSpinnerAppear 0.5s ease-out 1.5s both;
+  margin: 0 auto;
+  position: relative;
+  top: 120px;
+  opacity: 0;
+}
+
+@keyframes pageLoaderSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pageLoaderSpinnerAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.page-loader-message {
+  position: relative;
+  top: 140px;
+  color: var(--primary-brown);
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 20px;
+  opacity: 0;
+  animation: pageLoaderMessageAppear 0.5s ease-out 1.8s both;
+}
+
+@keyframes pageLoaderMessageAppear {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Effet de vague au sol */
+.page-loader-content::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: radial-gradient(ellipse at center, rgba(139, 69, 19, 0.1) 0%, transparent 70%);
+  animation: pageLoaderWaveRipple 1.5s ease-out 1s both;
+  z-index: 0;
+}
+
+@keyframes pageLoaderWaveRipple {
+  0% {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: scaleY(1);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-loader-logo {
+    width: 180px;
+    height: 180px;
+  }
+
+  .page-loader-logo-container::before {
+    width: 150px;
+    height: 150px;
+  }
+
+  .page-loader-logo-container::after {
+    width: 100px;
+    height: 100px;
+  }
+
+  .page-loader-spinner {
+    width: 50px;
+    height: 50px;
+    top: 100px;
+  }
+
+  .page-loader-message {
+    top: 120px;
+    font-size: 14px;
+  }
+}

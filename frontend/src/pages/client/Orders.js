@@ -4,6 +4,7 @@ import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
 import BottomNavbar from '../../components/BottomNavbar';
 import TopNavbar from '../../components/TopNavbar';
+import PageLoader from '../../components/PageLoader';
 import './Orders.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -55,7 +56,7 @@ const Orders = () => {
   };
 
   if (loading) {
-    return <div className="loading-state">Chargement...</div>;
+    return <PageLoader message="Chargement de vos commandes..." />;
   }
 
   return (

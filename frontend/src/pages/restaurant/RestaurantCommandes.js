@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
 import DashboardSidebar from '../../components/DashboardSidebar';
+import PageLoader from '../../components/PageLoader';
 import './RestaurantCommandes.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -75,7 +76,7 @@ const RestaurantCommandes = () => {
   };
 
   if (loading) {
-    return <div className="loading-state">Chargement...</div>;
+    return <PageLoader message="Chargement des commandes..." />;
   }
 
   return (
