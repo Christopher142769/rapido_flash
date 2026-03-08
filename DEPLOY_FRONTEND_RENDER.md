@@ -41,7 +41,19 @@ Dans la section **"Environment Variables"**, ajoutez les variables suivantes :
 REACT_APP_API_URL=https://votre-backend.onrender.com/api
 ```
 
+⚠️ **TRÈS IMPORTANT** : L'URL doit **OBLIGATOIREMENT** se terminer par `/api` (pas juste l'URL du backend).
+
 Remplacez `https://votre-backend.onrender.com` par l'URL réelle de votre backend déployé sur Render.
+
+**Exemple correct** :
+```
+REACT_APP_API_URL=https://rapido-flash-backend.onrender.com/api
+```
+
+**Exemple incorrect** (causera une erreur 404) :
+```
+REACT_APP_API_URL=https://rapido-flash-backend.onrender.com
+```
 
 ```
 REACT_APP_BASE_URL=https://votre-backend.onrender.com

@@ -3,6 +3,7 @@ const Restaurant = require('../models/Restaurant');
 const User = require('../models/User');
 const { auth, isRestaurant } = require('../middleware/auth');
 const uploadRestaurant = require('../middleware/uploadRestaurant');
+const initDefaultPlats = require('../utils/initDefaultPlats');
 
 const router = express.Router();
 
@@ -178,6 +179,15 @@ router.post('/', auth, isRestaurant, uploadRestaurant.fields([
     // Lier le restaurant au propriétaire
     req.user.restaurantId = restaurant._id;
     await req.user.save();
+    
+    // Créer les plats par défaut pour ce nouveau restaurant
+    try {
+      await initDefaultPlats();
+      console.log('✅ Plats par défaut créés pour le nouveau restaurant');
+    } catch (error) {
+      console.error('❌ Erreur lors de la création des plats par défaut:', error);
+      // Ne pas bloquer la création du restaurant si les plats ne peuvent pas être créés
+    }
 
     res.status(201).json(restaurant);
   } catch (error) {
