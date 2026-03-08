@@ -11,6 +11,7 @@ const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
 
 const LocationSelect = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useContext(AuthContext);
   const [position, setPosition] = useState(null);
   const [loading, setLoading] = useState(true);
   const [address, setAddress] = useState('');
