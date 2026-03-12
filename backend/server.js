@@ -89,6 +89,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
 app.use('/uploads/restaurants', express.static(path.join(__dirname, 'uploads/restaurants')));
 // Servir les images de plats
 app.use('/uploads/plats', express.static(path.join(__dirname, 'uploads/plats')));
+app.use('/uploads/categories-domaine', express.static(path.join(__dirname, 'uploads/categories-domaine')));
+app.use('/uploads/categories-produit', express.static(path.join(__dirname, 'uploads/categories-produit')));
+app.use('/uploads/produits', express.static(path.join(__dirname, 'uploads/produits')));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -98,6 +101,9 @@ app.use('/api/commandes', require('./routes/commandes'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/bannieres', require('./routes/bannieres'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/categories-domaine', require('./routes/categoriesDomaine'));
+app.use('/api/categories-produit', require('./routes/categoriesProduit'));
+app.use('/api/produits', require('./routes/produits'));
 
 // Gestionnaire d'erreur global pour Multer
 app.use((error, req, res, next) => {
@@ -114,8 +120,6 @@ app.use((error, req, res, next) => {
   next();
 });
 
-// Import de la fonction d'initialisation des plats par défaut
-const initDefaultPlats = require('./utils/initDefaultPlats');
 // Import de la fonction d'initialisation de l'admin par défaut
 const initDefaultAdmin = require('./utils/initDefaultAdmin');
 
@@ -130,16 +134,10 @@ mongoose.connect(MONGODB_URI, {
   console.log('✅ MongoDB Atlas connecté avec succès');
   console.log('📊 Base de données:', mongoose.connection.name);
   
-  // Initialiser l'admin et les plats par défaut après la connexion MongoDB
-  // Attendre un peu pour s'assurer que la connexion est stable
+  // Initialiser l'admin par défaut après la connexion MongoDB (plus de plats par défaut)
   setTimeout(async () => {
     try {
-      // Créer l'admin par défaut
       await initDefaultAdmin();
-      
-      // Initialiser les plats par défaut
-      await initDefaultPlats();
-      console.log('✅ Plats par défaut initialisés');
     } catch (error) {
       console.error('❌ Erreur lors de l\'initialisation:', error);
     }

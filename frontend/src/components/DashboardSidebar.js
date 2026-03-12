@@ -7,36 +7,12 @@ const DashboardSidebar = ({ onLogout }) => {
   const location = useLocation();
 
   const menuItems = [
-    {
-      id: 'restaurants',
-      label: 'Restaurants',
-      icon: '🍽️',
-      path: '/dashboard'
-    },
-    {
-      id: 'plats',
-      label: 'Plats',
-      icon: '🍕',
-      path: '/dashboard/plats'
-    },
-    {
-      id: 'categories',
-      label: 'Catégories',
-      icon: '📂',
-      path: '/dashboard/categories'
-    },
-    {
-      id: 'commandes',
-      label: 'Commandes',
-      icon: '📦',
-      path: '/dashboard/commandes'
-    },
-    {
-      id: 'bannieres',
-      label: 'Bannières',
-      icon: '🖼️',
-      path: '/dashboard/bannieres'
-    }
+    { id: 'structure', label: 'Mon entreprise', icon: '🏪', path: '/dashboard' },
+    { id: 'categories-domaine', label: 'Catégories domaine', icon: '📂', path: '/dashboard/categories-domaine' },
+    { id: 'categories', label: 'Catégories produits', icon: '📁', path: '/dashboard/categories' },
+    { id: 'plats', label: 'Produits', icon: '📦', path: '/dashboard/plats' },
+    { id: 'commandes', label: 'Commandes', icon: '🛒', path: '/dashboard/commandes' },
+    { id: 'bannieres', label: 'Bannières', icon: '🖼️', path: '/dashboard/bannieres' }
   ];
 
   const isActive = (path) => {

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import LanguageContext from '../../context/LanguageContext';
 import BottomNavbar from '../../components/BottomNavbar';
 import TopNavbar from '../../components/TopNavbar';
 import { getImageUrl } from '../../utils/imagePlaceholder';
@@ -11,6 +12,7 @@ const BASE_URL = API_URL.replace('/api', '');
 
 const Cart = () => {
   const navigate = useNavigate();
+  const { t } = useContext(LanguageContext);
   const [cart, setCart] = useState([]);
   const [fraisLivraison, setFraisLivraison] = useState(0);
 
@@ -29,21 +31,22 @@ const Cart = () => {
     }
   }, []);
 
-  const updateQuantity = (platId, newQuantity) => {
+  const itemId = (item) => item.productId != null ? item.productId : item.platId;
+
+  const updateQuantity = (id, newQuantity) => {
     if (newQuantity <= 0) {
-      removeItem(platId);
+      removeItem(id);
       return;
     }
-
     const newCart = cart.map(item =>
-      item.platId === platId ? { ...item, quantite: newQuantity } : item
+      itemId(item) === id ? { ...item, quantite: newQuantity } : item
     );
     setCart(newCart);
     localStorage.setItem('cart', JSON.stringify(newCart));
   };
 
-  const removeItem = (platId) => {
-    const newCart = cart.filter(item => item.platId !== platId);
+  const removeItem = (id) => {
+    const newCart = cart.filter(item => itemId(item) !== id);
     setCart(newCart);
     localStorage.setItem('cart', JSON.stringify(newCart));
   };
@@ -70,14 +73,14 @@ const Cart = () => {
               <path d="M15 18L9 12L15 6" stroke="#8B4513" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
-          <h1>Panier</h1>
+          <h1>{t('cart', 'title')}</h1>
         </div>
         <div className="empty-cart">
           <div className="empty-icon">🛒</div>
-          <h2>Votre panier est vide</h2>
-          <p>Ajoutez des plats pour commencer</p>
+          <h2>{t('cart', 'emptyTitle')}</h2>
+          <p>{t('cart', 'emptySubtitle')}</p>
           <button className="btn btn-primary" onClick={() => navigate('/home')}>
-            Découvrir les restaurants
+            {t('cart', 'discoverStructures')}
           </button>
         </div>
         <BottomNavbar />
@@ -94,71 +97,56 @@ const Cart = () => {
             <path d="M15 18L9 12L15 6" stroke="#8B4513" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
-        <h1>Panier</h1>
+        <h1>{t('cart', 'title')}</h1>
       </div>
 
       <div className="cart-content">
         <div className="cart-items">
-          {cart.map((item) => (
-            <div key={item.platId} className="cart-item">
-              <img 
-                src={getImageUrl(item.image, { nom: item.nom, categorie: item.categorie }, BASE_URL)} 
-                alt={item.nom} 
-                className="cart-item-image"
-                onError={(e) => {
-                  e.target.src = getImageUrl(null, { nom: item.nom, categorie: item.categorie }, BASE_URL);
-                }}
-              />
-              <div className="cart-item-info">
-                <h3>{item.nom}</h3>
-                <p className="cart-item-price">{item.prix.toFixed(2)} FCFA</p>
+          {cart.map((item) => {
+            const id = item.productId != null ? item.productId : item.platId;
+            const imgSrc = item.image && item.image.startsWith('/') ? `${BASE_URL}${item.image}` : getImageUrl(item.image, { nom: item.nom, categorie: item.categorie }, BASE_URL);
+            return (
+              <div key={id} className="cart-item">
+                <img
+                  src={imgSrc}
+                  alt={item.nom}
+                  className="cart-item-image"
+                  onError={(e) => { e.target.src = getImageUrl(null, { nom: item.nom }, BASE_URL); }}
+                />
+                <div className="cart-item-info">
+                  <h3>{item.nom}</h3>
+                  <p className="cart-item-price">{Number(item.prix).toFixed(0)} FCFA</p>
+                </div>
+                <div className="cart-item-controls">
+                  <button className="quantity-btn" onClick={() => updateQuantity(id, item.quantite - 1)}>−</button>
+                  <span className="quantity">{item.quantite}</span>
+                  <button className="quantity-btn" onClick={() => updateQuantity(id, item.quantite + 1)}>+</button>
+                </div>
+                <div className="cart-item-total">{(item.prix * item.quantite).toFixed(0)} FCFA</div>
+                <button className="remove-btn" onClick={() => removeItem(id)}>×</button>
               </div>
-              <div className="cart-item-controls">
-                <button
-                  className="quantity-btn"
-                  onClick={() => updateQuantity(item.platId, item.quantite - 1)}
-                >
-                  −
-                </button>
-                <span className="quantity">{item.quantite}</span>
-                <button
-                  className="quantity-btn"
-                  onClick={() => updateQuantity(item.platId, item.quantite + 1)}
-                >
-                  +
-                </button>
-              </div>
-              <div className="cart-item-total">
-                {(item.prix * item.quantite).toFixed(2)} FCFA
-              </div>
-              <button
-                className="remove-btn"
-                onClick={() => removeItem(item.platId)}
-              >
-                ×
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="cart-summary">
           <div className="summary-row">
-            <span>Sous-total</span>
-            <span>{getSubTotal().toFixed(2)} FCFA</span>
+            <span>{t('cart', 'subTotal')}</span>
+            <span>{getSubTotal().toFixed(0)} FCFA</span>
           </div>
           <div className="summary-row">
-            <span>Frais de livraison</span>
-            <span>{fraisLivraison.toFixed(2)} FCFA</span>
+            <span>{t('cart', 'deliveryFee')}</span>
+            <span>{fraisLivraison.toFixed(0)} FCFA</span>
           </div>
           <div className="summary-row total">
-            <span>Total</span>
-            <span>{getTotal().toFixed(2)} FCFA</span>
+            <span>{t('cart', 'total')}</span>
+            <span>{getTotal().toFixed(0)} FCFA</span>
           </div>
           <button
             className="btn btn-primary btn-large"
             onClick={() => navigate('/checkout')}
           >
-            Passer la commande
+            {t('cart', 'checkout')}
           </button>
         </div>
       </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ModalProvider } from './context/ModalContext';
+import { LanguageProvider } from './context/LanguageContext';
 import PrivateRoute from './components/PrivateRoute';
 
 // Pages Client
@@ -23,14 +24,16 @@ import RestaurantPlats from './pages/restaurant/RestaurantPlats';
 import Categories from './pages/restaurant/Categories';
 import RestaurantCommandes from './pages/restaurant/RestaurantCommandes';
 import Bannieres from './pages/restaurant/Bannieres';
+import CategoriesDomaine from './pages/restaurant/CategoriesDomaine';
 
 import './App.css';
 
 function App() {
   return (
     <AuthProvider>
-      <ModalProvider>
-        <Router
+      <LanguageProvider>
+        <ModalProvider>
+          <Router
           future={{
             v7_startTransition: true,
             v7_relativeSplatPath: true
@@ -54,6 +57,7 @@ function App() {
           
           {/* Pages restaurant */}
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+          <Route path="/dashboard/categories-domaine" element={<PrivateRoute><CategoriesDomaine /></PrivateRoute>} />
           <Route path="/dashboard/plats" element={<PrivateRoute><RestaurantPlats /></PrivateRoute>} />
           <Route path="/dashboard/categories" element={<PrivateRoute><Categories /></PrivateRoute>} />
           <Route path="/dashboard/commandes" element={<PrivateRoute><RestaurantCommandes /></PrivateRoute>} />
@@ -62,7 +66,8 @@ function App() {
           <Route path="/" element={<Navigate to="/loading" replace />} />
         </Routes>
       </Router>
-      </ModalProvider>
+        </ModalProvider>
+      </LanguageProvider>
     </AuthProvider>
   );
 }

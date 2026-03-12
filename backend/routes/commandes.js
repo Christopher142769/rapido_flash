@@ -9,37 +9,44 @@ const router = express.Router();
 router.use(express.json({ limit: '100mb' }));
 router.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
-// Créer une commande
+// Créer une commande (plats ou produits)
 router.post('/', auth, async (req, res) => {
   try {
-    const { restaurantId, plats, adresseLivraison } = req.body;
-
-    // Récupérer le restaurant pour obtenir les frais de livraison
+    const { restaurantId, plats, produits, adresseLivraison } = req.body;
     const Restaurant = require('../models/Restaurant');
     const restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) {
-      return res.status(404).json({ message: 'Restaurant non trouvé' });
+      return res.status(404).json({ message: 'Structure non trouvée' });
     }
 
     let sousTotal = 0;
     const platsDetails = [];
+    const produitsDetails = [];
 
-    for (const item of plats) {
+    if (plats && plats.length > 0) {
       const Plat = require('../models/Plat');
-      const plat = await Plat.findById(item.platId);
-      if (!plat) {
-        return res.status(404).json({ message: `Plat ${item.platId} non trouvé` });
+      for (const item of plats) {
+        const plat = await Plat.findById(item.platId);
+        if (!plat) return res.status(404).json({ message: `Plat ${item.platId} non trouvé` });
+        sousTotal += plat.prix * item.quantite;
+        platsDetails.push({ plat: item.platId, quantite: item.quantite, prix: plat.prix });
       }
-      const itemTotal = plat.prix * item.quantite;
-      sousTotal += itemTotal;
-      platsDetails.push({
-        plat: item.platId,
-        quantite: item.quantite,
-        prix: plat.prix
-      });
     }
 
-    // Ajouter les frais de livraison
+    if (produits && produits.length > 0) {
+      const Produit = require('../models/Produit');
+      for (const item of produits) {
+        const produit = await Produit.findById(item.produitId);
+        if (!produit) return res.status(404).json({ message: `Produit ${item.produitId} non trouvé` });
+        sousTotal += produit.prix * item.quantite;
+        produitsDetails.push({ produit: item.produitId, quantite: item.quantite, prix: produit.prix });
+      }
+    }
+
+    if (platsDetails.length === 0 && produitsDetails.length === 0) {
+      return res.status(400).json({ message: 'La commande doit contenir des plats ou des produits' });
+    }
+
     const fraisLivraison = restaurant.fraisLivraison || 0;
     const total = sousTotal + fraisLivraison;
 
@@ -47,6 +54,7 @@ router.post('/', auth, async (req, res) => {
       client: req.user._id,
       restaurant: restaurantId,
       plats: platsDetails,
+      produits: produitsDetails,
       adresseLivraison,
       sousTotal,
       fraisLivraison,
@@ -56,6 +64,7 @@ router.post('/', auth, async (req, res) => {
     await commande.save();
     await commande.populate('restaurant', 'nom logo fraisLivraison');
     await commande.populate('plats.plat', 'nom image prix');
+    await commande.populate('produits.produit', 'nom images prix');
 
     res.status(201).json(commande);
   } catch (error) {
@@ -69,6 +78,7 @@ router.get('/my-commandes', auth, async (req, res) => {
     const commandes = await Commande.find({ client: req.user._id })
       .populate('restaurant', 'nom logo')
       .populate('plats.plat', 'nom image prix')
+      .populate('produits.produit', 'nom images prix')
       .sort({ createdAt: -1 });
 
     res.json(commandes);
@@ -95,6 +105,7 @@ router.get('/restaurant/:restaurantId', auth, async (req, res) => {
     const commandes = await Commande.find({ restaurant: req.params.restaurantId })
       .populate('client', 'nom email telephone position')
       .populate('plats.plat', 'nom image prix')
+      .populate('produits.produit', 'nom images prix')
       .sort({ createdAt: -1 });
 
     res.json(commandes);
@@ -153,12 +164,14 @@ router.get('/all', auth, async (req, res) => {
       commandes = await Commande.find({ restaurant: req.user.restaurantId })
         .populate('client', 'nom email telephone position')
         .populate('plats.plat', 'nom image prix')
+        .populate('produits.produit', 'nom images prix')
         .sort({ createdAt: -1 });
     } else {
       commandes = await Commande.find()
         .populate('restaurant', 'nom')
         .populate('client', 'nom email')
         .populate('plats.plat', 'nom')
+        .populate('produits.produit', 'nom')
         .sort({ createdAt: -1 });
     }
 

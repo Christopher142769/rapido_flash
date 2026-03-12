@@ -3,17 +3,19 @@ const Restaurant = require('../models/Restaurant');
 const User = require('../models/User');
 const { auth, isRestaurant } = require('../middleware/auth');
 const uploadRestaurant = require('../middleware/uploadRestaurant');
-const initDefaultPlats = require('../utils/initDefaultPlats');
 
 const router = express.Router();
 
-// Obtenir tous les restaurants
+// Obtenir tous les restaurants (structures)
 router.get('/', async (req, res) => {
   try {
-    const { latitude, longitude } = req.query;
-    
-    let restaurants = await Restaurant.find({ actif: true })
+    const { latitude, longitude, categorieId } = req.query;
+    const query = { actif: true };
+    if (categorieId) query.categorie = categorieId;
+
+    let restaurants = await Restaurant.find(query)
       .populate('proprietaire', 'nom email')
+      .populate('categorie', 'nom icone')
       .select('-gestionnaires');
 
     // Si position fournie, calculer la distance et trier
@@ -35,13 +37,14 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Obtenir un restaurant par ID
+// Obtenir un restaurant (structure) par ID
 router.get('/:id', async (req, res) => {
   try {
     const restaurant = await Restaurant.findById(req.params.id)
-      .populate('proprietaire', 'nom email');
+      .populate('proprietaire', 'nom email')
+      .populate('categorie', 'nom icone');
     if (!restaurant) {
-      return res.status(404).json({ message: 'Restaurant non trouvé' });
+      return res.status(404).json({ message: 'Structure non trouvée' });
     }
     res.json(restaurant);
   } catch (error) {
@@ -129,6 +132,7 @@ router.post('/', auth, isRestaurant, uploadRestaurant.fields([
     const restaurantData = {
       nom: String(nom).trim(),
       description: description ? String(description).trim() : '',
+      categorie: req.body.categorieId || undefined,
       position: { 
         latitude: lat, 
         longitude: lng, 
@@ -175,18 +179,11 @@ router.post('/', auth, isRestaurant, uploadRestaurant.fields([
     }
     
     await restaurant.save();
-    
-    // Lier le restaurant au propriétaire
-    req.user.restaurantId = restaurant._id;
-    await req.user.save();
-    
-    // Créer les plats par défaut pour ce nouveau restaurant
-    try {
-      await initDefaultPlats();
-      console.log('✅ Plats par défaut créés pour le nouveau restaurant');
-    } catch (error) {
-      console.error('❌ Erreur lors de la création des plats par défaut:', error);
-      // Ne pas bloquer la création du restaurant si les plats ne peuvent pas être créés
+
+    const user = await User.findById(req.user._id);
+    if (user) {
+      user.restaurantId = restaurant._id;
+      await user.save();
     }
 
     res.status(201).json(restaurant);
@@ -220,9 +217,10 @@ router.put('/:id', auth, uploadRestaurant.fields([
       return res.status(403).json({ message: 'Accès refusé' });
     }
 
-    const { nom, description, latitude, longitude, adresse, telephone, whatsapp, email, fraisLivraison } = req.body;
+    const { nom, description, latitude, longitude, adresse, telephone, whatsapp, email, fraisLivraison, categorieId } = req.body;
 
     if (nom) restaurant.nom = nom;
+    if (categorieId !== undefined) restaurant.categorie = categorieId || null;
     if (description !== undefined) restaurant.description = description;
     if (latitude && longitude) {
       restaurant.position = { 
@@ -292,9 +290,11 @@ router.get('/my/restaurants', auth, isRestaurant, async (req, res) => {
     let restaurants;
     
     if (req.user.role === 'restaurant') {
-      restaurants = await Restaurant.find({ proprietaire: req.user._id });
+      restaurants = await Restaurant.find({ proprietaire: req.user._id }).populate('categorie', 'nom icone');
     } else if (req.user.role === 'gestionnaire') {
-      restaurants = await Restaurant.find({ gestionnaires: req.user._id });
+      restaurants = await Restaurant.find({ gestionnaires: req.user._id }).populate('categorie', 'nom icone');
+    } else {
+      restaurants = [];
     }
 
     res.json(restaurants);

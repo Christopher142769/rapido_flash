@@ -24,13 +24,16 @@ function RestaurantMarker({ position }) {
   return position ? <Marker position={position} /> : null;
 }
 
+const STORAGE_CURRENT_RESTAURANT = 'dashboardCurrentRestaurantId';
+
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const { user, logout } = useContext(AuthContext);
+  const { logout } = useContext(AuthContext);
   const { showSuccess, showError, showWarning } = useModal();
-  const [restaurant, setRestaurant] = useState(null);
+  const [restaurants, setRestaurants] = useState([]);
+  const [currentRestaurantId, setCurrentRestaurantIdState] = useState(null); // entreprise active (pour re-render)
+  const [restaurant, setRestaurant] = useState(null); // celui qu'on édite ou null pour "nouvelle"
   const [loading, setLoading] = useState(true);
-  const [position, setPosition] = useState([6.3725, 2.3544]); // Cotonou, Bénin par défaut
+  const [position, setPosition] = useState([6.3725, 2.3544]);
   const [formData, setFormData] = useState({
     nom: '',
     description: '',
@@ -40,8 +43,10 @@ const Dashboard = () => {
     latitude: '',
     longitude: '',
     adresse: '',
-    fraisLivraison: 0
+    fraisLivraison: 0,
+    categorieId: ''
   });
+  const [categoriesDomaine, setCategoriesDomaine] = useState([]);
   const [editing, setEditing] = useState(false);
   const [logoFile, setLogoFile] = useState(null);
   const [banniereFile, setBanniereFile] = useState(null);
@@ -52,37 +57,39 @@ const Dashboard = () => {
   const [showSearchResults, setShowSearchResults] = useState(false);
   const searchTimeoutRef = useRef(null);
 
+  const getCurrentRestaurantId = () => currentRestaurantId || localStorage.getItem(STORAGE_CURRENT_RESTAURANT);
+  const setCurrentRestaurantId = (id) => {
+    if (id) {
+      localStorage.setItem(STORAGE_CURRENT_RESTAURANT, id);
+      setCurrentRestaurantIdState(id);
+    } else {
+      localStorage.removeItem(STORAGE_CURRENT_RESTAURANT);
+      setCurrentRestaurantIdState(null);
+    }
+  };
+
   useEffect(() => {
-    fetchRestaurant();
+    fetchRestaurants();
+    axios.get(`${API_URL}/categories-domaine`).then(res => setCategoriesDomaine(res.data || [])).catch(() => {});
   }, []);
 
-  const fetchRestaurant = async () => {
+  const fetchRestaurants = async () => {
     try {
-      const res = await axios.get(`${API_URL}/restaurants/my/restaurants`);
-      if (res.data.length > 0) {
-        const resto = res.data[0];
-        setRestaurant(resto);
-        setFormData({
-          nom: resto.nom || '',
-          description: resto.description || '',
-          telephone: resto.telephone || '',
-          whatsapp: resto.whatsapp || '',
-          email: resto.email || '',
-          latitude: resto.position?.latitude || '',
-          longitude: resto.position?.longitude || '',
-          adresse: resto.position?.adresse || '',
-          fraisLivraison: resto.fraisLivraison || 0
-        });
-        if (resto.position?.latitude) {
-          setPosition([resto.position.latitude, resto.position.longitude]);
-        }
-        if (resto.logo) {
-          setLogoPreview(`${API_URL.replace('/api', '')}${resto.logo}`);
-        }
-        if (resto.banniere) {
-          setBannierePreview(`${API_URL.replace('/api', '')}${resto.banniere}`);
-        }
+      const token = localStorage.getItem('token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const res = await axios.get(`${API_URL}/restaurants/my/restaurants`, config);
+      const list = res.data || [];
+      setRestaurants(list);
+      const stored = localStorage.getItem(STORAGE_CURRENT_RESTAURANT);
+      const validId = list.length > 0 && list.some((r) => (r._id || r.id) === stored) ? stored : (list[0] && (list[0]._id || list[0].id));
+      if (validId) {
+        localStorage.setItem(STORAGE_CURRENT_RESTAURANT, validId);
+        setCurrentRestaurantIdState(validId);
       } else {
+        setCurrentRestaurantIdState(null);
+      }
+      if (list.length === 0) {
+        setRestaurant(null);
         setEditing(true);
       }
     } catch (error) {
@@ -90,6 +97,57 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadRestaurantInForm = (resto) => {
+    setRestaurant(resto);
+    setFormData({
+      nom: resto?.nom || '',
+      description: resto?.description || '',
+      telephone: resto?.telephone || '',
+      whatsapp: resto?.whatsapp || '',
+      email: resto?.email || '',
+      latitude: resto?.position?.latitude?.toString() || '',
+      longitude: resto?.position?.longitude?.toString() || '',
+      adresse: resto?.position?.adresse || '',
+      fraisLivraison: resto?.fraisLivraison ?? 0,
+      categorieId: resto?.categorie?._id || resto?.categorie || ''
+    });
+    if (resto?.position?.latitude) setPosition([resto.position.latitude, resto.position.longitude]);
+    setLogoPreview(resto?.logo ? `${API_URL.replace('/api', '')}${resto.logo}` : null);
+    setBannierePreview(resto?.banniere ? `${API_URL.replace('/api', '')}${resto.banniere}` : null);
+  };
+
+  const handleAddEnterprise = () => {
+    setRestaurant(null);
+    setFormData({
+      nom: '',
+      description: '',
+      telephone: '',
+      whatsapp: '',
+      email: '',
+      latitude: '',
+      longitude: '',
+      adresse: '',
+      fraisLivraison: 0,
+      categorieId: ''
+    });
+    setPosition([6.3725, 2.3544]);
+    setLogoPreview(null);
+    setBannierePreview(null);
+    setLogoFile(null);
+    setBanniereFile(null);
+    setEditing(true);
+  };
+
+  const handleEditEnterprise = (resto) => {
+    loadRestaurantInForm(resto);
+    setEditing(true);
+  };
+
+  const handleUseAsCurrent = (resto) => {
+    setCurrentRestaurantId(resto._id);
+    showSuccess(`« ${resto.nom} » est maintenant l'entreprise active pour les catégories et produits.`);
   };
 
   const handleMapClick = (e) => {
@@ -213,6 +271,7 @@ const Dashboard = () => {
       submitData.append('longitude', lng.toString());
       submitData.append('adresse', (formData.adresse || '').trim());
       submitData.append('fraisLivraison', (formData.fraisLivraison ? parseFloat(formData.fraisLivraison) : 0).toString());
+      if (formData.categorieId) submitData.append('categorieId', formData.categorieId);
 
       // Debug: Afficher les données envoyées
       console.log('Données envoyées:', {
@@ -244,18 +303,16 @@ const Dashboard = () => {
       };
 
       if (restaurant) {
-        // Mettre à jour
         await axios.put(`${API_URL}/restaurants/${restaurant._id}`, submitData, config);
       } else {
-        // Créer
         const res = await axios.post(`${API_URL}/restaurants`, submitData, config);
-        setRestaurant(res.data);
+        setCurrentRestaurantId(res.data._id);
       }
       setEditing(false);
       setLogoFile(null);
       setBanniereFile(null);
-      await fetchRestaurant();
-      showSuccess('Restaurant enregistré avec succès !');
+      await fetchRestaurants();
+      showSuccess(restaurant ? 'Entreprise mise à jour.' : 'Entreprise créée. Elle est maintenant l\'entreprise active.');
     } catch (error) {
       console.error('Erreur complète:', error);
       console.error('Réponse erreur:', error.response?.data);
@@ -274,13 +331,47 @@ const Dashboard = () => {
       <div className="dashboard-main">
         <div className="dashboard-content">
         <div className="dashboard-header">
-          <h1>Mon Restaurant</h1>
-          {restaurant && !editing && (
-            <button className="btn btn-secondary" onClick={() => setEditing(true)}>
-              Modifier
+          <h1>Mes entreprises</h1>
+          {!editing && (
+            <button className="btn btn-primary" onClick={handleAddEnterprise}>
+              + Ajouter une entreprise
             </button>
           )}
         </div>
+
+        {!editing && restaurants.length > 0 && (
+          <div className="enterprises-list">
+            <p className="enterprises-list-intro">Sélectionnez l'entreprise active pour les catégories et produits, ou modifiez une entreprise.</p>
+            <div className="enterprise-cards">
+              {restaurants.map((r) => {
+                const rid = r._id || r.id;
+                const isCurrent = getCurrentRestaurantId() === rid;
+                return (
+                  <div key={rid} className={`enterprise-card ${isCurrent ? 'enterprise-card-active' : ''}`}>
+                    <div className="enterprise-card-header">
+                      {r.logo ? (
+                        <img src={`${API_URL.replace('/api', '')}${r.logo}`} alt="" className="enterprise-card-logo" />
+                      ) : (
+                        <span className="enterprise-card-icon">🏪</span>
+                      )}
+                      <div className="enterprise-card-info">
+                        <strong className="enterprise-card-name">{r.nom}</strong>
+                        {r.categorie && <div className="enterprise-card-category">{r.categorie.nom}</div>}
+                      </div>
+                    </div>
+                    {isCurrent && <span className="enterprise-card-badge">✓ Entreprise active</span>}
+                    <div className="enterprise-card-actions">
+                      <button type="button" className="btn btn-secondary btn-small" onClick={() => handleEditEnterprise(r)}>Modifier</button>
+                      {!isCurrent && (
+                        <button type="button" className="btn btn-outline btn-small" onClick={() => handleUseAsCurrent(r)}>Utiliser cette entreprise</button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {editing ? (
           <form onSubmit={handleSubmit} className="restaurant-form">
@@ -288,7 +379,19 @@ const Dashboard = () => {
               <h2>Informations générales</h2>
               <div className="form-grid">
                 <div className="form-group">
-                  <label>Nom du restaurant *</label>
+                  <label>Catégorie domaine</label>
+                  <select
+                    value={formData.categorieId || ''}
+                    onChange={(e) => setFormData({ ...formData, categorieId: e.target.value })}
+                  >
+                    <option value="">— Aucune —</option>
+                    {categoriesDomaine.map((c) => (
+                      <option key={c._id} value={c._id}>{c.nom}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Nom de l'entreprise *</label>
                   <input
                     type="text"
                     value={formData.nom}
@@ -531,50 +634,18 @@ const Dashboard = () => {
             <div className="form-actions">
               <button type="button" className="btn btn-outline" onClick={() => {
                 setEditing(false);
-                if (restaurant) fetchRestaurant();
+                if (restaurants.length > 0) loadRestaurantInForm(restaurants.find(x => x._id === getCurrentRestaurantId()) || restaurants[0]);
               }}>
                 Annuler
               </button>
               <button type="submit" className="btn btn-primary">
-                Enregistrer
+                {restaurant ? 'Enregistrer' : 'Créer l\'entreprise'}
               </button>
             </div>
           </form>
-        ) : (
-          <div className="restaurant-display">
-            <div className="restaurant-info-card">
-              <h2>{restaurant?.nom}</h2>
-              {restaurant?.description && <p>{restaurant.description}</p>}
-              {restaurant?.telephone && <p>📞 {restaurant.telephone}</p>}
-              {restaurant?.whatsapp && <p>💬 WhatsApp: {restaurant.whatsapp}</p>}
-              {restaurant?.email && <p>✉️ {restaurant.email}</p>}
-              {restaurant?.position && (
-                <div className="position-info">
-                  <p><strong>Position:</strong></p>
-                  <p>Lat: {restaurant.position.latitude.toFixed(6)}</p>
-                  <p>Lng: {restaurant.position.longitude.toFixed(6)}</p>
-                  {restaurant.position.adresse && <p>{restaurant.position.adresse}</p>}
-                </div>
-              )}
-            </div>
-
-            {restaurant?.position && (
-              <div className="map-display">
-                <MapContainer
-                  center={[restaurant.position.latitude, restaurant.position.longitude]}
-                  zoom={15}
-                  style={{ height: '400px', width: '100%', borderRadius: '12px' }}
-                >
-                  <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  />
-                  <RestaurantMarker position={[restaurant.position.latitude, restaurant.position.longitude]} />
-                </MapContainer>
-              </div>
-            )}
-          </div>
-        )}
+        ) : restaurants.length === 0 ? (
+          <p style={{ color: '#666' }}>Aucune entreprise. Cliquez sur « Ajouter une entreprise » pour commencer.</p>
+        ) : null}
         </div>
       </div>
     </div>

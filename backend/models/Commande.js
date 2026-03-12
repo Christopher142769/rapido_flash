@@ -12,18 +12,14 @@ const commandeSchema = new mongoose.Schema({
     required: true
   },
   plats: [{
-    plat: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Plat'
-    },
-    quantite: {
-      type: Number,
-      required: true
-    },
-    prix: {
-      type: Number,
-      required: true
-    }
+    plat: { type: mongoose.Schema.Types.ObjectId, ref: 'Plat' },
+    quantite: { type: Number, required: true },
+    prix: { type: Number, required: true }
+  }],
+  produits: [{
+    produit: { type: mongoose.Schema.Types.ObjectId, ref: 'Produit' },
+    quantite: { type: Number, required: true },
+    prix: { type: Number, required: true }
   }],
   adresseLivraison: {
     latitude: Number,

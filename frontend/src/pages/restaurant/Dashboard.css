@@ -29,6 +29,89 @@
   font-weight: 700;
 }
 
+/* Liste des entreprises */
+.enterprises-list {
+  margin-bottom: 24px;
+  background-color: var(--primary-white);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.enterprises-list-intro {
+  color: #666;
+  margin-bottom: 16px;
+  font-size: 15px;
+}
+
+.enterprise-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.enterprise-card {
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 260px;
+  max-width: 320px;
+  background: #fff;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.enterprise-card-active {
+  border-color: var(--primary-brown);
+  background: #FFF8DC;
+}
+
+.enterprise-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.enterprise-card-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.enterprise-card-icon {
+  font-size: 28px;
+}
+
+.enterprise-card-info {
+  flex: 1;
+}
+
+.enterprise-card-name {
+  font-size: 16px;
+  display: block;
+}
+
+.enterprise-card-category {
+  font-size: 12px;
+  color: #666;
+}
+
+.enterprise-card-badge {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--primary-brown);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.enterprise-card-actions {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .restaurant-form {
   background-color: var(--primary-white);
   border-radius: 16px;

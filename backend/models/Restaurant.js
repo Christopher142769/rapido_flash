@@ -43,6 +43,10 @@ const restaurantSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
+  categorie: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'CategorieDomaine'
+  },
   actif: {
     type: Boolean,
     default: true

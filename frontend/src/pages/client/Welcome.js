@@ -10,21 +10,21 @@ const Welcome = () => {
   const steps = [
     {
       title: "Bienvenue sur Rapido",
-      subtitle: "Votre plateforme de livraison préférée",
+      subtitle: "Votre plateforme de livraison",
       illustration: "/images/illustrations/welcome.png",
-      description: "Commandez vos plats préférés et recevez-les rapidement à votre porte"
+      description: "Commandez tous types de produits et recevez-les rapidement à votre porte"
     },
     {
       title: "Livraison rapide",
       subtitle: "Où que vous soyez",
       illustration: "/images/illustrations/delivery.png",
-      description: "Trouvez les restaurants les plus proches et commandez en quelques clics"
+      description: "Découvrez les entreprises près de chez vous et commandez en quelques clics"
     },
     {
       title: "Commencez maintenant",
       subtitle: "C'est simple et rapide",
       illustration: "/images/illustrations/start.png",
-      description: "Ajoutez votre position et découvrez les meilleurs restaurants près de chez vous"
+      description: "Indiquez votre position et explorez les structures et produits disponibles"
     }
   ];
 

@@ -2,6 +2,7 @@ import React, { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
+import LanguageContext from '../../context/LanguageContext';
 import { useModal } from '../../context/ModalContext';
 import BottomNavbar from '../../components/BottomNavbar';
 import TopNavbar from '../../components/TopNavbar';
@@ -14,6 +15,7 @@ const BASE_URL = process.env.REACT_APP_BASE_URL || 'http://localhost:5000';
 const Settings = () => {
   const navigate = useNavigate();
   const { user, logout, setUser } = useContext(AuthContext);
+  const { t } = useContext(LanguageContext);
   const { showSuccess, showError, showWarning, showInfo } = useModal();
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [showLocationEditor, setShowLocationEditor] = useState(false);
@@ -48,7 +50,7 @@ const Settings = () => {
   const handlePasswordSubmit = (e) => {
     e.preventDefault();
     // TODO: Implémenter le changement de mot de passe
-    showInfo('Fonctionnalité à venir', 'Information');
+    showInfo(t('settings', 'comingSoon'), t('settings', 'info'));
     setShowPasswordForm(false);
   };
 
@@ -58,13 +60,13 @@ const Settings = () => {
 
     // Vérifier le type de fichier
     if (!file.type.startsWith('image/')) {
-      showError('Veuillez sélectionner un fichier image', 'Format invalide');
+      showError(t('settings', 'selectImage'), t('settings', 'invalidFormat'));
       return;
     }
 
     // Vérifier la taille (max 100MB)
     if (file.size > 100 * 1024 * 1024) {
-      showError('L\'image ne doit pas dépasser 100MB', 'Fichier trop volumineux');
+      showError(t('settings', 'fileTooBig'), t('settings', 'error'));
       return;
     }
 
@@ -97,11 +99,11 @@ const Settings = () => {
       const updatedUser = { ...user, photo: `${BASE_URL}${response.data.photo}` };
       setUser(updatedUser);
       
-      showSuccess('Photo mise à jour avec succès !');
+      showSuccess(t('settings', 'photoUpdated'));
       setPhotoPreview(null);
     } catch (error) {
       console.error('Erreur lors de l\'upload de la photo:', error);
-      showError(error.response?.data?.message || 'Erreur lors de l\'upload de la photo');
+      showError(error.response?.data?.message || t('settings', 'uploadError'));
       setPhotoPreview(null);
     } finally {
       setUploadingPhoto(false);
@@ -125,7 +127,7 @@ const Settings = () => {
             <path d="M15 18L9 12L15 6" stroke="#8B4513" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
-        <h1>Paramètres</h1>
+        <h1>{t('settings', 'title')}</h1>
       </div>
 
       <div className="settings-content">
@@ -134,9 +136,9 @@ const Settings = () => {
           <div className="profile-photo-section">
             <div className="profile-photo">
               {photoPreview ? (
-                <img src={photoPreview} alt="Profile preview" />
+                <img src={photoPreview} alt="" />
               ) : user?.photo ? (
-                <img src={user.photo.startsWith('http') ? user.photo : `${BASE_URL}${user.photo}`} alt="Profile" />
+                <img src={user.photo.startsWith('http') ? user.photo : `${BASE_URL}${user.photo}`} alt="" />
               ) : (
                 <div className="profile-placeholder">
                   {user?.nom?.charAt(0).toUpperCase() || 'U'}
@@ -148,151 +150,88 @@ const Settings = () => {
                 </div>
               )}
             </div>
-            <input
-              type="file"
-              ref={fileInputRef}
-              accept="image/*"
-              onChange={handlePhotoChange}
-              style={{ display: 'none' }}
-            />
-            <button 
-              className="btn btn-outline change-photo-btn"
-              onClick={handleChangePhotoClick}
-              disabled={uploadingPhoto}
-            >
-              {uploadingPhoto ? 'Upload en cours...' : 'Changer la photo'}
+            <input type="file" ref={fileInputRef} accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
+            <button className="btn btn-outline change-photo-btn" onClick={handleChangePhotoClick} disabled={uploadingPhoto}>
+              {uploadingPhoto ? t('settings', 'uploading') : t('settings', 'changePhoto')}
             </button>
           </div>
         </div>
 
         {/* Informations personnelles */}
         <div className="settings-section">
-          <h2 className="section-title">Informations personnelles</h2>
+          <h2 className="section-title">{t('settings', 'personalInfo')}</h2>
           {!showEditForm ? (
             <>
               <div className="info-item">
-                <span className="info-label">Nom</span>
-                <span className="info-value">{user?.nom || 'Non défini'}</span>
+                <span className="info-label">{t('settings', 'name')}</span>
+                <span className="info-value">{user?.nom || t('settings', 'notSet')}</span>
               </div>
               <div className="info-item">
-                <span className="info-label">Email</span>
-                <span className="info-value">{user?.email || 'Non défini'}</span>
+                <span className="info-label">{t('settings', 'email')}</span>
+                <span className="info-value">{user?.email || t('settings', 'notSet')}</span>
               </div>
               <div className="info-item">
-                <span className="info-label">Téléphone</span>
-                <span className="info-value">{user?.telephone || 'Non défini'}</span>
+                <span className="info-label">{t('settings', 'phone')}</span>
+                <span className="info-value">{user?.telephone || t('settings', 'notSet')}</span>
               </div>
-              <button
-                className="btn btn-outline full-width"
-                onClick={() => setShowEditForm(true)}
-                style={{ marginTop: '15px' }}
-              >
-                Modifier les informations
+              <button className="btn btn-outline full-width" onClick={() => setShowEditForm(true)} style={{ marginTop: '15px' }}>
+                {t('settings', 'editInfo')}
               </button>
             </>
           ) : (
-            <PersonalInfoForm 
-              user={user}
-              onCancel={() => setShowEditForm(false)}
-              onSuccess={() => {
-                setShowEditForm(false);
-                window.location.reload(); // Recharger pour mettre à jour les données
-              }}
-            />
-          )}
+              <PersonalInfoForm user={user} onCancel={() => setShowEditForm(false)} onSuccess={() => { setShowEditForm(false); window.location.reload(); }} t={t} />
+            )}
         </div>
 
         {/* Adresse de livraison */}
         <div className="settings-section">
-          <h2 className="section-title">Adresse de livraison</h2>
+          <h2 className="section-title">{t('settings', 'deliveryAddress')}</h2>
           <div className="delivery-address-section">
             {userLocation?.adresse ? (
               <div className="address-display">
                 <div className="address-icon">📍</div>
                 <div className="address-details">
                   <p className="address-text">{userLocation.adresse}</p>
-                  <p className="address-coords">
-                    {userLocation.latitude?.toFixed(6)}, {userLocation.longitude?.toFixed(6)}
-                  </p>
+                  <p className="address-coords">{userLocation.latitude?.toFixed(6)}, {userLocation.longitude?.toFixed(6)}</p>
                 </div>
               </div>
             ) : (
               <div className="no-address">
-                <p>Aucune adresse de livraison définie</p>
+                <p>{t('settings', 'noAddressDefined')}</p>
               </div>
             )}
-            <button
-              className="btn btn-outline full-width"
-              onClick={() => setShowLocationEditor(true)}
-            >
-              {userLocation?.adresse ? 'Modifier l\'adresse' : 'Définir une adresse'}
+            <button className="btn btn-outline full-width" onClick={() => setShowLocationEditor(true)}>
+              {userLocation?.adresse ? t('settings', 'modifyAddress') : t('settings', 'setAddress')}
             </button>
           </div>
         </div>
 
         {/* Mot de passe */}
         <div className="settings-section">
-          <h2 className="section-title">Sécurité</h2>
+          <h2 className="section-title">{t('settings', 'security')}</h2>
           {!showPasswordForm ? (
-            <button
-              className="btn btn-outline full-width"
-              onClick={() => setShowPasswordForm(true)}
-            >
-              Changer le mot de passe
+            <button className="btn btn-outline full-width" onClick={() => setShowPasswordForm(true)}>
+              {t('settings', 'changePassword')}
             </button>
           ) : (
             <form onSubmit={handlePasswordSubmit} className="password-form">
               <div className="form-group">
-                <label>Mot de passe actuel</label>
-                <input
-                  type="password"
-                  name="currentPassword"
-                  value={passwordData.currentPassword}
-                  onChange={handlePasswordChange}
-                  required
-                  placeholder="Mot de passe actuel"
-                />
+                <label>{t('settings', 'currentPassword')}</label>
+                <input type="password" name="currentPassword" value={passwordData.currentPassword} onChange={handlePasswordChange} required placeholder={t('settings', 'currentPassword')} />
               </div>
               <div className="form-group">
-                <label>Nouveau mot de passe</label>
-                <input
-                  type="password"
-                  name="newPassword"
-                  value={passwordData.newPassword}
-                  onChange={handlePasswordChange}
-                  required
-                  placeholder="Nouveau mot de passe"
-                />
+                <label>{t('settings', 'newPassword')}</label>
+                <input type="password" name="newPassword" value={passwordData.newPassword} onChange={handlePasswordChange} required placeholder={t('settings', 'newPassword')} />
               </div>
               <div className="form-group">
-                <label>Confirmer le mot de passe</label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={passwordData.confirmPassword}
-                  onChange={handlePasswordChange}
-                  required
-                  placeholder="Confirmer le mot de passe"
-                />
+                <label>{t('settings', 'confirmPassword')}</label>
+                <input type="password" name="confirmPassword" value={passwordData.confirmPassword} onChange={handlePasswordChange} required placeholder={t('settings', 'confirmPassword')} />
               </div>
               <div className="form-actions">
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={() => {
-                    setShowPasswordForm(false);
-                    setPasswordData({
-                      currentPassword: '',
-                      newPassword: '',
-                      confirmPassword: ''
-                    });
-                  }}
-                >
-                  Annuler
+                <button type="button" className="btn btn-outline" onClick={() => { setShowPasswordForm(false); setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' }); }}>
+                  {t('settings', 'cancel')}
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  Enregistrer
-                </button>
+                <button type="submit" className="btn btn-primary">{t('settings', 'save')}</button>
               </div>
             </form>
           )}
@@ -301,7 +240,7 @@ const Settings = () => {
         {/* Déconnexion */}
         <div className="settings-section">
           <button className="btn btn-danger full-width" onClick={logout}>
-            Se déconnecter
+            {t('settings', 'logout')}
           </button>
         </div>
       </div>
@@ -321,7 +260,9 @@ const Settings = () => {
 };
 
 // Composant pour le formulaire de modification des informations personnelles
-const PersonalInfoForm = ({ user, onCancel, onSuccess }) => {
+const PersonalInfoForm = ({ user, onCancel, onSuccess, t }) => {
+  const { t: tCtx } = useContext(LanguageContext);
+  const tFn = t || tCtx;
   const [formData, setFormData] = useState({
     nom: user?.nom || '',
     email: user?.email || '',
@@ -354,13 +295,13 @@ const PersonalInfoForm = ({ user, onCancel, onSuccess }) => {
       const updatedUser = { ...user, ...response.data.user };
       setUser(updatedUser);
       
-      showSuccess('Informations mises à jour avec succès !');
+      showSuccess(tFn('settings', 'infoUpdated'));
       onSuccess();
     } catch (error) {
       console.error('Erreur lors de la mise à jour:', error);
-      const errorMsg = error.response?.data?.message || 'Erreur lors de la mise à jour';
+      const errorMsg = error.response?.data?.message || tFn('settings', 'updateError');
       setError(errorMsg);
-      showErrorModal(errorMsg, 'Erreur');
+      showErrorModal(errorMsg, tFn('settings', 'error'));
     } finally {
       setLoading(false);
     }
@@ -381,53 +322,20 @@ const PersonalInfoForm = ({ user, onCancel, onSuccess }) => {
         </div>
       )}
       <div className="form-group">
-        <label>Nom</label>
-        <input
-          type="text"
-          name="nom"
-          value={formData.nom}
-          onChange={handleChange}
-          required
-          placeholder="Votre nom"
-        />
+        <label>{tFn('settings', 'name')}</label>
+        <input type="text" name="nom" value={formData.nom} onChange={handleChange} required placeholder={tFn('settings', 'yourName')} />
       </div>
       <div className="form-group">
-        <label>Email</label>
-        <input
-          type="email"
-          name="email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-          placeholder="Votre email"
-        />
+        <label>{tFn('settings', 'email')}</label>
+        <input type="email" name="email" value={formData.email} onChange={handleChange} required placeholder={tFn('settings', 'yourEmail')} />
       </div>
       <div className="form-group">
-        <label>Téléphone</label>
-        <input
-          type="tel"
-          name="telephone"
-          value={formData.telephone}
-          onChange={handleChange}
-          placeholder="Votre numéro de téléphone"
-        />
+        <label>{tFn('settings', 'phone')}</label>
+        <input type="tel" name="telephone" value={formData.telephone} onChange={handleChange} placeholder={tFn('settings', 'yourPhone')} />
       </div>
       <div className="form-actions">
-        <button
-          type="button"
-          className="btn btn-outline"
-          onClick={onCancel}
-          disabled={loading}
-        >
-          Annuler
-        </button>
-        <button 
-          type="submit" 
-          className="btn btn-primary"
-          disabled={loading}
-        >
-          {loading ? 'Enregistrement...' : 'Enregistrer'}
-        </button>
+        <button type="button" className="btn btn-outline" onClick={onCancel} disabled={loading}>{tFn('settings', 'cancel')}</button>
+        <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? tFn('settings', 'saving') : tFn('settings', 'save')}</button>
       </div>
     </form>
   );

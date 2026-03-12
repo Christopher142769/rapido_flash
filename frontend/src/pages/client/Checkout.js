@@ -255,15 +255,13 @@ const Checkout = () => {
       // Mettre à jour la position de l'utilisateur
       await updatePosition(mapPosition[0], mapPosition[1], address);
 
-      // Créer la commande
-      const plats = cart.map(item => ({
-        platId: item.platId,
-        quantite: item.quantite
-      }));
+      const plats = cart.filter(item => item.platId != null).map(item => ({ platId: item.platId, quantite: item.quantite }));
+      const produits = cart.filter(item => item.productId != null).map(item => ({ produitId: item.productId, quantite: item.quantite }));
 
       const commandeData = {
         restaurantId,
-        plats,
+        plats: plats.length ? plats : undefined,
+        produits: produits.length ? produits : undefined,
         adresseLivraison: {
           latitude: mapPosition[0],
           longitude: mapPosition[1],
@@ -420,9 +418,9 @@ const Checkout = () => {
             <h2>Récapitulatif</h2>
             <div className="order-items">
               {cart.map((item) => (
-                <div key={item.platId} className="order-item">
+                <div key={item.productId || item.platId} className="order-item">
                   <span>{item.nom} x {item.quantite}</span>
-                  <span>{(item.prix * item.quantite).toFixed(2)} FCFA</span>
+                  <span>{(item.prix * item.quantite).toFixed(0)} FCFA</span>
                 </div>
               ))}
             </div>
@@ -434,15 +432,15 @@ const Checkout = () => {
             <h2>Total</h2>
             <div className="summary-row">
               <span>Sous-total</span>
-              <span>{getSubTotal().toFixed(2)} FCFA</span>
+              <span>{getSubTotal().toFixed(0)} FCFA</span>
             </div>
             <div className="summary-row">
               <span>Frais de livraison</span>
-              <span>{fraisLivraison.toFixed(2)} FCFA</span>
+              <span>{fraisLivraison.toFixed(0)} FCFA</span>
             </div>
             <div className="summary-row total">
               <span>Total</span>
-              <span>{getTotal().toFixed(2)} FCFA</span>
+              <span>{getTotal().toFixed(0)} FCFA</span>
             </div>
             <button
               className="btn btn-primary btn-large"

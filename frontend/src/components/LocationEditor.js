@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import LeafletMap from './LeafletMap';
 import axios from 'axios';
+import LanguageContext from '../context/LanguageContext';
 import { useModal } from '../context/ModalContext';
 import './LocationEditor.css';
 
@@ -9,6 +10,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
 
 const LocationEditor = ({ onClose, onSave }) => {
+  const { t } = useContext(LanguageContext);
   const { showError } = useModal();
   const [position, setPosition] = useState(null);
   const [address, setAddress] = useState('');
@@ -162,7 +164,7 @@ const LocationEditor = ({ onClose, onSave }) => {
           });
         },
         (error) => {
-          showError('Impossible de récupérer votre position', 'Erreur de géolocalisation');
+          showError(t('locationEditor', 'geolocError'), t('locationEditor', 'geolocErrorTitle'));
         }
       );
     }
@@ -198,7 +200,7 @@ const LocationEditor = ({ onClose, onSave }) => {
       if (onClose) onClose();
     } catch (error) {
       console.error('Erreur:', error);
-      showError('Erreur lors de la sauvegarde', 'Erreur');
+      showError(t('locationEditor', 'saveError'), t('common', 'error'));
     } finally {
       setSaving(false);
     }
@@ -208,8 +210,8 @@ const LocationEditor = ({ onClose, onSave }) => {
     <div className="location-editor-modal">
       <div className="location-editor-content">
         <div className="location-editor-header">
-          <h2>Modifier l'adresse de livraison</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
+          <h2>{t('locationEditor', 'title')}</h2>
+          <button className="close-btn" onClick={onClose} aria-label={t('locationEditor', 'cancel')}>×</button>
         </div>
 
         <div className="location-editor-body">
@@ -217,7 +219,7 @@ const LocationEditor = ({ onClose, onSave }) => {
             <div className="address-search-wrapper">
               <input
                 type="text"
-                placeholder="Rechercher une adresse..."
+                placeholder={t('locationEditor', 'searchPlaceholder')}
                 className="address-search-input"
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
@@ -241,7 +243,7 @@ const LocationEditor = ({ onClose, onSave }) => {
               className="btn-use-location"
               onClick={handleUseCurrentLocation}
             >
-              📍 Utiliser ma position
+              📍 {t('locationEditor', 'useMyLocation')}
             </button>
           </div>
 
@@ -277,7 +279,7 @@ const LocationEditor = ({ onClose, onSave }) => {
 
           {address && (
             <div className="address-display-section">
-              <p className="address-label">Adresse sélectionnée :</p>
+              <p className="address-label">{t('locationEditor', 'selectedAddress')}</p>
               <p className="address-value">{address}</p>
             </div>
           )}
@@ -285,14 +287,14 @@ const LocationEditor = ({ onClose, onSave }) => {
 
         <div className="location-editor-footer">
           <button className="btn btn-outline" onClick={onClose}>
-            Annuler
+            {t('locationEditor', 'cancel')}
           </button>
           <button
             className="btn btn-primary"
             onClick={handleSave}
             disabled={!position || saving}
           >
-            {saving ? 'Enregistrement...' : 'Enregistrer'}
+            {saving ? t('locationEditor', 'saving') : t('locationEditor', 'save')}
           </button>
         </div>
       </div>
