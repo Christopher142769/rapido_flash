@@ -60,8 +60,8 @@ const Bannieres = () => {
         alert('Veuillez sélectionner une image');
         return;
       }
-      if (file.size > 100 * 1024 * 1024) {
-        alert('L\'image ne doit pas dépasser 100MB');
+      if (file.size > 500 * 1024 * 1024) {
+        alert('L\'image ne doit pas dépasser 500 Mo');
         return;
       }
       setSelectedFile(file);
@@ -215,7 +215,7 @@ const Bannieres = () => {
                   <div className="upload-placeholder">
                     <span className="upload-icon">📷</span>
                     <span>Cliquez pour sélectionner une image</span>
-                    <small>JPG, PNG (max 100MB)</small>
+                    <small>JPG, PNG (max 500 Mo)</small>
                   </div>
                 )}
               </label>

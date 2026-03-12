@@ -64,8 +64,8 @@ const Settings = () => {
       return;
     }
 
-    // Vérifier la taille (max 100MB)
-    if (file.size > 100 * 1024 * 1024) {
+    // Vérifier la taille (max 500MB)
+    if (file.size > 500 * 1024 * 1024) {
       showError(t('settings', 'fileTooBig'), t('settings', 'error'));
       return;
     }

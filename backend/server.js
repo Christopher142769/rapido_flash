@@ -109,7 +109,7 @@ app.use('/api/produits', require('./routes/produits'));
 app.use((error, req, res, next) => {
   if (error instanceof require('multer').MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ message: 'Fichier trop volumineux (max 100MB)' });
+      return res.status(400).json({ message: 'Fichier trop volumineux (max 500MB)' });
     }
     return res.status(400).json({ message: `Erreur upload: ${error.message}` });
   }
