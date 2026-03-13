@@ -25,6 +25,7 @@ import Categories from './pages/restaurant/Categories';
 import RestaurantCommandes from './pages/restaurant/RestaurantCommandes';
 import Bannieres from './pages/restaurant/Bannieres';
 import CategoriesDomaine from './pages/restaurant/CategoriesDomaine';
+import Gestionnaires from './pages/restaurant/Gestionnaires';
 
 import './App.css';
 
@@ -62,6 +63,7 @@ function App() {
           <Route path="/dashboard/categories" element={<PrivateRoute><Categories /></PrivateRoute>} />
           <Route path="/dashboard/commandes" element={<PrivateRoute><RestaurantCommandes /></PrivateRoute>} />
           <Route path="/dashboard/bannieres" element={<PrivateRoute><Bannieres /></PrivateRoute>} />
+          <Route path="/dashboard/gestionnaires" element={<PrivateRoute><Gestionnaires /></PrivateRoute>} />
           
           <Route path="/" element={<Navigate to="/loading" replace />} />
         </Routes>

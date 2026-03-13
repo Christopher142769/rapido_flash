@@ -37,6 +37,77 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Obtenir les restaurants du propriétaire/gestionnaire (AVANT /:id pour éviter que "my" soit capturé par :id)
+router.get('/my/restaurants', auth, isRestaurant, async (req, res) => {
+  try {
+    let restaurants;
+    if (req.user.role === 'restaurant') {
+      restaurants = await Restaurant.find({ proprietaire: req.user._id }).populate('categorie', 'nom icone');
+    } else if (req.user.role === 'gestionnaire') {
+      restaurants = await Restaurant.find({ gestionnaires: req.user._id }).populate('categorie', 'nom icone');
+    } else {
+      restaurants = [];
+    }
+    res.json(restaurants);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Lister les gestionnaires d'un restaurant (AVANT /:id pour matcher /:id/gestionnaires)
+router.get('/:id/gestionnaires', auth, async (req, res) => {
+  try {
+    const restaurant = await Restaurant.findById(req.params.id);
+    if (!restaurant) return res.status(404).json({ message: 'Restaurant non trouvé' });
+    if (restaurant.proprietaire.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+    const users = await User.find({ _id: { $in: restaurant.gestionnaires } }).select('nom email telephone createdAt');
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Créer un gestionnaire (AVANT /:id)
+router.post('/:id/gestionnaires', auth, async (req, res) => {
+  try {
+    const restaurant = await Restaurant.findById(req.params.id);
+    if (!restaurant) return res.status(404).json({ message: 'Restaurant non trouvé' });
+    if (restaurant.proprietaire.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+    const body = req.body || {};
+    const nom = body.nom;
+    const email = body.email;
+    const password = body.password;
+    const telephone = body.telephone;
+    if (!nom || !email || !password) {
+      return res.status(400).json({ message: 'Nom, email et mot de passe sont requis' });
+    }
+    const gestionnaire = new User({
+      nom,
+      email,
+      password,
+      telephone: telephone || '',
+      role: 'gestionnaire',
+      restaurantId: restaurant._id
+    });
+    await gestionnaire.save();
+    restaurant.gestionnaires.push(gestionnaire._id);
+    await restaurant.save();
+    const gestionnaireObj = gestionnaire.toObject();
+    delete gestionnaireObj.password;
+    res.status(201).json({
+      message: 'Gestionnaire créé',
+      gestionnaire: gestionnaireObj,
+      credentials: { email, password }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Erreur serveur' });
+  }
+});
+
 // Obtenir un restaurant (structure) par ID
 router.get('/:id', async (req, res) => {
   try {
@@ -247,59 +318,6 @@ router.put('/:id', auth, uploadRestaurant.fields([
   } catch (error) {
     console.error('Erreur mise à jour restaurant:', error);
     res.status(500).json({ message: error.message || 'Erreur lors de la mise à jour du restaurant' });
-  }
-});
-
-// Créer un gestionnaire
-router.post('/:id/gestionnaires', auth, async (req, res) => {
-  try {
-    const restaurant = await Restaurant.findById(req.params.id);
-    
-    if (!restaurant) {
-      return res.status(404).json({ message: 'Restaurant non trouvé' });
-    }
-
-    if (restaurant.proprietaire.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Accès refusé' });
-    }
-
-    const { nom, email, password, telephone } = req.body;
-
-    const gestionnaire = new User({
-      nom,
-      email,
-      password,
-      telephone,
-      role: 'gestionnaire',
-      restaurantId: restaurant._id
-    });
-
-    await gestionnaire.save();
-    restaurant.gestionnaires.push(gestionnaire._id);
-    await restaurant.save();
-
-    res.status(201).json({ message: 'Gestionnaire créé', gestionnaire });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Obtenir les restaurants du propriétaire/gestionnaire
-router.get('/my/restaurants', auth, isRestaurant, async (req, res) => {
-  try {
-    let restaurants;
-    
-    if (req.user.role === 'restaurant') {
-      restaurants = await Restaurant.find({ proprietaire: req.user._id }).populate('categorie', 'nom icone');
-    } else if (req.user.role === 'gestionnaire') {
-      restaurants = await Restaurant.find({ gestionnaires: req.user._id }).populate('categorie', 'nom icone');
-    } else {
-      restaurants = [];
-    }
-
-    res.json(restaurants);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
   }
 });
 

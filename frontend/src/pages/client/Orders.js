@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
 import BottomNavbar from '../../components/BottomNavbar';
@@ -12,9 +12,22 @@ const BASE_URL = API_URL.replace('/api', '');
 
 const Orders = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useContext(AuthContext);
   const [commandes, setCommandes] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Retour après paiement KkiaPay (callback URL)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const paymentSuccess = params.get('payment') === 'success';
+    const commandeId = params.get('commandeId');
+    if (paymentSuccess && commandeId) {
+      axios.put(`${API_URL}/commandes/${commandeId}/statut`, { statut: 'confirmee' }).catch(() => {});
+      localStorage.removeItem('cart');
+      window.history.replaceState({}, '', '/orders');
+    }
+  }, [location.search]);
 
   useEffect(() => {
     fetchCommandes();

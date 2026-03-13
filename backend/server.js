@@ -70,10 +70,9 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// IMPORTANT: express.json() et express.urlencoded() ne doivent PAS être appliqués globalement
-// car ils consomment le body stream et empêchent Multer de parser multipart/form-data
-// On les applique seulement aux routes qui n'utilisent pas Multer via un middleware conditionnel
-// Pour les routes avec Multer, Multer parse automatiquement les champs texte dans req.body
+// Parser JSON et urlencoded (n'affecte pas les requêtes multipart/form-data utilisées par Multer)
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Servir les fichiers statiques avec les bons headers
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {

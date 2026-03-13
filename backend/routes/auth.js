@@ -2,7 +2,9 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
+const LoginCode = require('../models/LoginCode');
 const { auth } = require('../middleware/auth');
+const { sendLoginCode } = require('../utils/mailer');
 
 const router = express.Router();
 
@@ -96,6 +98,74 @@ router.post('/login', [
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Envoyer un code de connexion par email (flux type Yelo)
+router.post('/send-login-code', [
+  body('email').isEmail().normalizeEmail()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ message: 'Email invalide' });
+    }
+    const { email } = req.body;
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return res.status(404).json({ message: 'Aucun compte avec cet email' });
+    }
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    await LoginCode.deleteMany({ email: email.toLowerCase().trim() });
+    await LoginCode.create({ email: email.toLowerCase().trim(), code, expiresAt });
+    const result = await sendLoginCode(email, code);
+    if (!result.sent) {
+      return res.status(500).json({ message: 'Impossible d\'envoyer l\'email. Réessayez plus tard.' });
+    }
+    res.json({ message: 'Code envoyé à votre adresse email' });
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Erreur serveur' });
+  }
+});
+
+// Vérifier le code et définir un nouveau mot de passe puis connexion
+router.post('/verify-login-code', [
+  body('email').isEmail().normalizeEmail(),
+  body('code').notEmpty(),
+  body('newPassword').isLength({ min: 6 })
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ message: 'Email, code et nouveau mot de passe (min. 6 caractères) requis' });
+    }
+    const { email, code, newPassword } = req.body;
+    const emailNorm = email.toLowerCase().trim();
+    const record = await LoginCode.findOne({ email: emailNorm, code }).sort({ createdAt: -1 });
+    if (!record || record.expiresAt < new Date()) {
+      return res.status(400).json({ message: 'Code invalide ou expiré' });
+    }
+    const user = await User.findOne({ email: emailNorm });
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+    user.password = newPassword;
+    await user.save();
+    await LoginCode.deleteMany({ email: emailNorm });
+    const token = generateToken(user._id);
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        nom: user.nom,
+        email: user.email,
+        role: user.role,
+        restaurantId: user.restaurantId
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Erreur serveur' });
   }
 });
 

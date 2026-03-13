@@ -12,11 +12,12 @@
     <link rel="icon" type="image/png" href="/images/logo.png" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://cdn.kkiapay.me/k.js" onload="console.log('✅ Script Kkiapay chargé depuis index.html'); if(window.Kkiapay) console.log('✅ Kkiapay disponible'); else console.warn('⚠️ Script chargé mais Kkiapay non disponible');" onerror="console.error('❌ Erreur chargement Kkiapay depuis index.html')"></script>
     <title>Rapido Flash</title>
   </head>
   <body>
     <noscript>Vous devez activer JavaScript pour utiliser cette application.</noscript>
     <div id="root"></div>
+    <!-- KkiaPay : script avant fermeture body (doc KkiaPay) -->
+    <script src="https://cdn.kkiapay.me/k.js"></script>
   </body>
 </html>

@@ -66,6 +66,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginWithToken = (newToken, newUser) => {
+    localStorage.setItem('token', newToken);
+    setToken(newToken);
+    setUser(newUser);
+    axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+  };
+
   const register = async (userData) => {
     try {
       const res = await axios.post(`${API_URL}/auth/register`, userData);
@@ -103,6 +110,7 @@ export const AuthProvider = ({ children }) => {
       setUser,
       loading,
       login,
+      loginWithToken,
       register,
       logout,
       updatePosition,

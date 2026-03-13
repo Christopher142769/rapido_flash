@@ -27,8 +27,10 @@ function RestaurantMarker({ position }) {
 const STORAGE_CURRENT_RESTAURANT = 'dashboardCurrentRestaurantId';
 
 const Dashboard = () => {
-  const { logout } = useContext(AuthContext);
+  const { user, logout } = useContext(AuthContext);
   const { showSuccess, showError, showWarning } = useModal();
+  const isAdmin = user?.role === 'restaurant';
+  const isGestionnaire = user?.role === 'gestionnaire';
   const [restaurants, setRestaurants] = useState([]);
   const [currentRestaurantId, setCurrentRestaurantIdState] = useState(null); // entreprise active (pour re-render)
   const [restaurant, setRestaurant] = useState(null); // celui qu'on édite ou null pour "nouvelle"
@@ -55,6 +57,7 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const searchTimeoutRef = useRef(null);
 
   const getCurrentRestaurantId = () => currentRestaurantId || localStorage.getItem(STORAGE_CURRENT_RESTAURANT);
@@ -228,7 +231,7 @@ const Dashboard = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    setSubmitting(true);
     // Validation
     if (!formData.nom || !formData.latitude || !formData.longitude) {
       alert('Veuillez remplir tous les champs obligatoires (Nom, Latitude, Longitude)');
@@ -239,16 +242,18 @@ const Dashboard = () => {
       // Validation côté client
       if (!formData.nom || formData.nom.trim() === '') {
         showWarning('Le nom du restaurant est requis', 'Champ requis');
+        setSubmitting(false);
         return;
       }
       
       if (!formData.latitude || isNaN(parseFloat(formData.latitude))) {
         showWarning('Veuillez sélectionner une position sur la carte ou entrer une latitude valide', 'Position requise');
+        setSubmitting(false);
         return;
       }
-      
       if (!formData.longitude || isNaN(parseFloat(formData.longitude))) {
         showWarning('Veuillez sélectionner une position sur la carte ou entrer une longitude valide', 'Position requise');
+        setSubmitting(false);
         return;
       }
 
@@ -258,6 +263,7 @@ const Dashboard = () => {
       
       if (isNaN(lat) || isNaN(lng)) {
         showWarning('Les coordonnées GPS ne sont pas valides. Veuillez cliquer sur la carte ou utiliser la recherche d\'adresse.', 'Coordonnées invalides');
+        setSubmitting(false);
         return;
       }
 
@@ -315,9 +321,10 @@ const Dashboard = () => {
       showSuccess(restaurant ? 'Entreprise mise à jour.' : 'Entreprise créée. Elle est maintenant l\'entreprise active.');
     } catch (error) {
       console.error('Erreur complète:', error);
-      console.error('Réponse erreur:', error.response?.data);
       const errorMessage = error.response?.data?.message || error.message || 'Erreur lors de l\'enregistrement';
       showError(`Erreur: ${errorMessage}`, 'Erreur d\'enregistrement');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -331,9 +338,9 @@ const Dashboard = () => {
       <div className="dashboard-main">
         <div className="dashboard-content">
         <div className="dashboard-header">
-          <h1>Mes entreprises</h1>
-          {!editing && (
-            <button className="btn btn-primary" onClick={handleAddEnterprise}>
+          <h1>{isGestionnaire ? 'Mon entreprise' : 'Mes entreprises'}</h1>
+          {!editing && isAdmin && (
+            <button type="button" className="btn btn-primary" onClick={handleAddEnterprise}>
               + Ajouter une entreprise
             </button>
           )}
@@ -362,7 +369,7 @@ const Dashboard = () => {
                     {isCurrent && <span className="enterprise-card-badge">✓ Entreprise active</span>}
                     <div className="enterprise-card-actions">
                       <button type="button" className="btn btn-secondary btn-small" onClick={() => handleEditEnterprise(r)}>Modifier</button>
-                      {!isCurrent && (
+                      {!isCurrent && !isGestionnaire && (
                         <button type="button" className="btn btn-outline btn-small" onClick={() => handleUseAsCurrent(r)}>Utiliser cette entreprise</button>
                       )}
                     </div>
@@ -635,11 +642,18 @@ const Dashboard = () => {
               <button type="button" className="btn btn-outline" onClick={() => {
                 setEditing(false);
                 if (restaurants.length > 0) loadRestaurantInForm(restaurants.find(x => x._id === getCurrentRestaurantId()) || restaurants[0]);
-              }}>
+              }} disabled={submitting}>
                 Annuler
               </button>
-              <button type="submit" className="btn btn-primary">
-                {restaurant ? 'Enregistrer' : 'Créer l\'entreprise'}
+              <button type="submit" className="btn btn-primary" disabled={submitting}>
+                {submitting ? (
+                  <>
+                    <span className="btn-spinner" />
+                    {restaurant ? 'Enregistrement…' : 'Création…'}
+                  </>
+                ) : (
+                  restaurant ? 'Enregistrer' : 'Créer l\'entreprise'
+                )}
               </button>
             </div>
           </form>

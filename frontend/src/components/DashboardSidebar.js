@@ -1,58 +1,97 @@
-import React from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import AuthContext from '../context/AuthContext';
 import './DashboardSidebar.css';
+
+const BASE_URL = process.env.REACT_APP_BASE_URL || 'http://localhost:5000';
 
 const DashboardSidebar = ({ onLogout }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useContext(AuthContext);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [navigating, setNavigating] = useState(false);
+
+  const isAdmin = user?.role === 'restaurant';
+  const isGestionnaire = user?.role === 'gestionnaire';
 
   const menuItems = [
-    { id: 'structure', label: 'Mon entreprise', icon: '🏪', path: '/dashboard' },
-    { id: 'categories-domaine', label: 'Catégories domaine', icon: '📂', path: '/dashboard/categories-domaine' },
-    { id: 'categories', label: 'Catégories produits', icon: '📁', path: '/dashboard/categories' },
-    { id: 'plats', label: 'Produits', icon: '📦', path: '/dashboard/plats' },
-    { id: 'commandes', label: 'Commandes', icon: '🛒', path: '/dashboard/commandes' },
-    { id: 'bannieres', label: 'Bannières', icon: '🖼️', path: '/dashboard/bannieres' }
+    { id: 'structure', label: 'Entreprise', path: '/dashboard' },
+    { id: 'categories-domaine', label: 'Catégories domaine', path: '/dashboard/categories-domaine' },
+    { id: 'categories', label: 'Catégories produits', path: '/dashboard/categories' },
+    { id: 'plats', label: 'Produits', path: '/dashboard/plats' },
+    { id: 'commandes', label: 'Commandes', path: '/dashboard/commandes' },
+    { id: 'bannieres', label: 'Bannières', path: '/dashboard/bannieres' }
   ];
 
+  if (isAdmin) {
+    menuItems.push({ id: 'gestionnaires', label: 'Gestionnaires', path: '/dashboard/gestionnaires' });
+  }
+
   const isActive = (path) => {
-    if (path === '/dashboard') {
-      return location.pathname === '/dashboard';
-    }
+    if (path === '/dashboard') return location.pathname === '/dashboard';
     return location.pathname.startsWith(path);
   };
 
+  const handleNav = (path) => {
+    setNavigating(true);
+    setMenuOpen(false);
+    navigate(path);
+    setTimeout(() => setNavigating(false), 400);
+  };
+
+  const handleLogout = () => {
+    setMenuOpen(false);
+    onLogout();
+  };
+
   return (
-    <div className="dashboard-sidebar">
-      <div className="sidebar-header">
-        <div className="sidebar-logo">
-          <span className="logo-icon">🍔</span>
-          <span className="logo-text">Rapido</span>
+    <>
+      <button
+        type="button"
+        className="dashboard-sidebar-toggle"
+        onClick={() => setMenuOpen(!menuOpen)}
+        aria-label="Menu"
+        aria-expanded={menuOpen}
+      >
+        <span className={menuOpen ? 'open' : ''} />
+        <span className={menuOpen ? 'open' : ''} />
+        <span className={menuOpen ? 'open' : ''} />
+      </button>
+      <div className={`dashboard-sidebar-overlay ${menuOpen ? 'visible' : ''}`} onClick={() => setMenuOpen(false)} aria-hidden="true" />
+      <aside className={`dashboard-sidebar ${menuOpen ? 'open' : ''}`}>
+        <div className="dashboard-sidebar-inner">
+          <header className="dashboard-sidebar-header">
+            <div className="dashboard-sidebar-logo" onClick={() => handleNav('/dashboard')} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && handleNav('/dashboard')}>
+              <img src="/images/logo.png" alt="Rapido Flash" className="dashboard-sidebar-logo-img" />
+              <span className="dashboard-sidebar-logo-text">Rapido Flash</span>
+            </div>
+            <p className="dashboard-sidebar-role">
+              {isAdmin ? 'Administration' : isGestionnaire ? 'Gestion' : 'Dashboard'}
+            </p>
+          </header>
+          <nav className="dashboard-sidebar-nav">
+            {menuItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`dashboard-sidebar-item ${isActive(item.path) ? 'active' : ''}`}
+                onClick={() => handleNav(item.path)}
+              >
+                <span className="dashboard-sidebar-item-label">{item.label}</span>
+                {isActive(item.path) && <span className="dashboard-sidebar-item-dot" />}
+              </button>
+            ))}
+          </nav>
+          <footer className="dashboard-sidebar-footer">
+            <button type="button" className="dashboard-sidebar-logout" onClick={handleLogout}>
+              Déconnexion
+            </button>
+          </footer>
         </div>
-        <div className="sidebar-subtitle">Dashboard Admin</div>
-      </div>
-
-      <nav className="sidebar-nav">
-        {menuItems.map((item) => (
-          <button
-            key={item.id}
-            className={`sidebar-item ${isActive(item.path) ? 'active' : ''}`}
-            onClick={() => navigate(item.path)}
-          >
-            <span className="sidebar-icon">{item.icon}</span>
-            <span className="sidebar-label">{item.label}</span>
-            {isActive(item.path) && <div className="active-indicator" />}
-          </button>
-        ))}
-      </nav>
-
-      <div className="sidebar-footer">
-        <button className="sidebar-logout" onClick={onLogout}>
-          <span className="sidebar-icon">🚪</span>
-          <span className="sidebar-label">Déconnexion</span>
-        </button>
-      </div>
-    </div>
+      </aside>
+      {navigating && <div className="dashboard-nav-loading" aria-hidden="true"><span className="spinner" /></div>}
+    </>
   );
 };
 

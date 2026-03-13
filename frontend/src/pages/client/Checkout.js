@@ -10,6 +10,11 @@ import './Checkout.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
+// Clé publique KkiaPay (Public Api Key)
+const KKIAPAY_PUBLIC_KEY = process.env.REACT_APP_KKIAPAY_PUBLIC_KEY || '261f38e09ef211f0989243766f89f726';
+// Sandbox par défaut (clé sandbox). Mettre REACT_APP_KKIAPAY_SANDBOX=false en production avec clé live.
+const KKIAPAY_SANDBOX = process.env.REACT_APP_KKIAPAY_SANDBOX !== 'false';
+
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
@@ -123,123 +128,52 @@ const Checkout = () => {
   // Fonction pour charger dynamiquement le script Kkiapay si nécessaire
   const loadKkiapayScript = () => {
     return new Promise((resolve, reject) => {
-      // Si Kkiapay est déjà disponible
-      if (window.Kkiapay) {
-        console.log('✅ Kkiapay déjà disponible');
+      // Le SDK KkiaPay peut exposer openKkiapayWidget OU window.Kkiapay
+      const isReady = () => window.openKkiapayWidget || window.Kkiapay;
+      if (isReady()) {
         resolve();
         return;
       }
 
-      // Vérifier si le script est déjà en cours de chargement
       const existingScript = document.querySelector('script[src*="kkiapay"]');
+      const url = 'https://cdn.kkiapay.me/k.js';
+
+      const waitForReady = (maxMs = 5000) => {
+        return new Promise((res) => {
+          if (isReady()) {
+            res();
+            return;
+          }
+          let elapsed = 0;
+          const iv = setInterval(() => {
+            elapsed += 200;
+            if (isReady()) {
+              clearInterval(iv);
+              res();
+            } else if (elapsed >= maxMs) {
+              clearInterval(iv);
+              res(); // résoudre quand même pour tenter le paiement
+            }
+          }, 200);
+        });
+      };
+
+      // Script déjà dans le DOM (index.html) : attendre un peu que le SDK s’initialise
       if (existingScript) {
-        console.log('📜 Script Kkiapay déjà présent dans le DOM:', existingScript.src);
-        console.log('🔍 État du script:', existingScript.readyState || 'N/A');
-        
-        // Si Kkiapay est déjà disponible, résoudre immédiatement
-        if (window.Kkiapay) {
-          console.log('✅ Kkiapay déjà disponible');
-          resolve();
-          return;
-        }
-        
-        // Le script est présent mais Kkiapay n'est pas disponible
-        // Cela signifie que le script ne s'est pas exécuté correctement
-        // Supprimer l'ancien script et recharger
-        console.warn('⚠️ Script présent mais Kkiapay non disponible - suppression et rechargement...');
-        if (existingScript.parentNode) {
-          existingScript.parentNode.removeChild(existingScript);
-          console.log('🗑️ Ancien script supprimé');
-        }
-        // Continuer avec le chargement dynamique ci-dessous
+        waitForReady(3000).then(resolve);
+        return;
       }
 
-      // Charger le script dynamiquement avec plusieurs URLs de fallback
-      console.log('📥 Chargement dynamique du script Kkiapay...');
-      
-      const kkiapayUrls = [
-        'https://cdn.kkiapay.me/k.js',
-        'https://cdn.kkiapay.com/k.js'
-      ];
-      
-      let currentUrlIndex = 0;
-      
-      const tryLoadScript = (urlIndex) => {
-        if (urlIndex >= kkiapayUrls.length) {
-          console.error('❌ Toutes les URLs Kkiapay ont échoué');
-          reject(new Error('Impossible de charger Kkiapay depuis toutes les URLs. Vérifiez votre connexion internet.'));
-          return;
-        }
-        
-        const url = kkiapayUrls[urlIndex];
-        console.log(`🔄 Tentative ${urlIndex + 1}/${kkiapayUrls.length} avec URL: ${url}`);
-        
-        // Supprimer l'ancien script s'il existe
-        const oldScript = document.querySelector(`script[src="${url}"]`);
-        if (oldScript && oldScript.parentNode) {
-          oldScript.parentNode.removeChild(oldScript);
-        }
-        
-        const script = document.createElement('script');
-        script.src = url;
-        script.async = false;
-        
-        script.onload = () => {
-          console.log('📜 Script Kkiapay chargé depuis:', url);
-          console.log('🔍 Vérification de window.Kkiapay dans 1 seconde...');
-          
-          // Attendre un peu avant de vérifier (le script peut avoir besoin de temps pour s'initialiser)
-          setTimeout(() => {
-            console.log('🔍 Vérification de window.Kkiapay maintenant...');
-            console.log('window.Kkiapay:', window.Kkiapay);
-            console.log('typeof window.Kkiapay:', typeof window.Kkiapay);
-            
-            // Attendre que Kkiapay soit disponible - timeout à 15 secondes
-            let attempts = 0;
-            let resolved = false;
-            const checkKkiapay = setInterval(() => {
-              attempts++;
-              if (window.Kkiapay) {
-                if (!resolved) {
-                  resolved = true;
-                  clearInterval(checkKkiapay);
-                  console.log('✅ Kkiapay initialisé après chargement dynamique (', attempts * 100, 'ms)');
-                  console.log('🔍 Type de Kkiapay:', typeof window.Kkiapay);
-                  resolve();
-                }
-              } else if (attempts > 150 && !resolved) { // 15 secondes max
-                resolved = true;
-                clearInterval(checkKkiapay);
-                console.warn('⚠️ Kkiapay non disponible après chargement depuis', url, 'après', attempts * 100, 'ms');
-                console.warn('🔍 window.Kkiapay est toujours:', window.Kkiapay);
-                // Essayer l'URL suivante
-                if (urlIndex < kkiapayUrls.length - 1) {
-                  console.log('🔄 Essai avec URL alternative...');
-                  tryLoadScript(urlIndex + 1);
-                } else {
-                  reject(new Error('Kkiapay script chargé mais non disponible après 15 secondes depuis toutes les URLs. Le script peut être bloqué, l\'URL peut être incorrecte, ou il y a une erreur dans le script.'));
-                }
-              }
-            }, 100);
-          }, 1000); // Attendre 1 seconde après le onload avant de commencer à vérifier
-        };
-        
-        script.onerror = (error) => {
-          console.error(`❌ Erreur chargement depuis ${url}:`, error);
-          // Essayer l'URL suivante
-          if (urlIndex < kkiapayUrls.length - 1) {
-            console.log('🔄 Essai avec URL alternative...');
-            tryLoadScript(urlIndex + 1);
-          } else {
-            reject(new Error(`Erreur lors du chargement du script Kkiapay depuis toutes les URLs. Vérifiez votre connexion internet.`));
-          }
-        };
-        
-        document.head.appendChild(script);
-        console.log('📤 Script Kkiapay ajouté au DOM');
+      // Charger le script une seule fois (pas de fallback .com qui échoue)
+      const script = document.createElement('script');
+      script.src = url;
+      script.async = false;
+      script.onload = () => waitForReady(5000).then(resolve);
+      script.onerror = () => {
+        // Ne pas bloquer : on résout pour afficher un message clair dans handlePayment
+        resolve();
       };
-      
-      tryLoadScript(0);
+      document.body.appendChild(script);
     });
   };
 
@@ -276,73 +210,95 @@ const Checkout = () => {
       const sousTotal = getTotal();
       const total = sousTotal + fraisLivraison;
 
-      // Charger Kkiapay si nécessaire
-      try {
-        console.log('🔄 Tentative de chargement de Kkiapay...');
-        console.log('window.Kkiapay avant chargement:', typeof window.Kkiapay, window.Kkiapay);
-        await loadKkiapayScript();
-        console.log('✅ Kkiapay chargé avec succès');
-        console.log('window.Kkiapay après chargement:', typeof window.Kkiapay, window.Kkiapay);
-      } catch (error) {
-        console.error('❌ Erreur chargement Kkiapay:', error);
-        console.error('Message d\'erreur:', error.message);
-        console.error('Stack:', error.stack);
-        showError(`Erreur lors du chargement du service de paiement: ${error.message}. Veuillez rafraîchir la page et réessayer.`, 'Erreur de chargement');
+      await loadKkiapayScript();
+
+      // URL de retour après paiement (pour redirection KkiaPay)
+      const callbackUrl = `${window.location.origin}/orders?payment=success&commandeId=${commande._id}`;
+
+      const onPaymentSuccess = async () => {
+        try {
+          await axios.put(`${API_URL}/commandes/${commande._id}/statut`, { statut: 'confirmee' });
+          localStorage.removeItem('cart');
+          showSuccess('Paiement effectué avec succès !', 'Paiement réussi');
+          setTimeout(() => navigate('/orders'), 1500);
+        } catch (err) {
+          console.error('Erreur mise à jour commande:', err);
+          showWarning('Paiement effectué mais erreur lors de la mise à jour de la commande', 'Attention');
+        }
+        setLoading(false);
+      };
+
+      const onPaymentFailure = () => {
+        showWarning('Paiement annulé ou échoué', 'Paiement annulé');
+        setLoading(false);
+      };
+
+      // Méthode 1 : openKkiapayWidget (API documentée KkiaPay)
+      if (typeof window.openKkiapayWidget === 'function') {
+        console.log('Ouverture KkiaPay via openKkiapayWidget, montant:', total);
+        window.openKkiapayWidget({
+          amount: String(total),
+          key: KKIAPAY_PUBLIC_KEY,
+          callback: callbackUrl,
+          position: 'center',
+          theme: '#8B4513',
+          sandbox: KKIAPAY_SANDBOX
+        });
+        // Écouter le succès (si le SDK émet un événement en restant sur la page)
+        if (typeof window.addKkiapayListener === 'function') {
+          window.addKkiapayListener('success', onPaymentSuccess);
+          window.addKkiapayListener('failed', onPaymentFailure);
+        }
         setLoading(false);
         return;
       }
 
-      // Intégration Kkiapay
-      if (window.Kkiapay) {
-        console.log('Initialisation Kkiapay avec montant:', total);
+      // Méthode 2 : Kkiapay.init() + open()
+      if (window.Kkiapay && typeof window.Kkiapay.init === 'function') {
+        console.log('Initialisation KkiaPay avec montant:', total);
         window.Kkiapay.init({
-          public_key: process.env.REACT_APP_KKIAPAY_PUBLIC_KEY || '261f38e09ef211f0989243766f89f726',
+          public_key: KKIAPAY_PUBLIC_KEY,
+          key: KKIAPAY_PUBLIC_KEY,
           amount: total,
           position: 'center',
           theme: '#8B4513',
-          sandbox: process.env.REACT_APP_KKIAPAY_SANDBOX === 'true' || false,
-          data: {
-            commandeId: commande._id,
-            restaurantId: restaurantId,
-            clientId: user?._id
+          sandbox: KKIAPAY_SANDBOX,
+          data: { commandeId: commande._id, restaurantId, clientId: user?._id },
+          callback: (response) => {
+            if (response && response.status === 'success') onPaymentSuccess();
+            else onPaymentFailure();
           },
-          callback: async (response) => {
-            console.log('Réponse Kkiapay:', response);
-            if (response.status === 'success') {
-              // Mettre à jour le statut de la commande
-              try {
-                await axios.put(`${API_URL}/commandes/${commande._id}/statut`, {
-                  statut: 'confirmee'
-                });
-                
-                // Vider le panier
-                localStorage.removeItem('cart');
-                
-                showSuccess('Paiement effectué avec succès !', 'Paiement réussi');
-                setTimeout(() => navigate('/orders'), 1500);
-              } catch (error) {
-                console.error('Erreur mise à jour commande:', error);
-                showWarning('Paiement effectué mais erreur lors de la mise à jour de la commande', 'Attention');
-              }
-            } else {
-              showWarning('Paiement annulé ou échoué', 'Paiement annulé');
-            }
-            setLoading(false);
-          },
-          error: (error) => {
-            console.error('Erreur Kkiapay:', error);
+          error: (err) => {
+            console.error('Erreur Kkiapay:', err);
             showError('Erreur lors du paiement. Veuillez réessayer.', 'Erreur de paiement');
             setLoading(false);
           }
         });
-        
         window.Kkiapay.open();
-      } else {
-        // Fallback si Kkiapay n'est toujours pas disponible
-        console.error('Kkiapay n\'est pas disponible après chargement');
-        showError('Service de paiement non disponible. Veuillez rafraîchir la page et réessayer.', 'Service indisponible');
-        setLoading(false);
+        return;
       }
+
+      // Méthode 3 : widget HTML <kkiapay-widget> (script peut n’exposer que le custom element)
+      const widgetKey = 'kkiapay-widget';
+      if (typeof customElements !== 'undefined' && customElements.get(widgetKey)) {
+        const container = document.createElement('div');
+        container.id = 'kkiapay-widget-container';
+        container.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);';
+        const widget = document.createElement(widgetKey);
+        widget.setAttribute('amount', String(total));
+        widget.setAttribute('key', KKIAPAY_PUBLIC_KEY);
+        widget.setAttribute('callback', callbackUrl);
+        widget.setAttribute('position', 'center');
+        widget.setAttribute('sandbox', KKIAPAY_SANDBOX ? 'true' : 'false');
+        container.appendChild(widget);
+        document.body.appendChild(container);
+        container.onclick = (e) => { if (e.target === container) container.remove(); };
+        setLoading(false);
+        return;
+      }
+
+      showError('Service de paiement KkiaPay non disponible. Vérifiez que le script est chargé (rafraîchissez la page) ou réessayez plus tard.', 'Paiement indisponible');
+      setLoading(false);
     } catch (error) {
       console.error('Erreur:', error);
       showError('Erreur lors de la commande. Veuillez réessayer.', 'Erreur');
