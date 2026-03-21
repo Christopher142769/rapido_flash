@@ -43,10 +43,16 @@ const restaurantSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
+  /** @deprecated conservé pour rétrocompatibilité ; doit rester aligné avec le 1er élément de categoriesDomaine */
   categorie: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'CategorieDomaine'
   },
+  /** Une ou plusieurs catégories de domaine (ex. Restauration + Épicerie) */
+  categoriesDomaine: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'CategorieDomaine'
+  }],
   actif: {
     type: Boolean,
     default: true

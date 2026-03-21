@@ -56,7 +56,7 @@ const Dashboard = () => {
     longitude: '',
     adresse: '',
     fraisLivraison: 0,
-    categorieId: '',
+    categorieIds: [],
     joursVente: [],
     commanderVeille: false
   });
@@ -114,6 +114,26 @@ const Dashboard = () => {
     }
   };
 
+  const getRestoCategorieIds = (resto) => {
+    if (!resto) return [];
+    if (Array.isArray(resto.categoriesDomaine) && resto.categoriesDomaine.length > 0) {
+      return resto.categoriesDomaine.map((c) => c._id || c).filter(Boolean);
+    }
+    const single = resto.categorie?._id || resto.categorie;
+    return single ? [single] : [];
+  };
+
+  const toggleCategorieDomaine = (catId) => {
+    const id = String(catId);
+    setFormData((prev) => {
+      const s = (Array.isArray(prev.categorieIds) ? prev.categorieIds : []).map(String);
+      const i = s.indexOf(id);
+      if (i >= 0) s.splice(i, 1);
+      else s.push(id);
+      return { ...prev, categorieIds: [...s] };
+    });
+  };
+
   const toggleJourVente = (dayNum) => {
     setFormData((prev) => {
       const cur = Array.isArray(prev.joursVente) ? [...prev.joursVente] : [];
@@ -137,7 +157,7 @@ const Dashboard = () => {
       longitude: resto?.position?.longitude?.toString() || '',
       adresse: resto?.position?.adresse || '',
       fraisLivraison: resto?.fraisLivraison ?? 0,
-      categorieId: resto?.categorie?._id || resto?.categorie || '',
+      categorieIds: getRestoCategorieIds(resto),
       joursVente: Array.isArray(resto?.joursVente) ? [...resto.joursVente] : [],
       commanderVeille: !!resto?.commanderVeille
     });
@@ -158,7 +178,7 @@ const Dashboard = () => {
       longitude: '',
       adresse: '',
       fraisLivraison: 0,
-      categorieId: '',
+      categorieIds: [],
       joursVente: [],
       commanderVeille: false
     });
@@ -304,7 +324,7 @@ const Dashboard = () => {
       submitData.append('longitude', lng.toString());
       submitData.append('adresse', (formData.adresse || '').trim());
       submitData.append('fraisLivraison', (formData.fraisLivraison ? parseFloat(formData.fraisLivraison) : 0).toString());
-      if (formData.categorieId) submitData.append('categorieId', formData.categorieId);
+      submitData.append('categorieIds', JSON.stringify((formData.categorieIds || []).map(String)));
       submitData.append('joursVente', JSON.stringify((formData.joursVente || []).filter((n) => n >= 0 && n <= 6)));
       submitData.append('commanderVeille', formData.commanderVeille ? 'true' : 'false');
 
@@ -392,7 +412,18 @@ const Dashboard = () => {
                       )}
                       <div className="enterprise-card-info">
                         <strong className="enterprise-card-name">{r.nom}</strong>
-                        {r.categorie && <div className="enterprise-card-category">{r.categorie.nom}</div>}
+                        {(r.categoriesDomaine?.length > 0 || r.categorie) && (
+                          <div className="enterprise-card-categories">
+                            {(r.categoriesDomaine?.length
+                              ? r.categoriesDomaine
+                              : r.categorie
+                                ? [r.categorie]
+                                : []
+                            ).map((c) => (
+                              <span key={c._id || c} className="enterprise-card-category">{c.nom}</span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                     {isCurrent && <span className="enterprise-card-badge">✓ Entreprise active</span>}
@@ -414,17 +445,30 @@ const Dashboard = () => {
             <div className="form-section">
               <h2>Informations générales</h2>
               <div className="form-grid">
-                <div className="form-group">
-                  <label>Catégorie domaine</label>
-                  <select
-                    value={formData.categorieId || ''}
-                    onChange={(e) => setFormData({ ...formData, categorieId: e.target.value })}
-                  >
-                    <option value="">— Aucune —</option>
-                    {categoriesDomaine.map((c) => (
-                      <option key={c._id} value={c._id}>{c.nom}</option>
-                    ))}
-                  </select>
+                <div className="form-group full-width">
+                  <label>Catégories de domaine</label>
+                  <p className="section-description" style={{ marginTop: 0, marginBottom: 10 }}>
+                    Cochez une ou plusieurs catégories (ex. restauration + épicerie). L’entreprise apparaîtra dans chaque filtre correspondant sur l’accueil.
+                  </p>
+                  <div className="jours-vente-grid categorie-domaine-grid">
+                    {categoriesDomaine.map((c) => {
+                      const cid = String(c._id);
+                      const checked = (formData.categorieIds || []).map(String).includes(cid);
+                      return (
+                        <label key={c._id} className={`jour-vente-chip ${checked ? 'active' : ''}`}>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleCategorieDomaine(cid)}
+                          />
+                          <span>{c.nom}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {categoriesDomaine.length === 0 && (
+                    <p className="section-description">Aucune catégorie de domaine : créez-en dans le menu « Catégories domaine ».</p>
+                  )}
                 </div>
                 <div className="form-group">
                   <label>Nom de l'entreprise *</label>

@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const Restaurant = require('../models/Restaurant');
 const Produit = require('../models/Produit');
 const User = require('../models/User');
@@ -7,16 +8,44 @@ const uploadRestaurant = require('../middleware/uploadRestaurant');
 
 const router = express.Router();
 
+/** categorieIds = JSON string ou tableau ; sinon undefined (ne pas modifier en PUT) */
+function parseCategorieIdsFromBody(body) {
+  if (!Object.prototype.hasOwnProperty.call(body, 'categorieIds')) return undefined;
+  try {
+    const raw = typeof body.categorieIds === 'string' ? JSON.parse(body.categorieIds || '[]') : body.categorieIds;
+    if (!Array.isArray(raw)) return [];
+    return raw.map(String).filter((id) => mongoose.Types.ObjectId.isValid(id));
+  } catch (_) {
+    return [];
+  }
+}
+
+function setRestaurantCategories(restaurantLike, ids) {
+  const valid = (ids || []).filter((id) => mongoose.Types.ObjectId.isValid(id));
+  restaurantLike.categoriesDomaine = valid.map((id) => new mongoose.Types.ObjectId(id));
+  restaurantLike.categorie = valid.length > 0 ? restaurantLike.categoriesDomaine[0] : null;
+}
+
+const populateCategories = [
+  { path: 'categorie', select: 'nom icone' },
+  { path: 'categoriesDomaine', select: 'nom icone' }
+];
+
 // Obtenir tous les restaurants (structures)
 router.get('/', async (req, res) => {
   try {
     const { latitude, longitude, categorieId } = req.query;
     const query = { actif: true };
-    if (categorieId) query.categorie = categorieId;
+    if (categorieId && mongoose.Types.ObjectId.isValid(categorieId)) {
+      query.$or = [
+        { categoriesDomaine: categorieId },
+        { categorie: categorieId }
+      ];
+    }
 
     let restaurants = await Restaurant.find(query)
       .populate('proprietaire', 'nom email')
-      .populate('categorie', 'nom icone')
+      .populate(populateCategories)
       .select('-gestionnaires');
 
     let list = restaurants.map((r) => r.toObject());
@@ -70,9 +99,9 @@ router.get('/my/restaurants', auth, isRestaurant, async (req, res) => {
   try {
     let restaurants;
     if (req.user.role === 'restaurant') {
-      restaurants = await Restaurant.find({ proprietaire: req.user._id }).populate('categorie', 'nom icone');
+      restaurants = await Restaurant.find({ proprietaire: req.user._id }).populate(populateCategories);
     } else if (req.user.role === 'gestionnaire') {
-      restaurants = await Restaurant.find({ gestionnaires: req.user._id }).populate('categorie', 'nom icone');
+      restaurants = await Restaurant.find({ gestionnaires: req.user._id }).populate(populateCategories);
     } else {
       restaurants = [];
     }
@@ -141,7 +170,7 @@ router.get('/:id', async (req, res) => {
   try {
     const restaurant = await Restaurant.findById(req.params.id)
       .populate('proprietaire', 'nom email')
-      .populate('categorie', 'nom icone');
+      .populate(populateCategories);
     if (!restaurant) {
       return res.status(404).json({ message: 'Structure non trouvée' });
     }
@@ -242,10 +271,16 @@ router.post('/', auth, isRestaurant, uploadRestaurant.fields([
       return [];
     };
 
+    let categorieIdsResolved = parseCategorieIdsFromBody(req.body);
+    if (categorieIdsResolved === undefined) {
+      categorieIdsResolved = req.body.categorieId && mongoose.Types.ObjectId.isValid(req.body.categorieId)
+        ? [String(req.body.categorieId)]
+        : [];
+    }
+
     const restaurantData = {
       nom: String(nom).trim(),
       description: description ? String(description).trim() : '',
-      categorie: req.body.categorieId || undefined,
       position: { 
         latitude: lat, 
         longitude: lng, 
@@ -259,6 +294,7 @@ router.post('/', auth, isRestaurant, uploadRestaurant.fields([
       joursVente: parseJoursVente(req.body),
       commanderVeille: req.body.commanderVeille === 'true' || req.body.commanderVeille === true
     };
+    setRestaurantCategories(restaurantData, categorieIdsResolved);
 
     // Ajouter les fichiers si présents
     if (req.files?.logo) {
@@ -301,7 +337,8 @@ router.post('/', auth, isRestaurant, uploadRestaurant.fields([
       await user.save();
     }
 
-    res.status(201).json(restaurant);
+    const created = await Restaurant.findById(restaurant._id).populate(populateCategories);
+    res.status(201).json(created);
   } catch (error) {
     console.error('Erreur création restaurant:', error);
     res.status(500).json({ message: error.message || 'Erreur lors de la création du restaurant' });
@@ -334,6 +371,13 @@ router.put('/:id', auth, uploadRestaurant.fields([
 
     const { nom, description, latitude, longitude, adresse, telephone, whatsapp, email, fraisLivraison, categorieId, joursVente, commanderVeille } = req.body;
 
+    const catIdsFromForm = parseCategorieIdsFromBody(req.body);
+    if (catIdsFromForm !== undefined) {
+      setRestaurantCategories(restaurant, catIdsFromForm);
+    } else if (categorieId !== undefined) {
+      setRestaurantCategories(restaurant, categorieId ? [String(categorieId)] : []);
+    }
+
     const parseJoursVenteBody = (raw) => {
       try {
         if (raw == null || raw === '') return undefined;
@@ -349,7 +393,6 @@ router.put('/:id', auth, uploadRestaurant.fields([
     };
 
     if (nom) restaurant.nom = nom;
-    if (categorieId !== undefined) restaurant.categorie = categorieId || null;
     if (description !== undefined) restaurant.description = description;
     if (latitude && longitude) {
       restaurant.position = { 
@@ -379,7 +422,8 @@ router.put('/:id', auth, uploadRestaurant.fields([
     }
 
     await restaurant.save();
-    res.json(restaurant);
+    const updated = await Restaurant.findById(restaurant._id).populate(populateCategories);
+    res.json(updated);
   } catch (error) {
     console.error('Erreur mise à jour restaurant:', error);
     res.status(500).json({ message: error.message || 'Erreur lors de la mise à jour du restaurant' });

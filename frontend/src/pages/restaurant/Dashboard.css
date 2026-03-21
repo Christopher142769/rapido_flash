@@ -169,9 +169,30 @@
   display: block;
 }
 
+.enterprise-card-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.enterprise-card-categories .enterprise-card-category {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(139, 69, 19, 0.1);
+  color: var(--primary-brown);
+  font-weight: 600;
+  font-size: 11px;
+}
+
 .enterprise-card-category {
   font-size: 12px;
   color: #666;
+}
+
+.categorie-domaine-grid {
+  margin-bottom: 0;
 }
 
 .enterprise-card-badge {

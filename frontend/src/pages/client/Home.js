@@ -30,6 +30,18 @@ function productThumbUrl(produit, baseUrl, index) {
   return generateBannerPlaceholderSVG(index);
 }
 
+/** Libellés catégories domaine (plusieurs ou ancienne seule `categorie`) */
+function structureDomainCategoriesLabel(structure) {
+  const list =
+    structure.categoriesDomaine?.length > 0
+      ? structure.categoriesDomaine
+      : structure.categorie
+        ? [structure.categorie]
+        : [];
+  const names = list.map((c) => c?.nom).filter(Boolean);
+  return names.length ? names.join(' · ') : null;
+}
+
 const Home = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -296,7 +308,7 @@ const Home = () => {
                       <div className="structure-card-info-mobile">
                         <h3 className="structure-card-name-mobile">{structure.nom}</h3>
                         <p className="structure-card-meta-mobile">
-                          {structure.categorie?.nom || structure.position?.adresse || '—'}
+                          {structureDomainCategoriesLabel(structure) || structure.position?.adresse || '—'}
                         </p>
                         <div className="structure-card-pills-mobile">
                           {minutes != null && <span className="structure-pill-mobile">~{minutes} min</span>}
@@ -432,7 +444,7 @@ const Home = () => {
                         <div className="structure-card-info structure-card-info-compact">
                           <h3 className="structure-card-name">{structure.nom}</h3>
                           <p className="structure-card-meta">
-                            {structure.categorie?.nom || structure.position?.adresse || '—'}
+                            {structureDomainCategoriesLabel(structure) || structure.position?.adresse || '—'}
                           </p>
                           <div className="structure-card-pills">
                             {minutes != null && <span className="structure-pill">~{minutes} min</span>}
