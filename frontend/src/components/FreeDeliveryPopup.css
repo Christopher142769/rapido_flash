@@ -1,0 +1,104 @@
+.free-delivery-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  background: rgba(20, 12, 8, 0.45);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: freeDeliveryFadeIn 0.35s ease;
+}
+
+@keyframes freeDeliveryFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.free-delivery-popup {
+  position: relative;
+  max-width: 380px;
+  width: 100%;
+  background: linear-gradient(165deg, #fffefb 0%, #fff5e6 50%, #ffe8cc 100%);
+  border-radius: 24px;
+  padding: 28px 24px 24px;
+  box-shadow:
+    0 24px 48px rgba(139, 69, 19, 0.22),
+    0 0 0 1px rgba(139, 69, 19, 0.12);
+  text-align: center;
+  animation: freeDeliveryPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes freeDeliveryPop {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.free-delivery-popup-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: rgba(139, 69, 19, 0.08);
+  color: var(--primary-brown, #8b4513);
+  border-radius: 50%;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.free-delivery-popup-close:hover {
+  background: rgba(139, 69, 19, 0.15);
+  transform: scale(1.05);
+}
+
+.free-delivery-popup-icon {
+  font-size: 52px;
+  line-height: 1;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.12));
+}
+
+.free-delivery-popup-title {
+  margin: 0 0 12px;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--primary-brown, #8b4513);
+  letter-spacing: -0.02em;
+}
+
+.free-delivery-popup-text {
+  margin: 0 0 22px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #4a3728;
+}
+
+.free-delivery-popup-btn {
+  width: 100%;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #8b4513 0%, #a0522d 100%);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(139, 69, 19, 0.35);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.free-delivery-popup-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(139, 69, 19, 0.42);
+}

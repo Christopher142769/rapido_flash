@@ -2,7 +2,9 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config();
+// Variables d’environnement : d’abord la racine du repo, puis backend/.env (écrase les clés du premier)
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 
@@ -121,18 +123,27 @@ app.use((error, req, res, next) => {
 
 // Import de la fonction d'initialisation de l'admin par défaut
 const initDefaultAdmin = require('./utils/initDefaultAdmin');
+const fixStaleUserIndexes = require('./utils/fixUserIndexes');
 
-// MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/rapido_flash';
+// MongoDB : par défaut instance locale (voir backend/.env ou .env racine pour Atlas)
+const DEFAULT_LOCAL_MONGODB = 'mongodb://127.0.0.1:27017/rapido_flash';
+const MONGODB_URI = process.env.MONGODB_URI || DEFAULT_LOCAL_MONGODB;
+const isLocalMongo = /localhost|127\.0\.0\.1/.test(MONGODB_URI);
 
 mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
 .then(async () => {
-  console.log('✅ MongoDB Atlas connecté avec succès');
+  console.log(isLocalMongo ? '✅ MongoDB local connecté' : '✅ MongoDB (Atlas / distant) connecté');
   console.log('📊 Base de données:', mongoose.connection.name);
-  
+  if (!process.env.MONGODB_URI) {
+    console.log('💡 Astuce : définissez MONGODB_URI dans backend/.env ou .env (racine) pour utiliser Atlas.');
+  }
+
+  // Évite E11000 duplicate key sur username:null (index unique hérité sans champ username)
+  await fixStaleUserIndexes();
+
   // Initialiser l'admin par défaut après la connexion MongoDB (plus de plats par défaut)
   setTimeout(async () => {
     try {

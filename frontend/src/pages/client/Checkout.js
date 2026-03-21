@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
+import LanguageContext from '../../context/LanguageContext';
 import { useModal } from '../../context/ModalContext';
 import TopNavbar from '../../components/TopNavbar';
 import './Checkout.css';
@@ -35,6 +36,7 @@ function LocationMarker({ position, setPosition }) {
 const Checkout = () => {
   const navigate = useNavigate();
   const { user, updatePosition } = useContext(AuthContext);
+  const { t } = useContext(LanguageContext);
   const { showSuccess, showError, showWarning } = useModal();
   const [cart, setCart] = useState([]);
   const [deliveryOption, setDeliveryOption] = useState('current'); // 'current' or 'map'
@@ -44,6 +46,8 @@ const Checkout = () => {
   const [restaurantId, setRestaurantId] = useState(null);
   const [restaurant, setRestaurant] = useState(null);
   const [fraisLivraison, setFraisLivraison] = useState(0);
+  /** especes | momo_avant | momo_apres */
+  const [paymentMode, setPaymentMode] = useState('momo_avant');
 
   useEffect(() => {
     const savedCart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -179,7 +183,7 @@ const Checkout = () => {
 
   const handlePayment = async () => {
     if (!mapPosition) {
-      showWarning('Veuillez sélectionner une adresse de livraison', 'Adresse requise');
+      showWarning(t('checkout', 'selectAddress'), t('checkout', 'addressRequired'));
       return;
     }
 
@@ -200,11 +204,21 @@ const Checkout = () => {
           latitude: mapPosition[0],
           longitude: mapPosition[1],
           adresse: address
-        }
+        },
+        modePaiement: paymentMode
       };
 
       const res = await axios.post(`${API_URL}/commandes`, commandeData);
       const commande = res.data;
+
+      // Espèces ou MoMo après livraison : pas de widget KkiaPay
+      if (paymentMode === 'especes' || paymentMode === 'momo_apres') {
+        localStorage.removeItem('cart');
+        showSuccess(t('checkout', 'orderCreated'), 'Rapido');
+        setTimeout(() => navigate('/orders'), 1200);
+        setLoading(false);
+        return;
+      }
       
       // Calculer le total avec frais de livraison
       const sousTotal = getTotal();
@@ -385,6 +399,46 @@ const Checkout = () => {
 
         <div className="checkout-sidebar">
           <div className="payment-summary">
+            <h2 className="checkout-payment-title">{t('checkout', 'paymentMethod')}</h2>
+            <div className="checkout-payment-options">
+              <label className={`checkout-pay-option ${paymentMode === 'especes' ? 'active' : ''}`}>
+                <input
+                  type="radio"
+                  name="paymentMode"
+                  checked={paymentMode === 'especes'}
+                  onChange={() => setPaymentMode('especes')}
+                />
+                <span className="checkout-pay-label">
+                  <strong>{t('checkout', 'cashOnDelivery')}</strong>
+                  <small>{t('checkout', 'cashOnDeliveryHint')}</small>
+                </span>
+              </label>
+              <label className={`checkout-pay-option ${paymentMode === 'momo_avant' ? 'active' : ''}`}>
+                <input
+                  type="radio"
+                  name="paymentMode"
+                  checked={paymentMode === 'momo_avant'}
+                  onChange={() => setPaymentMode('momo_avant')}
+                />
+                <span className="checkout-pay-label">
+                  <strong>{t('checkout', 'momoBefore')}</strong>
+                  <small>{t('checkout', 'momoBeforeHint')}</small>
+                </span>
+              </label>
+              <label className={`checkout-pay-option ${paymentMode === 'momo_apres' ? 'active' : ''}`}>
+                <input
+                  type="radio"
+                  name="paymentMode"
+                  checked={paymentMode === 'momo_apres'}
+                  onChange={() => setPaymentMode('momo_apres')}
+                />
+                <span className="checkout-pay-label">
+                  <strong>{t('checkout', 'momoAfter')}</strong>
+                  <small>{t('checkout', 'momoAfterHint')}</small>
+                </span>
+              </label>
+            </div>
+
             <h2>Total</h2>
             <div className="summary-row">
               <span>Sous-total</span>
@@ -403,7 +457,9 @@ const Checkout = () => {
               onClick={handlePayment}
               disabled={loading || !mapPosition}
             >
-              {loading ? 'Traitement...' : 'Payer'}
+              {loading
+                ? t('checkout', 'processing')
+                : (paymentMode === 'momo_avant' ? t('checkout', 'pay') : t('checkout', 'confirmOrder'))}
             </button>
           </div>
         </div>

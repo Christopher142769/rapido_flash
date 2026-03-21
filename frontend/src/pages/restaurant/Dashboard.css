@@ -449,3 +449,54 @@
     grid-template-columns: 1fr;
   }
 }
+
+.jours-vente-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.jour-vente-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 2px solid #e0dcd6;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.jour-vente-chip input {
+  accent-color: var(--primary-brown);
+}
+
+.jour-vente-chip.active {
+  border-color: var(--primary-brown);
+  background: rgba(139, 69, 19, 0.08);
+  color: var(--primary-brown);
+}
+
+.commander-veille-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #faf8f5;
+  border-radius: 12px;
+  border: 1px solid rgba(139, 69, 19, 0.15);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #444;
+}
+
+.commander-veille-row input {
+  margin-top: 4px;
+  accent-color: var(--primary-brown);
+}

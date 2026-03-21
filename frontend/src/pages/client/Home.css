@@ -2438,3 +2438,225 @@
 }
 .structure-logo-badge-desktop { position: absolute; top: 15px; right: 15px; }
 .structure-banner-container-desktop { position: relative; }
+
+/* ——— Cartes « produits d’abord » (mosaïque) ——— */
+@media (min-width: 769px) {
+  .structures-grid-desktop {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .structures-grid-desktop {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.structure-card-desktop-products {
+  border-radius: 20px !important;
+}
+
+.structure-card-mosaic-wrap {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: 220px;
+  background: linear-gradient(145deg, #fff8e8 0%, #ffe8c8 100%);
+  overflow: hidden;
+}
+
+.structure-product-mosaic-desktop {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.mosaic-cell-desktop {
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.mosaic-cell-desktop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.45s ease;
+}
+
+.structure-card-desktop-products:hover .mosaic-cell-desktop img {
+  transform: scale(1.06);
+}
+
+.mosaic-cell-empty-desktop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 230, 190, 0.4) 100%);
+  color: rgba(139, 69, 19, 0.25);
+  font-size: 28px;
+}
+
+.structure-card-body-compact-desktop {
+  padding: 14px 16px 16px !important;
+}
+
+.structure-card-footer-row-desktop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.structure-card-tiny-logo-wrap {
+  flex-shrink: 0;
+}
+
+.structure-card-tiny-logo,
+.structure-card-tiny-logo-ph {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff5e6;
+  font-size: 22px;
+  border: 1px solid rgba(139, 69, 19, 0.12);
+}
+
+.structure-card-info-compact .structure-card-name {
+  font-size: 16px !important;
+  margin: 0 0 4px 0 !important;
+}
+
+.structure-card-info-compact .structure-card-meta {
+  font-size: 13px !important;
+  margin-bottom: 8px !important;
+}
+
+.structure-card-quick-actions-desktop {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.structure-quick-dot-desktop {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(139, 69, 19, 0.08);
+  color: var(--primary-brown);
+  text-decoration: none;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.structure-quick-dot-desktop:hover {
+  background: rgba(139, 69, 19, 0.18);
+  transform: scale(1.06);
+}
+
+.structure-quick-dot-desktop.wa {
+  color: #25d366;
+  background: rgba(37, 211, 102, 0.12);
+}
+
+/* Mobile mosaïque */
+.structure-card-mosaic-wrap-mobile {
+  width: 100%;
+  height: 148px;
+  background: linear-gradient(145deg, #fff8e8 0%, #ffe8c8 100%);
+  overflow: hidden;
+}
+
+.structure-product-mosaic-mobile {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  width: 100%;
+  height: 100%;
+}
+
+.mosaic-cell-mobile {
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.mosaic-cell-mobile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mosaic-cell-empty-mobile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.35);
+  color: rgba(139, 69, 19, 0.2);
+  font-size: 22px;
+}
+
+.structure-card-footer-compact-mobile {
+  padding: 12px 14px 14px !important;
+}
+
+.structure-card-title-row-mobile {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+}
+
+.structure-card-tiny-logo-mobile {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid rgba(139, 69, 19, 0.1);
+}
+
+.structure-card-tiny-logo-ph-mobile {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff5e6;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.structure-card-footer-compact-mobile .structure-card-info-mobile {
+  flex: 1;
+  min-width: 0;
+}
+
+.structure-card-quick-actions-mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.structure-quick-icon-mobile {
+  font-size: 18px;
+  text-decoration: none;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.structure-quick-icon-mobile:hover {
+  opacity: 1;
+}

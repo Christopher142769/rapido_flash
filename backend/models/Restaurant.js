@@ -55,6 +55,17 @@ const restaurantSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  /** Jours d’ouverture / vente : 0 = dimanche … 6 = samedi */
+  joursVente: [{
+    type: Number,
+    min: 0,
+    max: 6
+  }],
+  /** Si true : le client doit commander la veille pour la livraison le jour J */
+  commanderVeille: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
     type: Date,
     default: Date.now

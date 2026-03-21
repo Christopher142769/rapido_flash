@@ -12,7 +12,7 @@ router.use(express.urlencoded({ extended: true, limit: '100mb' }));
 // Créer une commande (plats ou produits)
 router.post('/', auth, async (req, res) => {
   try {
-    const { restaurantId, plats, produits, adresseLivraison } = req.body;
+    const { restaurantId, plats, produits, adresseLivraison, modePaiement } = req.body;
     const Restaurant = require('../models/Restaurant');
     const restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) {
@@ -50,6 +50,16 @@ router.post('/', auth, async (req, res) => {
     const fraisLivraison = restaurant.fraisLivraison || 0;
     const total = sousTotal + fraisLivraison;
 
+    const modesValides = ['especes', 'momo_avant', 'momo_apres'];
+    const mode = modesValides.includes(modePaiement) ? modePaiement : 'momo_avant';
+
+    /** Espèces ou MoMo après livraison : commande validée tout de suite. MoMo avant : en attente jusqu’au paiement. */
+    let statutInitial = 'en_attente';
+    let paiementEnLigneEffectue = false;
+    if (mode === 'especes' || mode === 'momo_apres') {
+      statutInitial = 'confirmee';
+    }
+
     const commande = new Commande({
       client: req.user._id,
       restaurant: restaurantId,
@@ -58,7 +68,10 @@ router.post('/', auth, async (req, res) => {
       adresseLivraison,
       sousTotal,
       fraisLivraison,
-      total
+      total,
+      statut: statutInitial,
+      modePaiement: mode,
+      paiementEnLigneEffectue
     });
 
     await commande.save();
@@ -134,6 +147,9 @@ router.put('/:id/statut', auth, async (req, res) => {
     // Le client peut seulement confirmer le paiement (statut: 'confirmee')
     if (isClient && statut === 'confirmee') {
       commande.statut = statut;
+      if (commande.modePaiement === 'momo_avant') {
+        commande.paiementEnLigneEffectue = true;
+      }
       await commande.save();
       return res.json(commande);
     }

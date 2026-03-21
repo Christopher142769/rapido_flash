@@ -9,6 +9,13 @@ import './RestaurantDetail.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
+const JOUR_LABELS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+
+function formatJoursVente(arr) {
+  if (!arr || !arr.length) return null;
+  return [...arr].sort((a, b) => a - b).map((d) => JOUR_LABELS[d]).join(' · ');
+}
+
 const RestaurantDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -178,6 +185,25 @@ const RestaurantDetail = () => {
       </div>
 
       <div className="restaurant-content-container">
+        {(formatJoursVente(restaurant.joursVente) || restaurant.commanderVeille) && (
+          <div className="restaurant-vente-info" role="region" aria-label="Informations commandes">
+            {formatJoursVente(restaurant.joursVente) && (
+              <p className="restaurant-vente-line">
+                <span className="restaurant-vente-icon" aria-hidden>📅</span>
+                <span><strong>Jours de commande / vente :</strong> {formatJoursVente(restaurant.joursVente)}</span>
+              </p>
+            )}
+            {restaurant.commanderVeille && (
+              <p className="restaurant-vente-line restaurant-vente-alert">
+                <span className="restaurant-vente-icon" aria-hidden>⏰</span>
+                <span>
+                  Pensez à commander <strong>la veille</strong> pour être livré le jour prévu.
+                </span>
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Barre de recherche produits (desktop uniquement) */}
         <div className="store-search-bar store-search-desktop">
           <span className="store-search-icon">🔍</span>

@@ -151,7 +151,7 @@ const LocationSelect = () => {
         longitude: position[1],
         adresse: address
       }));
-      navigate('/register');
+      navigate('/login');
     }
   };
 

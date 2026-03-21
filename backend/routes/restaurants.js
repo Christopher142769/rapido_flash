@@ -1,5 +1,6 @@
 const express = require('express');
 const Restaurant = require('../models/Restaurant');
+const Produit = require('../models/Produit');
 const User = require('../models/User');
 const { auth, isRestaurant } = require('../middleware/auth');
 const uploadRestaurant = require('../middleware/uploadRestaurant');
@@ -18,20 +19,47 @@ router.get('/', async (req, res) => {
       .populate('categorie', 'nom icone')
       .select('-gestionnaires');
 
+    let list = restaurants.map((r) => r.toObject());
+
     // Si position fournie, calculer la distance et trier
     if (latitude && longitude) {
-      restaurants = restaurants.map(resto => {
+      list = list.map((resto) => {
         const distance = calculateDistance(
           parseFloat(latitude),
           parseFloat(longitude),
           resto.position.latitude,
           resto.position.longitude
         );
-        return { ...resto.toObject(), distance };
+        return { ...resto, distance };
       }).sort((a, b) => a.distance - b.distance);
     }
 
-    res.json(restaurants);
+    // Aperçu produits (jusqu’à 4 images) pour les cartes home
+    const ids = list.map((r) => r._id);
+    const produits = await Produit.find({ restaurant: { $in: ids }, disponible: true })
+      .sort({ createdAt: -1 })
+      .select('nom prix images restaurant')
+      .lean();
+
+    const byRest = {};
+    for (const p of produits) {
+      const rid = p.restaurant.toString();
+      if (!byRest[rid]) byRest[rid] = [];
+      if (byRest[rid].length < 4) {
+        byRest[rid].push({
+          nom: p.nom,
+          prix: p.prix,
+          image: p.images && p.images[0] ? p.images[0] : null
+        });
+      }
+    }
+
+    const enriched = list.map((r) => ({
+      ...r,
+      produitsApercu: byRest[r._id.toString()] || []
+    }));
+
+    res.json(enriched);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -200,6 +228,20 @@ router.post('/', auth, isRestaurant, uploadRestaurant.fields([
     }
 
     // Construire l'objet restaurant avec validation
+    const parseJoursVente = (body) => {
+      try {
+        if (body.joursVente == null || body.joursVente === '') return [];
+        if (Array.isArray(body.joursVente)) {
+          return body.joursVente.map(Number).filter((n) => !Number.isNaN(n) && n >= 0 && n <= 6);
+        }
+        const parsed = JSON.parse(body.joursVente);
+        if (Array.isArray(parsed)) {
+          return parsed.map(Number).filter((n) => !Number.isNaN(n) && n >= 0 && n <= 6);
+        }
+      } catch (_) { /* ignore */ }
+      return [];
+    };
+
     const restaurantData = {
       nom: String(nom).trim(),
       description: description ? String(description).trim() : '',
@@ -213,7 +255,9 @@ router.post('/', auth, isRestaurant, uploadRestaurant.fields([
       whatsapp: whatsapp ? String(whatsapp).trim() : '',
       email: email ? String(email).trim() : '',
       fraisLivraison: fraisLivraison ? parseFloat(fraisLivraison) : 0,
-      proprietaire: req.user._id
+      proprietaire: req.user._id,
+      joursVente: parseJoursVente(req.body),
+      commanderVeille: req.body.commanderVeille === 'true' || req.body.commanderVeille === true
     };
 
     // Ajouter les fichiers si présents
@@ -288,7 +332,21 @@ router.put('/:id', auth, uploadRestaurant.fields([
       return res.status(403).json({ message: 'Accès refusé' });
     }
 
-    const { nom, description, latitude, longitude, adresse, telephone, whatsapp, email, fraisLivraison, categorieId } = req.body;
+    const { nom, description, latitude, longitude, adresse, telephone, whatsapp, email, fraisLivraison, categorieId, joursVente, commanderVeille } = req.body;
+
+    const parseJoursVenteBody = (raw) => {
+      try {
+        if (raw == null || raw === '') return undefined;
+        if (Array.isArray(raw)) {
+          return raw.map(Number).filter((n) => !Number.isNaN(n) && n >= 0 && n <= 6);
+        }
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed.map(Number).filter((n) => !Number.isNaN(n) && n >= 0 && n <= 6);
+        }
+      } catch (_) { /* ignore */ }
+      return undefined;
+    };
 
     if (nom) restaurant.nom = nom;
     if (categorieId !== undefined) restaurant.categorie = categorieId || null;
@@ -304,6 +362,13 @@ router.put('/:id', auth, uploadRestaurant.fields([
     if (whatsapp !== undefined) restaurant.whatsapp = whatsapp;
     if (email !== undefined) restaurant.email = email;
     if (fraisLivraison !== undefined) restaurant.fraisLivraison = parseFloat(fraisLivraison) || 0;
+    if (joursVente !== undefined) {
+      const j = parseJoursVenteBody(joursVente);
+      if (j !== undefined) restaurant.joursVente = j;
+    }
+    if (commanderVeille !== undefined) {
+      restaurant.commanderVeille = commanderVeille === 'true' || commanderVeille === true;
+    }
 
     // Gérer les uploads de fichiers
     if (req.files?.logo) {

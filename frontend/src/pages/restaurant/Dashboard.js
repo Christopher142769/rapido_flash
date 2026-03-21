@@ -13,6 +13,16 @@ const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
+const JOURS_SEMAINE = [
+  { v: 1, label: 'Lundi' },
+  { v: 2, label: 'Mardi' },
+  { v: 3, label: 'Mercredi' },
+  { v: 4, label: 'Jeudi' },
+  { v: 5, label: 'Vendredi' },
+  { v: 6, label: 'Samedi' },
+  { v: 0, label: 'Dimanche' },
+];
+
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
@@ -46,7 +56,9 @@ const Dashboard = () => {
     longitude: '',
     adresse: '',
     fraisLivraison: 0,
-    categorieId: ''
+    categorieId: '',
+    joursVente: [],
+    commanderVeille: false
   });
   const [categoriesDomaine, setCategoriesDomaine] = useState([]);
   const [editing, setEditing] = useState(false);
@@ -102,6 +114,17 @@ const Dashboard = () => {
     }
   };
 
+  const toggleJourVente = (dayNum) => {
+    setFormData((prev) => {
+      const cur = Array.isArray(prev.joursVente) ? [...prev.joursVente] : [];
+      const i = cur.indexOf(dayNum);
+      if (i >= 0) cur.splice(i, 1);
+      else cur.push(dayNum);
+      cur.sort((a, b) => a - b);
+      return { ...prev, joursVente: cur };
+    });
+  };
+
   const loadRestaurantInForm = (resto) => {
     setRestaurant(resto);
     setFormData({
@@ -114,7 +137,9 @@ const Dashboard = () => {
       longitude: resto?.position?.longitude?.toString() || '',
       adresse: resto?.position?.adresse || '',
       fraisLivraison: resto?.fraisLivraison ?? 0,
-      categorieId: resto?.categorie?._id || resto?.categorie || ''
+      categorieId: resto?.categorie?._id || resto?.categorie || '',
+      joursVente: Array.isArray(resto?.joursVente) ? [...resto.joursVente] : [],
+      commanderVeille: !!resto?.commanderVeille
     });
     if (resto?.position?.latitude) setPosition([resto.position.latitude, resto.position.longitude]);
     setLogoPreview(resto?.logo ? `${API_URL.replace('/api', '')}${resto.logo}` : null);
@@ -133,7 +158,9 @@ const Dashboard = () => {
       longitude: '',
       adresse: '',
       fraisLivraison: 0,
-      categorieId: ''
+      categorieId: '',
+      joursVente: [],
+      commanderVeille: false
     });
     setPosition([6.3725, 2.3544]);
     setLogoPreview(null);
@@ -278,6 +305,8 @@ const Dashboard = () => {
       submitData.append('adresse', (formData.adresse || '').trim());
       submitData.append('fraisLivraison', (formData.fraisLivraison ? parseFloat(formData.fraisLivraison) : 0).toString());
       if (formData.categorieId) submitData.append('categorieId', formData.categorieId);
+      submitData.append('joursVente', JSON.stringify((formData.joursVente || []).filter((n) => n >= 0 && n <= 6)));
+      submitData.append('commanderVeille', formData.commanderVeille ? 'true' : 'false');
 
       // Debug: Afficher les données envoyées
       console.log('Données envoyées:', {
@@ -452,6 +481,33 @@ const Dashboard = () => {
                   />
                 </div>
               </div>
+            </div>
+
+            <div className="form-section">
+              <h2>Jours de vente & commandes</h2>
+              <p className="section-description">
+                Cochez les jours où vous acceptez les commandes / livraisons. Ces infos sont affichées sur la fiche de votre entreprise.
+              </p>
+              <div className="jours-vente-grid">
+                {JOURS_SEMAINE.map(({ v, label }) => (
+                  <label key={v} className={`jour-vente-chip ${(formData.joursVente || []).includes(v) ? 'active' : ''}`}>
+                    <input
+                      type="checkbox"
+                      checked={(formData.joursVente || []).includes(v)}
+                      onChange={() => toggleJourVente(v)}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+              <label className="commander-veille-row">
+                <input
+                  type="checkbox"
+                  checked={!!formData.commanderVeille}
+                  onChange={(e) => setFormData({ ...formData, commanderVeille: e.target.checked })}
+                />
+                <span>Le client doit commander <strong>la veille</strong> pour être livré le jour prévu</span>
+              </label>
             </div>
 
             <div className="form-section">

@@ -43,6 +43,17 @@ const commandeSchema = new mongoose.Schema({
     enum: ['en_attente', 'confirmee', 'en_preparation', 'en_livraison', 'livree', 'annulee'],
     default: 'en_attente'
   },
+  /** especes : paiement en espèces à la livraison ; momo_avant : Mobile Money avant livraison ; momo_apres : Mobile Money après livraison */
+  modePaiement: {
+    type: String,
+    enum: ['especes', 'momo_avant', 'momo_apres'],
+    default: 'momo_avant'
+  },
+  /** Indique si le paiement en ligne (MoMo) a été encaissé (pour momo_avant / suivi momo_apres) */
+  paiementEnLigneEffectue: {
+    type: Boolean,
+    default: false
+  },
   livreur: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
