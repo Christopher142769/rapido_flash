@@ -120,8 +120,11 @@
 }
 
 .navbar-search-icon {
-  font-size: 18px;
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
+  color: var(--primary-brown);
+  opacity: 0.85;
 }
 
 .navbar-search-input {
@@ -175,8 +178,25 @@
   box-shadow: 0 4px 16px rgba(139, 69, 19, 0.35);
 }
 
-.nav-link-icon {
-  font-size: 20px;
+.nav-link-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-link-icon-svg {
+  flex-shrink: 0;
+  color: var(--primary-brown);
+}
+
+.nav-link-desktop.active .nav-link-icon-svg {
+  color: var(--primary-white);
+}
+
+.user-dropdown-row-icon {
+  flex-shrink: 0;
+  font-size: 16px;
+  opacity: 0.95;
 }
 
 .nav-link-label {

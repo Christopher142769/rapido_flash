@@ -37,6 +37,7 @@ export const translations = {
       next: 'Suivant',
       freeDeliveryCotonou: 'La livraison est gratuite à Cotonou. Profitez-en pour commander vos produits préférés !',
       gotIt: "J'ai compris",
+      noProductsPreview: 'Découvrir la carte',
     },
     settings: {
       title: 'Paramètres',
@@ -175,6 +176,7 @@ export const translations = {
       next: 'Next',
       freeDeliveryCotonou: 'Delivery is free in Cotonou. Enjoy ordering your favorite products!',
       gotIt: 'Got it',
+      noProductsPreview: 'See the menu',
     },
     settings: {
       title: 'Settings',

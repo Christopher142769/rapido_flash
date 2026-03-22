@@ -4,6 +4,17 @@ import { useContext } from 'react';
 import AuthContext from '../context/AuthContext';
 import LanguageContext from '../context/LanguageContext';
 import LangSwitcher from './LangSwitcher';
+import {
+  FaHome,
+  FaShoppingCart,
+  FaClipboardList,
+  FaSearch,
+  FaMapMarkerAlt,
+  FaGlobe,
+  FaMapPin,
+  FaCog,
+  FaSignOutAlt,
+} from 'react-icons/fa';
 import './TopNavbar.css';
 
 const BASE_URL = process.env.REACT_APP_BASE_URL || 'http://localhost:5000';
@@ -58,9 +69,9 @@ const TopNavbar = ({
   };
 
   const navItems = [
-    { path: '/home', labelKey: 'home', icon: '🏠' },
-    { path: '/cart', labelKey: 'cart', icon: '🛒', badge: cartCount },
-    { path: '/orders', labelKey: 'orders', icon: '📦' },
+    { path: '/home', labelKey: 'home', Icon: FaHome },
+    { path: '/cart', labelKey: 'cart', Icon: FaShoppingCart, badge: cartCount },
+    { path: '/orders', labelKey: 'orders', Icon: FaClipboardList },
   ];
 
   return (
@@ -76,16 +87,16 @@ const TopNavbar = ({
           <div className="navbar-home-extras">
             <button type="button" className="navbar-location-cta" onClick={onLocationClick} title={t('navbar', 'changeDeliveryAddress')}>
               <span className="navbar-pin-icon" aria-hidden>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z" />
-                </svg>
+                <FaMapMarkerAlt size={18} />
               </span>
               <span className="navbar-location-address">{locationAddress || t('navbar', 'chooseAddress')}</span>
               <span className="navbar-location-hint">{t('navbar', 'modify')}</span>
             </button>
             <LangSwitcher variant="inline" />
             <div className="navbar-search-wrap">
-              <span className="navbar-search-icon" aria-hidden>🔍</span>
+              <span className="navbar-search-icon" aria-hidden>
+                <FaSearch size={17} />
+              </span>
               <input
                 type="text"
                 placeholder={t('navbar', 'searchPlaceholder')}
@@ -107,7 +118,9 @@ const TopNavbar = ({
               onClick={() => navigate(item.path)}
               aria-label={t('nav', item.labelKey)}
             >
-              <span className="nav-link-icon">{item.icon}</span>
+              <span className="nav-link-icon-wrap" aria-hidden>
+                <item.Icon className="nav-link-icon-svg" size={20} />
+              </span>
               <span className="nav-link-label">{t('nav', item.labelKey)}</span>
               {item.badge > 0 && <span className="nav-link-badge">{item.badge}</span>}
             </button>
@@ -124,10 +137,7 @@ const TopNavbar = ({
               title={t('navbar', 'changeLanguage')}
               aria-label={t('navbar', 'changeLanguage')}
             >
-              <svg className="navbar-lang-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-              </svg>
+              <FaGlobe className="navbar-lang-icon" size={22} aria-hidden />
               <span className="navbar-lang-code">{language.toUpperCase()}</span>
             </button>
             {showLangMenu && (
@@ -164,19 +174,27 @@ const TopNavbar = ({
                     <button
                       key={item.id}
                       type="button"
+                      className="user-dropdown-row"
                       onClick={() => {
                         if (onScrollToSection) onScrollToSection(item.id);
                         setShowUserMenu(false);
                       }}
                     >
-                      📍 {t('navbar', item.labelKey)}
+                      <FaMapPin className="user-dropdown-row-icon" aria-hidden />
+                      {t('navbar', item.labelKey)}
                     </button>
                   ))}
                   <div className="user-dropdown-divider" />
                 </>
               )}
-              <button onClick={() => { navigate('/settings'); setShowUserMenu(false); }}>⚙️ {t('nav', 'settings')}</button>
-              <button onClick={() => { logout(); setShowUserMenu(false); }}>🚪 {t('nav', 'logout')}</button>
+              <button type="button" className="user-dropdown-row" onClick={() => { navigate('/settings'); setShowUserMenu(false); }}>
+                <FaCog className="user-dropdown-row-icon" aria-hidden />
+                {t('nav', 'settings')}
+              </button>
+              <button type="button" className="user-dropdown-row" onClick={() => { logout(); setShowUserMenu(false); }}>
+                <FaSignOutAlt className="user-dropdown-row-icon" aria-hidden />
+                {t('nav', 'logout')}
+              </button>
             </div>
           )}
         </div>
