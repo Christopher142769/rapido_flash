@@ -13,8 +13,16 @@ router.get('/', async (req, res) => {
     if (!restaurantId) {
       return res.status(400).json({ message: 'restaurantId requis' });
     }
-    const list = await CategorieProduit.find({ restaurant: restaurantId }).sort({ ordre: 1, nom: 1 });
-    res.json(list);
+    const list = await CategorieProduit.find({ restaurant: restaurantId })
+      .select('nom nomEn image restaurant ordre')
+      .sort({ ordre: 1, nom: 1 })
+      .lean();
+    res.json(
+      list.map((c) => ({
+        ...c,
+        nomEn: c.nomEn != null && String(c.nomEn).trim() !== '' ? String(c.nomEn).trim() : '',
+      }))
+    );
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -45,18 +53,21 @@ router.post('/', auth, isRestaurant, upload.single('image'), async (req, res) =>
       return res.status(403).json({ message: 'Accès refusé pour cette entreprise' });
     }
 
-    const { nom, ordre } = req.body;
+    const { nom, nomEn, ordre } = req.body;
     if (!nom || !nom.trim()) {
       return res.status(400).json({ message: 'Le nom est requis' });
     }
 
     const data = {
       nom: nom.trim(),
+      nomEn: nomEn != null ? String(nomEn).trim() : '',
       restaurant: restaurantId,
       ordre: ordre ? parseInt(ordre, 10) : 0
     };
     if (req.file) {
       data.image = `/uploads/categories-produit/${req.file.filename}`;
+    } else if (req.body.imagePath && String(req.body.imagePath).startsWith('/uploads/') && !String(req.body.imagePath).includes('..')) {
+      data.image = String(req.body.imagePath).trim();
     }
     const cat = new CategorieProduit(data);
     await cat.save();
@@ -79,8 +90,14 @@ router.put('/:id', auth, isRestaurant, upload.single('image'), async (req, res) 
     }
 
     if (req.body.nom) cat.nom = req.body.nom.trim();
+    if (req.body.nomEn !== undefined) cat.nomEn = String(req.body.nomEn || '').trim();
     if (req.body.ordre !== undefined) cat.ordre = parseInt(req.body.ordre, 10);
     if (req.file) cat.image = `/uploads/categories-produit/${req.file.filename}`;
+    if (req.body.imagePath !== undefined) {
+      const v = String(req.body.imagePath || '').trim();
+      if (v === '') cat.image = null;
+      else if (v.startsWith('/uploads/') && !v.includes('..')) cat.image = v;
+    }
     await cat.save();
     res.json(cat);
   } catch (error) {

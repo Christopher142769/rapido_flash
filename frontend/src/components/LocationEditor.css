@@ -250,6 +250,38 @@
   cursor: not-allowed;
 }
 
+.location-editor-extra-fields {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(139, 69, 19, 0.12);
+}
+
+.location-editor-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-brown);
+  margin-bottom: 6px;
+}
+
+.location-editor-textarea,
+.location-editor-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 2px solid rgba(139, 69, 19, 0.15);
+  font-size: 14px;
+  margin-bottom: 12px;
+  font-family: inherit;
+}
+
+.location-editor-textarea:focus,
+.location-editor-input:focus {
+  outline: none;
+  border-color: var(--primary-brown);
+}
+
 @media (max-width: 768px) {
   .location-editor-content {
     max-width: 100%;

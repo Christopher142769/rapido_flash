@@ -16,6 +16,8 @@ import RestaurantDetail from './pages/client/RestaurantDetail';
 import Cart from './pages/client/Cart';
 import Checkout from './pages/client/Checkout';
 import Orders from './pages/client/Orders';
+import Factures from './pages/client/Factures';
+import ReceiptPage from './pages/client/ReceiptPage';
 import Settings from './pages/client/Settings';
 
 // Pages Restaurant
@@ -26,8 +28,11 @@ import RestaurantCommandes from './pages/restaurant/RestaurantCommandes';
 import Bannieres from './pages/restaurant/Bannieres';
 import CategoriesDomaine from './pages/restaurant/CategoriesDomaine';
 import Gestionnaires from './pages/restaurant/Gestionnaires';
+import RestaurantMedias from './pages/restaurant/RestaurantMedias';
+import MiseEnAvantAccueil from './pages/restaurant/MiseEnAvantAccueil';
 
 import './App.css';
+import MaintenanceGate from './components/MaintenanceGate';
 
 function App() {
   return (
@@ -40,6 +45,7 @@ function App() {
             v7_relativeSplatPath: true
           }}
         >
+          <MaintenanceGate>
           <Routes>
           {/* Pages publiques client */}
           <Route path="/loading" element={<Loading />} />
@@ -54,10 +60,14 @@ function App() {
           <Route path="/cart" element={<PrivateRoute><Cart /></PrivateRoute>} />
           <Route path="/checkout" element={<PrivateRoute><Checkout /></PrivateRoute>} />
           <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />
+          <Route path="/factures" element={<PrivateRoute><Factures /></PrivateRoute>} />
+          <Route path="/facture/:id" element={<PrivateRoute><ReceiptPage /></PrivateRoute>} />
           <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
           
           {/* Pages restaurant */}
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+          <Route path="/dashboard/medias" element={<PrivateRoute><RestaurantMedias /></PrivateRoute>} />
+          <Route path="/dashboard/vitrine-accueil" element={<PrivateRoute><MiseEnAvantAccueil /></PrivateRoute>} />
           <Route path="/dashboard/categories-domaine" element={<PrivateRoute><CategoriesDomaine /></PrivateRoute>} />
           <Route path="/dashboard/plats" element={<PrivateRoute><RestaurantPlats /></PrivateRoute>} />
           <Route path="/dashboard/categories" element={<PrivateRoute><Categories /></PrivateRoute>} />
@@ -67,6 +77,7 @@ function App() {
           
           <Route path="/" element={<Navigate to="/loading" replace />} />
         </Routes>
+          </MaintenanceGate>
       </Router>
         </ModalProvider>
       </LanguageProvider>

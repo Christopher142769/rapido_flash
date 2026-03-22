@@ -24,7 +24,20 @@ const commandeSchema = new mongoose.Schema({
   adresseLivraison: {
     latitude: Number,
     longitude: Number,
-    adresse: String
+    adresse: String,
+    /** Indications pour le livreur (optionnel) */
+    instruction: { type: String, default: '' },
+    /** Numéro à appeler pour la livraison (optionnel, ex. si paiement en ligne) */
+    telephoneContact: { type: String, default: '' }
+  },
+  /** Reçu paiement en ligne (Kkiapay) — jeton unique pour vérification / QR */
+  receiptToken: {
+    type: String,
+    sparse: true
+  },
+  /** Après cette date le reçu n’est plus valide / téléchargeable */
+  receiptExpiresAt: {
+    type: Date
   },
   sousTotal: {
     type: Number,

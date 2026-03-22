@@ -1,7 +1,10 @@
 const express = require('express');
+const crypto = require('crypto');
 const Commande = require('../models/Commande');
 const Restaurant = require('../models/Restaurant');
 const { auth } = require('../middleware/auth');
+
+const RECEIPT_VALIDITY_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
 
 const router = express.Router();
 
@@ -13,6 +16,17 @@ router.use(express.urlencoded({ extended: true, limit: '100mb' }));
 router.post('/', auth, async (req, res) => {
   try {
     const { restaurantId, plats, produits, adresseLivraison, modePaiement } = req.body;
+
+    let adressePayload = adresseLivraison || {};
+    if (adresseLivraison && typeof adresseLivraison === 'object') {
+      adressePayload = {
+        latitude: adresseLivraison.latitude,
+        longitude: adresseLivraison.longitude,
+        adresse: adresseLivraison.adresse,
+        instruction: adresseLivraison.instruction || '',
+        telephoneContact: adresseLivraison.telephoneContact || ''
+      };
+    }
     const Restaurant = require('../models/Restaurant');
     const restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) {
@@ -65,7 +79,7 @@ router.post('/', auth, async (req, res) => {
       restaurant: restaurantId,
       plats: platsDetails,
       produits: produitsDetails,
-      adresseLivraison,
+      adresseLivraison: adressePayload,
       sousTotal,
       fraisLivraison,
       total,
@@ -95,6 +109,48 @@ router.get('/my-commandes', auth, async (req, res) => {
       .sort({ createdAt: -1 });
 
     res.json(commandes);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/** Données reçu / facture (paiement en ligne uniquement) */
+router.get('/:id/receipt', auth, async (req, res) => {
+  try {
+    const commande = await Commande.findById(req.params.id)
+      .populate('restaurant', 'nom logo')
+      .populate('client', 'nom email telephone')
+      .populate('plats.plat', 'nom image prix')
+      .populate('produits.produit', 'nom images prix');
+
+    if (!commande) {
+      return res.status(404).json({ message: 'Commande non trouvée' });
+    }
+    const clientId = commande.client?._id || commande.client;
+    if (clientId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+    if (!commande.paiementEnLigneEffectue || commande.modePaiement !== 'momo_avant') {
+      return res.status(400).json({ message: 'Aucun reçu numérique pour cette commande' });
+    }
+
+    if (!commande.receiptToken) {
+      commande.receiptToken = crypto.randomBytes(24).toString('hex');
+      commande.receiptExpiresAt = new Date(Date.now() + RECEIPT_VALIDITY_MS);
+      await commande.save();
+    }
+
+    const expired = commande.receiptExpiresAt && new Date(commande.receiptExpiresAt) < new Date();
+    const qrPayload = commande.receiptToken
+      ? `RAPIDO|${commande._id}|${Number(commande.total).toFixed(0)}|${commande.receiptToken}`
+      : '';
+
+    res.json({
+      commande,
+      expired: !!expired,
+      qrPayload,
+      clientNom: commande.client?.nom || req.user.nom
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -149,6 +205,10 @@ router.put('/:id/statut', auth, async (req, res) => {
       commande.statut = statut;
       if (commande.modePaiement === 'momo_avant') {
         commande.paiementEnLigneEffectue = true;
+        if (!commande.receiptToken) {
+          commande.receiptToken = crypto.randomBytes(24).toString('hex');
+          commande.receiptExpiresAt = new Date(Date.now() + RECEIPT_VALIDITY_MS);
+        }
       }
       await commande.save();
       return res.json(commande);

@@ -5,6 +5,7 @@ const User = require('../models/User');
 const LoginCode = require('../models/LoginCode');
 const { auth } = require('../middleware/auth');
 const { sendLoginCode } = require('../utils/mailer');
+const { canManageMaintenance } = require('../utils/maintenanceAccess');
 
 const router = express.Router();
 
@@ -55,8 +56,9 @@ router.post('/register', [
         id: user._id,
         nom: user.nom,
         email: user.email,
-        role: user.role
-      }
+        role: user.role,
+        canManageMaintenance: canManageMaintenance(user),
+      },
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -93,7 +95,8 @@ router.post('/login', [
         nom: user.nom,
         email: user.email,
         role: user.role,
-        restaurantId: user.restaurantId
+        restaurantId: user.restaurantId,
+        canManageMaintenance: canManageMaintenance(user),
       }
     });
   } catch (error) {
@@ -161,7 +164,8 @@ router.post('/verify-login-code', [
         nom: user.nom,
         email: user.email,
         role: user.role,
-        restaurantId: user.restaurantId
+        restaurantId: user.restaurantId,
+        canManageMaintenance: canManageMaintenance(user),
       }
     });
   } catch (error) {
@@ -186,7 +190,8 @@ router.get('/me', auth, async (req, res) => {
         telephone: user.telephone,
         photo: user.photo,
         position: user.position,
-        restaurantId: user.restaurantId
+        restaurantId: user.restaurantId,
+        canManageMaintenance: canManageMaintenance(user),
       }
     });
   } catch (error) {

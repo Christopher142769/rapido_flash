@@ -21,10 +21,51 @@
   margin-bottom: 30px;
 }
 
+.plats-header {
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
 .plats-header h1 {
   font-size: 32px;
   color: var(--primary-brown);
   font-weight: 700;
+}
+
+.plats-subhint {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.45;
+  max-width: 720px;
+  margin: 8px 0 0;
+}
+
+.plat-nom-accueil {
+  font-size: 13px;
+  color: var(--primary-brown);
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.produit-visuel-preview {
+  display: block;
+  max-width: 100%;
+  max-height: 120px;
+  border-radius: 10px;
+  object-fit: cover;
+  margin-bottom: 8px;
+  border: 2px solid rgba(139, 69, 19, 0.12);
+}
+
+.produit-visuel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.produit-visuel-actions label.btn {
+  position: relative;
 }
 
 .plat-form-modal {

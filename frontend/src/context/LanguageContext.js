@@ -1,23 +1,26 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { pickLocalized, pickProductDisplayName } from '../utils/i18nContent';
 
 const STORAGE_KEY = 'rapido_lang';
 
 export const translations = {
   fr: {
-    nav: {
+      nav: {
       home: 'Accueil',
       cart: 'Panier',
       orders: 'Commandes',
+      invoices: 'Factures',
       settings: 'Paramètres',
       logout: 'Déconnexion',
     },
     navbar: {
       chooseAddress: 'Choisir une adresse',
       modify: 'Modifier',
-      searchPlaceholder: 'Rechercher une structure...',
+      searchPlaceholder: 'Rechercher un produit, une boutique...',
       userMenu: 'Menu utilisateur',
       sectionCategories: 'Catégories',
       sectionStructures: 'Structures',
+      sectionProducts: 'Produits',
       changeDeliveryAddress: "Modifier l'adresse de livraison",
       changeLanguage: 'Changer la langue',
       language: 'Langue',
@@ -25,7 +28,13 @@ export const translations = {
     home: {
       deliveryTo: 'Livraison à',
       selectAddress: 'Sélectionner une adresse',
-      searchPlaceholder: 'Rechercher une structure...',
+      searchPlaceholder: 'Rechercher un produit, une boutique...',
+      productSearchTitle: 'Produits trouvés',
+      productSearchLoading: 'Recherche en cours…',
+      productSearchEmpty: 'Aucun produit ne correspond. Voici des structures à explorer.',
+      openShop: 'Voir la boutique',
+      addToCartShort: 'Panier',
+      distanceKm: 'km',
       categories: 'Catégories',
       all: 'Tous',
       noStructuresFound: 'Aucune structure trouvée',
@@ -37,6 +46,7 @@ export const translations = {
       next: 'Suivant',
       freeDeliveryCotonou: 'La livraison est gratuite à Cotonou. Profitez-en pour commander vos produits préférés !',
       gotIt: "J'ai compris",
+      hideBannerToday: 'Masquer pour 24 h',
       noProductsPreview: 'Découvrir la carte',
     },
     settings: {
@@ -77,6 +87,42 @@ export const translations = {
       updateError: 'Erreur lors de la mise à jour',
       error: 'Erreur',
     },
+    invoices: {
+      title: 'Mes factures / reçus',
+      subtitle: 'Reçus de paiement en ligne (Kkiapay)',
+      empty: 'Aucune facture numérique pour le moment.',
+      viewReceipt: 'Voir le reçu',
+      downloadReceipt: 'Télécharger',
+      expired: 'Expiré',
+    },
+    maintenance: {
+      title: 'On revient tout de suite',
+      subtitle: 'Le site est en maintenance',
+      defaultMessage:
+        'Nous améliorons Rapido Flash pour vous offrir une meilleure expérience. Merci de votre patience — à très vite !',
+      staffLogin: 'Connexion espace pro (tableau de bord)',
+      dashboardTitle: 'Maintenance du site',
+      dashboardHint:
+        'Lorsque la maintenance est activée, les clients voient une page d’attente. Vous gardez l’accès au tableau de bord.',
+      toggleLabel: 'Mettre le site en maintenance',
+      messageLabel: 'Message affiché aux visiteurs',
+      messagePlaceholder: 'Ex. : retour prévu dans quelques heures…',
+      save: 'Enregistrer',
+      saved: 'Paramètres enregistrés',
+      loadError: 'Impossible de charger les paramètres',
+    },
+    receipt: {
+      title: 'Reçu de paiement',
+      expiredMessage: 'Ce reçu n’est plus valide (30 jours dépassés).',
+      print: 'Imprimer / PDF',
+      download: 'Télécharger (HTML)',
+      orderRef: 'Référence commande',
+      date: 'Date',
+      amount: 'Montant payé',
+      client: 'Client',
+      structure: 'Structure',
+      paidOnline: 'Paiement en ligne confirmé',
+    },
     cart: {
       title: 'Panier',
       emptyTitle: 'Votre panier est vide',
@@ -89,6 +135,10 @@ export const translations = {
     },
     locationEditor: {
       title: "Modifier l'adresse de livraison",
+      instructionLabel: 'Indications pour le livreur (optionnel)',
+      instructionPlaceholder: 'Ex. : code portail, étage, repères…',
+      telephoneLabel: 'Numéro à appeler pour la livraison (optionnel)',
+      telephonePlaceholder: 'Ex. : +229 …',
       searchPlaceholder: 'Rechercher une adresse...',
       useMyLocation: 'Utiliser ma position',
       selectedAddress: 'Adresse sélectionnée :',
@@ -141,22 +191,64 @@ export const translations = {
       english: 'English',
       error: 'Erreur',
     },
+    i18n: {
+      nameEn: 'Nom (anglais)',
+      nameEnHint: 'Optionnel. Affiché quand la langue du site est « English ».',
+      descEn: 'Description (anglais)',
+      productNameEn: 'Nom produit (anglais)',
+      productDescEn: 'Description (anglais)',
+      homeCardNameEn: 'Nom carte d’accueil (anglais)',
+      structureNameEn: 'Nom de la structure (anglais)',
+      structureDescEn: 'Description (anglais)',
+    },
+    store: {
+      loading: 'Chargement de la structure...',
+      notFound: 'Structure non trouvée',
+      notFoundDesc: "La structure demandée n'existe pas ou a été supprimée.",
+      backHome: "Retour à l'accueil",
+      back: 'Retour',
+      productSearchPlaceholder: 'Recherche de produits',
+      productSearchAria: 'Recherche de produits dans cette boutique',
+      orderDaysLabel: 'Jours de commande / vente :',
+      orderDayBefore: 'Pensez à commander la veille pour être livré le jour prévu.',
+      filterAll: 'Tous',
+      filterAllProducts: 'Tous les produits',
+      menu: 'Menu',
+      cartTitle: 'Chariot',
+      contact: 'Contact',
+      callTitle: 'Appeler',
+      whatsappTitle: 'Contacter par WhatsApp',
+      noProducts: 'Aucun produit disponible',
+      noProductsStructure: 'Aucun produit pour cette structure.',
+      noProductsCategory: 'Aucun produit dans cette catégorie.',
+      noProductsCategoryDesktop: 'Aucun produit dans cette catégorie.',
+      cartEmpty: 'Ajouter un élément pour commencer',
+      total: 'Total',
+      viewCart: 'Voir le panier',
+      articles: 'article(s)',
+      addToCart: 'Ajouter au panier',
+      share: 'Partager',
+      zoomAlt: 'Vue agrandie',
+      close: 'Fermer',
+    },
   },
   en: {
-    nav: {
+      nav: {
       home: 'Home',
       cart: 'Cart',
       orders: 'Orders',
+      invoices: 'Invoices',
       settings: 'Settings',
       logout: 'Log out',
     },
     navbar: {
       chooseAddress: 'Choose an address',
       modify: 'Modify',
-      searchPlaceholder: 'Search for a structure...',
+      searchPlaceholder: 'Search for a product or shop...',
       userMenu: 'User menu',
       sectionCategories: 'Categories',
       sectionStructures: 'Structures',
+      sectionProducts: 'Products',
       changeDeliveryAddress: 'Change delivery address',
       changeLanguage: 'Change language',
       language: 'Language',
@@ -164,7 +256,13 @@ export const translations = {
     home: {
       deliveryTo: 'Delivery to',
       selectAddress: 'Select an address',
-      searchPlaceholder: 'Search for a structure...',
+      searchPlaceholder: 'Search for a product or shop...',
+      productSearchTitle: 'Matching products',
+      productSearchLoading: 'Searching…',
+      productSearchEmpty: 'No products match. Here are some places to explore.',
+      openShop: 'Open shop',
+      addToCartShort: 'Cart',
+      distanceKm: 'km',
       categories: 'Categories',
       all: 'All',
       noStructuresFound: 'No structures found',
@@ -176,6 +274,7 @@ export const translations = {
       next: 'Next',
       freeDeliveryCotonou: 'Delivery is free in Cotonou. Enjoy ordering your favorite products!',
       gotIt: 'Got it',
+      hideBannerToday: 'Hide for 24h',
       noProductsPreview: 'See the menu',
     },
     settings: {
@@ -216,6 +315,42 @@ export const translations = {
       updateError: 'Error updating',
       error: 'Error',
     },
+    invoices: {
+      title: 'My invoices / receipts',
+      subtitle: 'Online payment receipts (Kkiapay)',
+      empty: 'No digital invoices yet.',
+      viewReceipt: 'View receipt',
+      downloadReceipt: 'Download',
+      expired: 'Expired',
+    },
+    maintenance: {
+      title: "We'll be right back",
+      subtitle: 'The site is under maintenance',
+      defaultMessage:
+        "We're improving Rapido Flash for a better experience. Thank you for your patience — see you soon!",
+      staffLogin: 'Pro login (dashboard)',
+      dashboardTitle: 'Site maintenance',
+      dashboardHint:
+        'When maintenance is on, clients see a waiting page. You still have access to the dashboard.',
+      toggleLabel: 'Put the site in maintenance mode',
+      messageLabel: 'Message shown to visitors',
+      messagePlaceholder: 'E.g. back in a few hours…',
+      save: 'Save',
+      saved: 'Settings saved',
+      loadError: 'Could not load settings',
+    },
+    receipt: {
+      title: 'Payment receipt',
+      expiredMessage: 'This receipt is no longer valid (30 days passed).',
+      print: 'Print / PDF',
+      download: 'Download (HTML)',
+      orderRef: 'Order reference',
+      date: 'Date',
+      amount: 'Amount paid',
+      client: 'Customer',
+      structure: 'Business',
+      paidOnline: 'Online payment confirmed',
+    },
     cart: {
       title: 'Cart',
       emptyTitle: 'Your cart is empty',
@@ -228,6 +363,10 @@ export const translations = {
     },
     locationEditor: {
       title: 'Change delivery address',
+      instructionLabel: 'Delivery notes (optional)',
+      instructionPlaceholder: 'E.g. gate code, floor, landmarks…',
+      telephoneLabel: 'Phone to call for delivery (optional)',
+      telephonePlaceholder: 'E.g. +229 …',
       searchPlaceholder: 'Search for an address...',
       useMyLocation: 'Use my location',
       selectedAddress: 'Selected address:',
@@ -280,6 +419,46 @@ export const translations = {
       english: 'English',
       error: 'Error',
     },
+    i18n: {
+      nameEn: 'Name (English)',
+      nameEnHint: 'Optional. Shown when the site language is English.',
+      descEn: 'Description (English)',
+      productNameEn: 'Product name (English)',
+      productDescEn: 'Description (English)',
+      homeCardNameEn: 'Home card name (English)',
+      structureNameEn: 'Business name (English)',
+      structureDescEn: 'Description (English)',
+    },
+    store: {
+      loading: 'Loading shop...',
+      notFound: 'Shop not found',
+      notFoundDesc: 'This shop does not exist or was removed.',
+      backHome: 'Back to home',
+      back: 'Back',
+      productSearchPlaceholder: 'Search products',
+      productSearchAria: 'Search products in this shop',
+      orderDaysLabel: 'Order / sales days:',
+      orderDayBefore: 'Consider ordering the day before to be delivered on the planned day.',
+      filterAll: 'All',
+      filterAllProducts: 'All products',
+      menu: 'Menu',
+      cartTitle: 'Cart',
+      contact: 'Contact',
+      callTitle: 'Call',
+      whatsappTitle: 'Contact on WhatsApp',
+      noProducts: 'No products available',
+      noProductsStructure: 'No products for this shop.',
+      noProductsCategory: 'No products in this category.',
+      noProductsCategoryDesktop: 'No products in this category.',
+      cartEmpty: 'Add an item to get started',
+      total: 'Total',
+      viewCart: 'View cart',
+      articles: 'item(s)',
+      addToCart: 'Add to cart',
+      share: 'Share',
+      zoomAlt: 'Enlarged view',
+      close: 'Close',
+    },
   },
 };
 
@@ -287,6 +466,8 @@ const LanguageContext = createContext({
   language: 'fr',
   setLanguage: () => {},
   t: (key) => key,
+  localized: () => '',
+  productDisplayName: () => '',
 });
 
 export const LanguageProvider = ({ children }) => {
@@ -315,8 +496,19 @@ export const LanguageProvider = ({ children }) => {
     return (ns && ns[key]) || translations.fr[namespace]?.[key] || key;
   }, [language]);
 
+  const contextValue = useMemo(
+    () => ({
+      language,
+      setLanguage,
+      t,
+      localized: (obj, field) => pickLocalized(language, obj, field),
+      productDisplayName: (p) => pickProductDisplayName(language, p),
+    }),
+    [language, setLanguage, t]
+  );
+
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={contextValue}>
       {children}
     </LanguageContext.Provider>
   );

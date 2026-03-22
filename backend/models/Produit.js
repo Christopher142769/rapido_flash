@@ -6,6 +6,27 @@ const produitSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  /** Nom affiché sur l’accueil (cartes) ; si vide, le nom du produit est utilisé */
+  nomAfficheAccueil: {
+    type: String,
+    default: null,
+    trim: true
+  },
+  nomEn: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  nomAfficheAccueilEn: {
+    type: String,
+    default: null,
+    trim: true
+  },
+  descriptionEn: {
+    type: String,
+    default: '',
+    trim: true
+  },
   description: {
     type: String
   },

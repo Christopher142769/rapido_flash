@@ -14,6 +14,7 @@ import {
   FaMapPin,
   FaCog,
   FaSignOutAlt,
+  FaFileInvoice,
 } from 'react-icons/fa';
 import './TopNavbar.css';
 
@@ -24,6 +25,7 @@ const TopNavbar = ({
   onLocationClick,
   searchTerm = '',
   onSearchChange,
+  onSearchSubmit,
   sectionLinks = [],
   onScrollToSection,
 }) => {
@@ -36,7 +38,9 @@ const TopNavbar = ({
   const [showLangMenu, setShowLangMenu] = useState(false);
   const langWrapRef = useRef(null);
   const userWrapRef = useRef(null);
-  const showHomeExtras = typeof onLocationClick === 'function' && location.pathname === '/home';
+  const showHomeExtras =
+    typeof onLocationClick === 'function' &&
+    (location.pathname === '/home' || /^\/restaurant\/[^/]+$/.test(location.pathname));
 
   useEffect(() => {
     if (!showLangMenu) return;
@@ -72,10 +76,12 @@ const TopNavbar = ({
     { path: '/home', labelKey: 'home', Icon: FaHome },
     { path: '/cart', labelKey: 'cart', Icon: FaShoppingCart, badge: cartCount },
     { path: '/orders', labelKey: 'orders', Icon: FaClipboardList },
+    { path: '/factures', labelKey: 'invoices', Icon: FaFileInvoice },
   ];
 
   return (
-    <nav className="top-navbar-desktop">
+    <>
+    <nav className="top-navbar-desktop" aria-label="Navigation principale">
       <div className="navbar-container">
         {/* Logo : seul, bien mis en valeur */}
         <div className="navbar-brand" onClick={() => navigate('/home')} title="Accueil">
@@ -102,6 +108,12 @@ const TopNavbar = ({
                 placeholder={t('navbar', 'searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => onSearchChange && onSearchChange(e)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && typeof onSearchSubmit === 'function') {
+                    e.preventDefault();
+                    onSearchSubmit(searchTerm);
+                  }
+                }}
                 className="navbar-search-input"
                 aria-label={t('navbar', 'searchPlaceholder')}
               />
@@ -187,6 +199,10 @@ const TopNavbar = ({
                   <div className="user-dropdown-divider" />
                 </>
               )}
+              <button type="button" className="user-dropdown-row" onClick={() => { navigate('/factures'); setShowUserMenu(false); }}>
+                <FaFileInvoice className="user-dropdown-row-icon" aria-hidden />
+                {t('nav', 'invoices')}
+              </button>
               <button type="button" className="user-dropdown-row" onClick={() => { navigate('/settings'); setShowUserMenu(false); }}>
                 <FaCog className="user-dropdown-row-icon" aria-hidden />
                 {t('nav', 'settings')}
@@ -200,6 +216,8 @@ const TopNavbar = ({
         </div>
       </div>
     </nav>
+    <div className="top-navbar-spacer" aria-hidden="true" />
+    </>
   );
 };
 

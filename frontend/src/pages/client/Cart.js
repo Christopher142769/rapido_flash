@@ -12,7 +12,7 @@ const BASE_URL = API_URL.replace('/api', '');
 
 const Cart = () => {
   const navigate = useNavigate();
-  const { t } = useContext(LanguageContext);
+  const { t, productDisplayName } = useContext(LanguageContext);
   const [cart, setCart] = useState([]);
   const [fraisLivraison, setFraisLivraison] = useState(0);
 
@@ -104,17 +104,18 @@ const Cart = () => {
         <div className="cart-items">
           {cart.map((item) => {
             const id = item.productId != null ? item.productId : item.platId;
-            const imgSrc = item.image && item.image.startsWith('/') ? `${BASE_URL}${item.image}` : getImageUrl(item.image, { nom: item.nom, categorie: item.categorie }, BASE_URL);
+            const lineName = productDisplayName(item);
+            const imgSrc = item.image && item.image.startsWith('/') ? `${BASE_URL}${item.image}` : getImageUrl(item.image, { nom: lineName, categorie: item.categorie }, BASE_URL);
             return (
               <div key={id} className="cart-item">
                 <img
                   src={imgSrc}
-                  alt={item.nom}
+                  alt={lineName}
                   className="cart-item-image"
-                  onError={(e) => { e.target.src = getImageUrl(null, { nom: item.nom }, BASE_URL); }}
+                  onError={(e) => { e.target.src = getImageUrl(null, { nom: lineName }, BASE_URL); }}
                 />
                 <div className="cart-item-info">
-                  <h3>{item.nom}</h3>
+                  <h3>{lineName}</h3>
                   <p className="cart-item-price">{Number(item.prix).toFixed(0)} FCFA</p>
                 </div>
                 <div className="cart-item-controls">

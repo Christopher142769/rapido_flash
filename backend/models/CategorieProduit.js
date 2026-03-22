@@ -6,6 +6,11 @@ const categorieProduitSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  nomEn: {
+    type: String,
+    default: '',
+    trim: true
+  },
   image: {
     type: String
   },

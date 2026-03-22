@@ -17,6 +17,8 @@ const DashboardSidebar = ({ onLogout }) => {
 
   const menuItems = [
     { id: 'structure', label: 'Entreprise', path: '/dashboard' },
+    { id: 'medias', label: 'Galerie d’images', path: '/dashboard/medias' },
+    { id: 'vitrine', label: 'Vitrine accueil', path: '/dashboard/vitrine-accueil' },
     { id: 'categories-domaine', label: 'Catégories domaine', path: '/dashboard/categories-domaine' },
     { id: 'categories', label: 'Catégories produits', path: '/dashboard/categories' },
     { id: 'plats', label: 'Produits', path: '/dashboard/plats' },

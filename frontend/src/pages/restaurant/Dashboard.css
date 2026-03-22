@@ -17,6 +17,71 @@
   padding: 28px 24px 48px;
 }
 
+.dashboard-maintenance-card {
+  background: linear-gradient(145deg, #fff9f0 0%, #fff 55%);
+  border-radius: 16px;
+  padding: 22px 24px 24px;
+  margin-bottom: 28px;
+  box-shadow: 0 4px 20px rgba(139, 69, 19, 0.1);
+  border: 1px solid rgba(139, 69, 19, 0.15);
+}
+
+.dashboard-maintenance-title {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--primary-brown, #8b4513);
+}
+
+.dashboard-maintenance-hint {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.45;
+}
+
+.dashboard-maintenance-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+}
+
+.dashboard-maintenance-row input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary-brown, #8b4513);
+}
+
+.dashboard-maintenance-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary-brown, #8b4513);
+  margin-bottom: 6px;
+}
+
+.dashboard-maintenance-textarea {
+  width: 100%;
+  max-width: 640px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(139, 69, 19, 0.2);
+  font-size: 14px;
+  line-height: 1.45;
+  resize: vertical;
+  margin-bottom: 14px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.dashboard-maintenance-save {
+  min-width: 160px;
+}
+
 .dashboard-block-header {
   margin-bottom: 24px;
 }
@@ -520,4 +585,84 @@
 .commander-veille-row input {
   margin-top: 4px;
   accent-color: var(--primary-brown);
+}
+
+/* Visuels entreprise — sélection depuis la galerie uniquement */
+.entreprise-visuels-intro {
+  margin-top: 0;
+  margin-bottom: 20px;
+  max-width: 900px;
+  line-height: 1.55;
+}
+
+.entreprise-visuels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+
+.entreprise-visuel-card {
+  background: #fff;
+  border: 2px solid rgba(139, 69, 19, 0.12);
+  border-radius: 14px;
+  padding: 18px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.entreprise-visuel-title {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--primary-brown, #8b4513);
+}
+
+.entreprise-visuel-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.45;
+}
+
+.entreprise-visuel-preview {
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f5f0e8;
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.entreprise-visuel-preview-wide {
+  min-height: 120px;
+  aspect-ratio: 16 / 9;
+}
+
+.entreprise-visuel-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  max-height: 160px;
+}
+
+.entreprise-visuel-placeholder {
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: #999;
+}
+
+.entreprise-visuel-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.entreprise-visuel-actions .btn {
+  width: 100%;
+  justify-content: center;
 }

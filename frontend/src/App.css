@@ -1,4 +1,6 @@
 :root {
+  /* Hauteur barre du haut (navbar fixe) — mobile plus compact */
+  --top-navbar-height: 56px;
   --primary-brown: #8B4513;
   --primary-yellow: #FFD700;
   --primary-white: #FFFFFF;
@@ -7,6 +9,12 @@
   --light-yellow: #FFF8DC;
   --gray: #F5F5F5;
   --dark-gray: #333;
+}
+
+@media (min-width: 769px) {
+  :root {
+    --top-navbar-height: 76px;
+  }
 }
 
 .App {

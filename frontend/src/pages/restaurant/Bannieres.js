@@ -1,23 +1,23 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import PageLoader from '../../components/PageLoader';
+import MediaPickerModal from '../../components/MediaPickerModal';
 import './Bannieres.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const Bannieres = () => {
-  const navigate = useNavigate();
   const { logout } = useContext(AuthContext);
   const [bannieres, setBannieres] = useState([]);
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedMediaPath, setSelectedMediaPath] = useState(null);
   const [preview, setPreview] = useState(null);
   const [selectedRestaurant, setSelectedRestaurant] = useState('');
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
 
   useEffect(() => {
     fetchBannieres();
@@ -53,56 +53,40 @@ const Bannieres = () => {
     }
   };
 
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        alert('Veuillez sélectionner une image');
-        return;
-      }
-      if (file.size > 500 * 1024 * 1024) {
-        alert('L\'image ne doit pas dépasser 500 Mo');
-        return;
-      }
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
+  const BASE_URL = API_URL.replace('/api', '');
+
+  const onMediaChosen = (path) => {
+    setSelectedMediaPath(path);
+    setPreview(`${BASE_URL}${path}`);
+    setMediaPickerOpen(false);
   };
 
-  const handleUpload = async () => {
-    if (!selectedFile) {
-      alert('Veuillez sélectionner une image');
+  const handleUploadFromMedia = async () => {
+    if (!selectedMediaPath) {
+      alert('Choisissez une image dans la galerie (menu « Galerie d’images »).');
+      return;
+    }
+    if (!selectedRestaurant) {
+      alert('Sélectionnez un restaurant associé.');
       return;
     }
 
     setUploading(true);
     try {
       const token = localStorage.getItem('token');
-      const formData = new FormData();
-      formData.append('image', selectedFile);
-      if (selectedRestaurant) {
-        formData.append('restaurantId', selectedRestaurant);
-      }
+      await axios.post(
+        `${API_URL}/bannieres/from-media`,
+        { imagePath: selectedMediaPath, restaurantId: selectedRestaurant },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-      await axios.post(`${API_URL}/bannieres`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      setSelectedFile(null);
+      setSelectedMediaPath(null);
       setPreview(null);
-      document.getElementById('file-input').value = '';
       await fetchBannieres();
-      alert('Bannière uploadée avec succès !');
+      alert('Bannière ajoutée depuis la galerie.');
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de l\'upload');
+      alert(error.response?.data?.message || 'Erreur lors de l\'ajout');
     } finally {
       setUploading(false);
     }
@@ -175,7 +159,10 @@ const Bannieres = () => {
 
         {/* Section Upload */}
         <div className="upload-section">
-          <h2>Ajouter une nouvelle bannière (photo de plat)</h2>
+          <h2>Ajouter une bannière depuis la galerie</h2>
+          <p style={{ color: '#666', marginBottom: 16, maxWidth: 560 }}>
+            Importez vos images dans <strong>Galerie d’images</strong>, puis sélectionnez-les ici. Une même image peut servir partout sur le site.
+          </p>
           {restaurants.length > 0 && (
             <div className="form-group" style={{ marginBottom: '20px', maxWidth: '400px' }}>
               <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: 'var(--dark-brown)' }}>Restaurant associé *</label>
@@ -200,36 +187,52 @@ const Bannieres = () => {
             </div>
           )}
           <div className="upload-container">
-            <div className="file-input-wrapper">
-              <input
-                type="file"
-                id="file-input"
-                accept="image/*"
-                onChange={handleFileSelect}
-                className="file-input"
-              />
-              <label htmlFor="file-input" className="file-label">
-                {preview ? (
-                  <img src={preview} alt="Preview" className="preview-image" />
-                ) : (
-                  <div className="upload-placeholder">
-                    <span className="upload-icon">📷</span>
-                    <span>Cliquez pour sélectionner une image</span>
-                    <small>JPG, PNG (max 500 Mo)</small>
-                  </div>
-                )}
-              </label>
+            <div className="file-input-wrapper" style={{ border: '2px dashed #E0E0E0', borderRadius: 12, padding: 24, minHeight: 160, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {preview ? (
+                <img src={preview} alt="Aperçu" className="preview-image" style={{ maxHeight: 200 }} />
+              ) : (
+                <div className="upload-placeholder">
+                  <span className="upload-icon">🖼️</span>
+                  <span>Aucune image sélectionnée</span>
+                </div>
+              )}
             </div>
-            {selectedFile && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 16 }}>
               <button
-                className="btn btn-primary"
-                onClick={handleUpload}
-                disabled={uploading}
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setMediaPickerOpen(true)}
+                disabled={!selectedRestaurant}
               >
-                {uploading ? 'Upload en cours...' : 'Uploader la bannière'}
+                Ouvrir la galerie
               </button>
-            )}
+              {selectedMediaPath && (
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => { setSelectedMediaPath(null); setPreview(null); }}
+                >
+                  Effacer le choix
+                </button>
+              )}
+              {selectedMediaPath && (
+                <button
+                  className="btn btn-primary"
+                  onClick={handleUploadFromMedia}
+                  disabled={uploading}
+                >
+                  {uploading ? 'Ajout…' : 'Ajouter cette bannière'}
+                </button>
+              )}
+            </div>
           </div>
+
+          <MediaPickerModal
+            open={mediaPickerOpen}
+            onClose={() => setMediaPickerOpen(false)}
+            onSelect={onMediaChosen}
+            title="Choisir l’image de bannière"
+          />
         </div>
 
         {/* Liste des bannières */}

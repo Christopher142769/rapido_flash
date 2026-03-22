@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
+import LanguageContext from '../../context/LanguageContext';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import PageLoader from '../../components/PageLoader';
+import MediaPickerModal from '../../components/MediaPickerModal';
 import { getImageUrl } from '../../utils/imagePlaceholder';
 import './RestaurantPlats.css';
 
@@ -11,7 +14,9 @@ const BASE_URL = API_URL.replace('/api', '');
 const STORAGE_CURRENT_RESTAURANT = 'dashboardCurrentRestaurantId';
 
 const RestaurantPlats = () => {
+  const navigate = useNavigate();
   const { logout } = useContext(AuthContext);
+  const { t } = useContext(LanguageContext);
   const [restaurants, setRestaurants] = useState([]);
   const [currentRestaurantId, setCurrentRestaurantIdState] = useState('');
   const [produits, setProduits] = useState([]);
@@ -21,17 +26,24 @@ const RestaurantPlats = () => {
   const [editingProduit, setEditingProduit] = useState(null);
   const [formData, setFormData] = useState({
     nom: '',
+    nomEn: '',
+    nomAfficheAccueil: '',
+    nomAfficheAccueilEn: '',
     description: '',
+    descriptionEn: '',
     prix: '',
     categorieProduitId: '',
-    disponible: true
+    disponible: true,
   });
-  const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-  const [imageCarteHomeFile, setImageCarteHomeFile] = useState(null);
+  /** Image galerie produit (chemin /uploads/...) */
+  const [galleryImagePath, setGalleryImagePath] = useState(null);
+  /** Chemins serveur issus de la médiathèque (ou existants) */
+  const [cartePath, setCartePath] = useState(null);
   const [previewCarteHome, setPreviewCarteHome] = useState(null);
-  const [banniereProduitFile, setBanniereProduitFile] = useState(null);
+  const [bannierePath, setBannierePath] = useState(null);
   const [previewBanniere, setPreviewBanniere] = useState(null);
+  const [pickerField, setPickerField] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -60,9 +72,12 @@ const RestaurantPlats = () => {
     if (!currentRestaurantId) return;
     try {
       setLoading(true);
+      const token = localStorage.getItem('token');
       const [prodRes, catRes] = await Promise.all([
-        axios.get(`${API_URL}/produits?restaurantId=${currentRestaurantId}`),
-        axios.get(`${API_URL}/categories-produit?restaurantId=${currentRestaurantId}`)
+        axios.get(`${API_URL}/produits/dashboard/${currentRestaurantId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${API_URL}/categories-produit?restaurantId=${currentRestaurantId}`),
       ]);
       setProduits(prodRes.data || []);
       setCategoriesProduit(catRes.data || []);
@@ -78,37 +93,14 @@ const RestaurantPlats = () => {
     if (id) localStorage.setItem(STORAGE_CURRENT_RESTAURANT, id);
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
-  };
-
-  const handleCarteHomeChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImageCarteHomeFile(file);
-      setPreviewCarteHome(URL.createObjectURL(file));
-    }
-  };
-
-  const handleBanniereChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setBanniereProduitFile(file);
-      setPreviewBanniere(URL.createObjectURL(file));
-    }
-  };
-
   const resetMediaPreviews = () => {
-    setImageFile(null);
     setImagePreview(null);
-    setImageCarteHomeFile(null);
+    setGalleryImagePath(null);
+    setCartePath(null);
     setPreviewCarteHome(null);
-    setBanniereProduitFile(null);
+    setBannierePath(null);
     setPreviewBanniere(null);
+    setPickerField(null);
   };
 
   const handleSubmit = async (e) => {
@@ -117,18 +109,28 @@ const RestaurantPlats = () => {
       alert('Sélectionnez une entreprise.');
       return;
     }
+    const wasEditing = !!editingProduit;
     try {
       const token = localStorage.getItem('token');
       const data = new FormData();
       data.append('nom', formData.nom.trim());
+      data.append('nomEn', (formData.nomEn || '').trim());
+      data.append('nomAfficheAccueil', (formData.nomAfficheAccueil || '').trim());
+      data.append('nomAfficheAccueilEn', (formData.nomAfficheAccueilEn || '').trim());
       data.append('description', (formData.description || '').trim());
+      data.append('descriptionEn', (formData.descriptionEn || '').trim());
       data.append('prix', String(formData.prix));
       if (formData.categorieProduitId) data.append('categorieProduitId', formData.categorieProduitId);
       data.append('disponible', formData.disponible);
       data.append('restaurantId', currentRestaurantId);
-      if (imageFile) data.append('image', imageFile);
-      if (imageCarteHomeFile) data.append('imageCarteHome', imageCarteHomeFile);
-      if (banniereProduitFile) data.append('banniereProduit', banniereProduitFile);
+      if (galleryImagePath) data.append('galleryImagePath', galleryImagePath);
+      if (editingProduit) {
+        data.append('imageCarteHome', cartePath || '');
+        data.append('banniereProduit', bannierePath || '');
+      } else {
+        if (cartePath) data.append('imageCarteHome', cartePath);
+        if (bannierePath) data.append('banniereProduit', bannierePath);
+      }
       const config = { headers: { Authorization: `Bearer ${token}` } };
       if (editingProduit) {
         await axios.put(`${API_URL}/produits/${editingProduit._id}`, data, config);
@@ -137,10 +139,20 @@ const RestaurantPlats = () => {
       }
       setShowForm(false);
       setEditingProduit(null);
-      setFormData({ nom: '', description: '', prix: '', categorieProduitId: '', disponible: true });
+      setFormData({
+        nom: '',
+        nomEn: '',
+        nomAfficheAccueil: '',
+        nomAfficheAccueilEn: '',
+        description: '',
+        descriptionEn: '',
+        prix: '',
+        categorieProduitId: '',
+        disponible: true,
+      });
       resetMediaPreviews();
       await fetchData();
-      alert(editingProduit ? 'Produit modifié.' : 'Produit créé.');
+      alert(wasEditing ? 'Produit modifié.' : 'Produit créé.');
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || 'Erreur');
@@ -151,18 +163,22 @@ const RestaurantPlats = () => {
     setEditingProduit(p);
     setFormData({
       nom: p.nom,
+      nomEn: p.nomEn || '',
+      nomAfficheAccueil: p.nomAfficheAccueil || '',
+      nomAfficheAccueilEn: p.nomAfficheAccueilEn || '',
       description: p.description || '',
+      descriptionEn: p.descriptionEn || '',
       prix: p.prix,
       categorieProduitId: (p.categorieProduit && p.categorieProduit._id) || '',
-      disponible: p.disponible !== false
+      disponible: p.disponible !== false,
     });
     const firstImg = (p.images && p.images[0]) ? `${BASE_URL}${p.images[0]}` : null;
     setImagePreview(firstImg);
-    setImageFile(null);
+    setGalleryImagePath(null);
+    setCartePath(p.imageCarteHome || null);
     setPreviewCarteHome(p.imageCarteHome ? `${BASE_URL}${p.imageCarteHome}` : null);
-    setImageCarteHomeFile(null);
+    setBannierePath(p.banniereProduit || null);
     setPreviewBanniere(p.banniereProduit ? `${BASE_URL}${p.banniereProduit}` : null);
-    setBanniereProduitFile(null);
     setShowForm(true);
   };
 
@@ -178,6 +194,20 @@ const RestaurantPlats = () => {
     }
   };
 
+  const onMediaPicked = (path) => {
+    if (pickerField === 'carte') {
+      setCartePath(path);
+      setPreviewCarteHome(`${BASE_URL}${path}`);
+    } else if (pickerField === 'banniere') {
+      setBannierePath(path);
+      setPreviewBanniere(`${BASE_URL}${path}`);
+    } else if (pickerField === 'galerie') {
+      setGalleryImagePath(path);
+      setImagePreview(`${BASE_URL}${path}`);
+    }
+    setPickerField(null);
+  };
+
   if (loading) return <PageLoader message="Chargement des produits..." />;
 
   return (
@@ -186,7 +216,13 @@ const RestaurantPlats = () => {
       <div className="dashboard-main">
         <div className="plats-content">
           <div className="plats-header">
-            <h1>Gestion des produits</h1>
+            <div>
+              <h1>Gestion des produits</h1>
+              <p className="plats-subhint">
+                Toutes les images viennent de la <strong>Galerie d’images</strong> (menu) : importez-y vos photos une fois, puis choisissez-les ici.
+                La page <strong>Vitrine accueil</strong> permet aussi de régler les visuels par produit.
+              </p>
+            </div>
             {restaurants.length > 1 && (
               <div className="form-group" style={{ marginTop: '8px', marginBottom: '12px', maxWidth: '320px' }}>
                 <label>Entreprise</label>
@@ -205,7 +241,17 @@ const RestaurantPlats = () => {
             <button className="btn btn-primary" onClick={() => {
               setShowForm(true);
               setEditingProduit(null);
-              setFormData({ nom: '', description: '', prix: '', categorieProduitId: '', disponible: true });
+              setFormData({
+                nom: '',
+                nomEn: '',
+                nomAfficheAccueil: '',
+                nomAfficheAccueilEn: '',
+                description: '',
+                descriptionEn: '',
+                prix: '',
+                categorieProduitId: '',
+                disponible: true,
+              });
               resetMediaPreviews();
             }} disabled={!currentRestaurantId}>
               + Ajouter un produit
@@ -222,8 +268,43 @@ const RestaurantPlats = () => {
                     <input type="text" value={formData.nom} onChange={(e) => setFormData({ ...formData, nom: e.target.value })} required />
                   </div>
                   <div className="form-group">
+                    <label>{t('i18n', 'productNameEn')}</label>
+                    <span className="label-hint">{t('i18n', 'nameEnHint')}</span>
+                    <input
+                      type="text"
+                      value={formData.nomEn}
+                      onChange={(e) => setFormData({ ...formData, nomEn: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>
+                      Nom affiché sur l’accueil (optionnel)
+                      <span className="label-hint">Si vide, le nom du produit est utilisé sur les cartes d’accueil.</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.nomAfficheAccueil}
+                      onChange={(e) => setFormData({ ...formData, nomAfficheAccueil: e.target.value })}
+                      placeholder="Ex. Menu du jour"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>{t('i18n', 'homeCardNameEn')}</label>
+                    <span className="label-hint">{t('i18n', 'nameEnHint')}</span>
+                    <input
+                      type="text"
+                      value={formData.nomAfficheAccueilEn}
+                      onChange={(e) => setFormData({ ...formData, nomAfficheAccueilEn: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
                     <label>Description</label>
                     <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows="3" />
+                  </div>
+                  <div className="form-group">
+                    <label>{t('i18n', 'productDescEn')}</label>
+                    <span className="label-hint">{t('i18n', 'nameEnHint')}</span>
+                    <textarea value={formData.descriptionEn} onChange={(e) => setFormData({ ...formData, descriptionEn: e.target.value })} rows="2" />
                   </div>
                   <div className="form-group">
                     <label>Prix (FCFA) *</label>
@@ -238,62 +319,83 @@ const RestaurantPlats = () => {
                       ))}
                     </select>
                   </div>
-                  <div className="produit-media-uploads">
-                    <div className="form-group">
-                      <label>
-                        Image galerie (fiche produit, panier)
-                        <span className="label-hint">Photo principale du produit ; plusieurs envois successifs ajoutent à la galerie à la modification.</span>
-                      </label>
-                      <div className="file-upload-container">
-                        <input type="file" accept="image/*" onChange={handleFileChange} className="file-input" id="produit-image-upload" />
-                        <label htmlFor="produit-image-upload" className="file-upload-label">
-                          {imagePreview ? (
-                            <img src={imagePreview} alt="Aperçu galerie" className="image-preview" />
-                          ) : (
-                            <div className="file-upload-placeholder">
-                              <span>📷</span>
-                              <span>Ajouter à la galerie</span>
-                            </div>
-                          )}
-                        </label>
-                      </div>
+                  <div className="form-group">
+                    <label>
+                      Image galerie (fiche produit, panier)
+                      <span className="label-hint">Uniquement depuis votre galerie d’images.</span>
+                    </label>
+                    <div className="file-upload-container" style={{ minHeight: 100 }}>
+                      {imagePreview ? (
+                        <div className="file-upload-label" style={{ cursor: 'default' }}>
+                          <img src={imagePreview} alt="Aperçu galerie" className="image-preview" />
+                        </div>
+                      ) : (
+                        <div className="file-upload-placeholder">
+                          <span>📷</span>
+                          <span>Choisir une image dans la galerie</span>
+                        </div>
+                      )}
                     </div>
-                    <div className="form-group">
+                    <div className="produit-visuel-actions" style={{ marginTop: 8 }}>
+                      <button type="button" className="btn btn-secondary btn-small" onClick={() => setPickerField('galerie')}>
+                        Ouvrir la galerie
+                      </button>
+                      <button type="button" className="btn btn-outline btn-small" onClick={() => navigate('/dashboard/medias')}>
+                        Importer des images
+                      </button>
+                      {(imagePreview || galleryImagePath) && (
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-small"
+                          onClick={() => {
+                            setGalleryImagePath(null);
+                            setImagePreview(null);
+                          }}
+                        >
+                          Retirer l’image galerie
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="produit-media-uploads">
+                    <div className="form-group produit-visuel-block">
                       <label>
                         Photo carte — page d’accueil
-                        <span className="label-hint">Visuel large sur les cartes « produits » côté client (recommandé format paysage). Sinon la 1ʳᵉ image galerie est utilisée.</span>
+                        <span className="label-hint">Image choisie dans la galerie.</span>
                       </label>
-                      <div className="file-upload-container">
-                        <input type="file" accept="image/*" onChange={handleCarteHomeChange} className="file-input" id="produit-carte-home-upload" />
-                        <label htmlFor="produit-carte-home-upload" className="file-upload-label">
-                          {previewCarteHome ? (
-                            <img src={previewCarteHome} alt="Aperçu carte accueil" className="image-preview" />
-                          ) : (
-                            <div className="file-upload-placeholder">
-                              <span>🏠</span>
-                              <span>Image pour l’accueil</span>
-                            </div>
-                          )}
-                        </label>
+                      {previewCarteHome && <img src={previewCarteHome} alt="" className="produit-visuel-preview" />}
+                      <div className="produit-visuel-actions">
+                        <button type="button" className="btn btn-secondary btn-small" onClick={() => setPickerField('carte')}>
+                          Ouvrir la galerie
+                        </button>
+                        <button type="button" className="btn btn-outline btn-small" onClick={() => navigate('/dashboard/medias')}>
+                          Importer des images
+                        </button>
+                        {cartePath && (
+                          <button type="button" className="btn btn-outline btn-small" onClick={() => { setCartePath(null); setPreviewCarteHome(null); }}>
+                            Retirer
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <div className="form-group">
+                    <div className="form-group produit-visuel-block">
                       <label>
                         Bannière — clic sur le produit
-                        <span className="label-hint">Grande image à l’ouverture (zoom) côté client. Sinon la galerie est affichée.</span>
+                        <span className="label-hint">Grande image au zoom / ouverture.</span>
                       </label>
-                      <div className="file-upload-container">
-                        <input type="file" accept="image/*" onChange={handleBanniereChange} className="file-input" id="produit-banniere-upload" />
-                        <label htmlFor="produit-banniere-upload" className="file-upload-label">
-                          {previewBanniere ? (
-                            <img src={previewBanniere} alt="Aperçu bannière" className="image-preview" />
-                          ) : (
-                            <div className="file-upload-placeholder">
-                              <span>🖼</span>
-                              <span>Bannière détail</span>
-                            </div>
-                          )}
-                        </label>
+                      {previewBanniere && <img src={previewBanniere} alt="" className="produit-visuel-preview" />}
+                      <div className="produit-visuel-actions">
+                        <button type="button" className="btn btn-secondary btn-small" onClick={() => setPickerField('banniere')}>
+                          Ouvrir la galerie
+                        </button>
+                        <button type="button" className="btn btn-outline btn-small" onClick={() => navigate('/dashboard/medias')}>
+                          Importer des images
+                        </button>
+                        {bannierePath && (
+                          <button type="button" className="btn btn-outline btn-small" onClick={() => { setBannierePath(null); setPreviewBanniere(null); }}>
+                            Retirer
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -312,6 +414,19 @@ const RestaurantPlats = () => {
             </div>
           )}
 
+          <MediaPickerModal
+            open={!!pickerField}
+            onClose={() => setPickerField(null)}
+            onSelect={onMediaPicked}
+            title={
+              pickerField === 'banniere'
+                ? 'Bannière au clic'
+                : pickerField === 'galerie'
+                  ? 'Image galerie produit'
+                  : 'Photo carte — accueil'
+            }
+          />
+
           <div className="plats-grid">
             {produits.map((p) => {
               const imgSrc =
@@ -323,6 +438,7 @@ const RestaurantPlats = () => {
                   <img src={imgSrc} alt={p.nom} className="plat-image-admin" onError={(e) => { e.target.src = getImageUrl(null, { nom: p.nom }, BASE_URL); }} />
                   <div className="plat-info-admin">
                     <h3>{p.nom}</h3>
+                    {p.nomAfficheAccueil && <p className="plat-nom-accueil">Accueil : {p.nomAfficheAccueil}</p>}
                     {p.description && <p>{p.description}</p>}
                     <div className="plat-details">
                       <span className="plat-prix-admin">{Number(p.prix).toFixed(0)} FCFA</span>

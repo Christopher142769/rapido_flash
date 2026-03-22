@@ -93,6 +93,7 @@ app.use('/uploads/plats', express.static(path.join(__dirname, 'uploads/plats')))
 app.use('/uploads/categories-domaine', express.static(path.join(__dirname, 'uploads/categories-domaine')));
 app.use('/uploads/categories-produit', express.static(path.join(__dirname, 'uploads/categories-produit')));
 app.use('/uploads/produits', express.static(path.join(__dirname, 'uploads/produits')));
+app.use('/uploads/medias', express.static(path.join(__dirname, 'uploads/medias')));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -105,6 +106,8 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/categories-domaine', require('./routes/categoriesDomaine'));
 app.use('/api/categories-produit', require('./routes/categoriesProduit'));
 app.use('/api/produits', require('./routes/produits'));
+app.use('/api/medias', require('./routes/medias'));
+app.use('/api/app-settings', require('./routes/app-settings'));
 
 // Gestionnaire d'erreur global pour Multer
 app.use((error, req, res, next) => {
@@ -124,6 +127,8 @@ app.use((error, req, res, next) => {
 // Import de la fonction d'initialisation de l'admin par défaut
 const initDefaultAdmin = require('./utils/initDefaultAdmin');
 const fixStaleUserIndexes = require('./utils/fixUserIndexes');
+const ensureDefaultCategoriesDomaine = require('./utils/ensureDefaultCategoriesDomaine');
+const ensureAppSettings = require('./utils/ensureAppSettings');
 
 // MongoDB : par défaut instance locale (voir backend/.env ou .env racine pour Atlas)
 const DEFAULT_LOCAL_MONGODB = 'mongodb://127.0.0.1:27017/rapido_flash';
@@ -143,6 +148,8 @@ mongoose.connect(MONGODB_URI, {
 
   // Évite E11000 duplicate key sur username:null (index unique hérité sans champ username)
   await fixStaleUserIndexes();
+  await ensureDefaultCategoriesDomaine();
+  await ensureAppSettings();
 
   // Initialiser l'admin par défaut après la connexion MongoDB (plus de plats par défaut)
   setTimeout(async () => {

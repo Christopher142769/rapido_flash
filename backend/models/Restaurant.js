@@ -5,13 +5,27 @@ const restaurantSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  nomEn: {
+    type: String,
+    default: '',
+    trim: true
+  },
   description: {
     type: String
+  },
+  descriptionEn: {
+    type: String,
+    default: '',
+    trim: true
   },
   logo: {
     type: String
   },
   banniere: {
+    type: String
+  },
+  /** Grande image des cartes « structures » sur l’accueil (liste) ; prioritaire sur bannière / aperçu produit */
+  visuelCarteAccueil: {
     type: String
   },
   position: {

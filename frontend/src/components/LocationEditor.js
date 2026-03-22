@@ -25,6 +25,8 @@ const LocationEditor = ({ onClose, onSave }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const searchTimeoutRef = useRef(null);
+  const [instruction, setInstruction] = useState('');
+  const [telephoneContact, setTelephoneContact] = useState('');
 
   useEffect(() => {
     // Récupérer la localisation actuelle
@@ -40,6 +42,8 @@ const LocationEditor = ({ onClose, onSave }) => {
         zoom: 15
       });
       setAddress(userLocation.adresse || '');
+      setInstruction(userLocation.instruction || '');
+      setTelephoneContact(userLocation.telephoneContact || '');
       setLoading(false);
     } else {
       // Utiliser la géolocalisation
@@ -178,7 +182,9 @@ const LocationEditor = ({ onClose, onSave }) => {
       const locationData = {
         latitude: position.latitude,
         longitude: position.longitude,
-        adresse: address
+        adresse: address,
+        instruction: (instruction || '').trim(),
+        telephoneContact: (telephoneContact || '').trim()
       };
 
       localStorage.setItem('userLocation', JSON.stringify(locationData));
@@ -283,6 +289,27 @@ const LocationEditor = ({ onClose, onSave }) => {
               <p className="address-value">{address}</p>
             </div>
           )}
+
+          <div className="location-editor-extra-fields">
+            <label className="location-editor-label" htmlFor="loc-instruction">{t('locationEditor', 'instructionLabel')}</label>
+            <textarea
+              id="loc-instruction"
+              className="location-editor-textarea"
+              rows={2}
+              placeholder={t('locationEditor', 'instructionPlaceholder')}
+              value={instruction}
+              onChange={(e) => setInstruction(e.target.value)}
+            />
+            <label className="location-editor-label" htmlFor="loc-tel">{t('locationEditor', 'telephoneLabel')}</label>
+            <input
+              id="loc-tel"
+              type="tel"
+              className="location-editor-input"
+              placeholder={t('locationEditor', 'telephonePlaceholder')}
+              value={telephoneContact}
+              onChange={(e) => setTelephoneContact(e.target.value)}
+            />
+          </div>
         </div>
 
         <div className="location-editor-footer">

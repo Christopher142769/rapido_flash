@@ -4,14 +4,17 @@ import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
+import LanguageContext from '../../context/LanguageContext';
 import { useModal } from '../../context/ModalContext';
 import DashboardSidebar from '../../components/DashboardSidebar';
 import PageLoader from '../../components/PageLoader';
+import MediaPickerModal from '../../components/MediaPickerModal';
 import './Dashboard.css';
 
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const BASE_URL = API_URL.replace('/api', '');
 
 const JOURS_SEMAINE = [
   { v: 1, label: 'Lundi' },
@@ -37,7 +40,9 @@ function RestaurantMarker({ position }) {
 const STORAGE_CURRENT_RESTAURANT = 'dashboardCurrentRestaurantId';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { user, logout } = useContext(AuthContext);
+  const { t } = useContext(LanguageContext);
   const { showSuccess, showError, showWarning } = useModal();
   const isAdmin = user?.role === 'restaurant';
   const isGestionnaire = user?.role === 'gestionnaire';
@@ -48,7 +53,9 @@ const Dashboard = () => {
   const [position, setPosition] = useState([6.3725, 2.3544]);
   const [formData, setFormData] = useState({
     nom: '',
+    nomEn: '',
     description: '',
+    descriptionEn: '',
     telephone: '',
     whatsapp: '',
     email: '',
@@ -62,15 +69,22 @@ const Dashboard = () => {
   });
   const [categoriesDomaine, setCategoriesDomaine] = useState([]);
   const [editing, setEditing] = useState(false);
-  const [logoFile, setLogoFile] = useState(null);
-  const [banniereFile, setBanniereFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [bannierePreview, setBannierePreview] = useState(null);
+  const [visuelCartePreview, setVisuelCartePreview] = useState(null);
+  /** undefined = ne pas envoyer ; '' = effacer (édition) ; sinon chemin galerie */
+  const [logoPathOverride, setLogoPathOverride] = useState(undefined);
+  const [bannierePathOverride, setBannierePathOverride] = useState(undefined);
+  const [visuelCartePathOverride, setVisuelCartePathOverride] = useState(undefined);
+  const [mediaPickerTarget, setMediaPickerTarget] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const searchTimeoutRef = useRef(null);
+  const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState('');
+  const [maintenanceSaving, setMaintenanceSaving] = useState(false);
 
   const getCurrentRestaurantId = () => currentRestaurantId || localStorage.getItem(STORAGE_CURRENT_RESTAURANT);
   const setCurrentRestaurantId = (id) => {
@@ -87,6 +101,34 @@ const Dashboard = () => {
     fetchRestaurants();
     axios.get(`${API_URL}/categories-domaine`).then(res => setCategoriesDomaine(res.data || [])).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!user?.canManageMaintenance) return;
+    axios
+      .get(`${API_URL}/app-settings/public`)
+      .then((res) => {
+        setMaintenanceEnabled(!!res.data?.maintenanceEnabled);
+        setMaintenanceMessage(res.data?.maintenanceMessage || '');
+      })
+      .catch(() => {});
+  }, [user?.canManageMaintenance]);
+
+  const saveMaintenance = async () => {
+    const token = localStorage.getItem('token');
+    setMaintenanceSaving(true);
+    try {
+      await axios.put(
+        `${API_URL}/app-settings`,
+        { maintenanceEnabled, maintenanceMessage },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      showSuccess(t('maintenance', 'saved'));
+    } catch (err) {
+      showError(err.response?.data?.message || err.message || 'Erreur');
+    } finally {
+      setMaintenanceSaving(false);
+    }
+  };
 
   const fetchRestaurants = async () => {
     try {
@@ -149,7 +191,9 @@ const Dashboard = () => {
     setRestaurant(resto);
     setFormData({
       nom: resto?.nom || '',
+      nomEn: resto?.nomEn || '',
       description: resto?.description || '',
+      descriptionEn: resto?.descriptionEn || '',
       telephone: resto?.telephone || '',
       whatsapp: resto?.whatsapp || '',
       email: resto?.email || '',
@@ -162,15 +206,21 @@ const Dashboard = () => {
       commanderVeille: !!resto?.commanderVeille
     });
     if (resto?.position?.latitude) setPosition([resto.position.latitude, resto.position.longitude]);
-    setLogoPreview(resto?.logo ? `${API_URL.replace('/api', '')}${resto.logo}` : null);
-    setBannierePreview(resto?.banniere ? `${API_URL.replace('/api', '')}${resto.banniere}` : null);
+    setLogoPreview(resto?.logo ? `${BASE_URL}${resto.logo}` : null);
+    setBannierePreview(resto?.banniere ? `${BASE_URL}${resto.banniere}` : null);
+    setVisuelCartePreview(resto?.visuelCarteAccueil ? `${BASE_URL}${resto.visuelCarteAccueil}` : null);
+    setLogoPathOverride(undefined);
+    setBannierePathOverride(undefined);
+    setVisuelCartePathOverride(undefined);
   };
 
   const handleAddEnterprise = () => {
     setRestaurant(null);
     setFormData({
       nom: '',
+      nomEn: '',
       description: '',
+      descriptionEn: '',
       telephone: '',
       whatsapp: '',
       email: '',
@@ -185,8 +235,10 @@ const Dashboard = () => {
     setPosition([6.3725, 2.3544]);
     setLogoPreview(null);
     setBannierePreview(null);
-    setLogoFile(null);
-    setBanniereFile(null);
+    setVisuelCartePreview(null);
+    setLogoPathOverride(undefined);
+    setBannierePathOverride(undefined);
+    setVisuelCartePathOverride(undefined);
     setEditing(true);
   };
 
@@ -263,17 +315,23 @@ const Dashboard = () => {
     setShowSearchResults(false);
   };
 
-  const handleFileChange = (e, type) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (type === 'logo') {
-        setLogoFile(file);
-        setLogoPreview(URL.createObjectURL(file));
-      } else if (type === 'banniere') {
-        setBanniereFile(file);
-        setBannierePreview(URL.createObjectURL(file));
-      }
+  const onStructureMediaPicked = (path) => {
+    if (mediaPickerTarget === 'logo') {
+      setLogoPathOverride(path);
+      setLogoPreview(`${BASE_URL}${path}`);
+    } else if (mediaPickerTarget === 'banniere') {
+      setBannierePathOverride(path);
+      setBannierePreview(`${BASE_URL}${path}`);
+    } else if (mediaPickerTarget === 'visuelCarte') {
+      setVisuelCartePathOverride(path);
+      setVisuelCartePreview(`${BASE_URL}${path}`);
     }
+    setMediaPickerTarget(null);
+  };
+
+  const clearPathForMode = (setterPath, setterPreview, isEdit) => {
+    setterPreview(null);
+    setterPath(isEdit ? '' : undefined);
   };
 
   const handleSubmit = async (e) => {
@@ -316,7 +374,9 @@ const Dashboard = () => {
 
       const submitData = new FormData();
       submitData.append('nom', formData.nom.trim());
+      submitData.append('nomEn', (formData.nomEn || '').trim());
       submitData.append('description', (formData.description || '').trim());
+      submitData.append('descriptionEn', (formData.descriptionEn || '').trim());
       submitData.append('telephone', (formData.telephone || '').trim());
       submitData.append('whatsapp', (formData.whatsapp || '').trim());
       submitData.append('email', (formData.email || '').trim());
@@ -341,11 +401,16 @@ const Dashboard = () => {
         console.log('FormData:', pair[0], '=', pair[1]);
       }
 
-      if (logoFile) {
-        submitData.append('logo', logoFile);
-      }
-      if (banniereFile) {
-        submitData.append('banniere', banniereFile);
+      if (!restaurant) {
+        if (logoPathOverride) submitData.append('logoPath', logoPathOverride);
+        if (bannierePathOverride) submitData.append('bannierePath', bannierePathOverride);
+        if (visuelCartePathOverride) submitData.append('visuelCarteAccueilPath', visuelCartePathOverride);
+      } else {
+        if (logoPathOverride !== undefined) submitData.append('logoPath', logoPathOverride);
+        if (bannierePathOverride !== undefined) submitData.append('bannierePath', bannierePathOverride);
+        if (visuelCartePathOverride !== undefined) {
+          submitData.append('visuelCarteAccueilPath', visuelCartePathOverride);
+        }
       }
 
       const token = localStorage.getItem('token');
@@ -364,8 +429,9 @@ const Dashboard = () => {
         setCurrentRestaurantId(res.data._id);
       }
       setEditing(false);
-      setLogoFile(null);
-      setBanniereFile(null);
+      setLogoPathOverride(undefined);
+      setBannierePathOverride(undefined);
+      setVisuelCartePathOverride(undefined);
       await fetchRestaurants();
       showSuccess(restaurant ? 'Entreprise mise à jour.' : 'Entreprise créée. Elle est maintenant l\'entreprise active.');
     } catch (error) {
@@ -386,6 +452,40 @@ const Dashboard = () => {
       <DashboardSidebar onLogout={logout} />
       <div className="dashboard-main">
         <div className="dashboard-content">
+        {user?.canManageMaintenance && (
+          <div className="dashboard-maintenance-card">
+            <h2 className="dashboard-maintenance-title">{t('maintenance', 'dashboardTitle')}</h2>
+            <p className="dashboard-maintenance-hint">{t('maintenance', 'dashboardHint')}</p>
+            <label className="dashboard-maintenance-row">
+              <input
+                type="checkbox"
+                checked={maintenanceEnabled}
+                onChange={(e) => setMaintenanceEnabled(e.target.checked)}
+              />
+              <span>{t('maintenance', 'toggleLabel')}</span>
+            </label>
+            <label className="dashboard-maintenance-label" htmlFor="maintenance-message">
+              {t('maintenance', 'messageLabel')}
+            </label>
+            <textarea
+              id="maintenance-message"
+              className="dashboard-maintenance-textarea"
+              rows={4}
+              value={maintenanceMessage}
+              onChange={(e) => setMaintenanceMessage(e.target.value)}
+              placeholder={t('maintenance', 'messagePlaceholder')}
+              disabled={maintenanceSaving}
+            />
+            <button
+              type="button"
+              className="btn btn-primary dashboard-maintenance-save"
+              onClick={saveMaintenance}
+              disabled={maintenanceSaving}
+            >
+              {maintenanceSaving ? '…' : t('maintenance', 'save')}
+            </button>
+          </div>
+        )}
         <div className="dashboard-header">
           <h1>{isGestionnaire ? 'Mon entreprise' : 'Mes entreprises'}</h1>
           {!editing && isAdmin && (
@@ -479,6 +579,16 @@ const Dashboard = () => {
                     required
                   />
                 </div>
+                <div className="form-group full-width">
+                  <label>{t('i18n', 'structureNameEn')}</label>
+                  <p className="section-description" style={{ marginTop: 0, marginBottom: 8 }}>{t('i18n', 'nameEnHint')}</p>
+                  <input
+                    type="text"
+                    value={formData.nomEn}
+                    onChange={(e) => setFormData({ ...formData, nomEn: e.target.value })}
+                    placeholder="English name (optional)"
+                  />
+                </div>
                 <div className="form-group">
                   <label>Téléphone</label>
                   <input
@@ -524,6 +634,16 @@ const Dashboard = () => {
                     placeholder="Décrivez votre restaurant..."
                   />
                 </div>
+                <div className="form-group full-width">
+                  <label>{t('i18n', 'structureDescEn')}</label>
+                  <p className="section-description" style={{ marginTop: 0, marginBottom: 8 }}>{t('i18n', 'nameEnHint')}</p>
+                  <textarea
+                    value={formData.descriptionEn}
+                    onChange={(e) => setFormData({ ...formData, descriptionEn: e.target.value })}
+                    rows="3"
+                    placeholder="English description (optional)"
+                  />
+                </div>
               </div>
             </div>
 
@@ -555,50 +675,96 @@ const Dashboard = () => {
             </div>
 
             <div className="form-section">
-              <h2>Photos du restaurant</h2>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Logo du restaurant</label>
-                  <div className="file-upload-container">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleFileChange(e, 'logo')}
-                      className="file-input"
-                      id="logo-upload"
-                    />
-                    <label htmlFor="logo-upload" className="file-upload-label">
-                      {logoPreview ? (
-                        <img src={logoPreview} alt="Logo preview" className="image-preview" />
-                      ) : (
-                        <div className="file-upload-placeholder">
-                          <span>📷</span>
-                          <span>Choisir un logo</span>
-                        </div>
-                      )}
-                    </label>
+              <h2>Visuels de l’entreprise (galerie)</h2>
+              <p className="section-description entreprise-visuels-intro">
+                <strong>Aucun fichier direct ici.</strong> Cliquez sur <strong>« Choisir une image dans la galerie »</strong> pour ouvrir vos photos
+                déjà importées. Besoin de nouvelles images ? Utilisez <strong>« Importer dans la galerie »</strong> (menu Galerie d’images).
+              </p>
+              <div className="entreprise-visuels-grid">
+                <div className="entreprise-visuel-card">
+                  <h3 className="entreprise-visuel-title">Logo</h3>
+                  <p className="entreprise-visuel-desc">Affiché sur la fiche et les listes (petit format).</p>
+                  <div className="entreprise-visuel-preview">
+                    {logoPreview ? (
+                      <img src={logoPreview} alt="" className="entreprise-visuel-preview-img" />
+                    ) : (
+                      <div className="entreprise-visuel-placeholder">Aperçu logo</div>
+                    )}
+                  </div>
+                  <div className="entreprise-visuel-actions">
+                    <button type="button" className="btn btn-primary btn-small" onClick={() => setMediaPickerTarget('logo')}>
+                      Choisir une image dans la galerie
+                    </button>
+                    <button type="button" className="btn btn-outline btn-small" onClick={() => navigate('/dashboard/medias')}>
+                      Importer dans la galerie
+                    </button>
+                    {logoPreview && (
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-small"
+                        onClick={() => clearPathForMode(setLogoPathOverride, setLogoPreview, !!restaurant)}
+                      >
+                        Retirer
+                      </button>
+                    )}
                   </div>
                 </div>
-                <div className="form-group">
-                  <label>Bannière du restaurant</label>
-                  <div className="file-upload-container">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleFileChange(e, 'banniere')}
-                      className="file-input"
-                      id="banniere-upload"
-                    />
-                    <label htmlFor="banniere-upload" className="file-upload-label">
-                      {bannierePreview ? (
-                        <img src={bannierePreview} alt="Bannière preview" className="image-preview" />
-                      ) : (
-                        <div className="file-upload-placeholder">
-                          <span>🖼️</span>
-                          <span>Choisir une bannière</span>
-                        </div>
-                      )}
-                    </label>
+                <div className="entreprise-visuel-card">
+                  <h3 className="entreprise-visuel-title">Bannière</h3>
+                  <p className="entreprise-visuel-desc">Bandeau en haut de la page de votre entreprise.</p>
+                  <div className="entreprise-visuel-preview entreprise-visuel-preview-wide">
+                    {bannierePreview ? (
+                      <img src={bannierePreview} alt="" className="entreprise-visuel-preview-img" />
+                    ) : (
+                      <div className="entreprise-visuel-placeholder">Aperçu bannière</div>
+                    )}
+                  </div>
+                  <div className="entreprise-visuel-actions">
+                    <button type="button" className="btn btn-primary btn-small" onClick={() => setMediaPickerTarget('banniere')}>
+                      Choisir une image dans la galerie
+                    </button>
+                    <button type="button" className="btn btn-outline btn-small" onClick={() => navigate('/dashboard/medias')}>
+                      Importer dans la galerie
+                    </button>
+                    {bannierePreview && (
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-small"
+                        onClick={() => clearPathForMode(setBannierePathOverride, setBannierePreview, !!restaurant)}
+                      >
+                        Retirer
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="entreprise-visuel-card">
+                  <h3 className="entreprise-visuel-title">Carte d’accueil</h3>
+                  <p className="entreprise-visuel-desc">
+                    Grande image sur les <strong>cartes structures</strong> de la page d’accueil (liste). Si vide : bannière puis aperçu produits.
+                  </p>
+                  <div className="entreprise-visuel-preview entreprise-visuel-preview-wide">
+                    {visuelCartePreview ? (
+                      <img src={visuelCartePreview} alt="" className="entreprise-visuel-preview-img" />
+                    ) : (
+                      <div className="entreprise-visuel-placeholder">Aperçu carte accueil</div>
+                    )}
+                  </div>
+                  <div className="entreprise-visuel-actions">
+                    <button type="button" className="btn btn-primary btn-small" onClick={() => setMediaPickerTarget('visuelCarte')}>
+                      Choisir une image dans la galerie
+                    </button>
+                    <button type="button" className="btn btn-outline btn-small" onClick={() => navigate('/dashboard/medias')}>
+                      Importer dans la galerie
+                    </button>
+                    {visuelCartePreview && (
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-small"
+                        onClick={() => clearPathForMode(setVisuelCartePathOverride, setVisuelCartePreview, !!restaurant)}
+                      >
+                        Retirer
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -760,6 +926,21 @@ const Dashboard = () => {
         ) : restaurants.length === 0 ? (
           <p style={{ color: '#666' }}>Aucune entreprise. Cliquez sur « Ajouter une entreprise » pour commencer.</p>
         ) : null}
+
+        {editing && (
+          <MediaPickerModal
+            open={!!mediaPickerTarget}
+            onClose={() => setMediaPickerTarget(null)}
+            onSelect={onStructureMediaPicked}
+            title={
+              mediaPickerTarget === 'banniere'
+                ? 'Choisir la bannière (galerie)'
+                : mediaPickerTarget === 'visuelCarte'
+                  ? 'Choisir l’image carte d’accueil (galerie)'
+                  : 'Choisir le logo (galerie)'
+            }
+          />
+        )}
         </div>
       </div>
     </div>

@@ -8,10 +8,12 @@ const Loading = () => {
   const { user, loading, isAuthenticated } = useContext(AuthContext);
 
   useEffect(() => {
-    // Enregistrer le service worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js')
+    // En prod uniquement : évite les conflits avec le dev server (bundle.js, HMR) et les FetchEvent rejetés
+    if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('/service-worker.js', { updateViaCache: 'none' })
         .then((registration) => {
+          registration.update();
           console.log('✅ Service Worker enregistré:', registration);
         })
         .catch((error) => {

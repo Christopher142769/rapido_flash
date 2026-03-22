@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
@@ -10,6 +10,7 @@ import TopNavbar from '../../components/TopNavbar';
 import './Checkout.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
 
 // Clé publique KkiaPay (Public Api Key)
 const KKIAPAY_PUBLIC_KEY = process.env.REACT_APP_KKIAPAY_PUBLIC_KEY || '261f38e09ef211f0989243766f89f726';
@@ -33,10 +34,20 @@ function LocationMarker({ position, setPosition }) {
   return position ? <Marker position={position} /> : null;
 }
 
+function MapPanToCenter({ center }) {
+  const map = useMap();
+  useEffect(() => {
+    if (center && center[0] && center[1]) {
+      map.setView(center, 15);
+    }
+  }, [center, map]);
+  return null;
+}
+
 const Checkout = () => {
   const navigate = useNavigate();
   const { user, updatePosition } = useContext(AuthContext);
-  const { t } = useContext(LanguageContext);
+  const { t, productDisplayName } = useContext(LanguageContext);
   const { showSuccess, showError, showWarning } = useModal();
   const [cart, setCart] = useState([]);
   const [deliveryOption, setDeliveryOption] = useState('current'); // 'current' or 'map'
@@ -48,6 +59,12 @@ const Checkout = () => {
   const [fraisLivraison, setFraisLivraison] = useState(0);
   /** especes | momo_avant | momo_apres */
   const [paymentMode, setPaymentMode] = useState('momo_avant');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const searchTimeoutRef = useRef(null);
+  const [instruction, setInstruction] = useState('');
+  const [telephoneContact, setTelephoneContact] = useState('');
 
   useEffect(() => {
     const savedCart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -74,6 +91,8 @@ const Checkout = () => {
     if (userLocation.latitude) {
       setMapPosition([userLocation.latitude, userLocation.longitude]);
       setAddress(userLocation.adresse || '');
+      setInstruction(userLocation.instruction || '');
+      setTelephoneContact(userLocation.telephoneContact || '');
     } else if (user?.position?.latitude) {
       setMapPosition([user.position.latitude, user.position.longitude]);
       setAddress(user.position.adresse || '');
@@ -107,6 +126,49 @@ const Checkout = () => {
     
     return () => clearInterval(interval);
   }, [navigate, user]);
+
+  const handleAddressSearch = (query) => {
+    setSearchQuery(query);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    if (query.length < 3) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+    searchTimeoutRef.current = setTimeout(() => {
+      fetch(`${NOMINATIM_URL}/search?format=json&q=${encodeURIComponent(query)}&limit=6&addressdetails=1`, {
+        headers: { 'User-Agent': 'RapidoFlash/1.0' },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            const formatted = data.map((item) => ({
+              place_name: item.display_name,
+              geometry: { coordinates: [parseFloat(item.lon), parseFloat(item.lat)] },
+            }));
+            setSearchResults(formatted);
+            setShowSearchResults(true);
+          }
+        })
+        .catch(err => console.error('Recherche adresse:', err));
+    }, 300);
+  };
+
+  const handleSelectSearchResult = (result) => {
+    const [lng, lat] = result.geometry.coordinates;
+    setMapPosition([lat, lng]);
+    setAddress(result.place_name);
+    setSearchQuery(result.place_name);
+    setShowSearchResults(false);
+    fetch(`${NOMINATIM_URL}/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+      headers: { 'User-Agent': 'RapidoFlash/1.0' },
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.display_name) setAddress(d.display_name);
+      })
+      .catch(() => {});
+  };
 
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
@@ -192,6 +254,22 @@ const Checkout = () => {
     try {
       // Mettre à jour la position de l'utilisateur
       await updatePosition(mapPosition[0], mapPosition[1], address);
+      try {
+        const prev = JSON.parse(localStorage.getItem('userLocation') || '{}');
+        localStorage.setItem(
+          'userLocation',
+          JSON.stringify({
+            ...prev,
+            latitude: mapPosition[0],
+            longitude: mapPosition[1],
+            adresse: address,
+            instruction: (instruction || '').trim(),
+            telephoneContact: (telephoneContact || '').trim(),
+          })
+        );
+      } catch (_) {
+        /* ignore */
+      }
 
       const plats = cart.filter(item => item.platId != null).map(item => ({ platId: item.platId, quantite: item.quantite }));
       const produits = cart.filter(item => item.productId != null).map(item => ({ produitId: item.productId, quantite: item.quantite }));
@@ -203,7 +281,9 @@ const Checkout = () => {
         adresseLivraison: {
           latitude: mapPosition[0],
           longitude: mapPosition[1],
-          adresse: address
+          adresse: address,
+          instruction: (instruction || '').trim(),
+          telephoneContact: (telephoneContact || '').trim()
         },
         modePaiement: paymentMode
       };
@@ -220,9 +300,7 @@ const Checkout = () => {
         return;
       }
       
-      // Calculer le total avec frais de livraison
-      const sousTotal = getTotal();
-      const total = sousTotal + fraisLivraison;
+      const total = getTotal();
 
       await loadKkiapayScript();
 
@@ -234,7 +312,7 @@ const Checkout = () => {
           await axios.put(`${API_URL}/commandes/${commande._id}/statut`, { statut: 'confirmee' });
           localStorage.removeItem('cart');
           showSuccess('Paiement effectué avec succès !', 'Paiement réussi');
-          setTimeout(() => navigate('/orders'), 1500);
+          setTimeout(() => navigate(`/facture/${commande._id}`), 1200);
         } catch (err) {
           console.error('Erreur mise à jour commande:', err);
           showWarning('Paiement effectué mais erreur lors de la mise à jour de la commande', 'Attention');
@@ -342,7 +420,36 @@ const Checkout = () => {
         <div className="checkout-main">
           <div className="delivery-section">
             <h2>Adresse de livraison</h2>
-            
+
+            <div className="checkout-address-search-wrap">
+              <label className="checkout-field-label" htmlFor="checkout-search-addr">
+                {t('locationEditor', 'searchPlaceholder')}
+              </label>
+              <input
+                id="checkout-search-addr"
+                type="text"
+                className="checkout-address-search-input"
+                placeholder={t('locationEditor', 'searchPlaceholder')}
+                value={searchQuery}
+                onChange={(e) => handleAddressSearch(e.target.value)}
+                onFocus={() => searchQuery.length >= 3 && searchResults.length > 0 && setShowSearchResults(true)}
+              />
+              {showSearchResults && searchResults.length > 0 && (
+                <div className="checkout-search-dropdown">
+                  {searchResults.map((r, idx) => (
+                    <button
+                      type="button"
+                      key={idx}
+                      className="checkout-search-item"
+                      onClick={() => handleSelectSearchResult(r)}
+                    >
+                      {r.place_name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="delivery-options">
               <button
                 className={`option-btn ${deliveryOption === 'current' ? 'active' : ''}`}
@@ -372,6 +479,7 @@ const Checkout = () => {
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   />
+                  <MapPanToCenter center={mapPosition} />
                   <LocationMarker position={mapPosition} setPosition={setMapPosition} />
                 </MapContainer>
               </div>
@@ -382,6 +490,27 @@ const Checkout = () => {
                 <strong>Adresse:</strong> {address}
               </div>
             )}
+
+            <div className="checkout-extra-fields">
+              <label className="checkout-field-label" htmlFor="checkout-instr">{t('locationEditor', 'instructionLabel')}</label>
+              <textarea
+                id="checkout-instr"
+                className="checkout-textarea"
+                rows={2}
+                placeholder={t('locationEditor', 'instructionPlaceholder')}
+                value={instruction}
+                onChange={(e) => setInstruction(e.target.value)}
+              />
+              <label className="checkout-field-label" htmlFor="checkout-tel">{t('locationEditor', 'telephoneLabel')}</label>
+              <input
+                id="checkout-tel"
+                type="tel"
+                className="checkout-input"
+                placeholder={t('locationEditor', 'telephonePlaceholder')}
+                value={telephoneContact}
+                onChange={(e) => setTelephoneContact(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="order-summary-section">
@@ -389,7 +518,7 @@ const Checkout = () => {
             <div className="order-items">
               {cart.map((item) => (
                 <div key={item.productId || item.platId} className="order-item">
-                  <span>{item.nom} x {item.quantite}</span>
+                  <span>{productDisplayName(item)} x {item.quantite}</span>
                   <span>{(item.prix * item.quantite).toFixed(0)} FCFA</span>
                 </div>
               ))}

@@ -8,6 +8,14 @@ const uploadRestaurant = require('../middleware/uploadRestaurant');
 
 const router = express.Router();
 
+function isAllowedStoredPath(p) {
+  const s = String(p || '').trim();
+  if (!s) return false;
+  if (!s.startsWith('/uploads/')) return false;
+  if (s.includes('..')) return false;
+  return true;
+}
+
 /** categorieIds = JSON string ou tableau ; sinon undefined (ne pas modifier en PUT) */
 function parseCategorieIdsFromBody(body) {
   if (!Object.prototype.hasOwnProperty.call(body, 'categorieIds')) return undefined;
@@ -27,8 +35,8 @@ function setRestaurantCategories(restaurantLike, ids) {
 }
 
 const populateCategories = [
-  { path: 'categorie', select: 'nom icone' },
-  { path: 'categoriesDomaine', select: 'nom icone' }
+  { path: 'categorie', select: 'nom icone nomEn' },
+  { path: 'categoriesDomaine', select: 'nom icone nomEn' }
 ];
 
 // Obtenir tous les restaurants (structures)
@@ -67,7 +75,9 @@ router.get('/', async (req, res) => {
     const ids = list.map((r) => r._id);
     const produits = await Produit.find({ restaurant: { $in: ids }, disponible: true })
       .sort({ createdAt: -1 })
-      .select('nom prix images imageCarteHome restaurant')
+      .select(
+        'nom nomEn nomAfficheAccueil nomAfficheAccueilEn prix images imageCarteHome restaurant'
+      )
       .lean();
 
     const byRest = {};
@@ -79,8 +89,12 @@ router.get('/', async (req, res) => {
           (p.imageCarteHome && String(p.imageCarteHome).trim()) ||
           (p.images && p.images[0]) ||
           null;
+        const label = (p.nomAfficheAccueil && String(p.nomAfficheAccueil).trim()) || p.nom;
         byRest[rid].push({
-          nom: p.nom,
+          nom: label,
+          nomEn: p.nomEn,
+          nomAfficheAccueil: p.nomAfficheAccueil,
+          nomAfficheAccueilEn: p.nomAfficheAccueilEn,
           prix: p.prix,
           image: thumb
         });
@@ -284,7 +298,9 @@ router.post('/', auth, isRestaurant, uploadRestaurant.fields([
 
     const restaurantData = {
       nom: String(nom).trim(),
+      nomEn: req.body.nomEn != null && String(req.body.nomEn).trim() !== '' ? String(req.body.nomEn).trim() : '',
       description: description ? String(description).trim() : '',
+      descriptionEn: req.body.descriptionEn != null && String(req.body.descriptionEn).trim() !== '' ? String(req.body.descriptionEn).trim() : '',
       position: { 
         latitude: lat, 
         longitude: lng, 
@@ -307,6 +323,15 @@ router.post('/', auth, isRestaurant, uploadRestaurant.fields([
 
     if (req.files?.banniere) {
       restaurantData.banniere = `/uploads/restaurants/banners/${req.files.banniere[0].filename}`;
+    }
+    if (!restaurantData.logo && req.body.logoPath && isAllowedStoredPath(req.body.logoPath)) {
+      restaurantData.logo = String(req.body.logoPath).trim();
+    }
+    if (!restaurantData.banniere && req.body.bannierePath && isAllowedStoredPath(req.body.bannierePath)) {
+      restaurantData.banniere = String(req.body.bannierePath).trim();
+    }
+    if (req.body.visuelCarteAccueilPath && isAllowedStoredPath(req.body.visuelCarteAccueilPath)) {
+      restaurantData.visuelCarteAccueil = String(req.body.visuelCarteAccueilPath).trim();
     }
 
     console.log('RestaurantData final AVANT création:', JSON.stringify(restaurantData, null, 2));
@@ -398,6 +423,8 @@ router.put('/:id', auth, uploadRestaurant.fields([
 
     if (nom) restaurant.nom = nom;
     if (description !== undefined) restaurant.description = description;
+    if (req.body.nomEn !== undefined) restaurant.nomEn = String(req.body.nomEn || '').trim();
+    if (req.body.descriptionEn !== undefined) restaurant.descriptionEn = String(req.body.descriptionEn || '').trim();
     if (latitude && longitude) {
       restaurant.position = { 
         latitude: parseFloat(latitude), 
@@ -423,6 +450,21 @@ router.put('/:id', auth, uploadRestaurant.fields([
     }
     if (req.files?.banniere) {
       restaurant.banniere = `/uploads/restaurants/banners/${req.files.banniere[0].filename}`;
+    }
+    if (req.body.logoPath !== undefined) {
+      const v = String(req.body.logoPath || '').trim();
+      if (v === '') restaurant.logo = null;
+      else if (isAllowedStoredPath(v)) restaurant.logo = v;
+    }
+    if (req.body.bannierePath !== undefined) {
+      const v = String(req.body.bannierePath || '').trim();
+      if (v === '') restaurant.banniere = null;
+      else if (isAllowedStoredPath(v)) restaurant.banniere = v;
+    }
+    if (req.body.visuelCarteAccueilPath !== undefined) {
+      const v = String(req.body.visuelCarteAccueilPath || '').trim();
+      if (v === '') restaurant.visuelCarteAccueil = null;
+      else if (isAllowedStoredPath(v)) restaurant.visuelCarteAccueil = v;
     }
 
     await restaurant.save();

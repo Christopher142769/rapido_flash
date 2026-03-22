@@ -1,0 +1,119 @@
+.factures-page {
+  min-height: 100vh;
+  padding-bottom: 100px;
+  background: var(--gray, #f5f5f5);
+}
+
+.factures-header {
+  padding: 20px 20px 16px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.factures-header h1 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  color: var(--primary-brown, #8b4513);
+}
+
+.factures-subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.factures-list {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.factures-empty {
+  text-align: center;
+  color: #888;
+  padding: 32px 16px;
+}
+
+.factures-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  padding: 16px;
+  border: none;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.factures-card:hover {
+  box-shadow: 0 4px 18px rgba(139, 69, 19, 0.12);
+  transform: translateY(-1px);
+}
+
+.factures-card-expired {
+  opacity: 0.85;
+}
+
+.factures-card-icon {
+  color: var(--primary-brown, #8b4513);
+}
+
+.factures-card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.factures-card-title {
+  font-weight: 700;
+  color: #222;
+}
+
+.factures-card-meta {
+  font-size: 13px;
+  color: #666;
+}
+
+.factures-badge-expired {
+  font-size: 11px;
+  font-weight: 700;
+  color: #b00020;
+  text-transform: uppercase;
+}
+
+.factures-card-download {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 12px;
+  background: rgba(139, 69, 19, 0.1);
+  color: var(--primary-brown, #8b4513);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.factures-card-download:hover {
+  background: rgba(139, 69, 19, 0.18);
+}
+
+.factures-card-download:active {
+  transform: scale(0.96);
+}
+
+.factures-card-arrow {
+  color: #aaa;
+  flex-shrink: 0;
+}

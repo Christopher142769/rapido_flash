@@ -1,0 +1,141 @@
+.vitrine-page .vitrine-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 16px 80px;
+}
+
+.vitrine-header h1 {
+  font-size: 28px;
+  color: var(--primary-brown, #8b4513);
+  margin: 0 0 12px;
+}
+
+.vitrine-intro {
+  font-size: 15px;
+  color: #555;
+  line-height: 1.55;
+  margin: 0;
+  max-width: 800px;
+}
+
+.vitrine-restaurant-select {
+  margin: 20px 0;
+  max-width: 360px;
+}
+
+.vitrine-restaurant-select label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.vitrine-restaurant-select select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 2px solid #e0e0e0;
+}
+
+.vitrine-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #888;
+}
+
+.vitrine-table-wrap {
+  overflow-x: auto;
+  border-radius: 14px;
+  border: 2px solid rgba(139, 69, 19, 0.12);
+  background: #fff;
+}
+
+.vitrine-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+  font-size: 14px;
+}
+
+.vitrine-table th,
+.vitrine-table td {
+  padding: 12px 14px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid #eee;
+}
+
+.vitrine-table th {
+  background: #f9f6f0;
+  font-weight: 700;
+  color: var(--primary-brown, #8b4513);
+}
+
+.vitrine-nom {
+  font-weight: 600;
+  color: #333;
+  max-width: 160px;
+}
+
+.vitrine-input {
+  width: 100%;
+  min-width: 140px;
+  max-width: 220px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 2px solid #e0e0e0;
+  font-size: 14px;
+}
+
+.vitrine-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vitrine-thumb {
+  width: 100px;
+  height: 64px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f0ebe3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vitrine-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vitrine-ph {
+  color: #bbb;
+  font-size: 18px;
+}
+
+.vitrine-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.vitrine-saving {
+  font-size: 12px;
+  color: #999;
+}
+
+.vitrine-note {
+  margin-top: 20px;
+  font-size: 13px;
+  color: #777;
+  font-style: italic;
+}
+
+@media (max-width: 900px) {
+  .vitrine-table-wrap {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+}

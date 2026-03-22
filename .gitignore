@@ -7,3 +7,4 @@ uploads/
 *.log
 exports/
 .mongodb/
+frontend/build/

@@ -231,6 +231,22 @@
   border-top: 2px solid #E0E0E0;
 }
 
+.order-receipt-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 2px solid rgba(139, 69, 19, 0.35);
+  background: #fff;
+  color: var(--primary-brown);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.order-receipt-btn:hover {
+  background: rgba(139, 69, 19, 0.08);
+}
+
 .loading-state {
   display: flex;
   justify-content: center;

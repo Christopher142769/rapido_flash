@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
 import LanguageContext from '../../context/LanguageContext';
@@ -9,10 +9,12 @@ import InstallButton from '../../components/InstallButton';
 import LangSwitcher from '../../components/LangSwitcher';
 import LocationEditor from '../../components/LocationEditor';
 import PageLoader from '../../components/PageLoader';
-import FreeDeliveryPopup from '../../components/FreeDeliveryPopup';
-import { FaPhoneAlt, FaWhatsapp, FaBoxOpen } from 'react-icons/fa';
+import FreeDeliveryBanner from '../../components/FreeDeliveryBanner';
+import CategoryDomainIcon from '../../components/CategoryDomainIcon';
+import { FaPhoneAlt, FaWhatsapp, FaPlus } from 'react-icons/fa';
 import { IoChevronBack, IoChevronForward } from 'react-icons/io5';
 import { generateBannerPlaceholderSVG } from '../../utils/imagePlaceholder';
+import { structureProductNamesText, pickLocalized } from '../../utils/i18nContent';
 import './Home.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -32,8 +34,11 @@ function productThumbUrl(produit, baseUrl, index) {
   return generateBannerPlaceholderSVG(index);
 }
 
-/** Image mise en avant : bannière entreprise, sinon 1er produit aperçu */
+/** Image mise en avant : visuel dédié accueil, sinon bannière, sinon 1er produit aperçu */
 function structureSpotlightImageUrl(structure, baseUrl) {
+  if (structure.visuelCarteAccueil && !structure.visuelCarteAccueil.includes('placeholder.com')) {
+    return `${baseUrl}${structure.visuelCarteAccueil}`;
+  }
   if (structure.banniere && !structure.banniere.includes('placeholder.com')) {
     return `${baseUrl}${structure.banniere}`;
   }
@@ -41,18 +46,23 @@ function structureSpotlightImageUrl(structure, baseUrl) {
   return productThumbUrl(first, baseUrl, 0);
 }
 
-/** Ligne titres produits (pas le nom de la structure) */
-function structureProductNamesText(structure, t) {
-  const names = (structure.produitsApercu || []).map((p) => p.nom).filter(Boolean);
-  if (names.length) return names.slice(0, 6).join(' · ');
-  return t('home', 'noProductsPreview');
+/** Image carte recherche produit (aligné sur RestaurantDetail) */
+function productHitImageSrc(produit, baseUrl, idx) {
+  const carte = produit.imageCarteHome;
+  if (carte && String(carte).trim() && !String(carte).includes('placeholder.com')) {
+    return `${baseUrl}${carte}`;
+  }
+  if (produit.images?.[0]) return `${baseUrl}${produit.images[0]}`;
+  return generateBannerPlaceholderSVG(idx);
 }
 
 const Home = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const qFromUrl = searchParams.get('q');
   const { user } = useContext(AuthContext);
-  const { t } = useContext(LanguageContext);
+  const { language, t, localized, productDisplayName } = useContext(LanguageContext);
   const [structures, setStructures] = useState([]);
   const [categoriesDomaine, setCategoriesDomaine] = useState([]);
   const [selectedCategorieId, setSelectedCategorieId] = useState(null);
@@ -64,6 +74,8 @@ const Home = () => {
   const [locationAddress, setLocationAddress] = useState('');
   const [showLocationEditor, setShowLocationEditor] = useState(false);
   const [error, setError] = useState(null);
+  const [productSearchResults, setProductSearchResults] = useState([]);
+  const [productSearchLoading, setProductSearchLoading] = useState(false);
   const categoriesScrollRef = useRef(null);
 
   useEffect(() => {
@@ -75,6 +87,11 @@ const Home = () => {
     window.addEventListener('locationUpdated', updateLocationAddress);
     return () => window.removeEventListener('locationUpdated', updateLocationAddress);
   }, [location]);
+
+  /** Recherche depuis la navbar (ex. page restaurant → /home?q=) */
+  useEffect(() => {
+    if (qFromUrl != null && qFromUrl !== '') setSearchTerm(qFromUrl);
+  }, [qFromUrl]);
 
   useEffect(() => {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -135,6 +152,35 @@ const Home = () => {
   }, [selectedCategorieId]);
 
   useEffect(() => {
+    const q = searchTerm.trim();
+    if (q.length < 2) {
+      setProductSearchResults([]);
+      setProductSearchLoading(false);
+      return undefined;
+    }
+    const handle = setTimeout(async () => {
+      setProductSearchLoading(true);
+      try {
+        const userLocation = JSON.parse(localStorage.getItem('userLocation') || '{}');
+        const params = { q };
+        if (userLocation.latitude != null && userLocation.longitude != null) {
+          params.latitude = userLocation.latitude;
+          params.longitude = userLocation.longitude;
+        }
+        if (selectedCategorieId) params.categorieId = selectedCategorieId;
+        const { data } = await axios.get(`${API_URL}/produits/search`, { params, timeout: 15000 });
+        setProductSearchResults(Array.isArray(data) ? data : []);
+      } catch (e) {
+        console.error('Recherche produits:', e);
+        setProductSearchResults([]);
+      } finally {
+        setProductSearchLoading(false);
+      }
+    }, 320);
+    return () => clearTimeout(handle);
+  }, [searchTerm, selectedCategorieId]);
+
+  useEffect(() => {
     if (bannieres.length > 0) {
       const interval = setInterval(() => {
         setCurrentBannerIndex(prev => (prev + 1) % bannieres.length);
@@ -150,6 +196,142 @@ const Home = () => {
     return (s.produitsApercu || []).some((p) => (p.nom || '').toLowerCase().includes(q));
   });
 
+  const productQueryActive = searchTerm.trim().length >= 2;
+  const showStructures = !productQueryActive || productSearchResults.length === 0;
+
+  const addProductFromSearch = (produit, restaurantId) => {
+    if (!produit?._id || !restaurantId) return;
+    let newCart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const imageUrl = produit.imageCarteHome || (produit.images && produit.images[0]) || null;
+    const pid = produit._id;
+    const existing = newCart.find(
+      (item) => String(item.productId) === String(pid) && String(item.restaurantId) === String(restaurantId)
+    );
+    if (existing) {
+      newCart = newCart.map((item) =>
+        String(item.productId) === String(pid) && String(item.restaurantId) === String(restaurantId)
+          ? { ...item, quantite: item.quantite + 1 }
+          : item
+      );
+    } else {
+      newCart = [
+        ...newCart,
+        {
+          productId: pid,
+          nom: produit.nom,
+          nomEn: produit.nomEn,
+          nomAfficheAccueil: produit.nomAfficheAccueil,
+          nomAfficheAccueilEn: produit.nomAfficheAccueilEn,
+          prix: produit.prix,
+          image: imageUrl,
+          quantite: 1,
+          restaurantId,
+        },
+      ];
+    }
+    localStorage.setItem('cart', JSON.stringify(newCart));
+    setCartCount(newCart.reduce((sum, item) => sum + item.quantite, 0));
+  };
+
+  const renderProductSearchSection = (layoutClass) => {
+    if (!productQueryActive) return null;
+    return (
+      <section
+        id={
+          layoutClass === 'home-product-search--desktop'
+            ? 'section-product-results-desktop'
+            : 'section-product-results-mobile'
+        }
+        className={`home-product-search-section ${layoutClass}`}
+        aria-label={t('home', 'productSearchTitle')}
+      >
+        <h2 className="home-product-search-title">{t('home', 'productSearchTitle')}</h2>
+        {productSearchLoading && (
+          <p className="home-product-search-meta">{t('home', 'productSearchLoading')}</p>
+        )}
+        {!productSearchLoading && productSearchResults.length === 0 && (
+          <p className="home-product-search-meta home-product-search-empty">{t('home', 'productSearchEmpty')}</p>
+        )}
+        {!productSearchLoading && productSearchResults.length > 0 && (
+          <div className="home-product-hits-grid">
+            {productSearchResults.map((produit, idx) => {
+              const r = produit.restaurant;
+              const restaurantId = r?._id || r;
+              const imgSrc = productHitImageSrc(produit, BASE_URL, idx);
+              const dist =
+                produit.distanceKm != null && typeof produit.distanceKm === 'number'
+                  ? produit.distanceKm.toFixed(1)
+                  : null;
+              return (
+                <article
+                  key={`${produit._id}-${restaurantId}`}
+                  className="home-product-hit-card"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => navigate(`/restaurant/${restaurantId}?produit=${produit._id}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigate(`/restaurant/${restaurantId}?produit=${produit._id}`);
+                    }
+                  }}
+                >
+                  <div className="home-product-hit-media">
+                    <img
+                      src={imgSrc}
+                      alt=""
+                      onError={(e) => {
+                        e.target.src = generateBannerPlaceholderSVG(idx);
+                      }}
+                    />
+                  </div>
+                  <div className="home-product-hit-body">
+                    <h3 className="home-product-hit-name">{productDisplayName(produit)}</h3>
+                    <p className="home-product-hit-shop">{localized(r, 'nom') || '—'}</p>
+                    <div className="home-product-hit-row">
+                      <span className="home-product-hit-price">
+                        {Number(produit.prix).toFixed(0)} FCFA
+                      </span>
+                      {dist != null && (
+                        <span className="home-product-hit-dist">
+                          {dist} {t('home', 'distanceKm')}
+                        </span>
+                      )}
+                    </div>
+                    <div className="home-product-hit-actions">
+                      <button
+                        type="button"
+                        className="home-product-hit-btn home-product-hit-btn-secondary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/restaurant/${restaurantId}?produit=${produit._id}`);
+                        }}
+                      >
+                        {t('home', 'openShop')}
+                      </button>
+                      <button
+                        type="button"
+                        className="home-product-hit-btn home-product-hit-btn-cart"
+                        title={t('home', 'addToCartShort')}
+                        aria-label={t('home', 'addToCartShort')}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addProductFromSearch(produit, restaurantId);
+                        }}
+                      >
+                        <FaPlus size={18} aria-hidden />
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+    );
+  };
+
   if (loading) {
     return <PageLoader message="Chargement des structures..." />;
   }
@@ -163,10 +345,22 @@ const Home = () => {
         onSearchChange={(e) => setSearchTerm(e.target.value)}
         sectionLinks={[
           { id: 'section-categories', labelKey: 'sectionCategories' },
+          { id: 'section-product-results', labelKey: 'sectionProducts' },
           { id: 'section-structures', labelKey: 'sectionStructures' },
         ]}
-        onScrollToSection={(id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })}
+        onScrollToSection={(id) => {
+          if (id === 'section-product-results') {
+            const desktop = window.matchMedia('(min-width: 769px)').matches;
+            const el = desktop
+              ? document.getElementById('section-product-results-desktop')
+              : document.getElementById('section-product-results-mobile');
+            el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return;
+          }
+          document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+        }}
       />
+      <FreeDeliveryBanner message={t('home', 'freeDeliveryCotonou')} dismissLabel={t('home', 'hideBannerToday')} />
 
       <div className="location-section-mobile">
         <button className="location-display-btn" onClick={() => setShowLocationEditor(true)}>
@@ -204,6 +398,8 @@ const Home = () => {
           />
         </div>
       </div>
+
+      {renderProductSearchSection('home-product-search--mobile')}
 
       {bannieres.length > 0 ? (
         <div className="banners-carousel-mobile">
@@ -261,25 +457,21 @@ const Home = () => {
                 onClick={() => setSelectedCategorieId(selectedCategorieId === cat._id ? null : cat._id)}
               >
                 <span className="category-circle-wrap">
-                  {cat.icone ? (
-                    <img src={`${BASE_URL}${cat.icone}`} alt={cat.nom} className="category-icon-img" />
-                  ) : (
-                    <span className="category-icon-emoji">📦</span>
-                  )}
+                  <CategoryDomainIcon category={cat} baseUrl={BASE_URL} size={34} />
                 </span>
-                <span className="category-label">{cat.nom}</span>
+                <span className="category-label">{pickLocalized(language, cat, 'nom')}</span>
               </button>
             ))}
             </div>
           </>
         )}
         {error && <div className="no-results"><p>{error}</p></div>}
-        {!error && filteredStructures.length === 0 && (
+        {!error && showStructures && filteredStructures.length === 0 && (
           <div className="no-results">
             <p>{t('home', 'noStructuresFound')}</p>
           </div>
         )}
-        {!error && filteredStructures.length > 0 && (
+        {!error && showStructures && filteredStructures.length > 0 && (
           <div className="plats-grid-mobile structures-grid-mobile">
             {filteredStructures.map((structure) => {
               const minutes = distanceToMinutes(structure.distance);
@@ -303,7 +495,7 @@ const Home = () => {
                     />
                   </div>
                   <div className="structure-spotlight-body-mobile">
-                    <h3 className="structure-spotlight-titles-mobile">{structureProductNamesText(structure, t)}</h3>
+                    <h3 className="structure-spotlight-titles-mobile">{structureProductNamesText(structure, t, productDisplayName)}</h3>
                     <div className="structure-spotlight-row-mobile">
                       <div className="structure-card-pills-mobile">
                         {minutes != null && <span className="structure-pill-mobile">~{minutes} min</span>}
@@ -360,6 +552,7 @@ const Home = () => {
 
       <div className="plats-section-desktop">
         <div className="container-desktop">
+          {renderProductSearchSection('home-product-search--desktop')}
           {categoriesDomaine.length > 0 && (
             <section id="section-categories" className="home-categories-section-desktop">
               <h2 className="home-section-title-desktop">{t('home', 'categories')}</h2>
@@ -386,13 +579,9 @@ const Home = () => {
                       onClick={() => setSelectedCategorieId(selectedCategorieId === cat._id ? null : cat._id)}
                     >
                       <span className="category-square-img">
-                        {cat.icone ? (
-                          <img src={`${BASE_URL}${cat.icone}`} alt={cat.nom} />
-                        ) : (
-                          <span className="category-square-emoji" aria-hidden><FaBoxOpen size={28} /></span>
-                        )}
+                        <CategoryDomainIcon category={cat} baseUrl={BASE_URL} size={40} />
                       </span>
-                      <span className="category-square-label">{cat.nom}</span>
+                      <span className="category-square-label">{pickLocalized(language, cat, 'nom')}</span>
                     </button>
                   ))}
                 </div>
@@ -403,10 +592,10 @@ const Home = () => {
             </section>
           )}
 
-          {!error && filteredStructures.length === 0 && (
+          {!error && showStructures && filteredStructures.length === 0 && (
             <div id="section-structures" className="no-results-desktop"><p>{t('home', 'noStructuresFound')}</p></div>
           )}
-          {!error && filteredStructures.length > 0 && (
+          {!error && showStructures && filteredStructures.length > 0 && (
             <div id="section-structures" className="structures-grid-desktop">
               {filteredStructures.map((structure) => {
                 const minutes = distanceToMinutes(structure.distance);
@@ -430,7 +619,7 @@ const Home = () => {
                       />
                     </div>
                     <div className="structure-spotlight-body-desktop">
-                      <h3 className="structure-spotlight-titles-desktop">{structureProductNamesText(structure, t)}</h3>
+                      <h3 className="structure-spotlight-titles-desktop">{structureProductNamesText(structure, t, productDisplayName)}</h3>
                       <div className="structure-spotlight-row-desktop">
                         <div className="structure-card-pills">
                           {minutes != null && <span className="structure-pill">~{minutes} min</span>}
@@ -481,7 +670,6 @@ const Home = () => {
         />
       )}
 
-      <FreeDeliveryPopup message={t('home', 'freeDeliveryCotonou')} ctaLabel={t('home', 'gotIt')} />
     </div>
   );
 };

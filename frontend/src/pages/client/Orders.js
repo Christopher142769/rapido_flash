@@ -23,9 +23,14 @@ const Orders = () => {
     const paymentSuccess = params.get('payment') === 'success';
     const commandeId = params.get('commandeId');
     if (paymentSuccess && commandeId) {
-      axios.put(`${API_URL}/commandes/${commandeId}/statut`, { statut: 'confirmee' }).catch(() => {});
-      localStorage.removeItem('cart');
-      window.history.replaceState({}, '', '/orders');
+      axios
+        .put(`${API_URL}/commandes/${commandeId}/statut`, { statut: 'confirmee' })
+        .then(() => {
+          localStorage.removeItem('cart');
+          window.history.replaceState({}, '', '/orders');
+          navigate(`/facture/${commandeId}`);
+        })
+        .catch(() => {});
     }
   }, [location.search]);
 
@@ -125,9 +130,15 @@ const Orders = () => {
                 </div>
 
                 <div className="order-plats">
-                  {commande.plats.map((item, index) => (
+                  {(commande.plats || []).map((item, index) => (
                     <div key={index} className="order-plat-item">
                       <span>{item.plat?.nom} x {item.quantite}</span>
+                      <span>{(item.prix * item.quantite).toFixed(2)} FCFA</span>
+                    </div>
+                  ))}
+                  {(commande.produits || []).map((item, index) => (
+                    <div key={`p-${index}`} className="order-plat-item">
+                      <span>{item.produit?.nom} x {item.quantite}</span>
                       <span>{(item.prix * item.quantite).toFixed(2)} FCFA</span>
                     </div>
                   ))}
@@ -136,6 +147,15 @@ const Orders = () => {
                 <div className="order-total">
                   <strong>Total: {commande.total.toFixed(2)} FCFA</strong>
                 </div>
+                {commande.paiementEnLigneEffectue && commande.modePaiement === 'momo_avant' && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary order-receipt-btn"
+                    onClick={() => navigate(`/facture/${commande._id}`)}
+                  >
+                    Voir le reçu / facture
+                  </button>
+                )}
               </div>
             ))}
           </div>

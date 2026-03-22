@@ -42,7 +42,28 @@ router.get('/all', auth, async (req, res) => {
   }
 });
 
-// Upload une nouvelle bannière
+/** Créer une bannière à partir d’un chemin déjà en médiathèque (/uploads/...) */
+router.post('/from-media', auth, async (req, res) => {
+  try {
+    const { imagePath, restaurantId } = req.body;
+    const p = String(imagePath || '').trim();
+    if (!p.startsWith('/uploads/') || p.includes('..')) {
+      return res.status(400).json({ message: 'Chemin image invalide' });
+    }
+    const count = await Banniere.countDocuments();
+    const banniere = new Banniere({
+      image: p,
+      restaurant: restaurantId || null,
+      ordre: count,
+    });
+    await banniere.save();
+    res.status(201).json(banniere);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Upload une nouvelle bannière (fichier direct)
 router.post('/', auth, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
@@ -97,10 +118,15 @@ router.delete('/:id', auth, async (req, res) => {
       return res.status(404).json({ message: 'Bannière non trouvée' });
     }
 
-    // Supprimer le fichier image
-    const imagePath = path.join(__dirname, '..', banniere.image);
-    if (fs.existsSync(imagePath)) {
-      fs.unlinkSync(imagePath);
+    // Supprimer le fichier seulement si stocké dans uploads/banners (pas médiathèque partagée)
+    const rel = String(banniere.image || '').replace(/^\//, '');
+    if (rel.startsWith('uploads/banners/')) {
+      const imagePath = path.join(__dirname, '..', rel);
+      if (fs.existsSync(imagePath)) {
+        try {
+          fs.unlinkSync(imagePath);
+        } catch (_) {}
+      }
     }
 
     await Banniere.findByIdAndDelete(req.params.id);
