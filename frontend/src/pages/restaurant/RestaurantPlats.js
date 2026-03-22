@@ -28,6 +28,10 @@ const RestaurantPlats = () => {
   });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [imageCarteHomeFile, setImageCarteHomeFile] = useState(null);
+  const [previewCarteHome, setPreviewCarteHome] = useState(null);
+  const [banniereProduitFile, setBanniereProduitFile] = useState(null);
+  const [previewBanniere, setPreviewBanniere] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -82,6 +86,31 @@ const RestaurantPlats = () => {
     }
   };
 
+  const handleCarteHomeChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageCarteHomeFile(file);
+      setPreviewCarteHome(URL.createObjectURL(file));
+    }
+  };
+
+  const handleBanniereChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setBanniereProduitFile(file);
+      setPreviewBanniere(URL.createObjectURL(file));
+    }
+  };
+
+  const resetMediaPreviews = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setImageCarteHomeFile(null);
+    setPreviewCarteHome(null);
+    setBanniereProduitFile(null);
+    setPreviewBanniere(null);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!currentRestaurantId) {
@@ -98,6 +127,8 @@ const RestaurantPlats = () => {
       data.append('disponible', formData.disponible);
       data.append('restaurantId', currentRestaurantId);
       if (imageFile) data.append('image', imageFile);
+      if (imageCarteHomeFile) data.append('imageCarteHome', imageCarteHomeFile);
+      if (banniereProduitFile) data.append('banniereProduit', banniereProduitFile);
       const config = { headers: { Authorization: `Bearer ${token}` } };
       if (editingProduit) {
         await axios.put(`${API_URL}/produits/${editingProduit._id}`, data, config);
@@ -107,8 +138,7 @@ const RestaurantPlats = () => {
       setShowForm(false);
       setEditingProduit(null);
       setFormData({ nom: '', description: '', prix: '', categorieProduitId: '', disponible: true });
-      setImageFile(null);
-      setImagePreview(null);
+      resetMediaPreviews();
       await fetchData();
       alert(editingProduit ? 'Produit modifié.' : 'Produit créé.');
     } catch (err) {
@@ -129,6 +159,10 @@ const RestaurantPlats = () => {
     const firstImg = (p.images && p.images[0]) ? `${BASE_URL}${p.images[0]}` : null;
     setImagePreview(firstImg);
     setImageFile(null);
+    setPreviewCarteHome(p.imageCarteHome ? `${BASE_URL}${p.imageCarteHome}` : null);
+    setImageCarteHomeFile(null);
+    setPreviewBanniere(p.banniereProduit ? `${BASE_URL}${p.banniereProduit}` : null);
+    setBanniereProduitFile(null);
     setShowForm(true);
   };
 
@@ -172,8 +206,7 @@ const RestaurantPlats = () => {
               setShowForm(true);
               setEditingProduit(null);
               setFormData({ nom: '', description: '', prix: '', categorieProduitId: '', disponible: true });
-              setImageFile(null);
-              setImagePreview(null);
+              resetMediaPreviews();
             }} disabled={!currentRestaurantId}>
               + Ajouter un produit
             </button>
@@ -181,7 +214,7 @@ const RestaurantPlats = () => {
 
           {showForm && (
             <div className="plat-form-modal">
-              <div className="modal-content">
+              <div className="modal-content modal-content-produit-form">
                 <h2>{editingProduit ? 'Modifier le produit' : 'Nouveau produit'}</h2>
                 <form onSubmit={handleSubmit}>
                   <div className="form-group">
@@ -205,20 +238,63 @@ const RestaurantPlats = () => {
                       ))}
                     </select>
                   </div>
-                  <div className="form-group">
-                    <label>Image</label>
-                    <div className="file-upload-container">
-                      <input type="file" accept="image/*" onChange={handleFileChange} className="file-input" id="produit-image-upload" />
-                      <label htmlFor="produit-image-upload" className="file-upload-label">
-                        {imagePreview ? (
-                          <img src={imagePreview} alt="Preview" className="image-preview" />
-                        ) : (
-                          <div className="file-upload-placeholder">
-                            <span>📷</span>
-                            <span>Choisir une image</span>
-                          </div>
-                        )}
+                  <div className="produit-media-uploads">
+                    <div className="form-group">
+                      <label>
+                        Image galerie (fiche produit, panier)
+                        <span className="label-hint">Photo principale du produit ; plusieurs envois successifs ajoutent à la galerie à la modification.</span>
                       </label>
+                      <div className="file-upload-container">
+                        <input type="file" accept="image/*" onChange={handleFileChange} className="file-input" id="produit-image-upload" />
+                        <label htmlFor="produit-image-upload" className="file-upload-label">
+                          {imagePreview ? (
+                            <img src={imagePreview} alt="Aperçu galerie" className="image-preview" />
+                          ) : (
+                            <div className="file-upload-placeholder">
+                              <span>📷</span>
+                              <span>Ajouter à la galerie</span>
+                            </div>
+                          )}
+                        </label>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label>
+                        Photo carte — page d’accueil
+                        <span className="label-hint">Visuel large sur les cartes « produits » côté client (recommandé format paysage). Sinon la 1ʳᵉ image galerie est utilisée.</span>
+                      </label>
+                      <div className="file-upload-container">
+                        <input type="file" accept="image/*" onChange={handleCarteHomeChange} className="file-input" id="produit-carte-home-upload" />
+                        <label htmlFor="produit-carte-home-upload" className="file-upload-label">
+                          {previewCarteHome ? (
+                            <img src={previewCarteHome} alt="Aperçu carte accueil" className="image-preview" />
+                          ) : (
+                            <div className="file-upload-placeholder">
+                              <span>🏠</span>
+                              <span>Image pour l’accueil</span>
+                            </div>
+                          )}
+                        </label>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label>
+                        Bannière — clic sur le produit
+                        <span className="label-hint">Grande image à l’ouverture (zoom) côté client. Sinon la galerie est affichée.</span>
+                      </label>
+                      <div className="file-upload-container">
+                        <input type="file" accept="image/*" onChange={handleBanniereChange} className="file-input" id="produit-banniere-upload" />
+                        <label htmlFor="produit-banniere-upload" className="file-upload-label">
+                          {previewBanniere ? (
+                            <img src={previewBanniere} alt="Aperçu bannière" className="image-preview" />
+                          ) : (
+                            <div className="file-upload-placeholder">
+                              <span>🖼</span>
+                              <span>Bannière détail</span>
+                            </div>
+                          )}
+                        </label>
+                      </div>
                     </div>
                   </div>
                   <div className="form-group">
@@ -228,7 +304,7 @@ const RestaurantPlats = () => {
                     </label>
                   </div>
                   <div className="form-actions">
-                    <button type="button" className="btn btn-outline" onClick={() => { setShowForm(false); setEditingProduit(null); }}>Annuler</button>
+                    <button type="button" className="btn btn-outline" onClick={() => { setShowForm(false); setEditingProduit(null); resetMediaPreviews(); }}>Annuler</button>
                     <button type="submit" className="btn btn-primary">{editingProduit ? 'Modifier' : 'Créer'}</button>
                   </div>
                 </form>
@@ -238,7 +314,10 @@ const RestaurantPlats = () => {
 
           <div className="plats-grid">
             {produits.map((p) => {
-              const imgSrc = (p.images && p.images[0]) ? `${BASE_URL}${p.images[0]}` : getImageUrl(null, { nom: p.nom }, BASE_URL);
+              const imgSrc =
+                (p.imageCarteHome && `${BASE_URL}${p.imageCarteHome}`) ||
+                (p.images && p.images[0] && `${BASE_URL}${p.images[0]}`) ||
+                getImageUrl(null, { nom: p.nom }, BASE_URL);
               return (
                 <div key={p._id} className="plat-card-admin">
                   <img src={imgSrc} alt={p.nom} className="plat-image-admin" onError={(e) => { e.target.src = getImageUrl(null, { nom: p.nom }, BASE_URL); }} />

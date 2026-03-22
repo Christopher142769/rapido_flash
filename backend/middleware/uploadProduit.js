@@ -23,4 +23,12 @@ const upload = multer({
   }
 });
 
+/** Champs fichier pour création / édition produit (galerie + carte accueil + bannière détail) */
+const uploadProductFields = [
+  { name: 'image', maxCount: 1 },
+  { name: 'imageCarteHome', maxCount: 1 },
+  { name: 'banniereProduit', maxCount: 1 }
+];
+
 module.exports = upload;
+module.exports.uploadProductFields = uploadProductFields;

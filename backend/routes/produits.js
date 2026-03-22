@@ -3,6 +3,7 @@ const Produit = require('../models/Produit');
 const Restaurant = require('../models/Restaurant');
 const { auth, isRestaurant } = require('../middleware/auth');
 const upload = require('../middleware/uploadProduit');
+const uploadProductFields = upload.uploadProductFields;
 
 const router = express.Router();
 
@@ -44,7 +45,7 @@ async function canManageRestaurant(userId, restaurantId) {
 }
 
 // Créer (dashboard) — restaurantId dans le body pour choisir l'entreprise
-router.post('/', auth, isRestaurant, upload.single('image'), async (req, res) => {
+router.post('/', auth, isRestaurant, upload.fields(uploadProductFields), async (req, res) => {
   try {
     let restaurantId = req.body.restaurantId;
     if (!restaurantId) {
@@ -66,6 +67,11 @@ router.post('/', auth, isRestaurant, upload.single('image'), async (req, res) =>
       return res.status(400).json({ message: 'Le prix (FCFA) est requis' });
     }
 
+    const files = req.files || {};
+    const mainFile = files.image && files.image[0];
+    const carteFile = files.imageCarteHome && files.imageCarteHome[0];
+    const banniereFile = files.banniereProduit && files.banniereProduit[0];
+
     const data = {
       nom: nom.trim(),
       description: (description && description.trim()) || '',
@@ -74,8 +80,14 @@ router.post('/', auth, isRestaurant, upload.single('image'), async (req, res) =>
       disponible: true
     };
     if (categorieProduitId) data.categorieProduit = categorieProduitId;
-    if (req.file) {
-      data.images = [`/uploads/produits/${req.file.filename}`];
+    if (mainFile) {
+      data.images = [`/uploads/produits/${mainFile.filename}`];
+    }
+    if (carteFile) {
+      data.imageCarteHome = `/uploads/produits/${carteFile.filename}`;
+    }
+    if (banniereFile) {
+      data.banniereProduit = `/uploads/produits/${banniereFile.filename}`;
     }
     const prod = new Produit(data);
     await prod.save();
@@ -87,7 +99,7 @@ router.post('/', auth, isRestaurant, upload.single('image'), async (req, res) =>
 });
 
 // Mettre à jour
-router.put('/:id', auth, isRestaurant, upload.single('image'), async (req, res) => {
+router.put('/:id', auth, isRestaurant, upload.fields(uploadProductFields), async (req, res) => {
   try {
     const prod = await Produit.findById(req.params.id);
     if (!prod) return res.status(404).json({ message: 'Produit non trouvé' });
@@ -98,16 +110,27 @@ router.put('/:id', auth, isRestaurant, upload.single('image'), async (req, res) 
       return res.status(403).json({ message: 'Accès refusé' });
     }
 
+    const files = req.files || {};
+    const mainFile = files.image && files.image[0];
+    const carteFile = files.imageCarteHome && files.imageCarteHome[0];
+    const banniereFile = files.banniereProduit && files.banniereProduit[0];
+
     if (req.body.nom) prod.nom = req.body.nom.trim();
     if (req.body.description !== undefined) prod.description = req.body.description.trim();
     if (req.body.prix !== undefined) prod.prix = parseFloat(req.body.prix);
     if (req.body.categorieProduitId !== undefined) prod.categorieProduit = req.body.categorieProduitId || null;
     if (req.body.disponible !== undefined) prod.disponible = !!req.body.disponible;
-    if (req.file) {
-      const newImg = `/uploads/produits/${req.file.filename}`;
+    if (mainFile) {
+      const newImg = `/uploads/produits/${mainFile.filename}`;
       prod.images = Array.isArray(prod.images) && prod.images.length
         ? [...prod.images, newImg]
         : [newImg];
+    }
+    if (carteFile) {
+      prod.imageCarteHome = `/uploads/produits/${carteFile.filename}`;
+    }
+    if (banniereFile) {
+      prod.banniereProduit = `/uploads/produits/${banniereFile.filename}`;
     }
     await prod.save();
     await prod.populate('categorieProduit', 'nom image');

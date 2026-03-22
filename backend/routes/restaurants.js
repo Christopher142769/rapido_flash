@@ -67,7 +67,7 @@ router.get('/', async (req, res) => {
     const ids = list.map((r) => r._id);
     const produits = await Produit.find({ restaurant: { $in: ids }, disponible: true })
       .sort({ createdAt: -1 })
-      .select('nom prix images restaurant')
+      .select('nom prix images imageCarteHome restaurant')
       .lean();
 
     const byRest = {};
@@ -75,10 +75,14 @@ router.get('/', async (req, res) => {
       const rid = p.restaurant.toString();
       if (!byRest[rid]) byRest[rid] = [];
       if (byRest[rid].length < 4) {
+        const thumb =
+          (p.imageCarteHome && String(p.imageCarteHome).trim()) ||
+          (p.images && p.images[0]) ||
+          null;
         byRest[rid].push({
           nom: p.nom,
           prix: p.prix,
-          image: p.images && p.images[0] ? p.images[0] : null
+          image: thumb
         });
       }
     }

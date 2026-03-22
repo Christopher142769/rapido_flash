@@ -26,6 +26,26 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const JOUR_LABELS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
+/** Image carte liste / grille : visuel accueil si défini, sinon galerie */
+function productCardImageSrc(produit, baseUrl) {
+  const carte = produit.imageCarteHome;
+  if (carte && String(carte).trim() && !String(carte).includes('placeholder.com')) {
+    return `${baseUrl}${carte}`;
+  }
+  if (produit.images?.[0]) return `${baseUrl}${produit.images[0]}`;
+  return null;
+}
+
+/** Grande image à l’ouverture : bannière produit si définie, sinon galerie */
+function productOpenImageSrc(produit, baseUrl) {
+  const ban = produit.banniereProduit;
+  if (ban && String(ban).trim() && !String(ban).includes('placeholder.com')) {
+    return `${baseUrl}${ban}`;
+  }
+  if (produit.images?.[0]) return `${baseUrl}${produit.images[0]}`;
+  return null;
+}
+
 function formatJoursVente(arr) {
   if (!arr || !arr.length) return null;
   return [...arr].sort((a, b) => a - b).map((d) => JOUR_LABELS[d]).join(' · ');
@@ -88,7 +108,7 @@ const RestaurantDetail = () => {
   }, [selectedCategorieId, allProducts, productSearch]);
 
   const addToCart = (produit) => {
-    const imageUrl = (produit.images && produit.images[0]) ? produit.images[0] : null;
+    const imageUrl = produit.imageCarteHome || (produit.images && produit.images[0]) || null;
     const existing = cart.find(item => item.productId === produit._id);
     let newCart;
     if (existing) {
@@ -263,10 +283,11 @@ const RestaurantDetail = () => {
           ) : (
             <div className="plats-list-curved">
               {products.map((produit) => {
-                const imgSrc = (produit.images && produit.images[0]) ? `${BASE_URL}${produit.images[0]}` : getImageUrl(null, { nom: produit.nom }, BASE_URL);
+                const imgSrc = productCardImageSrc(produit, BASE_URL) || getImageUrl(null, { nom: produit.nom }, BASE_URL);
+                const zoomSrc = productOpenImageSrc(produit, BASE_URL) || imgSrc;
                 return (
                   <div key={produit._id} className="plat-item-curved">
-                    <div className="plat-image-square" onClick={() => { setSelectedImage(imgSrc); setShowImageModal(true); }}>
+                    <div className="plat-image-square" onClick={() => { setSelectedImage(zoomSrc); setShowImageModal(true); }}>
                       <img src={imgSrc} alt={produit.nom} className="plat-image-small" onError={(e) => { e.target.src = getImageUrl(null, { nom: produit.nom }, BASE_URL); }} />
                     </div>
                     <div className="plat-details-curved">
@@ -329,10 +350,11 @@ const RestaurantDetail = () => {
             ) : (
               <div className="products-grid-desktop">
                 {products.map((produit) => {
-                  const imgSrc = (produit.images && produit.images[0]) ? `${BASE_URL}${produit.images[0]}` : getImageUrl(null, { nom: produit.nom }, BASE_URL);
+                  const imgSrc = productCardImageSrc(produit, BASE_URL) || getImageUrl(null, { nom: produit.nom }, BASE_URL);
+                  const zoomSrc = productOpenImageSrc(produit, BASE_URL) || imgSrc;
                   return (
                     <div key={produit._id} className="product-card-desktop">
-                      <div className="product-card-image-wrap" onClick={() => { setSelectedImage(imgSrc); setShowImageModal(true); }}>
+                      <div className="product-card-image-wrap" onClick={() => { setSelectedImage(zoomSrc); setShowImageModal(true); }}>
                         <img src={imgSrc} alt={produit.nom} onError={(e) => { e.target.src = getImageUrl(null, { nom: produit.nom }, BASE_URL); }} />
                         <span className="product-card-share" onClick={(e) => { e.stopPropagation(); }} title="Partager" aria-hidden>
                           <FaShare size={15} />

@@ -17,6 +17,16 @@ const produitSchema = new mongoose.Schema({
   images: [{
     type: String
   }],
+  /** Visuel dédié aux cartes produit sur la page d’accueil (aperçu) */
+  imageCarteHome: {
+    type: String,
+    default: null
+  },
+  /** Grande bannière affichée à l’ouverture / zoom du produit */
+  banniereProduit: {
+    type: String,
+    default: null
+  },
   categorieProduit: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'CategorieProduit'
