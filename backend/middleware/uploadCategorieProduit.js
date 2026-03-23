@@ -1,21 +1,11 @@
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-
-const dir = path.join(__dirname, '../uploads/categories-produit');
-if (!fs.existsSync(dir)) {
-  fs.mkdirSync(dir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, dir),
-  filename: (req, file, cb) => {
-    cb(null, `cat-${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`);
-  }
-});
+const { createCloudinaryStorage } = require('./cloudinaryStorage');
 
 const upload = multer({
-  storage,
+  storage: createCloudinaryStorage({
+    folder: 'categories-produit',
+    publicIdPrefix: 'catprod',
+  }),
   limits: { fileSize: 500 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) cb(null, true);

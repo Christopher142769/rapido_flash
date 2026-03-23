@@ -10,7 +10,7 @@ const router = express.Router();
 
 function isAllowedUploadRef(p) {
   const s = String(p || '').trim();
-  return s.startsWith('/uploads/') && !s.includes('..');
+  return ((s.startsWith('/uploads/') || (s.startsWith('http') && s.includes('cloudinary.com'))) && !s.includes('..'));
 }
 
 // Liste pour un restaurant (public)
@@ -261,15 +261,15 @@ router.post('/', auth, isRestaurant, upload.fields(uploadProductFields), async (
       data.nomAfficheAccueilEn = v || null;
     }
     if (mainFile) {
-      data.images = [`/uploads/produits/${mainFile.filename}`];
+      data.images = [mainFile.path];
     } else if (req.body.galleryImagePath && isAllowedUploadRef(req.body.galleryImagePath)) {
       data.images = [String(req.body.galleryImagePath).trim()];
     }
     if (carteFile) {
-      data.imageCarteHome = `/uploads/produits/${carteFile.filename}`;
+      data.imageCarteHome = carteFile.path;
     }
     if (banniereFile) {
-      data.banniereProduit = `/uploads/produits/${banniereFile.filename}`;
+      data.banniereProduit = banniereFile.path;
     }
     if (!carteFile && req.body.imageCarteHome && isAllowedUploadRef(req.body.imageCarteHome)) {
       data.imageCarteHome = String(req.body.imageCarteHome).trim();
@@ -319,7 +319,7 @@ router.put('/:id', auth, isRestaurant, upload.fields(uploadProductFields), async
     if (req.body.categorieProduitId !== undefined) prod.categorieProduit = req.body.categorieProduitId || null;
     if (req.body.disponible !== undefined) prod.disponible = !!req.body.disponible;
     if (mainFile) {
-      const newImg = `/uploads/produits/${mainFile.filename}`;
+      const newImg = mainFile.path;
       prod.images = Array.isArray(prod.images) && prod.images.length
         ? [...prod.images, newImg]
         : [newImg];
@@ -328,10 +328,10 @@ router.put('/:id', auth, isRestaurant, upload.fields(uploadProductFields), async
       prod.images = Array.isArray(prod.images) && prod.images.length ? [...prod.images, gp] : [gp];
     }
     if (carteFile) {
-      prod.imageCarteHome = `/uploads/produits/${carteFile.filename}`;
+      prod.imageCarteHome = carteFile.path;
     }
     if (banniereFile) {
-      prod.banniereProduit = `/uploads/produits/${banniereFile.filename}`;
+      prod.banniereProduit = banniereFile.path;
     }
     // Chemins issus de la médiathèque (multipart texte) si pas de nouveau fichier
     if (!carteFile && req.body.imageCarteHome !== undefined) {

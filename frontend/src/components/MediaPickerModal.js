@@ -63,7 +63,11 @@ const MediaPickerModal = ({ open, onClose, onSelect, title }) => {
                   onClose();
                 }}
               >
-                <img src={`${BASE_URL}${m.path}`} alt="" loading="lazy" />
+                <img
+                  src={String(m.path).startsWith('http') ? m.path : `${BASE_URL}${m.path}`}
+                  alt=""
+                  loading="lazy"
+                />
               </button>
             ))}
           </div>

@@ -65,9 +65,11 @@ router.post('/', auth, isRestaurant, upload.single('image'), async (req, res) =>
       ordre: ordre ? parseInt(ordre, 10) : 0
     };
     if (req.file) {
-      data.image = `/uploads/categories-produit/${req.file.filename}`;
-    } else if (req.body.imagePath && String(req.body.imagePath).startsWith('/uploads/') && !String(req.body.imagePath).includes('..')) {
-      data.image = String(req.body.imagePath).trim();
+      data.image = req.file.path;
+    } else if (req.body.imagePath) {
+      const v = String(req.body.imagePath).trim();
+      const safe = (v.startsWith('/uploads/') || v.startsWith('http')) && !v.includes('..');
+      if (safe) data.image = v;
     }
     const cat = new CategorieProduit(data);
     await cat.save();
@@ -92,11 +94,11 @@ router.put('/:id', auth, isRestaurant, upload.single('image'), async (req, res) 
     if (req.body.nom) cat.nom = req.body.nom.trim();
     if (req.body.nomEn !== undefined) cat.nomEn = String(req.body.nomEn || '').trim();
     if (req.body.ordre !== undefined) cat.ordre = parseInt(req.body.ordre, 10);
-    if (req.file) cat.image = `/uploads/categories-produit/${req.file.filename}`;
+    if (req.file) cat.image = req.file.path;
     if (req.body.imagePath !== undefined) {
       const v = String(req.body.imagePath || '').trim();
       if (v === '') cat.image = null;
-      else if (v.startsWith('/uploads/') && !v.includes('..')) cat.image = v;
+      else if ((v.startsWith('/uploads/') || v.startsWith('http')) && !v.includes('..')) cat.image = v;
     }
     await cat.save();
     res.json(cat);

@@ -30,17 +30,17 @@ function phoneToWa(phone) {
 }
 
 function productThumbUrl(produit, baseUrl, index) {
-  if (produit?.image) return `${baseUrl}${produit.image}`;
+  if (produit?.image) return String(produit.image).startsWith('http') ? produit.image : `${baseUrl}${produit.image}`;
   return generateBannerPlaceholderSVG(index);
 }
 
 /** Image mise en avant : visuel dédié accueil, sinon bannière, sinon 1er produit aperçu */
 function structureSpotlightImageUrl(structure, baseUrl) {
   if (structure.visuelCarteAccueil && !structure.visuelCarteAccueil.includes('placeholder.com')) {
-    return `${baseUrl}${structure.visuelCarteAccueil}`;
+    return String(structure.visuelCarteAccueil).startsWith('http') ? structure.visuelCarteAccueil : `${baseUrl}${structure.visuelCarteAccueil}`;
   }
   if (structure.banniere && !structure.banniere.includes('placeholder.com')) {
-    return `${baseUrl}${structure.banniere}`;
+    return String(structure.banniere).startsWith('http') ? structure.banniere : `${baseUrl}${structure.banniere}`;
   }
   const first = structure.produitsApercu?.[0];
   return productThumbUrl(first, baseUrl, 0);
@@ -50,9 +50,9 @@ function structureSpotlightImageUrl(structure, baseUrl) {
 function productHitImageSrc(produit, baseUrl, idx) {
   const carte = produit.imageCarteHome;
   if (carte && String(carte).trim() && !String(carte).includes('placeholder.com')) {
-    return `${baseUrl}${carte}`;
+    return String(carte).startsWith('http') ? carte : `${baseUrl}${carte}`;
   }
-  if (produit.images?.[0]) return `${baseUrl}${produit.images[0]}`;
+  if (produit.images?.[0]) return String(produit.images[0]).startsWith('http') ? produit.images[0] : `${baseUrl}${produit.images[0]}`;
   return generateBannerPlaceholderSVG(idx);
 }
 
@@ -197,7 +197,62 @@ const Home = () => {
   });
 
   const productQueryActive = searchTerm.trim().length >= 2;
-  const showStructures = !productQueryActive || productSearchResults.length === 0;
+  // En mode recherche produit : on montre la liste de résultats (et éventuellement les structures en cas de vide)
+  // Hors recherche : la Home doit afficher les produits des structures (selon la catégorie de domaine choisie).
+  const showStructures = productQueryActive ? productSearchResults.length === 0 : false;
+
+  const homeProducts = !productQueryActive
+    ? filteredStructures.flatMap((s) =>
+        (s.produitsApercu || []).map((p) => ({
+          ...p,
+          productId: p.productId || p._id,
+          restaurantId: p.restaurantId || s._id,
+          restaurant: s,
+          // Pour réutiliser les helpers existants côté Home
+          imageCarteHome: p.image || null,
+          images: p.image ? [p.image] : [],
+        }))
+      )
+    : [];
+
+  const addProductFromHome = (previewProduit) => {
+    if (!previewProduit?.productId || !previewProduit?.restaurantId) return;
+
+    let newCart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const pid = previewProduit.productId;
+    const rid = previewProduit.restaurantId;
+    const imageUrl = previewProduit.image || null;
+
+    const existing = newCart.find(
+      (item) => String(item.productId) === String(pid) && String(item.restaurantId) === String(rid)
+    );
+
+    if (existing) {
+      newCart = newCart.map((item) =>
+        String(item.productId) === String(pid) && String(item.restaurantId) === String(rid)
+          ? { ...item, quantite: item.quantite + 1 }
+          : item
+      );
+    } else {
+      newCart = [
+        ...newCart,
+        {
+          productId: pid,
+          nom: previewProduit.nom,
+          nomEn: previewProduit.nomEn,
+          nomAfficheAccueil: previewProduit.nomAfficheAccueil,
+          nomAfficheAccueilEn: previewProduit.nomAfficheAccueilEn,
+          prix: previewProduit.prix,
+          image: imageUrl,
+          quantite: 1,
+          restaurantId: rid,
+        },
+      ];
+    }
+
+    localStorage.setItem('cart', JSON.stringify(newCart));
+    setCartCount(newCart.reduce((sum, item) => sum + item.quantite, 0));
+  };
 
   const addProductFromSearch = (produit, restaurantId) => {
     if (!produit?._id || !restaurantId) return;
@@ -405,9 +460,10 @@ const Home = () => {
         <div className="banners-carousel-mobile">
           <div className="banners-wrapper" style={{ transform: `translateX(-${currentBannerIndex * 100}%)` }}>
             {bannieres.map((banniere, index) => {
-              const imageUrl = banniere.image && !banniere.image.includes('placeholder.com')
-                ? `${BASE_URL}${banniere.image}`
-                : generateBannerPlaceholderSVG(index);
+              const imageUrl =
+                banniere.image && !banniere.image.includes('placeholder.com')
+                  ? (String(banniere.image).startsWith('http') ? banniere.image : `${BASE_URL}${banniere.image}`)
+                  : generateBannerPlaceholderSVG(index);
               return (
                 <div key={banniere._id} className="banner-slide">
                   <img
@@ -465,6 +521,83 @@ const Home = () => {
             </div>
           </>
         )}
+        {!productQueryActive && !error && homeProducts.length === 0 && (
+          <div className="no-results">
+            <p>{t('home', 'allProductsEmpty')}</p>
+          </div>
+        )}
+
+        {!productQueryActive && !error && homeProducts.length > 0 && (
+          <section id="section-home-products" className="home-product-search-section home-product-search--mobile">
+            <h2 className="home-product-search-title">{t('home', 'allProductsTitle')}</h2>
+            <div className="home-product-hits-grid">
+              {homeProducts.map((produit, idx) => {
+                const restaurantId = produit.restaurantId;
+                const productId = produit.productId;
+                const r = produit.restaurant;
+                const imgSrc = productHitImageSrc(produit, BASE_URL, idx);
+
+                return (
+                  <article
+                    key={`${productId}-${restaurantId}`}
+                    className="home-product-hit-card"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => navigate(`/restaurant/${restaurantId}?produit=${productId}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        navigate(`/restaurant/${restaurantId}?produit=${productId}`);
+                      }
+                    }}
+                  >
+                    <div className="home-product-hit-media">
+                      <img
+                        src={imgSrc}
+                        alt=""
+                        onError={(e) => {
+                          e.target.src = generateBannerPlaceholderSVG(idx);
+                        }}
+                      />
+                    </div>
+                    <div className="home-product-hit-body">
+                      <h3 className="home-product-hit-name">{productDisplayName(produit)}</h3>
+                      <p className="home-product-hit-shop">{localized(r, 'nom') || '—'}</p>
+                      <div className="home-product-hit-row">
+                        <span className="home-product-hit-price">{Number(produit.prix).toFixed(0)} FCFA</span>
+                      </div>
+                      <div className="home-product-hit-actions">
+                        <button
+                          type="button"
+                          className="home-product-hit-btn home-product-hit-btn-secondary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/restaurant/${restaurantId}?produit=${productId}`);
+                          }}
+                        >
+                          {t('home', 'openShop')}
+                        </button>
+                        <button
+                          type="button"
+                          className="home-product-hit-btn home-product-hit-btn-cart"
+                          title={t('home', 'addToCartShort')}
+                          aria-label={t('home', 'addToCartShort')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addProductFromHome(produit);
+                          }}
+                        >
+                          <FaPlus size={18} aria-hidden />
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {error && <div className="no-results"><p>{error}</p></div>}
         {!error && showStructures && filteredStructures.length === 0 && (
           <div className="no-results">
@@ -533,7 +666,10 @@ const Home = () => {
           {bannieres.length > 0 ? (
             <div className="hero-carousel-desktop" style={{ transform: `translateX(-${currentBannerIndex * 100}%)` }}>
               {bannieres.map((banniere, index) => {
-                const imageUrl = banniere.image && !banniere.image.includes('placeholder.com') ? `${BASE_URL}${banniere.image}` : generateBannerPlaceholderSVG(index);
+                const imageUrl =
+                  banniere.image && !banniere.image.includes('placeholder.com')
+                    ? (String(banniere.image).startsWith('http') ? banniere.image : `${BASE_URL}${banniere.image}`)
+                    : generateBannerPlaceholderSVG(index);
                 return <img key={banniere._id} src={imageUrl} alt="" className="hero-carousel-img-desktop" onError={(e) => { e.target.src = generateBannerPlaceholderSVG(index); }} />;
               })}
             </div>
@@ -588,6 +724,83 @@ const Home = () => {
                 <button type="button" className="categories-scroll-arrow right" onClick={() => categoriesScrollRef.current?.scrollBy({ left: 200, behavior: 'smooth' })} aria-label={t('home', 'next')}>
                   <IoChevronForward size={22} aria-hidden />
                 </button>
+              </div>
+            </section>
+          )}
+
+          {!productQueryActive && !error && homeProducts.length === 0 && (
+            <div className="no-results-desktop">
+              <p>{t('home', 'allProductsEmpty')}</p>
+            </div>
+          )}
+
+          {!productQueryActive && !error && homeProducts.length > 0 && (
+            <section id="section-home-products" className="home-product-search-section home-product-search--desktop">
+              <h2 className="home-product-search-title">{t('home', 'allProductsTitle')}</h2>
+              <div className="home-product-hits-grid">
+                {homeProducts.map((produit, idx) => {
+                  const restaurantId = produit.restaurantId;
+                  const productId = produit.productId;
+                  const r = produit.restaurant;
+                  const imgSrc = productHitImageSrc(produit, BASE_URL, idx);
+
+                  return (
+                    <article
+                      key={`${productId}-${restaurantId}`}
+                      className="home-product-hit-card"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => navigate(`/restaurant/${restaurantId}?produit=${productId}`)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          navigate(`/restaurant/${restaurantId}?produit=${productId}`);
+                        }
+                      }}
+                    >
+                      <div className="home-product-hit-media">
+                        <img
+                          src={imgSrc}
+                          alt=""
+                          onError={(e) => {
+                            e.target.src = generateBannerPlaceholderSVG(idx);
+                          }}
+                        />
+                      </div>
+                      <div className="home-product-hit-body">
+                        <h3 className="home-product-hit-name">{productDisplayName(produit)}</h3>
+                        <p className="home-product-hit-shop">{localized(r, 'nom') || '—'}</p>
+                        <div className="home-product-hit-row">
+                          <span className="home-product-hit-price">{Number(produit.prix).toFixed(0)} FCFA</span>
+                        </div>
+                        <div className="home-product-hit-actions">
+                          <button
+                            type="button"
+                            className="home-product-hit-btn home-product-hit-btn-secondary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/restaurant/${restaurantId}?produit=${productId}`);
+                            }}
+                          >
+                            {t('home', 'openShop')}
+                          </button>
+                          <button
+                            type="button"
+                            className="home-product-hit-btn home-product-hit-btn-cart"
+                            title={t('home', 'addToCartShort')}
+                            aria-label={t('home', 'addToCartShort')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addProductFromHome(produit);
+                            }}
+                          >
+                            <FaPlus size={18} aria-hidden />
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             </section>
           )}

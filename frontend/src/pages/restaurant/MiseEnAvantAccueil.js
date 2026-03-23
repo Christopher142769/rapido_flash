@@ -176,7 +176,7 @@ const MiseEnAvantAccueil = () => {
                         <div className="vitrine-cell">
                           <div className="vitrine-thumb">
                             {p.imageCarteHome ? (
-                              <img src={`${BASE_URL}${p.imageCarteHome}`} alt="" />
+                              <img src={String(p.imageCarteHome).startsWith('http') ? p.imageCarteHome : `${BASE_URL}${p.imageCarteHome}`} alt="" />
                             ) : (
                               <span className="vitrine-ph">—</span>
                             )}
@@ -201,7 +201,7 @@ const MiseEnAvantAccueil = () => {
                         <div className="vitrine-cell">
                           <div className="vitrine-thumb">
                             {p.banniereProduit ? (
-                              <img src={`${BASE_URL}${p.banniereProduit}`} alt="" />
+                              <img src={String(p.banniereProduit).startsWith('http') ? p.banniereProduit : `${BASE_URL}${p.banniereProduit}`} alt="" />
                             ) : (
                               <span className="vitrine-ph">—</span>
                             )}

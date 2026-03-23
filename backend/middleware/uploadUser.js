@@ -1,26 +1,5 @@
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-
-// Créer le dossier uploads/users/photos s'il n'existe pas
-const usersDir = path.join(__dirname, '../uploads/users');
-const photosDir = path.join(usersDir, 'photos');
-
-[usersDir, photosDir].forEach(dir => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-});
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, photosDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, `photo-${uniqueSuffix}${path.extname(file.originalname)}`);
-  }
-});
+const { createCloudinaryStorage } = require('./cloudinaryStorage');
 
 const fileFilter = (req, file, cb) => {
   if (file.mimetype.startsWith('image/')) {
@@ -34,7 +13,10 @@ const fileFilter = (req, file, cb) => {
 };
 
 const uploadUser = multer({
-  storage: storage,
+  storage: createCloudinaryStorage({
+    folder: 'users/photos',
+    publicIdPrefix: 'user-photo',
+  }),
   limits: {
     fileSize: 500 * 1024 * 1024 // 500MB max
   },

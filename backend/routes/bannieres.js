@@ -5,6 +5,15 @@ const { auth, isRestaurant } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const path = require('path');
 const fs = require('fs');
+const { cloudinary } = require('../utils/cloudinaryClient');
+
+function getCloudinaryPublicIdFromUrl(url) {
+  if (!url || typeof url !== 'string') return null;
+  // Exemple :
+  // https://res.cloudinary.com/<cloud>/image/upload/v1712345678/folder/public_id.jpg
+  const m = url.match(/\/upload\/v\d+\/(.+?)\.[a-zA-Z0-9]+$/);
+  return m && m[1] ? m[1] : null;
+}
 
 // Récupérer toutes les bannières actives (public)
 router.get('/', async (req, res) => {
@@ -47,7 +56,8 @@ router.post('/from-media', auth, async (req, res) => {
   try {
     const { imagePath, restaurantId } = req.body;
     const p = String(imagePath || '').trim();
-    if (!p.startsWith('/uploads/') || p.includes('..')) {
+    const safe = ((p.startsWith('/uploads/') || (p.startsWith('http') && p.includes('cloudinary.com'))) && !p.includes('..'));
+    if (!safe) {
       return res.status(400).json({ message: 'Chemin image invalide' });
     }
     const count = await Banniere.countDocuments();
@@ -70,7 +80,7 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
       return res.status(400).json({ message: 'Aucune image fournie' });
     }
 
-    const imageUrl = `/uploads/banners/${req.file.filename}`;
+    const imageUrl = req.file.path;
     const { restaurantId } = req.body;
     
     // Compter les bannières existantes pour définir l'ordre
@@ -118,14 +128,24 @@ router.delete('/:id', auth, async (req, res) => {
       return res.status(404).json({ message: 'Bannière non trouvée' });
     }
 
-    // Supprimer le fichier seulement si stocké dans uploads/banners (pas médiathèque partagée)
-    const rel = String(banniere.image || '').replace(/^\//, '');
-    if (rel.startsWith('uploads/banners/')) {
-      const imagePath = path.join(__dirname, '..', rel);
-      if (fs.existsSync(imagePath)) {
+    // Si Cloudinary, détruire; sinon ancien comportement (uploads/banners)
+    if (String(banniere.image || '').startsWith('http') && String(banniere.image || '').includes('cloudinary.com')) {
+      const publicId = getCloudinaryPublicIdFromUrl(banniere.image);
+      if (publicId) {
         try {
-          fs.unlinkSync(imagePath);
+          await cloudinary.uploader.destroy(publicId);
         } catch (_) {}
+      }
+    } else {
+      // Supprimer le fichier seulement si stocké dans uploads/banners (pas médiathèque partagée)
+      const rel = String(banniere.image || '').replace(/^\//, '');
+      if (rel.startsWith('uploads/banners/')) {
+        const imagePath = path.join(__dirname, '..', rel);
+        if (fs.existsSync(imagePath)) {
+          try {
+            fs.unlinkSync(imagePath);
+          } catch (_) {}
+        }
       }
     }
 

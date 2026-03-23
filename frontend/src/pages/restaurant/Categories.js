@@ -111,7 +111,7 @@ const Categories = () => {
   const handleEdit = (cat) => {
     setEditingCat(cat);
     setFormData({ nom: cat.nom, nomEn: cat.nomEn || '', ordre: cat.ordre != null ? cat.ordre : '' });
-    setImagePreview(cat.image ? `${BASE_URL}${cat.image}` : null);
+    setImagePreview(cat.image ? (String(cat.image).startsWith('http') ? cat.image : `${BASE_URL}${cat.image}`) : null);
     setImagePathOverride(undefined);
     setShowForm(true);
   };
@@ -163,7 +163,7 @@ const Categories = () => {
           {categories.map((cat) => (
             <div key={cat._id} className="category-card category-card-admin">
               {cat.image ? (
-                <img src={`${BASE_URL}${cat.image}`} alt={cat.nom} className="category-icon-img" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} />
+                <img src={String(cat.image).startsWith('http') ? cat.image : `${BASE_URL}${cat.image}`} alt={cat.nom} className="category-icon-img" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} />
               ) : (
                 <span className="category-icon">📦</span>
               )}
@@ -225,7 +225,7 @@ const Categories = () => {
                   onClose={() => setMediaPickerOpen(false)}
                   onSelect={(path) => {
                     setImagePathOverride(path);
-                    setImagePreview(`${BASE_URL}${path}`);
+                    setImagePreview(String(path).startsWith('http') ? path : `${BASE_URL}${path}`);
                     setMediaPickerOpen(false);
                   }}
                   title="Image de la catégorie produit"

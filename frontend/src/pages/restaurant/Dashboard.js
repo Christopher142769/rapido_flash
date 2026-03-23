@@ -206,9 +206,9 @@ const Dashboard = () => {
       commanderVeille: !!resto?.commanderVeille
     });
     if (resto?.position?.latitude) setPosition([resto.position.latitude, resto.position.longitude]);
-    setLogoPreview(resto?.logo ? `${BASE_URL}${resto.logo}` : null);
-    setBannierePreview(resto?.banniere ? `${BASE_URL}${resto.banniere}` : null);
-    setVisuelCartePreview(resto?.visuelCarteAccueil ? `${BASE_URL}${resto.visuelCarteAccueil}` : null);
+    setLogoPreview(resto?.logo ? (String(resto.logo).startsWith('http') ? resto.logo : `${BASE_URL}${resto.logo}`) : null);
+    setBannierePreview(resto?.banniere ? (String(resto.banniere).startsWith('http') ? resto.banniere : `${BASE_URL}${resto.banniere}`) : null);
+    setVisuelCartePreview(resto?.visuelCarteAccueil ? (String(resto.visuelCarteAccueil).startsWith('http') ? resto.visuelCarteAccueil : `${BASE_URL}${resto.visuelCarteAccueil}`) : null);
     setLogoPathOverride(undefined);
     setBannierePathOverride(undefined);
     setVisuelCartePathOverride(undefined);
@@ -318,13 +318,13 @@ const Dashboard = () => {
   const onStructureMediaPicked = (path) => {
     if (mediaPickerTarget === 'logo') {
       setLogoPathOverride(path);
-      setLogoPreview(`${BASE_URL}${path}`);
+      setLogoPreview(String(path).startsWith('http') ? path : `${BASE_URL}${path}`);
     } else if (mediaPickerTarget === 'banniere') {
       setBannierePathOverride(path);
-      setBannierePreview(`${BASE_URL}${path}`);
+      setBannierePreview(String(path).startsWith('http') ? path : `${BASE_URL}${path}`);
     } else if (mediaPickerTarget === 'visuelCarte') {
       setVisuelCartePathOverride(path);
-      setVisuelCartePreview(`${BASE_URL}${path}`);
+      setVisuelCartePreview(String(path).startsWith('http') ? path : `${BASE_URL}${path}`);
     }
     setMediaPickerTarget(null);
   };

@@ -106,7 +106,10 @@ const Orders = () => {
                 <div className="order-header">
                   <div className="order-restaurant">
                     {commande.restaurant?.logo && (
-                      <img src={`${BASE_URL}${commande.restaurant.logo}`} alt={commande.restaurant.nom} />
+                      <img
+                        src={String(commande.restaurant.logo).startsWith('http') ? commande.restaurant.logo : `${BASE_URL}${commande.restaurant.logo}`}
+                        alt={commande.restaurant.nom}
+                      />
                     )}
                     <div>
                       <h3>{commande.restaurant?.nom}</h3>

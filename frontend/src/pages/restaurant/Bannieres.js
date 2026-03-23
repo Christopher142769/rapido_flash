@@ -57,7 +57,7 @@ const Bannieres = () => {
 
   const onMediaChosen = (path) => {
     setSelectedMediaPath(path);
-    setPreview(`${BASE_URL}${path}`);
+    setPreview(String(path).startsWith('http') ? path : `${BASE_URL}${path}`);
     setMediaPickerOpen(false);
   };
 

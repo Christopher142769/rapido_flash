@@ -11,7 +11,7 @@ const router = express.Router();
 function isAllowedStoredPath(p) {
   const s = String(p || '').trim();
   if (!s) return false;
-  if (!s.startsWith('/uploads/')) return false;
+  if (!s.startsWith('/uploads/') && !(s.startsWith('http') && s.includes('cloudinary.com'))) return false;
   if (s.includes('..')) return false;
   return true;
 }
@@ -71,7 +71,7 @@ router.get('/', async (req, res) => {
       }).sort((a, b) => a.distance - b.distance);
     }
 
-    // Aperçu produits (jusqu’à 4 images) pour les cartes home
+    // Aperçu produits pour les cartes home (tous les produits disponibles)
     const ids = list.map((r) => r._id);
     const produits = await Produit.find({ restaurant: { $in: ids }, disponible: true })
       .sort({ createdAt: -1 })
@@ -84,21 +84,21 @@ router.get('/', async (req, res) => {
     for (const p of produits) {
       const rid = p.restaurant.toString();
       if (!byRest[rid]) byRest[rid] = [];
-      if (byRest[rid].length < 4) {
-        const thumb =
-          (p.imageCarteHome && String(p.imageCarteHome).trim()) ||
-          (p.images && p.images[0]) ||
-          null;
-        const label = (p.nomAfficheAccueil && String(p.nomAfficheAccueil).trim()) || p.nom;
-        byRest[rid].push({
-          nom: label,
-          nomEn: p.nomEn,
-          nomAfficheAccueil: p.nomAfficheAccueil,
-          nomAfficheAccueilEn: p.nomAfficheAccueilEn,
-          prix: p.prix,
-          image: thumb
-        });
-      }
+      const thumb =
+        (p.imageCarteHome && String(p.imageCarteHome).trim()) ||
+        (p.images && p.images[0]) ||
+        null;
+      const label = (p.nomAfficheAccueil && String(p.nomAfficheAccueil).trim()) || p.nom;
+      byRest[rid].push({
+        productId: p._id,
+        restaurantId: p.restaurant,
+        nom: label,
+        nomEn: p.nomEn,
+        nomAfficheAccueil: p.nomAfficheAccueil,
+        nomAfficheAccueilEn: p.nomAfficheAccueilEn,
+        prix: p.prix,
+        image: thumb
+      });
     }
 
     const enriched = list.map((r) => ({
@@ -318,11 +318,11 @@ router.post('/', auth, isRestaurant, uploadRestaurant.fields([
 
     // Ajouter les fichiers si présents
     if (req.files?.logo) {
-      restaurantData.logo = `/uploads/restaurants/logos/${req.files.logo[0].filename}`;
+      restaurantData.logo = req.files.logo[0].path;
     }
 
     if (req.files?.banniere) {
-      restaurantData.banniere = `/uploads/restaurants/banners/${req.files.banniere[0].filename}`;
+      restaurantData.banniere = req.files.banniere[0].path;
     }
     if (!restaurantData.logo && req.body.logoPath && isAllowedStoredPath(req.body.logoPath)) {
       restaurantData.logo = String(req.body.logoPath).trim();
@@ -446,10 +446,10 @@ router.put('/:id', auth, uploadRestaurant.fields([
 
     // Gérer les uploads de fichiers
     if (req.files?.logo) {
-      restaurant.logo = `/uploads/restaurants/logos/${req.files.logo[0].filename}`;
+      restaurant.logo = req.files.logo[0].path;
     }
     if (req.files?.banniere) {
-      restaurant.banniere = `/uploads/restaurants/banners/${req.files.banniere[0].filename}`;
+      restaurant.banniere = req.files.banniere[0].path;
     }
     if (req.body.logoPath !== undefined) {
       const v = String(req.body.logoPath || '').trim();

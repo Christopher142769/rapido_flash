@@ -4,8 +4,15 @@ const { auth } = require('../middleware/auth');
 const uploadUser = require('../middleware/uploadUser');
 const fs = require('fs');
 const path = require('path');
+const { cloudinary } = require('../utils/cloudinaryClient');
 
 const router = express.Router();
+
+function getCloudinaryPublicIdFromUrl(url) {
+  if (!url || typeof url !== 'string') return null;
+  const m = url.match(/\/upload\/v\d+\/(.+?)\.[a-zA-Z0-9]+$/);
+  return m && m[1] ? m[1] : null;
+}
 
 // Middleware pour parser JSON et URL-encoded pour cette route uniquement
 router.use(express.json({ limit: '100mb' }));
@@ -92,14 +99,27 @@ router.put('/photo', auth, uploadUser.single('photo'), async (req, res) => {
 
     // Supprimer l'ancienne photo si elle existe
     if (user.photo) {
-      const oldPhotoPath = path.join(__dirname, '..', user.photo);
-      if (fs.existsSync(oldPhotoPath)) {
-        fs.unlinkSync(oldPhotoPath);
+      if (String(user.photo).startsWith('http') && String(user.photo).includes('cloudinary.com')) {
+        const publicId = getCloudinaryPublicIdFromUrl(user.photo);
+        if (publicId) {
+          try {
+            await cloudinary.uploader.destroy(publicId);
+          } catch (_) {
+            // ignore
+          }
+        }
+      } else {
+        const oldPhotoPath = path.join(__dirname, '..', user.photo);
+        if (fs.existsSync(oldPhotoPath)) {
+          try {
+            fs.unlinkSync(oldPhotoPath);
+          } catch (_) {}
+        }
       }
     }
 
-    // Mettre à jour la photo
-    user.photo = `/uploads/users/photos/${req.file.filename}`;
+    // Mettre à jour la photo (Cloudinary)
+    user.photo = req.file.path;
     await user.save();
 
     res.json({ 

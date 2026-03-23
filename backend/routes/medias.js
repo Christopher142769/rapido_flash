@@ -5,6 +5,7 @@ const Media = require('../models/Media');
 const Restaurant = require('../models/Restaurant');
 const { auth, isRestaurant } = require('../middleware/auth');
 const upload = require('../middleware/uploadMedia');
+const { cloudinary } = require('../utils/cloudinaryClient');
 
 const router = express.Router();
 
@@ -58,7 +59,10 @@ router.post('/', auth, isRestaurant, upload.array('files', 30), async (req, res)
 
     const created = [];
     for (const f of files) {
-      const relPath = `/uploads/medias/${f.filename}`;
+      // CloudinaryStorage renvoie :
+      // - f.path = secure_url
+      // - f.filename = public_id
+      const relPath = f.path;
       const doc = await Media.create({
         owner: req.user._id,
         path: relPath,
@@ -85,11 +89,13 @@ router.delete('/:id', auth, isRestaurant, async (req, res) => {
       return res.status(403).json({ message: 'Accès refusé' });
     }
 
-    const abs = path.join(__dirname, '..', m.path.replace(/^\//, ''));
-    if (fs.existsSync(abs)) {
-      try {
-        fs.unlinkSync(abs);
-      } catch (_) {}
+    // Si c’est Cloudinary, détruire le public_id ; sinon on laisse tel quel (ancienne compat).
+    try {
+      if (m.filename) {
+        await cloudinary.uploader.destroy(m.filename);
+      }
+    } catch (_) {
+      // ignore
     }
     await Media.findByIdAndDelete(req.params.id);
     res.json({ message: 'Média supprimé' });

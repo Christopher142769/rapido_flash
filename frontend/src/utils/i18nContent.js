@@ -45,6 +45,6 @@ export function pickProductDisplayName(language, p) {
 export function structureProductNamesText(structure, t, productDisplayName) {
   const fn = typeof productDisplayName === 'function' ? productDisplayName : (p) => pickProductDisplayName('fr', p);
   const names = (structure.produitsApercu || []).map((p) => fn(p)).filter(Boolean);
-  if (names.length) return names.slice(0, 6).join(' · ');
+  if (names.length) return names.join(' · ');
   return t('home', 'noProductsPreview');
 }

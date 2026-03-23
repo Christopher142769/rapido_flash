@@ -34,9 +34,9 @@ const JOUR_LABELS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendred
 function productCardImageSrc(produit, baseUrl) {
   const carte = produit.imageCarteHome;
   if (carte && String(carte).trim() && !String(carte).includes('placeholder.com')) {
-    return `${baseUrl}${carte}`;
+    return String(carte).startsWith('http') ? carte : `${baseUrl}${carte}`;
   }
-  if (produit.images?.[0]) return `${baseUrl}${produit.images[0]}`;
+  if (produit.images?.[0]) return String(produit.images[0]).startsWith('http') ? produit.images[0] : `${baseUrl}${produit.images[0]}`;
   return null;
 }
 
@@ -44,9 +44,9 @@ function productCardImageSrc(produit, baseUrl) {
 function productOpenImageSrc(produit, baseUrl) {
   const ban = produit.banniereProduit;
   if (ban && String(ban).trim() && !String(ban).includes('placeholder.com')) {
-    return `${baseUrl}${ban}`;
+    return String(ban).startsWith('http') ? ban : `${baseUrl}${ban}`;
   }
-  if (produit.images?.[0]) return `${baseUrl}${produit.images[0]}`;
+  if (produit.images?.[0]) return String(produit.images[0]).startsWith('http') ? produit.images[0] : `${baseUrl}${produit.images[0]}`;
   return null;
 }
 
@@ -262,9 +262,10 @@ const RestaurantDetail = () => {
     );
   }
 
-  const bannerUrl = restaurant.banniere && !restaurant.banniere.includes('placeholder.com')
-    ? `${BASE_URL}${restaurant.banniere}`
-    : generateBannerPlaceholderSVG(0);
+  const bannerUrl =
+    restaurant.banniere && !restaurant.banniere.includes('placeholder.com')
+      ? (String(restaurant.banniere).startsWith('http') ? restaurant.banniere : `${BASE_URL}${restaurant.banniere}`)
+      : generateBannerPlaceholderSVG(0);
 
   const tel = (restaurant.telephone || '').trim();
   const waNumber = tel.replace(/\D/g, '');
@@ -315,7 +316,13 @@ const RestaurantDetail = () => {
         </button>
         <div className="store-info-card-mobile">
           <div className="store-info-logo-mobile">
-            {restaurant.logo ? <img src={`${BASE_URL}${restaurant.logo}`} alt={localized(restaurant, 'nom')} onError={(e) => { e.target.style.display = 'none'; if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex'; }} /> : null}
+            {restaurant.logo ? (
+              <img
+                src={String(restaurant.logo).startsWith('http') ? restaurant.logo : `${BASE_URL}${restaurant.logo}`}
+                alt={localized(restaurant, 'nom')}
+                onError={(e) => { e.target.style.display = 'none'; if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex'; }}
+              />
+            ) : null}
             <div className="store-info-logo-ph-mobile" style={{ display: restaurant.logo ? 'none' : 'flex' }}><FaStore size={28} aria-hidden /></div>
           </div>
           <h1 className="store-info-name-mobile">{localized(restaurant, 'nom')}</h1>
@@ -338,7 +345,11 @@ const RestaurantDetail = () => {
         </button>
         <div className="store-hero-logo-corner">
           {restaurant.logo ? (
-            <img src={`${BASE_URL}${restaurant.logo}`} alt={localized(restaurant, 'nom')} onError={(e) => { e.target.style.display = 'none'; if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex'; }} />
+            <img
+              src={String(restaurant.logo).startsWith('http') ? restaurant.logo : `${BASE_URL}${restaurant.logo}`}
+              alt={localized(restaurant, 'nom')}
+              onError={(e) => { e.target.style.display = 'none'; if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex'; }}
+            />
           ) : null}
           <div className="store-hero-logo-corner-placeholder" style={{ display: restaurant.logo ? 'none' : 'flex' }}><FaStore size={26} aria-hidden /></div>
         </div>
@@ -395,7 +406,15 @@ const RestaurantDetail = () => {
                   className={`category-btn category-btn-with-img ${selectedCategorieId === cat._id ? 'active' : ''}`}
                   onClick={() => setSelectedCategorieId(selectedCategorieId === cat._id ? null : cat._id)}
                 >
-                  {cat.image ? <img src={`${BASE_URL}${cat.image}`} alt={pickLocalized(language, cat, 'nom')} className="category-btn-img" /> : <span className="category-btn-emoji" aria-hidden><FaBoxOpen size={18} /></span>}
+                  {cat.image ? (
+                    <img
+                      src={String(cat.image).startsWith('http') ? cat.image : `${BASE_URL}${cat.image}`}
+                      alt={pickLocalized(language, cat, 'nom')}
+                      className="category-btn-img"
+                    />
+                  ) : (
+                    <span className="category-btn-emoji" aria-hidden><FaBoxOpen size={18} /></span>
+                  )}
                   <span>{pickLocalized(language, cat, 'nom')}</span>
                 </button>
               ))}

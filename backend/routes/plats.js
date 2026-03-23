@@ -124,7 +124,7 @@ router.post('/', auth, isRestaurant, uploadPlat.single('image'), async (req, res
     };
 
     if (req.file) {
-      platData.image = `/uploads/plats/${req.file.filename}`;
+      platData.image = req.file.path;
     } else if (req.body.image) {
       platData.image = req.body.image;
     }
@@ -155,7 +155,7 @@ router.put('/:id', auth, isRestaurant, uploadPlat.single('image'), async (req, r
 
     // Gérer l'upload d'image
     if (req.file) {
-      plat.image = `/uploads/plats/${req.file.filename}`;
+      plat.image = req.file.path;
     } else if (req.body.image) {
       plat.image = req.body.image;
     }

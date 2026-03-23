@@ -161,7 +161,11 @@ const RestaurantMedias = () => {
               {medias.map((m) => (
                 <div key={m._id} className="medias-card">
                   <div className="medias-thumb-wrap">
-                    <img src={`${BASE_URL}${m.path}`} alt="" loading="lazy" />
+                    <img
+                      src={String(m.path).startsWith('http') ? m.path : `${BASE_URL}${m.path}`}
+                      alt=""
+                      loading="lazy"
+                    />
                   </div>
                   <p className="medias-filename" title={m.originalName || m.filename}>
                     {m.originalName || m.filename}

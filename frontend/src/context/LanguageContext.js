@@ -47,6 +47,8 @@ export const translations = {
       freeDeliveryCotonou: 'La livraison est gratuite à Cotonou. Profitez-en pour commander vos produits préférés !',
       gotIt: "J'ai compris",
       hideBannerToday: 'Masquer pour 24 h',
+      allProductsTitle: 'Tous les produits',
+      allProductsEmpty: 'Aucun produit disponible pour cette catégorie.',
       noProductsPreview: 'Découvrir la carte',
     },
     settings: {
@@ -275,6 +277,8 @@ export const translations = {
       freeDeliveryCotonou: 'Delivery is free in Cotonou. Enjoy ordering your favorite products!',
       gotIt: 'Got it',
       hideBannerToday: 'Hide for 24h',
+      allProductsTitle: 'All products',
+      allProductsEmpty: 'No products available for this category.',
       noProductsPreview: 'See the menu',
     },
     settings: {

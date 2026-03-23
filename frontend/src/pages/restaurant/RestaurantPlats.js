@@ -172,13 +172,13 @@ const RestaurantPlats = () => {
       categorieProduitId: (p.categorieProduit && p.categorieProduit._id) || '',
       disponible: p.disponible !== false,
     });
-    const firstImg = (p.images && p.images[0]) ? `${BASE_URL}${p.images[0]}` : null;
+    const firstImg = (p.images && p.images[0]) ? (String(p.images[0]).startsWith('http') ? p.images[0] : `${BASE_URL}${p.images[0]}`) : null;
     setImagePreview(firstImg);
     setGalleryImagePath(null);
     setCartePath(p.imageCarteHome || null);
-    setPreviewCarteHome(p.imageCarteHome ? `${BASE_URL}${p.imageCarteHome}` : null);
+    setPreviewCarteHome(p.imageCarteHome ? (String(p.imageCarteHome).startsWith('http') ? p.imageCarteHome : `${BASE_URL}${p.imageCarteHome}`) : null);
     setBannierePath(p.banniereProduit || null);
-    setPreviewBanniere(p.banniereProduit ? `${BASE_URL}${p.banniereProduit}` : null);
+    setPreviewBanniere(p.banniereProduit ? (String(p.banniereProduit).startsWith('http') ? p.banniereProduit : `${BASE_URL}${p.banniereProduit}`) : null);
     setShowForm(true);
   };
 
@@ -197,13 +197,13 @@ const RestaurantPlats = () => {
   const onMediaPicked = (path) => {
     if (pickerField === 'carte') {
       setCartePath(path);
-      setPreviewCarteHome(`${BASE_URL}${path}`);
+      setPreviewCarteHome(String(path).startsWith('http') ? path : `${BASE_URL}${path}`);
     } else if (pickerField === 'banniere') {
       setBannierePath(path);
-      setPreviewBanniere(`${BASE_URL}${path}`);
+      setPreviewBanniere(String(path).startsWith('http') ? path : `${BASE_URL}${path}`);
     } else if (pickerField === 'galerie') {
       setGalleryImagePath(path);
-      setImagePreview(`${BASE_URL}${path}`);
+      setImagePreview(String(path).startsWith('http') ? path : `${BASE_URL}${path}`);
     }
     setPickerField(null);
   };
@@ -430,8 +430,10 @@ const RestaurantPlats = () => {
           <div className="plats-grid">
             {produits.map((p) => {
               const imgSrc =
-                (p.imageCarteHome && `${BASE_URL}${p.imageCarteHome}`) ||
-                (p.images && p.images[0] && `${BASE_URL}${p.images[0]}`) ||
+                (p.imageCarteHome &&
+                  (String(p.imageCarteHome).startsWith('http') ? p.imageCarteHome : `${BASE_URL}${p.imageCarteHome}`)) ||
+                (p.images && p.images[0] &&
+                  (String(p.images[0]).startsWith('http') ? p.images[0] : `${BASE_URL}${p.images[0]}`)) ||
                 getImageUrl(null, { nom: p.nom }, BASE_URL);
               return (
                 <div key={p._id} className="plat-card-admin">

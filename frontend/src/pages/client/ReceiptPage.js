@@ -115,7 +115,11 @@ const ReceiptPage = () => {
         <div className="receipt-logos">
           <div className="receipt-logo-wrap">
             {r?.logo && (
-              <img src={`${BASE_URL}${r.logo}`} alt="" className="receipt-logo-structure" />
+              <img
+                src={String(r.logo).startsWith('http') ? r.logo : `${BASE_URL}${r.logo}`}
+                alt=""
+                className="receipt-logo-structure"
+              />
             )}
             <span className="receipt-logo-label">{r?.nom}</span>
           </div>

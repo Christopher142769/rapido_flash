@@ -96,7 +96,12 @@ const Settings = () => {
       });
 
       // Mettre à jour l'utilisateur dans le contexte
-      const updatedUser = { ...user, photo: `${BASE_URL}${response.data.photo}` };
+      const updatedUser = {
+        ...user,
+        photo: String(response.data.photo).startsWith('http')
+          ? response.data.photo
+          : `${BASE_URL}${response.data.photo}`,
+      };
       setUser(updatedUser);
       
       showSuccess(t('settings', 'photoUpdated'));
