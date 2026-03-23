@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FaTruck, FaTimes, FaGift } from 'react-icons/fa';
 import './FreeDeliveryBanner.css';
 
@@ -7,6 +7,8 @@ const STORAGE_KEY = 'rapido_free_delivery_banner_dismissed_until';
 /** Bandeau jusqu’à fermeture — réapparaît après 24h. */
 const FreeDeliveryBanner = ({ message, dismissLabel = 'Masquer pour aujourd’hui' }) => {
   const [visible, setVisible] = useState(false);
+  const [offerOpen, setOfferOpen] = useState(false);
+  const wrapRef = useRef(null);
 
   useEffect(() => {
     try {
@@ -24,6 +26,16 @@ const FreeDeliveryBanner = ({ message, dismissLabel = 'Masquer pour aujourd’hu
     setVisible(true);
   }, []);
 
+  useEffect(() => {
+    if (!offerOpen) return;
+    const handleClickOutside = (e) => {
+      if (!wrapRef.current) return;
+      if (!wrapRef.current.contains(e.target)) setOfferOpen(false);
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [offerOpen]);
+
   const dismiss = () => {
     try {
       const until = Date.now() + 24 * 60 * 60 * 1000;
@@ -31,18 +43,33 @@ const FreeDeliveryBanner = ({ message, dismissLabel = 'Masquer pour aujourd’hu
     } catch (_) {
       /* ignore */
     }
+    setOfferOpen(false);
     setVisible(false);
   };
 
   if (!visible) return null;
 
   return (
-    <div className="free-delivery-banner" role="status" aria-live="polite">
+    <div className="free-delivery-banner" role="status" aria-live="polite" ref={wrapRef}>
       <div className="free-delivery-banner-inner">
-        <div className="free-delivery-banner-badge" aria-hidden>
+        <button
+          type="button"
+          className="free-delivery-banner-badge"
+          onClick={() => setOfferOpen((v) => !v)}
+          aria-label="Offre"
+          aria-expanded={offerOpen}
+        >
           <FaGift size={18} />
           <span>Offre</span>
-        </div>
+        </button>
+
+        {offerOpen && (
+          <div className="free-delivery-banner-popover" role="dialog" aria-live="polite">
+            <p className="free-delivery-banner-popover-title">Livraison</p>
+            <p className="free-delivery-banner-popover-text">{message}</p>
+          </div>
+        )}
+
         <span className="free-delivery-banner-icon" aria-hidden>
           <FaTruck size={22} />
         </span>
