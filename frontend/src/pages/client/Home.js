@@ -528,19 +528,25 @@ const Home = () => {
         )}
 
         {!productQueryActive && !error && homeProducts.length > 0 && (
-          <section id="section-home-products" className="home-product-search-section home-product-search--mobile">
+          <section
+            id="section-home-products"
+            className="home-product-search-section home-product-search--mobile"
+          >
             <h2 className="home-product-search-title">{t('home', 'allProductsTitle')}</h2>
-            <div className="home-product-hits-grid">
+            <div className="home-all-products-grid">
               {homeProducts.map((produit, idx) => {
                 const restaurantId = produit.restaurantId;
                 const productId = produit.productId;
                 const r = produit.restaurant;
                 const imgSrc = productHitImageSrc(produit, BASE_URL, idx);
+                const minutes = r?.distance != null ? distanceToMinutes(r.distance) : null;
+                const tel = (r?.telephone || '').trim();
+                const wa = phoneToWa(tel);
 
                 return (
                   <article
                     key={`${productId}-${restaurantId}`}
-                    className="home-product-hit-card"
+                    className="home-all-product-card"
                     role="button"
                     tabIndex={0}
                     onClick={() => navigate(`/restaurant/${restaurantId}?produit=${productId}`)}
@@ -551,44 +557,63 @@ const Home = () => {
                       }
                     }}
                   >
-                    <div className="home-product-hit-media">
+                    <div className="home-all-product-img-wrap">
                       <img
                         src={imgSrc}
                         alt=""
+                        className="home-all-product-img"
                         onError={(e) => {
                           e.target.src = generateBannerPlaceholderSVG(idx);
                         }}
                       />
                     </div>
-                    <div className="home-product-hit-body">
-                      <h3 className="home-product-hit-name">{productDisplayName(produit)}</h3>
-                      <p className="home-product-hit-shop">{localized(r, 'nom') || '—'}</p>
-                      <div className="home-product-hit-row">
-                        <span className="home-product-hit-price">{Number(produit.prix).toFixed(0)} FCFA</span>
-                      </div>
-                      <div className="home-product-hit-actions">
-                        <button
-                          type="button"
-                          className="home-product-hit-btn home-product-hit-btn-secondary"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/restaurant/${restaurantId}?produit=${productId}`);
-                          }}
-                        >
-                          {t('home', 'openShop')}
-                        </button>
-                        <button
-                          type="button"
-                          className="home-product-hit-btn home-product-hit-btn-cart"
-                          title={t('home', 'addToCartShort')}
-                          aria-label={t('home', 'addToCartShort')}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addProductFromHome(produit);
-                          }}
-                        >
-                          <FaPlus size={18} aria-hidden />
-                        </button>
+
+                    <div className="home-all-product-body">
+                      <h3 className="home-all-product-name">{productDisplayName(produit)}</h3>
+
+                      <div className="home-all-product-footer">
+                        {minutes != null ? (
+                          <span className="home-all-product-minutes">~{minutes} min</span>
+                        ) : (
+                          <span className="home-all-product-minutes home-all-product-minutes--empty">—</span>
+                        )}
+
+                        <div className="home-all-product-actions" onClick={(e) => e.stopPropagation()}>
+                          {tel && (
+                            <a
+                              href={`tel:${tel}`}
+                              className="home-all-product-icon-btn"
+                              title={t('home', 'call')}
+                              aria-label={t('home', 'call')}
+                            >
+                              <FaPhoneAlt size={16} />
+                            </a>
+                          )}
+                          {wa && (
+                            <a
+                              href={`https://wa.me/${wa}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="home-all-product-icon-btn home-all-product-icon-btn--wa"
+                              title={t('home', 'whatsapp')}
+                              aria-label={t('home', 'whatsapp')}
+                            >
+                              <FaWhatsapp size={18} />
+                            </a>
+                          )}
+                          <button
+                            type="button"
+                            className="home-all-product-icon-btn home-all-product-icon-btn--cart"
+                            title={t('home', 'addToCartShort')}
+                            aria-label={t('home', 'addToCartShort')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addProductFromHome(produit);
+                            }}
+                          >
+                            <FaPlus size={16} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </article>
@@ -735,19 +760,25 @@ const Home = () => {
           )}
 
           {!productQueryActive && !error && homeProducts.length > 0 && (
-            <section id="section-home-products" className="home-product-search-section home-product-search--desktop">
+            <section
+              id="section-home-products"
+              className="home-product-search-section home-product-search--desktop"
+            >
               <h2 className="home-product-search-title">{t('home', 'allProductsTitle')}</h2>
-              <div className="home-product-hits-grid">
+              <div className="home-all-products-grid">
                 {homeProducts.map((produit, idx) => {
                   const restaurantId = produit.restaurantId;
                   const productId = produit.productId;
                   const r = produit.restaurant;
                   const imgSrc = productHitImageSrc(produit, BASE_URL, idx);
+                  const minutes = r?.distance != null ? distanceToMinutes(r.distance) : null;
+                  const tel = (r?.telephone || '').trim();
+                  const wa = phoneToWa(tel);
 
                   return (
                     <article
                       key={`${productId}-${restaurantId}`}
-                      className="home-product-hit-card"
+                      className="home-all-product-card"
                       role="button"
                       tabIndex={0}
                       onClick={() => navigate(`/restaurant/${restaurantId}?produit=${productId}`)}
@@ -758,44 +789,63 @@ const Home = () => {
                         }
                       }}
                     >
-                      <div className="home-product-hit-media">
+                      <div className="home-all-product-img-wrap">
                         <img
                           src={imgSrc}
                           alt=""
+                          className="home-all-product-img"
                           onError={(e) => {
                             e.target.src = generateBannerPlaceholderSVG(idx);
                           }}
                         />
                       </div>
-                      <div className="home-product-hit-body">
-                        <h3 className="home-product-hit-name">{productDisplayName(produit)}</h3>
-                        <p className="home-product-hit-shop">{localized(r, 'nom') || '—'}</p>
-                        <div className="home-product-hit-row">
-                          <span className="home-product-hit-price">{Number(produit.prix).toFixed(0)} FCFA</span>
-                        </div>
-                        <div className="home-product-hit-actions">
-                          <button
-                            type="button"
-                            className="home-product-hit-btn home-product-hit-btn-secondary"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/restaurant/${restaurantId}?produit=${productId}`);
-                            }}
-                          >
-                            {t('home', 'openShop')}
-                          </button>
-                          <button
-                            type="button"
-                            className="home-product-hit-btn home-product-hit-btn-cart"
-                            title={t('home', 'addToCartShort')}
-                            aria-label={t('home', 'addToCartShort')}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              addProductFromHome(produit);
-                            }}
-                          >
-                            <FaPlus size={18} aria-hidden />
-                          </button>
+
+                      <div className="home-all-product-body">
+                        <h3 className="home-all-product-name">{productDisplayName(produit)}</h3>
+
+                        <div className="home-all-product-footer">
+                          {minutes != null ? (
+                            <span className="home-all-product-minutes">~{minutes} min</span>
+                          ) : (
+                            <span className="home-all-product-minutes home-all-product-minutes--empty">—</span>
+                          )}
+
+                          <div className="home-all-product-actions" onClick={(e) => e.stopPropagation()}>
+                            {tel && (
+                              <a
+                                href={`tel:${tel}`}
+                                className="home-all-product-icon-btn"
+                                title={t('home', 'call')}
+                                aria-label={t('home', 'call')}
+                              >
+                                <FaPhoneAlt size={16} />
+                              </a>
+                            )}
+                            {wa && (
+                              <a
+                                href={`https://wa.me/${wa}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="home-all-product-icon-btn home-all-product-icon-btn--wa"
+                                title={t('home', 'whatsapp')}
+                                aria-label={t('home', 'whatsapp')}
+                              >
+                                <FaWhatsapp size={18} />
+                              </a>
+                            )}
+                            <button
+                              type="button"
+                              className="home-all-product-icon-btn home-all-product-icon-btn--cart"
+                              title={t('home', 'addToCartShort')}
+                              aria-label={t('home', 'addToCartShort')}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                addProductFromHome(produit);
+                              }}
+                            >
+                              <FaPlus size={16} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </article>
