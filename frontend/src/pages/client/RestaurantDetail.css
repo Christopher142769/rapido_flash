@@ -1719,13 +1719,15 @@
   }
   .product-card-footer {
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
   }
   .product-card-add-btn {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    min-height: 36px;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
     font-size: 16px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--primary-brown) 0%, var(--dark-brown) 100%);
