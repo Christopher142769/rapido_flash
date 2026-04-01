@@ -17,6 +17,7 @@ const Bannieres = () => {
   const [selectedMediaPath, setSelectedMediaPath] = useState(null);
   const [preview, setPreview] = useState(null);
   const [selectedRestaurant, setSelectedRestaurant] = useState('');
+  const [selectedMode, setSelectedMode] = useState('web');
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
 
   useEffect(() => {
@@ -76,7 +77,7 @@ const Bannieres = () => {
       const token = localStorage.getItem('token');
       await axios.post(
         `${API_URL}/bannieres/from-media`,
-        { imagePath: selectedMediaPath, restaurantId: selectedRestaurant },
+        { imagePath: selectedMediaPath, restaurantId: selectedRestaurant, mode: selectedMode },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -160,6 +161,9 @@ const Bannieres = () => {
         {/* Section Upload */}
         <div className="upload-section">
           <h2>Ajouter une bannière depuis la galerie</h2>
+          <p style={{ color: '#666', marginBottom: 8, maxWidth: 700 }}>
+            Format conseille web: 1426 x 270 px. Format conseille mobile: 320 x 145 px.
+          </p>
           <p style={{ color: '#666', marginBottom: 16, maxWidth: 560 }}>
             Importez vos images dans <strong>Galerie d’images</strong>, puis sélectionnez-les ici. Une même image peut servir partout sur le site.
           </p>
@@ -186,6 +190,24 @@ const Bannieres = () => {
               </select>
             </div>
           )}
+          <div className="form-group" style={{ marginBottom: '20px', maxWidth: '400px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: 'var(--dark-brown)' }}>Mode d'affichage *</label>
+            <select
+              value={selectedMode}
+              onChange={(e) => setSelectedMode(e.target.value)}
+              style={{
+                padding: '12px 16px',
+                border: '2px solid #E0E0E0',
+                borderRadius: '8px',
+                fontSize: '16px',
+                width: '100%',
+                transition: 'all 0.3s'
+              }}
+            >
+              <option value="web">Web (desktop)</option>
+              <option value="mobile">Mobile</option>
+            </select>
+          </div>
           <div className="upload-container">
             <div className="file-input-wrapper" style={{ border: '2px dashed #E0E0E0', borderRadius: 12, padding: 24, minHeight: 160, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {preview ? (
@@ -248,7 +270,7 @@ const Bannieres = () => {
                 <div key={banniere._id} className={`banniere-card ${!banniere.actif ? 'inactive' : ''}`}>
                   <div className="banniere-image">
                     <img
-                      src={`${API_URL.replace('/api', '')}${banniere.image}`}
+                      src={String(banniere.image || '').startsWith('http') ? banniere.image : `${API_URL.replace('/api', '')}${banniere.image}`}
                       alt={`Bannière ${banniere.ordre + 1}`}
                     />
                     {!banniere.actif && (
@@ -258,6 +280,9 @@ const Bannieres = () => {
                     )}
                   </div>
                   <div className="banniere-controls">
+                    <div className="control-group">
+                      <label>Mode: {banniere.mode === 'mobile' ? 'Mobile' : 'Web'}</label>
+                    </div>
                     <div className="control-group">
                       <label>Ordre d'affichage:</label>
                       <input

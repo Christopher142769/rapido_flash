@@ -551,12 +551,14 @@
   /* Carrousel bannières mobile — image remplit toute la zone (comme le hero desktop) */
   .banners-carousel-mobile {
     position: relative;
-    width: 100%;
-    min-height: 200px;
-    height: 220px;
+    width: min(100%, 320px);
+    aspect-ratio: 320 / 145;
+    height: auto;
     overflow: hidden;
     background: linear-gradient(135deg, var(--light-yellow) 0%, var(--primary-white) 100%);
     box-sizing: border-box;
+    margin: 0 auto;
+    border-radius: 12px;
   }
 
   .banners-wrapper {
@@ -1210,10 +1212,12 @@
   /* Hero Desktop - bannières défilantes, images bien en valeur */
   .hero-desktop {
     position: relative;
-    width: 100%;
-    height: 420px;
+    width: min(100%, 1426px);
+    height: 270px;
+    margin: 0 auto;
     overflow: hidden;
     background: linear-gradient(135deg, #e8dcc8 0%, #d4c4a8 100%);
+    border-radius: 16px;
   }
 
   .hero-bg-desktop {

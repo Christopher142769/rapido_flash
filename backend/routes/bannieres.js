@@ -18,8 +18,11 @@ function getCloudinaryPublicIdFromUrl(url) {
 // Récupérer toutes les bannières actives (public)
 router.get('/', async (req, res) => {
   try {
+    const mode = String(req.query.mode || '').trim().toLowerCase();
+    const modeFilter = mode === 'web' || mode === 'mobile' ? { mode } : {};
     // Récupérer toutes les bannières actives (actif !== false inclut undefined/null)
     const bannieres = await Banniere.find({ 
+      ...modeFilter,
       $or: [
         { actif: true },
         { actif: { $exists: false } },
@@ -44,7 +47,9 @@ router.get('/', async (req, res) => {
 // Récupérer toutes les bannières (admin/restaurant)
 router.get('/all', auth, async (req, res) => {
   try {
-    const bannieres = await Banniere.find().sort({ ordre: 1, createdAt: -1 });
+    const mode = String(req.query.mode || '').trim().toLowerCase();
+    const filter = mode === 'web' || mode === 'mobile' ? { mode } : {};
+    const bannieres = await Banniere.find(filter).sort({ mode: 1, ordre: 1, createdAt: -1 });
     res.json(bannieres);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -55,14 +60,17 @@ router.get('/all', auth, async (req, res) => {
 router.post('/from-media', auth, async (req, res) => {
   try {
     const { imagePath, restaurantId } = req.body;
+    const modeRaw = String(req.body.mode || 'web').trim().toLowerCase();
+    const mode = modeRaw === 'mobile' ? 'mobile' : 'web';
     const p = String(imagePath || '').trim();
     const safe = ((p.startsWith('/uploads/') || (p.startsWith('http') && p.includes('cloudinary.com'))) && !p.includes('..'));
     if (!safe) {
       return res.status(400).json({ message: 'Chemin image invalide' });
     }
-    const count = await Banniere.countDocuments();
+    const count = await Banniere.countDocuments({ mode });
     const banniere = new Banniere({
       image: p,
+      mode,
       restaurant: restaurantId || null,
       ordre: count,
     });
@@ -81,13 +89,16 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
     }
 
     const imageUrl = req.file.path;
+    const modeRaw = String(req.body.mode || 'web').trim().toLowerCase();
+    const mode = modeRaw === 'mobile' ? 'mobile' : 'web';
     const { restaurantId } = req.body;
     
     // Compter les bannières existantes pour définir l'ordre
-    const count = await Banniere.countDocuments();
+    const count = await Banniere.countDocuments({ mode });
     
     const banniere = new Banniere({
       image: imageUrl,
+      mode,
       restaurant: restaurantId || null,
       ordre: count
     });
@@ -103,9 +114,15 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
   try {
     const { ordre, actif } = req.body;
+    const modeRaw = req.body.mode;
+    const update = { ordre, actif };
+    if (modeRaw !== undefined) {
+      const m = String(modeRaw || '').trim().toLowerCase();
+      update.mode = m === 'mobile' ? 'mobile' : 'web';
+    }
     const banniere = await Banniere.findByIdAndUpdate(
       req.params.id,
-      { ordre, actif },
+      update,
       { new: true }
     );
     

@@ -70,6 +70,9 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const [isDesktop, setIsDesktop] = useState(
+    typeof window !== 'undefined' ? window.matchMedia('(min-width: 769px)').matches : false
+  );
   const [cartCount, setCartCount] = useState(0);
   const [locationAddress, setLocationAddress] = useState('');
   const [showLocationEditor, setShowLocationEditor] = useState(false);
@@ -180,14 +183,40 @@ const Home = () => {
     return () => clearTimeout(handle);
   }, [searchTerm, selectedCategorieId]);
 
+  const mobileBannieres = bannieres.filter((b) => (b.mode || 'web') === 'mobile');
+  const webBannieres = bannieres.filter((b) => (b.mode || 'web') === 'web');
+  const bannieresForMobile = mobileBannieres.length > 0 ? mobileBannieres : bannieres;
+  const bannieresForDesktop = webBannieres.length > 0 ? webBannieres : bannieres;
+  const activeBannieres = isDesktop ? bannieresForDesktop : bannieresForMobile;
+
   useEffect(() => {
-    if (bannieres.length > 0) {
+    if (activeBannieres.length > 0) {
       const interval = setInterval(() => {
-        setCurrentBannerIndex(prev => (prev + 1) % bannieres.length);
+        setCurrentBannerIndex((prev) => (prev + 1) % activeBannieres.length);
       }, 4000);
       return () => clearInterval(interval);
     }
-  }, [bannieres.length]);
+  }, [activeBannieres.length]);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 769px)');
+    const onChange = (e) => setIsDesktop(e.matches);
+    setIsDesktop(mq.matches);
+    if (mq.addEventListener) mq.addEventListener('change', onChange);
+    else mq.addListener(onChange);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener('change', onChange);
+      else mq.removeListener(onChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!activeBannieres.length) {
+      setCurrentBannerIndex(0);
+      return;
+    }
+    setCurrentBannerIndex((prev) => prev % activeBannieres.length);
+  }, [activeBannieres.length]);
 
   const filteredStructures = structures.filter((s) => {
     const q = (searchTerm || '').toLowerCase();
@@ -456,10 +485,10 @@ const Home = () => {
 
       {renderProductSearchSection('home-product-search--mobile')}
 
-      {bannieres.length > 0 ? (
+      {bannieresForMobile.length > 0 ? (
         <div className="banners-carousel-mobile">
           <div className="banners-wrapper" style={{ transform: `translateX(-${currentBannerIndex * 100}%)` }}>
-            {bannieres.map((banniere, index) => {
+            {bannieresForMobile.map((banniere, index) => {
               const imageUrl =
                 banniere.image && !banniere.image.includes('placeholder.com')
                   ? (String(banniere.image).startsWith('http') ? banniere.image : `${BASE_URL}${banniere.image}`)
@@ -477,7 +506,7 @@ const Home = () => {
             })}
           </div>
           <div className="banner-indicators">
-            {bannieres.map((_, index) => (
+            {bannieresForMobile.map((_, index) => (
               <button key={index} className={`indicator-dot ${index === currentBannerIndex ? 'active' : ''}`} onClick={() => setCurrentBannerIndex(index)} />
             ))}
           </div>
@@ -688,9 +717,9 @@ const Home = () => {
       {/* Desktop: Bannières défilantes - images en valeur, sans overlay */}
       <div className="hero-desktop">
         <div className="hero-bg-desktop">
-          {bannieres.length > 0 ? (
+          {bannieresForDesktop.length > 0 ? (
             <div className="hero-carousel-desktop" style={{ transform: `translateX(-${currentBannerIndex * 100}%)` }}>
-              {bannieres.map((banniere, index) => {
+              {bannieresForDesktop.map((banniere, index) => {
                 const imageUrl =
                   banniere.image && !banniere.image.includes('placeholder.com')
                     ? (String(banniere.image).startsWith('http') ? banniere.image : `${BASE_URL}${banniere.image}`)
@@ -702,9 +731,9 @@ const Home = () => {
             <div className="hero-placeholder-desktop" />
           )}
         </div>
-        {bannieres.length > 1 && (
+        {bannieresForDesktop.length > 1 && (
           <div className="hero-indicators-desktop">
-            {bannieres.map((_, index) => (
+            {bannieresForDesktop.map((_, index) => (
               <button key={index} type="button" className={index === currentBannerIndex ? 'active' : ''} onClick={() => setCurrentBannerIndex(index)} />
             ))}
           </div>

@@ -5,6 +5,12 @@ const banniereSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  mode: {
+    type: String,
+    enum: ['web', 'mobile'],
+    default: 'web',
+    index: true
+  },
   restaurant: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Restaurant'
