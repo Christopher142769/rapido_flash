@@ -2724,8 +2724,8 @@
 /* ——— Produits “tous” sur Home ——— */
 .home-all-products-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
 }
 
 @media (min-width: 769px) {
@@ -2865,6 +2865,33 @@
   transform: scale(0.97);
 }
 
+@media (max-width: 768px) {
+  .home-all-product-body {
+    padding: 10px 8px;
+    gap: 8px;
+  }
+
+  .home-all-product-name {
+    font-size: 13px;
+  }
+
+  .home-all-product-minutes {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+
+  .home-all-product-icon-btn,
+  .home-all-product-icon-btn--cart {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+
+  .home-all-product-actions {
+    gap: 4px;
+  }
+}
+
 .home-product-search--mobile {
   padding: 0 14px;
 }
@@ -2896,8 +2923,8 @@
 
 .home-product-hits-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
 }
 
 @media (min-width: 769px) {
