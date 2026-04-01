@@ -39,6 +39,7 @@ const RestaurantPlats = () => {
     disponible: true,
     promoLivraisonGratuite: false,
     promoPourcentage: '',
+    recommande: false,
   });
   const [imagePreview, setImagePreview] = useState(null);
   /** Image galerie produit (chemin /uploads/...) */
@@ -140,6 +141,7 @@ const RestaurantPlats = () => {
       data.append('promoLivraisonGratuite', formData.promoLivraisonGratuite ? 'true' : 'false');
       const pp = String(formData.promoPourcentage || '').trim().replace(',', '.');
       data.append('promoPourcentage', pp === '' || pp === '0' ? '' : pp);
+      data.append('recommande', formData.recommande ? 'true' : 'false');
       data.append('restaurantId', currentRestaurantId);
       if (galleryImagePath) data.append('galleryImagePath', galleryImagePath);
       if (editingProduit) {
@@ -171,6 +173,7 @@ const RestaurantPlats = () => {
         disponible: true,
         promoLivraisonGratuite: false,
         promoPourcentage: '',
+        recommande: false,
       });
       resetMediaPreviews();
       await fetchData();
@@ -198,6 +201,7 @@ const RestaurantPlats = () => {
       promoLivraisonGratuite: !!p.promoLivraisonGratuite,
       promoPourcentage:
         p.promoPourcentage != null && Number(p.promoPourcentage) > 0 ? String(p.promoPourcentage) : '',
+      recommande: !!p.recommande,
     });
     const firstImg = (p.images && p.images[0]) ? (String(p.images[0]).startsWith('http') ? p.images[0] : `${BASE_URL}${p.images[0]}`) : null;
     setImagePreview(firstImg);
@@ -282,6 +286,7 @@ const RestaurantPlats = () => {
                 disponible: true,
                 promoLivraisonGratuite: false,
                 promoPourcentage: '',
+                recommande: false,
               });
               resetMediaPreviews();
             }} disabled={!currentRestaurantId}>
@@ -408,6 +413,17 @@ const RestaurantPlats = () => {
                       value={formData.promoPourcentage}
                       onChange={(e) => setFormData({ ...formData, promoPourcentage: e.target.value })}
                     />
+                  </div>
+                  <div className="form-group">
+                    <label className="produit-promo-check">
+                      <input
+                        type="checkbox"
+                        checked={formData.recommande}
+                        onChange={(e) => setFormData({ ...formData, recommande: e.target.checked })}
+                      />
+                      <span>{t('i18n', 'productRecommended')}</span>
+                    </label>
+                    <span className="label-hint">{t('i18n', 'productRecommendedHint')}</span>
                   </div>
                   <div className="form-group">
                     <label>Catégorie produit</label>

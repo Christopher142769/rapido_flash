@@ -26,6 +26,7 @@ import {
 import { pickLocalized } from '../../utils/i18nContent';
 import ProductPromoBadges from '../../components/ProductPromoBadges';
 import ProductDescriptionRich from '../../components/ProductDescriptionRich';
+import ProductReviewsSection, { StarsDisplay } from '../../components/ProductReviewsSection';
 import { effectiveProductPrice, hasFreeDeliveryPromo, hasPricePromo } from '../../utils/productPromo';
 import './RestaurantDetail.css';
 
@@ -104,6 +105,10 @@ const RestaurantDetail = () => {
   const [productSearch, setProductSearch] = useState('');
   const [showAllAfterFocus, setShowAllAfterFocus] = useState(false);
   const [pdpImageIndex, setPdpImageIndex] = useState(0);
+  const [reviewStats, setReviewStats] = useState(null);
+  const handleReviewStats = useCallback((s) => {
+    setReviewStats(s);
+  }, []);
 
   const BASE_URL = API_URL.replace('/api', '');
 
@@ -119,6 +124,10 @@ const RestaurantDetail = () => {
 
   useEffect(() => {
     setPdpImageIndex(0);
+  }, [produitFocusId]);
+
+  useEffect(() => {
+    setReviewStats(null);
   }, [produitFocusId]);
 
   useEffect(() => {
@@ -475,6 +484,9 @@ const RestaurantDetail = () => {
                     : t('store', 'productDefaultEyebrow')}
                 </p>
                 <h1 className="pdp-nike-title">{productDisplayName(highlightedProduct)}</h1>
+                {highlightedProduct.recommande ? (
+                  <p className="pdp-nike-recommended-badge">{t('reviews', 'recommendedBadge')}</p>
+                ) : null}
                 {hasPricePromo(highlightedProduct) ? (
                   <p className="pdp-nike-price pdp-nike-price--promo">
                     <span className="pdp-nike-price-current">{effectiveProductPrice(highlightedProduct)} FCFA</span>
@@ -486,12 +498,19 @@ const RestaurantDetail = () => {
                 {hasFreeDeliveryPromo(highlightedProduct) ? (
                   <p className="pdp-nike-promo-shipping">{t('home', 'promoFreeDelivery')}</p>
                 ) : null}
-                {highlightedDescriptionFull.trim() ? (
-                  <div className="pdp-nike-description-section">
-                    <h3 className="pdp-nike-description-title">{t('store', 'productDescriptionHeading')}</h3>
-                    <ProductDescriptionRich text={highlightedDescriptionFull} className="pdp-nike-description-body" />
-                  </div>
-                ) : null}
+                <div className="pdp-nike-rating-row" aria-label={t('reviews', 'sectionTitle')}>
+                  {reviewStats !== null &&
+                    (reviewStats.nombre > 0 ? (
+                      <>
+                        <StarsDisplay note={Math.round(reviewStats.moyenne)} size={20} />
+                        <span className="pdp-nike-rating-meta">
+                          {reviewStats.moyenne} · {reviewStats.nombre} {t('reviews', 'reviewCount')}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="pdp-nike-rating-meta pdp-nike-rating-meta--muted">{t('reviews', 'noReviewsYet')}</span>
+                    ))}
+                </div>
                 <button
                   type="button"
                   className="pdp-nike-cta"
@@ -499,6 +518,12 @@ const RestaurantDetail = () => {
                 >
                   {t('store', 'addToCart')}
                 </button>
+                {highlightedDescriptionFull.trim() ? (
+                  <div className="pdp-nike-description-section">
+                    <h3 className="pdp-nike-description-title">{t('store', 'productDescriptionHeading')}</h3>
+                    <ProductDescriptionRich text={highlightedDescriptionFull} className="pdp-nike-description-body" />
+                  </div>
+                ) : null}
                 <p className="pdp-nike-zoom-hint">{t('store', 'zoomHint')}</p>
                 <details className="pdp-nike-details">
                   <summary className="pdp-nike-details-summary">{t('store', 'productDetailsTitle')}</summary>
@@ -527,10 +552,7 @@ const RestaurantDetail = () => {
                     )}
                   </div>
                 </details>
-                <details className="pdp-nike-details">
-                  <summary className="pdp-nike-details-summary">{t('store', 'deliveryReturnsTitle')}</summary>
-                  <p className="pdp-nike-details-body pdp-nike-details-body--plain">{t('store', 'deliveryReturnsBody')}</p>
-                </details>
+                <ProductReviewsSection produitId={highlightedProduct._id} onStatsChange={handleReviewStats} />
                 <button
                   type="button"
                   className="pdp-nike-more-link"

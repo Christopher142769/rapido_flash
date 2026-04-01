@@ -30,6 +30,7 @@ import CategoriesDomaine from './pages/restaurant/CategoriesDomaine';
 import Gestionnaires from './pages/restaurant/Gestionnaires';
 import RestaurantMedias from './pages/restaurant/RestaurantMedias';
 import MiseEnAvantAccueil from './pages/restaurant/MiseEnAvantAccueil';
+import RestaurantAvis from './pages/restaurant/RestaurantAvis';
 
 import './App.css';
 import MaintenanceGate from './components/MaintenanceGate';
@@ -74,6 +75,7 @@ function App() {
           <Route path="/dashboard/commandes" element={<PrivateRoute><RestaurantCommandes /></PrivateRoute>} />
           <Route path="/dashboard/bannieres" element={<PrivateRoute><Bannieres /></PrivateRoute>} />
           <Route path="/dashboard/gestionnaires" element={<PrivateRoute><Gestionnaires /></PrivateRoute>} />
+          <Route path="/dashboard/avis" element={<PrivateRoute><RestaurantAvis /></PrivateRoute>} />
           
           <Route path="/" element={<Navigate to="/loading" replace />} />
         </Routes>

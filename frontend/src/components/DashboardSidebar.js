@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
+import LanguageContext from '../context/LanguageContext';
 import './DashboardSidebar.css';
 
 const BASE_URL = process.env.REACT_APP_BASE_URL || 'http://localhost:5000';
@@ -9,6 +10,7 @@ const DashboardSidebar = ({ onLogout }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
+  const { t } = useContext(LanguageContext);
   const [menuOpen, setMenuOpen] = useState(false);
   const [navigating, setNavigating] = useState(false);
 
@@ -23,6 +25,7 @@ const DashboardSidebar = ({ onLogout }) => {
     { id: 'categories', label: 'Catégories produits', path: '/dashboard/categories' },
     { id: 'plats', label: 'Produits', path: '/dashboard/plats' },
     { id: 'commandes', label: 'Commandes', path: '/dashboard/commandes' },
+    { id: 'avis', label: t('reviews', 'sidebarReviews'), path: '/dashboard/avis' },
     { id: 'bannieres', label: 'Bannières', path: '/dashboard/bannieres' }
   ];
 

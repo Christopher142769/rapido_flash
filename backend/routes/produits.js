@@ -304,6 +304,10 @@ router.post('/', auth, isRestaurant, upload.fields(uploadProductFields), async (
     }
     data.promoLivraisonGratuite = parsePromoLivraisonBody(promoLivraisonGratuite);
     data.promoPourcentage = parsePromoPourcentageBody(promoPourcentage);
+    if (req.body.recommande !== undefined) {
+      const r = req.body.recommande;
+      data.recommande = r === true || r === 'true' || r === '1';
+    }
     const prod = new Produit(data);
     await prod.save();
     await prod.populate('categorieProduit', 'nom nomEn image');
@@ -353,6 +357,10 @@ router.put('/:id', auth, isRestaurant, upload.fields(uploadProductFields), async
     }
     if (req.body.promoPourcentage !== undefined) {
       prod.promoPourcentage = parsePromoPourcentageBody(req.body.promoPourcentage);
+    }
+    if (req.body.recommande !== undefined) {
+      const r = req.body.recommande;
+      prod.recommande = r === true || r === 'true' || r === '1';
     }
     if (req.body.caracteristiques !== undefined) {
       prod.caracteristiques = parseCaracteristiques(req.body.caracteristiques) || [];

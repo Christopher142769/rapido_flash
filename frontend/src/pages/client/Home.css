@@ -2841,6 +2841,19 @@
   overflow: hidden;
 }
 
+.home-all-product-reco {
+  display: inline-block;
+  margin: 0 0 8px;
+  padding: 3px 8px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+  border-radius: 6px;
+}
+
 .home-all-product-price-row {
   display: flex;
   flex-wrap: wrap;

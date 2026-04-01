@@ -618,6 +618,9 @@ const Home = () => {
 
                     <div className="home-all-product-body">
                       <h3 className="home-all-product-name">{productDisplayName(produit)}</h3>
+                      {produit.recommande ? (
+                        <span className="home-all-product-reco">{t('reviews', 'recommendedBadge')}</span>
+                      ) : null}
                       <div className="home-all-product-price-row">
                         {hasPricePromo(produit) ? (
                           <>
@@ -861,6 +864,9 @@ const Home = () => {
 
                       <div className="home-all-product-body">
                         <h3 className="home-all-product-name">{productDisplayName(produit)}</h3>
+                        {produit.recommande ? (
+                          <span className="home-all-product-reco">{t('reviews', 'recommendedBadge')}</span>
+                        ) : null}
                         <div className="home-all-product-price-row">
                           {hasPricePromo(produit) ? (
                             <>

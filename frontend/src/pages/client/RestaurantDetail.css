@@ -505,6 +505,39 @@
   color: #1565c0;
 }
 
+.pdp-nike-recommended-badge {
+  display: inline-block;
+  margin: 0 0 12px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+  border-radius: 999px;
+}
+
+.pdp-nike-rating-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-height: 28px;
+  margin: 0 0 18px;
+}
+
+.pdp-nike-rating-meta {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.pdp-nike-rating-meta--muted {
+  font-weight: 500;
+  color: #757575;
+}
+
 .pdp-nike-description-section {
   margin: 0 0 24px;
 }

@@ -80,6 +80,11 @@ const produitSchema = new mongoose.Schema({
     type: Number,
     default: null
   },
+  /** Mis en avant manuellement depuis le dashboard (badge « recommandé ») */
+  recommande: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
     type: Date,
     default: Date.now
