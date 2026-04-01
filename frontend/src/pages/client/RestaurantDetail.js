@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useContext } from 'react';
+import React, { useState, useEffect, useCallback, useContext, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import LanguageContext from '../../context/LanguageContext';
@@ -55,6 +55,21 @@ function formatJoursVente(arr) {
   return [...arr].sort((a, b) => a - b).map((d) => JOUR_LABELS[d]).join(' · ');
 }
 
+/** URLs galerie produit (bannière détail, carte accueil, puis images) — ordre type fiche produit */
+function productGalleryUrls(produit, baseUrl) {
+  if (!produit) return [];
+  const urls = [];
+  const add = (raw) => {
+    if (!raw || String(raw).trim() === '' || String(raw).includes('placeholder.com')) return;
+    const u = String(raw).startsWith('http') ? raw : `${baseUrl}${raw}`;
+    if (!urls.includes(u)) urls.push(u);
+  };
+  add(produit.banniereProduit);
+  add(produit.imageCarteHome);
+  (produit.images || []).forEach((img) => add(img));
+  return urls;
+}
+
 const RestaurantDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -75,8 +90,23 @@ const RestaurantDetail = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [productSearch, setProductSearch] = useState('');
   const [showAllAfterFocus, setShowAllAfterFocus] = useState(false);
+  const [pdpImageIndex, setPdpImageIndex] = useState(0);
 
   const BASE_URL = API_URL.replace('/api', '');
+
+  const highlightedProduct = useMemo(() => {
+    if (!produitFocusId || !allProducts.length) return null;
+    return allProducts.find((p) => String(p._id) === String(produitFocusId)) || null;
+  }, [produitFocusId, allProducts]);
+
+  const highlightedGalleryUrls = useMemo(() => {
+    if (!highlightedProduct) return [];
+    return productGalleryUrls(highlightedProduct, BASE_URL);
+  }, [highlightedProduct, BASE_URL]);
+
+  useEffect(() => {
+    setPdpImageIndex(0);
+  }, [produitFocusId]);
 
   useEffect(() => {
     const updateLocationAddress = () => {
@@ -251,12 +281,17 @@ const RestaurantDetail = () => {
   const cartForRestaurant = cart.filter((item) => String(item.restaurantId) === String(id));
   const cartCountRestaurant = cartForRestaurant.reduce((sum, item) => sum + item.quantite, 0);
   const cartTotalRestaurant = cartForRestaurant.reduce((sum, item) => sum + item.prix * item.quantite, 0);
-  const featuredProduct = produitFocusId
-    ? allProducts.find((p) => String(p._id) === String(produitFocusId)) || null
-    : null;
-  const hasFocusedProduct = Boolean(featuredProduct);
+  const hasFocusedProduct = Boolean(highlightedProduct);
+  const highlightedDescriptionFull = hasFocusedProduct ? localized(highlightedProduct, 'description') : '';
+  const highlightedDescriptionParagraphs = highlightedDescriptionFull
+    ? highlightedDescriptionFull.split(/\n+/).map((s) => s.trim()).filter(Boolean)
+    : [];
+  const highlightedDescriptionLede =
+    highlightedDescriptionParagraphs.length > 1
+      ? highlightedDescriptionParagraphs[0]
+      : highlightedDescriptionFull;
   const otherProducts = hasFocusedProduct
-    ? products.filter((p) => String(p._id) !== String(featuredProduct._id))
+    ? products.filter((p) => String(p._id) !== String(highlightedProduct._id))
     : products;
   const visibleProducts = hasFocusedProduct && !showAllAfterFocus
     ? otherProducts.slice(0, 6)
@@ -366,42 +401,114 @@ const RestaurantDetail = () => {
 
       <div className="restaurant-content-container">
         {hasFocusedProduct && (
-          <section className="featured-product-section" aria-label="Produit mis en avant">
-            <div className="featured-product-card">
-              <div
-                className="featured-product-image-wrap"
-                onClick={() => {
-                  const src = productOpenImageSrc(featuredProduct, BASE_URL) || productCardImageSrc(featuredProduct, BASE_URL);
-                  if (src) {
-                    setSelectedImage(src);
-                    setShowImageModal(true);
-                  }
-                }}
-              >
-                <img
-                  src={productOpenImageSrc(featuredProduct, BASE_URL) || productCardImageSrc(featuredProduct, BASE_URL) || getImageUrl(null, { nom: productDisplayName(featuredProduct) }, BASE_URL)}
-                  alt={productDisplayName(featuredProduct)}
-                  className="featured-product-image"
-                />
+          <section className="pdp-nike" aria-label={t('store', 'productPageAria')}>
+            <div className="pdp-nike-inner">
+              <div className="pdp-nike-gallery">
+                <button
+                  type="button"
+                  className="pdp-nike-main"
+                  onClick={() => {
+                    const src =
+                      highlightedGalleryUrls[pdpImageIndex] ||
+                      productOpenImageSrc(highlightedProduct, BASE_URL) ||
+                      productCardImageSrc(highlightedProduct, BASE_URL);
+                    if (src) {
+                      setSelectedImage(src);
+                      setShowImageModal(true);
+                    }
+                  }}
+                  aria-label={t('store', 'zoomAlt')}
+                >
+                  <img
+                    src={
+                      highlightedGalleryUrls[pdpImageIndex] ||
+                      productOpenImageSrc(highlightedProduct, BASE_URL) ||
+                      productCardImageSrc(highlightedProduct, BASE_URL) ||
+                      getImageUrl(null, { nom: productDisplayName(highlightedProduct) }, BASE_URL)
+                    }
+                    alt={productDisplayName(highlightedProduct)}
+                    className="pdp-nike-main-img"
+                    onError={(e) => {
+                      e.target.src = getImageUrl(null, { nom: productDisplayName(highlightedProduct) }, BASE_URL);
+                    }}
+                  />
+                </button>
+                {highlightedGalleryUrls.length > 1 && (
+                  <div className="pdp-nike-thumbs" role="tablist" aria-label={t('store', 'productGalleryThumbsAria')}>
+                    {highlightedGalleryUrls.map((url, i) => (
+                      <button
+                        key={`${url}-${i}`}
+                        type="button"
+                        role="tab"
+                        aria-selected={i === pdpImageIndex}
+                        className={`pdp-nike-thumb ${i === pdpImageIndex ? 'pdp-nike-thumb--active' : ''}`}
+                        onClick={() => setPdpImageIndex(i)}
+                      >
+                        <img src={url} alt="" />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="featured-product-info">
-                <p className="featured-product-kicker">
-                  {String(language || '').toLowerCase().startsWith('en') ? 'Featured product' : 'Produit mis en avant'}
+              <div className="pdp-nike-buybox">
+                <p className="pdp-nike-eyebrow">
+                  {highlightedProduct.categorieProduit
+                    ? pickLocalized(language, highlightedProduct.categorieProduit, 'nom')
+                    : t('store', 'productDefaultEyebrow')}
                 </p>
-                <h2 className="featured-product-name">{productDisplayName(featuredProduct)}</h2>
-                {localized(featuredProduct, 'description') ? (
-                  <p className="featured-product-description">{localized(featuredProduct, 'description')}</p>
+                <h1 className="pdp-nike-title">{productDisplayName(highlightedProduct)}</h1>
+                <p className="pdp-nike-price">{Number(highlightedProduct.prix).toFixed(0)} FCFA</p>
+                {highlightedDescriptionLede ? (
+                  <p className="pdp-nike-lede">{highlightedDescriptionLede}</p>
                 ) : null}
-                <div className="featured-product-footer">
-                  <span className="featured-product-price">{Number(featuredProduct.prix).toFixed(0)} FCFA</span>
-                  <button
-                    type="button"
-                    className="featured-product-add-btn"
-                    onClick={() => addToCart(featuredProduct)}
-                  >
-                    {String(language || '').toLowerCase().startsWith('en') ? 'Add to cart' : 'Ajouter au panier'}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  className="pdp-nike-cta"
+                  onClick={() => addToCart(highlightedProduct)}
+                >
+                  {t('store', 'addToCart')}
+                </button>
+                <p className="pdp-nike-zoom-hint">{t('store', 'zoomHint')}</p>
+                <details className="pdp-nike-details">
+                  <summary className="pdp-nike-details-summary">{t('store', 'productDetailsTitle')}</summary>
+                  <div className="pdp-nike-details-body">
+                    <ul className="pdp-nike-meta-list">
+                      <li>
+                        <span className="pdp-nike-meta-label">{t('store', 'productCategoryLabel')}</span>
+                        {highlightedProduct.categorieProduit
+                          ? pickLocalized(language, highlightedProduct.categorieProduit, 'nom')
+                          : '—'}
+                      </li>
+                      <li>
+                        <span className="pdp-nike-meta-label">{t('store', 'productReferenceLabel')}</span>
+                        {String(highlightedProduct._id).slice(-8).toUpperCase()}
+                      </li>
+                    </ul>
+                    {highlightedDescriptionParagraphs.length > 1 ? (
+                      <div className="pdp-nike-details-copy">
+                        {highlightedDescriptionParagraphs.slice(1).map((line, lineIdx) => (
+                          <p key={lineIdx}>{line}</p>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </details>
+                <details className="pdp-nike-details">
+                  <summary className="pdp-nike-details-summary">{t('store', 'deliveryReturnsTitle')}</summary>
+                  <p className="pdp-nike-details-body pdp-nike-details-body--plain">{t('store', 'deliveryReturnsBody')}</p>
+                </details>
+                <button
+                  type="button"
+                  className="pdp-nike-more-link"
+                  onClick={() =>
+                    document.getElementById('section-store-products')?.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'start',
+                    })
+                  }
+                >
+                  {t('store', 'viewOtherProducts')}
+                </button>
               </div>
             </div>
           </section>

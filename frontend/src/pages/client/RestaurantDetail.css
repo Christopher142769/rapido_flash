@@ -375,82 +375,242 @@
   min-height: 50vh;
 }
 
-.featured-product-section {
-  margin: 0 auto 22px;
+/* Fiche produit (?produit=) — disposition type page produit (ex. Nike) */
+.pdp-nike {
+  background: #fff;
+  margin: 0 auto 28px;
+  border-bottom: 1px solid #e5e5e5;
 }
 
-.featured-product-card {
-  background: var(--primary-white);
-  border-radius: 20px;
-  overflow: hidden;
-  border: 1px solid rgba(139, 69, 19, 0.12);
-  box-shadow: 0 8px 28px rgba(139, 69, 19, 0.12);
+.pdp-nike-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 16px 32px;
   display: grid;
   grid-template-columns: 1fr;
+  gap: 28px;
+  box-sizing: border-box;
 }
 
-.featured-product-image-wrap {
+.pdp-nike-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pdp-nike-main {
+  display: block;
   width: 100%;
-  aspect-ratio: 16 / 9;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: #f5f5f5;
+  border-radius: 4px;
   overflow: hidden;
-  background: linear-gradient(135deg, #f8f6f2 0%, #f0ebe3 100%);
   cursor: zoom-in;
+  aspect-ratio: 1;
+  max-height: min(92vw, 520px);
 }
 
-.featured-product-image {
+.pdp-nike-main-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
 
-.featured-product-info {
-  padding: 16px 16px 18px;
+.pdp-nike-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.featured-product-kicker {
-  margin: 0 0 6px;
+.pdp-nike-thumb {
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #f5f5f5;
+  flex-shrink: 0;
+}
+
+.pdp-nike-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pdp-nike-thumb--active {
+  border-color: #111;
+}
+
+.pdp-nike-buybox {
+  max-width: 420px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.pdp-nike-eyebrow {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #111;
+  line-height: 1.3;
+}
+
+.pdp-nike-title {
+  margin: 0 0 12px;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: #111;
+  line-height: 1.15;
+}
+
+.pdp-nike-price {
+  margin: 0 0 20px;
+  font-size: 18px;
+  font-weight: 500;
+  color: #111;
+}
+
+.pdp-nike-lede {
+  margin: 0 0 24px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #444;
+}
+
+.pdp-nike-cta {
+  width: 100%;
+  border: none;
+  border-radius: 999px;
+  padding: 16px 24px;
+  background: #111;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.pdp-nike-cta:hover {
+  background: #333;
+}
+
+.pdp-nike-cta:active {
+  transform: scale(0.99);
+}
+
+.pdp-nike-zoom-hint {
+  margin: 12px 0 0;
   font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #9b6a3f;
+  color: #757575;
 }
 
-.featured-product-name {
-  margin: 0 0 10px;
-  color: var(--primary-brown);
-  font-size: 24px;
-  line-height: 1.2;
+.pdp-nike-details {
+  margin-top: 20px;
+  border-top: 1px solid #e5e5e5;
 }
 
-.featured-product-description {
-  margin: 0 0 14px;
-  color: #5c5c5c;
-  line-height: 1.55;
-}
-
-.featured-product-footer {
+.pdp-nike-details-summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 18px 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
 }
 
-.featured-product-price {
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--primary-brown);
+.pdp-nike-details-summary::-webkit-details-marker {
+  display: none;
 }
 
-.featured-product-add-btn {
-  border: none;
+.pdp-nike-details[open] .pdp-nike-details-summary {
+  border-bottom: none;
+}
+
+.pdp-nike-details-summary::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #111;
+  border-bottom: 2px solid #111;
+  transform: rotate(45deg);
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.pdp-nike-details[open] .pdp-nike-details-summary::after {
+  transform: rotate(-135deg);
+  margin-top: 4px;
+}
+
+.pdp-nike-details-body {
+  padding: 0 0 20px;
+}
+
+.pdp-nike-details-body--plain {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #444;
+  margin: 0;
+}
+
+.pdp-nike-meta-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #444;
+}
+
+.pdp-nike-meta-list li {
+  margin-bottom: 8px;
+}
+
+.pdp-nike-meta-label {
+  font-weight: 600;
+  color: #111;
+}
+
+.pdp-nike-details-copy p {
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #444;
+}
+
+.pdp-nike-details-copy p:last-child {
+  margin-bottom: 0;
+}
+
+.pdp-nike-more-link {
+  display: block;
+  width: 100%;
+  margin-top: 24px;
+  padding: 14px;
+  background: none;
+  border: 1px solid #ccc;
   border-radius: 999px;
-  padding: 12px 18px;
-  background: linear-gradient(135deg, var(--primary-brown) 0%, var(--dark-brown) 100%);
-  color: var(--primary-white);
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
   cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.pdp-nike-more-link:hover {
+  border-color: #111;
+  background: #fafafa;
 }
 
 .see-more-wrap {
@@ -825,33 +985,40 @@
     width: 100%;
   }
 
-  .featured-product-card {
-    grid-template-columns: minmax(360px, 45%) 1fr;
-    max-width: 1200px;
-    margin: 0 auto;
-    min-height: 360px;
+  .pdp-nike-inner {
+    grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+    gap: 48px;
+    padding: 32px 40px 48px;
+    align-items: start;
   }
 
-  .featured-product-image-wrap {
-    aspect-ratio: auto;
-    height: 100%;
-    min-height: 360px;
+  .pdp-nike-gallery {
+    position: sticky;
+    top: calc(var(--top-navbar-height, 76px) + 16px);
   }
 
-  .featured-product-info {
-    padding: 32px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+  .pdp-nike-main {
+    max-height: min(70vh, 640px);
+    aspect-ratio: 1;
   }
 
-  .featured-product-name {
-    font-size: 34px;
+  .pdp-nike-buybox {
+    margin: 0;
+    padding-top: 8px;
+    max-width: none;
   }
 
-  .featured-product-description {
+  .pdp-nike-title {
+    font-size: 36px;
+  }
+
+  .pdp-nike-price {
+    font-size: 20px;
+  }
+
+  .pdp-nike-lede {
     font-size: 16px;
-    max-width: 70ch;
+    max-width: 48ch;
   }
 
   .store-mobile-section {
