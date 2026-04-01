@@ -5,6 +5,7 @@ import LanguageContext from '../../context/LanguageContext';
 import BottomNavbar from '../../components/BottomNavbar';
 import TopNavbar from '../../components/TopNavbar';
 import { getImageUrl } from '../../utils/imagePlaceholder';
+import { cartQualifiesFreeDeliveryPromo } from '../../utils/cartPromo';
 import './Cart.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -55,8 +56,13 @@ const Cart = () => {
     return cart.reduce((sum, item) => sum + (item.prix * item.quantite), 0);
   };
 
+  const getFraisLivraisonEffectif = () => {
+    if (cartQualifiesFreeDeliveryPromo(cart)) return 0;
+    return fraisLivraison;
+  };
+
   const getTotal = () => {
-    return getSubTotal() + fraisLivraison;
+    return getSubTotal() + getFraisLivraisonEffectif();
   };
 
   const getRestaurantId = () => {
@@ -116,7 +122,16 @@ const Cart = () => {
                 />
                 <div className="cart-item-info">
                   <h3>{lineName}</h3>
-                  <p className="cart-item-price">{Number(item.prix).toFixed(0)} FCFA</p>
+                  <p className="cart-item-price">
+                    {item.prixCatalogue != null ? (
+                      <>
+                        <span className="cart-price-current">{Number(item.prix).toFixed(0)} FCFA</span>
+                        <span className="cart-price-old">{Number(item.prixCatalogue).toFixed(0)} FCFA</span>
+                      </>
+                    ) : (
+                      <>{Number(item.prix).toFixed(0)} FCFA</>
+                    )}
+                  </p>
                 </div>
                 <div className="cart-item-controls">
                   <button className="quantity-btn" onClick={() => updateQuantity(id, item.quantite - 1)}>−</button>
@@ -137,8 +152,20 @@ const Cart = () => {
           </div>
           <div className="summary-row">
             <span>{t('cart', 'deliveryFee')}</span>
-            <span>{fraisLivraison.toFixed(0)} FCFA</span>
+            <span>
+              {cartQualifiesFreeDeliveryPromo(cart) ? (
+                <>
+                  <span className="cart-fee-struck">{fraisLivraison.toFixed(0)} FCFA</span>
+                  <span className="cart-fee-free">0 FCFA</span>
+                </>
+              ) : (
+                <>{fraisLivraison.toFixed(0)} FCFA</>
+              )}
+            </span>
           </div>
+          {cartQualifiesFreeDeliveryPromo(cart) && (
+            <p className="cart-promo-delivery-note">{t('cart', 'freeDeliveryPromoNote')}</p>
+          )}
           <div className="summary-row total">
             <span>{t('cart', 'total')}</span>
             <span>{getTotal().toFixed(0)} FCFA</span>

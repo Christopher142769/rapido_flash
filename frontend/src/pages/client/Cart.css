@@ -149,6 +149,40 @@
 .cart-item-price {
   color: var(--dark-gray);
   font-size: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.cart-price-current {
+  font-weight: 700;
+  color: #1a7f37;
+}
+
+.cart-price-old {
+  font-size: 12px;
+  color: #999;
+  text-decoration: line-through;
+}
+
+.cart-fee-struck {
+  text-decoration: line-through;
+  color: #999;
+  font-size: 13px;
+  margin-right: 8px;
+}
+
+.cart-fee-free {
+  font-weight: 700;
+  color: #1a7f37;
+}
+
+.cart-promo-delivery-note {
+  margin: -4px 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1565c0;
 }
 
 .cart-item-controls {

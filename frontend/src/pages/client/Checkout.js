@@ -7,6 +7,7 @@ import AuthContext from '../../context/AuthContext';
 import LanguageContext from '../../context/LanguageContext';
 import { useModal } from '../../context/ModalContext';
 import TopNavbar from '../../components/TopNavbar';
+import { cartQualifiesFreeDeliveryPromo } from '../../utils/cartPromo';
 import './Checkout.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -402,8 +403,13 @@ const Checkout = () => {
     return cart.reduce((sum, item) => sum + (item.prix * item.quantite), 0);
   };
 
+  const getFraisLivraisonEffectif = () => {
+    if (cartQualifiesFreeDeliveryPromo(cart)) return 0;
+    return fraisLivraison;
+  };
+
   const getTotal = () => {
-    return getSubTotal() + fraisLivraison;
+    return getSubTotal() + getFraisLivraisonEffectif();
   };
 
   return (
@@ -575,8 +581,20 @@ const Checkout = () => {
             </div>
             <div className="summary-row">
               <span>Frais de livraison</span>
-              <span>{fraisLivraison.toFixed(0)} FCFA</span>
+              <span>
+                {cartQualifiesFreeDeliveryPromo(cart) ? (
+                  <>
+                    <span className="checkout-fee-struck">{fraisLivraison.toFixed(0)} FCFA</span>
+                    <span className="checkout-fee-free">0 FCFA</span>
+                  </>
+                ) : (
+                  <>{fraisLivraison.toFixed(0)} FCFA</>
+                )}
+              </span>
             </div>
+            {cartQualifiesFreeDeliveryPromo(cart) && (
+              <p className="checkout-promo-delivery-note">{t('cart', 'freeDeliveryPromoNote')}</p>
+            )}
             <div className="summary-row total">
               <span>Total</span>
               <span>{getTotal().toFixed(0)} FCFA</span>

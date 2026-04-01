@@ -24,6 +24,9 @@ import {
   FaBars,
 } from 'react-icons/fa';
 import { pickLocalized } from '../../utils/i18nContent';
+import ProductPromoBadges from '../../components/ProductPromoBadges';
+import ProductDescriptionRich from '../../components/ProductDescriptionRich';
+import { effectiveProductPrice, hasFreeDeliveryPromo, hasPricePromo } from '../../utils/productPromo';
 import './RestaurantDetail.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -68,6 +71,16 @@ function productGalleryUrls(produit, baseUrl) {
   add(produit.imageCarteHome);
   (produit.images || []).forEach((img) => add(img));
   return urls;
+}
+
+/** Puces « caractéristiques » : EN si renseignées, sinon FR */
+function productCaracteristiquesList(language, produit) {
+  if (!produit) return [];
+  const en = String(language || '').toLowerCase().startsWith('en');
+  const enList = (produit.caracteristiquesEn || []).map((s) => String(s).trim()).filter(Boolean);
+  const frList = (produit.caracteristiques || []).map((s) => String(s).trim()).filter(Boolean);
+  if (en && enList.length) return enList;
+  return frList;
 }
 
 const RestaurantDetail = () => {
@@ -169,6 +182,8 @@ const RestaurantDetail = () => {
           p.nomAfficheAccueilEn,
           p.description,
           p.descriptionEn,
+          ...(p.caracteristiques || []),
+          ...(p.caracteristiquesEn || []),
         ]
           .filter(Boolean)
           .join(' ')
@@ -214,13 +229,17 @@ const RestaurantDetail = () => {
           : item
       );
     } else {
+      const eff = effectiveProductPrice(produit);
+      const showOld = hasPricePromo(produit);
       newCart = [...cart, {
         productId: produit._id,
         nom: produit.nom,
         nomEn: produit.nomEn,
         nomAfficheAccueil: produit.nomAfficheAccueil,
         nomAfficheAccueilEn: produit.nomAfficheAccueilEn,
-        prix: produit.prix,
+        prix: eff,
+        prixCatalogue: showOld ? Number(produit.prix) : undefined,
+        promoLivraisonGratuite: !!produit.promoLivraisonGratuite,
         image: imageUrl,
         quantite: 1,
         restaurantId: id
@@ -290,6 +309,9 @@ const RestaurantDetail = () => {
     highlightedDescriptionParagraphs.length > 1
       ? highlightedDescriptionParagraphs[0]
       : highlightedDescriptionFull;
+  const highlightedCaracteristiques = hasFocusedProduct
+    ? productCaracteristiquesList(language, highlightedProduct)
+    : [];
   const otherProducts = hasFocusedProduct
     ? products.filter((p) => String(p._id) !== String(highlightedProduct._id))
     : products;
@@ -419,6 +441,7 @@ const RestaurantDetail = () => {
                   }}
                   aria-label={t('store', 'zoomAlt')}
                 >
+                  <ProductPromoBadges product={highlightedProduct} />
                   <img
                     src={
                       highlightedGalleryUrls[pdpImageIndex] ||
@@ -457,9 +480,19 @@ const RestaurantDetail = () => {
                     : t('store', 'productDefaultEyebrow')}
                 </p>
                 <h1 className="pdp-nike-title">{productDisplayName(highlightedProduct)}</h1>
-                <p className="pdp-nike-price">{Number(highlightedProduct.prix).toFixed(0)} FCFA</p>
+                {hasPricePromo(highlightedProduct) ? (
+                  <p className="pdp-nike-price pdp-nike-price--promo">
+                    <span className="pdp-nike-price-current">{effectiveProductPrice(highlightedProduct)} FCFA</span>
+                    <span className="pdp-nike-price-old">{Number(highlightedProduct.prix).toFixed(0)} FCFA</span>
+                  </p>
+                ) : (
+                  <p className="pdp-nike-price">{Number(highlightedProduct.prix).toFixed(0)} FCFA</p>
+                )}
+                {hasFreeDeliveryPromo(highlightedProduct) ? (
+                  <p className="pdp-nike-promo-shipping">{t('home', 'promoFreeDelivery')}</p>
+                ) : null}
                 {highlightedDescriptionLede ? (
-                  <p className="pdp-nike-lede">{highlightedDescriptionLede}</p>
+                  <ProductDescriptionRich text={highlightedDescriptionLede} className="pdp-nike-lede" />
                 ) : null}
                 <button
                   type="button"
@@ -484,12 +517,21 @@ const RestaurantDetail = () => {
                         {String(highlightedProduct._id).slice(-8).toUpperCase()}
                       </li>
                     </ul>
+                    {highlightedCaracteristiques.length > 0 && (
+                      <>
+                        <h3 className="pdp-nike-features-title">{t('store', 'productCharacteristicsHeading')}</h3>
+                        <ul className="pdp-nike-characteristics-list">
+                          {highlightedCaracteristiques.map((line, cIdx) => (
+                            <li key={cIdx}>{line}</li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
                     {highlightedDescriptionParagraphs.length > 1 ? (
-                      <div className="pdp-nike-details-copy">
-                        {highlightedDescriptionParagraphs.slice(1).map((line, lineIdx) => (
-                          <p key={lineIdx}>{line}</p>
-                        ))}
-                      </div>
+                      <ProductDescriptionRich
+                        text={highlightedDescriptionParagraphs.slice(1).join('\n\n')}
+                        className="pdp-nike-details-copy-rich"
+                      />
                     ) : null}
                   </div>
                 </details>
@@ -573,12 +615,25 @@ const RestaurantDetail = () => {
                 return (
                   <div key={produit._id} id={`product-card-${produit._id}`} className="plat-item-curved">
                     <div className="plat-image-square" onClick={() => { setSelectedImage(zoomSrc); setShowImageModal(true); }}>
+                      <ProductPromoBadges product={produit} />
                       <img src={imgSrc} alt={displayName} className="plat-image-small" onError={(e) => { e.target.src = getImageUrl(null, { nom: displayName }, BASE_URL); }} />
                     </div>
                     <div className="plat-details-curved">
                       <h3 className="plat-name-curved">{displayName}</h3>
-                      {localized(produit, 'description') ? <p className="plat-description-curved">{localized(produit, 'description')}</p> : null}
-                      <span className="plat-prix-curved">{Number(produit.prix).toFixed(0)} FCFA</span>
+                      {localized(produit, 'description') ? (
+                        <ProductDescriptionRich
+                          text={localized(produit, 'description')}
+                          className="plat-description-curved product-description-rich--in-list"
+                        />
+                      ) : null}
+                      {hasPricePromo(produit) ? (
+                        <span className="plat-prix-curved plat-prix-curved--promo">
+                          <span className="plat-prix-current">{effectiveProductPrice(produit)} FCFA</span>
+                          <span className="plat-prix-old">{Number(produit.prix).toFixed(0)} FCFA</span>
+                        </span>
+                      ) : (
+                        <span className="plat-prix-curved">{Number(produit.prix).toFixed(0)} FCFA</span>
+                      )}
                     </div>
                     <button type="button" className="btn-add-cart-inline" onClick={() => addToCart(produit)} title={t('store', 'addToCart')}>
                       <FaPlus size={22} aria-hidden />
@@ -648,6 +703,7 @@ const RestaurantDetail = () => {
                   return (
                     <div key={produit._id} id={`product-card-${produit._id}`} className="product-card-desktop">
                       <div className="product-card-image-wrap" onClick={() => { setSelectedImage(zoomSrc); setShowImageModal(true); }}>
+                        <ProductPromoBadges product={produit} />
                         <img src={imgSrc} alt={displayName} onError={(e) => { e.target.src = getImageUrl(null, { nom: displayName }, BASE_URL); }} />
                         <span className="product-card-share" onClick={(e) => { e.stopPropagation(); }} title={t('store', 'share')} aria-hidden>
                           <FaShare size={15} />
@@ -655,8 +711,20 @@ const RestaurantDetail = () => {
                       </div>
                       <div className="product-card-body">
                         <h3 className="product-card-name">{displayName}</h3>
-                        <span className="product-card-price">{Number(produit.prix).toFixed(0)} FCFA</span>
-                        {localized(produit, 'description') ? <p className="product-card-desc">{localized(produit, 'description')}</p> : null}
+                        {hasPricePromo(produit) ? (
+                          <span className="product-card-price product-card-price--promo">
+                            <span className="product-card-price-current">{effectiveProductPrice(produit)} FCFA</span>
+                            <span className="product-card-price-was">{Number(produit.prix).toFixed(0)} FCFA</span>
+                          </span>
+                        ) : (
+                          <span className="product-card-price">{Number(produit.prix).toFixed(0)} FCFA</span>
+                        )}
+                        {localized(produit, 'description') ? (
+                          <ProductDescriptionRich
+                            text={localized(produit, 'description')}
+                            className="product-card-desc product-description-rich--in-list"
+                          />
+                        ) : null}
                         <div className="product-card-footer">
                           <button type="button" className="product-card-add-btn" onClick={() => addToCart(produit)} title={t('store', 'addToCart')}>
                             <FaPlus size={22} aria-hidden />

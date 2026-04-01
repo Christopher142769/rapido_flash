@@ -7,6 +7,25 @@ const upload = require('../middleware/uploadProduit');
 const uploadProductFields = upload.uploadProductFields;
 
 const router = express.Router();
+const { parsePromoPourcentageBody, parsePromoLivraisonBody } = require('../utils/productPromo');
+
+function parseCaracteristiques(input) {
+  if (input === undefined) return undefined;
+  if (Array.isArray(input)) {
+    return input.map((s) => String(s).trim()).filter(Boolean);
+  }
+  const str = String(input ?? '').trim();
+  if (!str) return [];
+  try {
+    const parsed = JSON.parse(str);
+    if (Array.isArray(parsed)) {
+      return parsed.map((s) => String(s).trim()).filter(Boolean);
+    }
+  } catch (_) {
+    /* ignore */
+  }
+  return str.split(/\n/).map((s) => s.trim()).filter(Boolean);
+}
 
 function isAllowedUploadRef(p) {
   const s = String(p || '').trim();
@@ -105,7 +124,11 @@ router.get('/search', async (req, res) => {
 
     const scored = [];
     for (const p of produits) {
-      const parts = [p.nom, p.nomEn, p.description, p.descriptionEn, p.nomAfficheAccueil, p.nomAfficheAccueilEn]
+      const carJoin = []
+        .concat(p.caracteristiques || [], p.caracteristiquesEn || [])
+        .filter(Boolean)
+        .join(' ');
+      const parts = [p.nom, p.nomEn, p.description, p.descriptionEn, p.nomAfficheAccueil, p.nomAfficheAccueilEn, carJoin]
         .filter(Boolean)
         .map((s) => normalizeSearchText(s));
       const hayJoined = parts.join(' ');
@@ -232,7 +255,7 @@ router.post('/', auth, isRestaurant, upload.fields(uploadProductFields), async (
       return res.status(403).json({ message: 'Accès refusé pour cette entreprise' });
     }
 
-    const { nom, nomEn, description, descriptionEn, prix, categorieProduitId, nomAfficheAccueil, nomAfficheAccueilEn } = req.body;
+    const { nom, nomEn, description, descriptionEn, prix, categorieProduitId, nomAfficheAccueil, nomAfficheAccueilEn, caracteristiques, caracteristiquesEn, promoLivraisonGratuite, promoPourcentage } = req.body;
     if (!nom || !nom.trim()) return res.status(400).json({ message: 'Le nom est requis' });
     if (prix === undefined || prix === null || isNaN(parseFloat(prix))) {
       return res.status(400).json({ message: 'Le prix (FCFA) est requis' });
@@ -250,7 +273,9 @@ router.post('/', auth, isRestaurant, upload.fields(uploadProductFields), async (
       descriptionEn: descriptionEn != null ? String(descriptionEn).trim() : '',
       prix: parseFloat(prix),
       restaurant: restaurantId,
-      disponible: true
+      disponible: true,
+      caracteristiques: parseCaracteristiques(caracteristiques) ?? [],
+      caracteristiquesEn: parseCaracteristiques(caracteristiquesEn) ?? [],
     };
     if (categorieProduitId) data.categorieProduit = categorieProduitId;
     if (nomAfficheAccueil && String(nomAfficheAccueil).trim()) {
@@ -277,6 +302,8 @@ router.post('/', auth, isRestaurant, upload.fields(uploadProductFields), async (
     if (!banniereFile && req.body.banniereProduit && isAllowedUploadRef(req.body.banniereProduit)) {
       data.banniereProduit = String(req.body.banniereProduit).trim();
     }
+    data.promoLivraisonGratuite = parsePromoLivraisonBody(promoLivraisonGratuite);
+    data.promoPourcentage = parsePromoPourcentageBody(promoPourcentage);
     const prod = new Produit(data);
     await prod.save();
     await prod.populate('categorieProduit', 'nom nomEn image');
@@ -317,7 +344,22 @@ router.put('/:id', auth, isRestaurant, upload.fields(uploadProductFields), async
     if (req.body.descriptionEn !== undefined) prod.descriptionEn = String(req.body.descriptionEn || '').trim();
     if (req.body.prix !== undefined) prod.prix = parseFloat(req.body.prix);
     if (req.body.categorieProduitId !== undefined) prod.categorieProduit = req.body.categorieProduitId || null;
-    if (req.body.disponible !== undefined) prod.disponible = !!req.body.disponible;
+    if (req.body.disponible !== undefined) {
+      const d = req.body.disponible;
+      prod.disponible = d === true || d === 'true' || d === '1';
+    }
+    if (req.body.promoLivraisonGratuite !== undefined) {
+      prod.promoLivraisonGratuite = parsePromoLivraisonBody(req.body.promoLivraisonGratuite);
+    }
+    if (req.body.promoPourcentage !== undefined) {
+      prod.promoPourcentage = parsePromoPourcentageBody(req.body.promoPourcentage);
+    }
+    if (req.body.caracteristiques !== undefined) {
+      prod.caracteristiques = parseCaracteristiques(req.body.caracteristiques) || [];
+    }
+    if (req.body.caracteristiquesEn !== undefined) {
+      prod.caracteristiquesEn = parseCaracteristiques(req.body.caracteristiquesEn) || [];
+    }
     if (mainFile) {
       const newImg = mainFile.path;
       prod.images = Array.isArray(prod.images) && prod.images.length

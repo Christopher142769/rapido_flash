@@ -312,6 +312,55 @@
   font-size: 14px;
 }
 
+.produit-promo-block {
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #fff8f0 0%, #fff 100%);
+  border: 1px solid rgba(139, 69, 19, 0.2);
+  border-radius: 12px;
+}
+
+.produit-promo-block-title {
+  display: block;
+  font-weight: 700;
+  color: var(--primary-brown);
+  margin-bottom: 10px;
+}
+
+.produit-promo-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.produit-promo-check input {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.textarea-description-rich {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+  resize: vertical;
+  white-space: pre-wrap;
+}
+
+.produit-desc-preview-wrap {
+  margin-top: 10px;
+}
+
+.plat-admin-desc-preview {
+  margin-top: 8px;
+}
+
 @media (max-width: 768px) {
   .plats-header {
     flex-direction: column;

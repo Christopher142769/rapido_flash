@@ -30,6 +30,15 @@ const produitSchema = new mongoose.Schema({
   description: {
     type: String
   },
+  /** Points affichés dans « Détails du produit » (fiche boutique), une entrée = une puce */
+  caracteristiques: {
+    type: [String],
+    default: []
+  },
+  caracteristiquesEn: {
+    type: [String],
+    default: []
+  },
   prix: {
     type: Number,
     required: true,
@@ -60,6 +69,16 @@ const produitSchema = new mongoose.Schema({
   disponible: {
     type: Boolean,
     default: true
+  },
+  /** Promo : livraison gratuite pour la commande si au moins un article avec ce flag */
+  promoLivraisonGratuite: {
+    type: Boolean,
+    default: false
+  },
+  /** Réduction prix affichée / payée (1–90 %), null = pas de promo prix */
+  promoPourcentage: {
+    type: Number,
+    default: null
   },
   createdAt: {
     type: Date,

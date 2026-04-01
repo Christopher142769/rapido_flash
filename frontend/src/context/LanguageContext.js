@@ -50,6 +50,9 @@ export const translations = {
       allProductsTitle: 'Tous les produits',
       allProductsEmpty: 'Aucun produit disponible pour cette catégorie.',
       noProductsPreview: 'Découvrir la carte',
+      promoOff: 'promo',
+      promoFreeDelivery: 'Livraison gratuite',
+      promoBadgesAria: 'Offres promotionnelles sur ce produit',
     },
     settings: {
       title: 'Paramètres',
@@ -134,6 +137,7 @@ export const translations = {
       deliveryFee: 'Frais de livraison',
       total: 'Total',
       checkout: 'Passer la commande',
+      freeDeliveryPromoNote: 'Livraison offerte (promo produit)',
     },
     locationEditor: {
       title: "Modifier l'adresse de livraison",
@@ -202,6 +206,16 @@ export const translations = {
       homeCardNameEn: 'Nom carte d’accueil (anglais)',
       structureNameEn: 'Nom de la structure (anglais)',
       structureDescEn: 'Description (anglais)',
+      productCharacteristics: 'Caractéristiques',
+      productCharacteristicsHint: 'Une ligne = un point. Affiché dans « Détails du produit » sur la page boutique (fiche produit).',
+      productCharacteristicsEn: 'Caractéristiques (anglais)',
+      productPromoSection: 'Promotions (cartes & commande)',
+      promoFreeShippingLabel: 'Mettre en avant la livraison gratuite : si la commande contient ce produit, les frais de livraison sont offerts.',
+      promoPercentLabel: 'Réduction de prix (%)',
+      promoPercentHint: 'Entre 1 et 90, ou vide pour désactiver. Le prix payé est calculé automatiquement.',
+      productDescriptionFormatHint:
+        'Retours à la ligne : utilisez Entrée. Une ligne vide sépare deux paragraphes. Gras : **texte** ou __texte__. Lien : [libellé](https://…) — uniquement des adresses en http ou https.',
+      productDescriptionPreview: 'Aperçu (comme sur la fiche produit)',
     },
     store: {
       loading: 'Chargement de la structure...',
@@ -243,6 +257,7 @@ export const translations = {
       deliveryReturnsBody:
         'Les modalités de livraison et de retour dépendent de la structure. Contactez-la pour toute question.',
       viewOtherProducts: 'Voir les autres produits',
+      productCharacteristicsHeading: 'Caractéristiques',
     },
   },
   en: {
@@ -291,6 +306,9 @@ export const translations = {
       allProductsTitle: 'All products',
       allProductsEmpty: 'No products available for this category.',
       noProductsPreview: 'See the menu',
+      promoOff: 'off',
+      promoFreeDelivery: 'Free delivery',
+      promoBadgesAria: 'Promotional offers on this product',
     },
     settings: {
       title: 'Settings',
@@ -375,6 +393,7 @@ export const translations = {
       deliveryFee: 'Delivery fee',
       total: 'Total',
       checkout: 'Checkout',
+      freeDeliveryPromoNote: 'Free delivery (product promo)',
     },
     locationEditor: {
       title: 'Change delivery address',
@@ -443,6 +462,16 @@ export const translations = {
       homeCardNameEn: 'Home card name (English)',
       structureNameEn: 'Business name (English)',
       structureDescEn: 'Description (English)',
+      productCharacteristics: 'Characteristics',
+      productCharacteristicsHint: 'One line = one bullet. Shown under “Product details” on the shop product page.',
+      productCharacteristicsEn: 'Characteristics (English)',
+      productPromoSection: 'Promotions (cards & checkout)',
+      promoFreeShippingLabel: 'Highlight free delivery: if the order includes this product, delivery fees are waived.',
+      promoPercentLabel: 'Price discount (%)',
+      promoPercentHint: 'Between 1 and 90, or leave empty to disable. The paid price is calculated automatically.',
+      productDescriptionFormatHint:
+        'Line breaks: press Enter. A blank line starts a new paragraph. Bold: **text** or __text__. Link: [label](https://…) — only http or https URLs.',
+      productDescriptionPreview: 'Preview (as on the product page)',
     },
     store: {
       loading: 'Loading shop...',
@@ -484,6 +513,7 @@ export const translations = {
       deliveryReturnsBody:
         'Delivery and return policies depend on the shop. Contact them for details.',
       viewOtherProducts: 'See more products',
+      productCharacteristicsHeading: 'Features',
     },
   },
 };

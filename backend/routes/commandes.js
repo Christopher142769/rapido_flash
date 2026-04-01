@@ -5,6 +5,7 @@ const Restaurant = require('../models/Restaurant');
 const { auth } = require('../middleware/auth');
 
 const RECEIPT_VALIDITY_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
+const { effectiveProduitPrice } = require('../utils/productPromo');
 
 const router = express.Router();
 
@@ -47,13 +48,16 @@ router.post('/', auth, async (req, res) => {
       }
     }
 
+    let commandeQualifieLivraisonGratuite = false;
     if (produits && produits.length > 0) {
       const Produit = require('../models/Produit');
       for (const item of produits) {
         const produit = await Produit.findById(item.produitId);
         if (!produit) return res.status(404).json({ message: `Produit ${item.produitId} non trouvé` });
-        sousTotal += produit.prix * item.quantite;
-        produitsDetails.push({ produit: item.produitId, quantite: item.quantite, prix: produit.prix });
+        const prixLigne = effectiveProduitPrice(produit);
+        sousTotal += prixLigne * item.quantite;
+        produitsDetails.push({ produit: item.produitId, quantite: item.quantite, prix: prixLigne });
+        if (produit.promoLivraisonGratuite) commandeQualifieLivraisonGratuite = true;
       }
     }
 
@@ -61,7 +65,8 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ message: 'La commande doit contenir des plats ou des produits' });
     }
 
-    const fraisLivraison = restaurant.fraisLivraison || 0;
+    const fraisLivraisonBase = restaurant.fraisLivraison || 0;
+    const fraisLivraison = commandeQualifieLivraisonGratuite ? 0 : fraisLivraisonBase;
     const total = sousTotal + fraisLivraison;
 
     const modesValides = ['especes', 'momo_avant', 'momo_apres'];

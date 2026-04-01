@@ -1,0 +1,45 @@
+.product-description-rich {
+  margin: 0;
+}
+
+.product-description-rich__p {
+  margin: 0 0 0.65em;
+  line-height: 1.5;
+}
+
+.product-description-rich__p:last-child {
+  margin-bottom: 0;
+}
+
+.product-description-rich__link {
+  color: #1565c0;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-word;
+}
+
+.product-description-rich__link:hover {
+  color: #0d47a1;
+}
+
+/* Cartes liste : hauteur limitée sans casser le gras / liens */
+.product-description-rich--in-list {
+  max-height: 3.65em;
+  overflow: hidden;
+}
+
+.product-description-rich--in-list .product-description-rich__p {
+  margin-bottom: 0.35em;
+}
+
+/* Aperçu tableau de bord */
+.product-description-rich--admin-preview {
+  max-height: 140px;
+  overflow: auto;
+  padding: 10px 12px;
+  background: #faf8f5;
+  border-radius: 8px;
+  border: 1px solid rgba(139, 69, 19, 0.15);
+  font-size: 14px;
+}

@@ -7,6 +7,7 @@ import DashboardSidebar from '../../components/DashboardSidebar';
 import PageLoader from '../../components/PageLoader';
 import MediaPickerModal from '../../components/MediaPickerModal';
 import { getImageUrl } from '../../utils/imagePlaceholder';
+import ProductDescriptionRich from '../../components/ProductDescriptionRich';
 import './RestaurantPlats.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -31,9 +32,13 @@ const RestaurantPlats = () => {
     nomAfficheAccueilEn: '',
     description: '',
     descriptionEn: '',
+    caracteristiquesText: '',
+    caracteristiquesEnText: '',
     prix: '',
     categorieProduitId: '',
     disponible: true,
+    promoLivraisonGratuite: false,
+    promoPourcentage: '',
   });
   const [imagePreview, setImagePreview] = useState(null);
   /** Image galerie produit (chemin /uploads/...) */
@@ -119,9 +124,22 @@ const RestaurantPlats = () => {
       data.append('nomAfficheAccueilEn', (formData.nomAfficheAccueilEn || '').trim());
       data.append('description', (formData.description || '').trim());
       data.append('descriptionEn', (formData.descriptionEn || '').trim());
+      const carFr = (formData.caracteristiquesText || '')
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const carEn = (formData.caracteristiquesEnText || '')
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      data.append('caracteristiques', JSON.stringify(carFr));
+      data.append('caracteristiquesEn', JSON.stringify(carEn));
       data.append('prix', String(formData.prix));
       if (formData.categorieProduitId) data.append('categorieProduitId', formData.categorieProduitId);
       data.append('disponible', formData.disponible);
+      data.append('promoLivraisonGratuite', formData.promoLivraisonGratuite ? 'true' : 'false');
+      const pp = String(formData.promoPourcentage || '').trim().replace(',', '.');
+      data.append('promoPourcentage', pp === '' || pp === '0' ? '' : pp);
       data.append('restaurantId', currentRestaurantId);
       if (galleryImagePath) data.append('galleryImagePath', galleryImagePath);
       if (editingProduit) {
@@ -146,9 +164,13 @@ const RestaurantPlats = () => {
         nomAfficheAccueilEn: '',
         description: '',
         descriptionEn: '',
+        caracteristiquesText: '',
+        caracteristiquesEnText: '',
         prix: '',
         categorieProduitId: '',
         disponible: true,
+        promoLivraisonGratuite: false,
+        promoPourcentage: '',
       });
       resetMediaPreviews();
       await fetchData();
@@ -168,9 +190,14 @@ const RestaurantPlats = () => {
       nomAfficheAccueilEn: p.nomAfficheAccueilEn || '',
       description: p.description || '',
       descriptionEn: p.descriptionEn || '',
+      caracteristiquesText: Array.isArray(p.caracteristiques) && p.caracteristiques.length ? p.caracteristiques.join('\n') : '',
+      caracteristiquesEnText: Array.isArray(p.caracteristiquesEn) && p.caracteristiquesEn.length ? p.caracteristiquesEn.join('\n') : '',
       prix: p.prix,
       categorieProduitId: (p.categorieProduit && p.categorieProduit._id) || '',
       disponible: p.disponible !== false,
+      promoLivraisonGratuite: !!p.promoLivraisonGratuite,
+      promoPourcentage:
+        p.promoPourcentage != null && Number(p.promoPourcentage) > 0 ? String(p.promoPourcentage) : '',
     });
     const firstImg = (p.images && p.images[0]) ? (String(p.images[0]).startsWith('http') ? p.images[0] : `${BASE_URL}${p.images[0]}`) : null;
     setImagePreview(firstImg);
@@ -248,9 +275,13 @@ const RestaurantPlats = () => {
                 nomAfficheAccueilEn: '',
                 description: '',
                 descriptionEn: '',
+                caracteristiquesText: '',
+                caracteristiquesEnText: '',
                 prix: '',
                 categorieProduitId: '',
                 disponible: true,
+                promoLivraisonGratuite: false,
+                promoPourcentage: '',
               });
               resetMediaPreviews();
             }} disabled={!currentRestaurantId}>
@@ -299,16 +330,84 @@ const RestaurantPlats = () => {
                   </div>
                   <div className="form-group">
                     <label>Description</label>
-                    <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows="3" />
+                    <span className="label-hint">{t('i18n', 'productDescriptionFormatHint')}</span>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      rows={8}
+                      className="textarea-description-rich"
+                      spellCheck="true"
+                    />
+                    {formData.description.trim() ? (
+                      <div className="produit-desc-preview-wrap">
+                        <span className="label-hint">{t('i18n', 'productDescriptionPreview')}</span>
+                        <ProductDescriptionRich text={formData.description} className="product-description-rich--admin-preview" />
+                      </div>
+                    ) : null}
                   </div>
                   <div className="form-group">
                     <label>{t('i18n', 'productDescEn')}</label>
                     <span className="label-hint">{t('i18n', 'nameEnHint')}</span>
-                    <textarea value={formData.descriptionEn} onChange={(e) => setFormData({ ...formData, descriptionEn: e.target.value })} rows="2" />
+                    <span className="label-hint">{t('i18n', 'productDescriptionFormatHint')}</span>
+                    <textarea
+                      value={formData.descriptionEn}
+                      onChange={(e) => setFormData({ ...formData, descriptionEn: e.target.value })}
+                      rows={6}
+                      className="textarea-description-rich"
+                      spellCheck="true"
+                    />
+                    {formData.descriptionEn.trim() ? (
+                      <div className="produit-desc-preview-wrap">
+                        <span className="label-hint">{t('i18n', 'productDescriptionPreview')}</span>
+                        <ProductDescriptionRich text={formData.descriptionEn} className="product-description-rich--admin-preview" />
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="form-group">
+                    <label>{t('i18n', 'productCharacteristics')}</label>
+                    <span className="label-hint">{t('i18n', 'productCharacteristicsHint')}</span>
+                    <textarea
+                      value={formData.caracteristiquesText}
+                      onChange={(e) => setFormData({ ...formData, caracteristiquesText: e.target.value })}
+                      rows="4"
+                      placeholder={'Une ligne par point (liste à puces sur la fiche produit)'}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>{t('i18n', 'productCharacteristicsEn')}</label>
+                    <span className="label-hint">{t('i18n', 'nameEnHint')}</span>
+                    <textarea
+                      value={formData.caracteristiquesEnText}
+                      onChange={(e) => setFormData({ ...formData, caracteristiquesEnText: e.target.value })}
+                      rows="3"
+                      placeholder="One line per bullet"
+                    />
                   </div>
                   <div className="form-group">
                     <label>Prix (FCFA) *</label>
                     <input type="number" min="0" step="1" value={formData.prix} onChange={(e) => setFormData({ ...formData, prix: e.target.value })} required />
+                  </div>
+                  <div className="form-group produit-promo-block">
+                    <label className="produit-promo-block-title">{t('i18n', 'productPromoSection')}</label>
+                    <label className="produit-promo-check">
+                      <input
+                        type="checkbox"
+                        checked={formData.promoLivraisonGratuite}
+                        onChange={(e) => setFormData({ ...formData, promoLivraisonGratuite: e.target.checked })}
+                      />
+                      <span>{t('i18n', 'promoFreeShippingLabel')}</span>
+                    </label>
+                    <label>{t('i18n', 'promoPercentLabel')}</label>
+                    <span className="label-hint">{t('i18n', 'promoPercentHint')}</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="90"
+                      step="1"
+                      placeholder="—"
+                      value={formData.promoPourcentage}
+                      onChange={(e) => setFormData({ ...formData, promoPourcentage: e.target.value })}
+                    />
                   </div>
                   <div className="form-group">
                     <label>Catégorie produit</label>
@@ -441,7 +540,11 @@ const RestaurantPlats = () => {
                   <div className="plat-info-admin">
                     <h3>{p.nom}</h3>
                     {p.nomAfficheAccueil && <p className="plat-nom-accueil">Accueil : {p.nomAfficheAccueil}</p>}
-                    {p.description && <p>{p.description}</p>}
+                    {p.description ? (
+                      <div className="plat-admin-desc-preview">
+                        <ProductDescriptionRich text={p.description} className="product-description-rich--admin-preview" />
+                      </div>
+                    ) : null}
                     <div className="plat-details">
                       <span className="plat-prix-admin">{Number(p.prix).toFixed(0)} FCFA</span>
                       {p.categorieProduit && <span className="plat-categorie">{p.categorieProduit.nom}</span>}

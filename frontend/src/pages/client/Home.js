@@ -15,6 +15,8 @@ import { FaPhoneAlt, FaWhatsapp, FaPlus } from 'react-icons/fa';
 import { IoChevronBack, IoChevronForward } from 'react-icons/io5';
 import { generateBannerPlaceholderSVG } from '../../utils/imagePlaceholder';
 import { structureProductNamesText, pickLocalized } from '../../utils/i18nContent';
+import ProductPromoBadges from '../../components/ProductPromoBadges';
+import { effectiveProductPrice, hasPricePromo } from '../../utils/productPromo';
 import './Home.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -263,6 +265,8 @@ const Home = () => {
           : item
       );
     } else {
+      const eff = effectiveProductPrice(previewProduit);
+      const showOld = hasPricePromo(previewProduit);
       newCart = [
         ...newCart,
         {
@@ -271,7 +275,9 @@ const Home = () => {
           nomEn: previewProduit.nomEn,
           nomAfficheAccueil: previewProduit.nomAfficheAccueil,
           nomAfficheAccueilEn: previewProduit.nomAfficheAccueilEn,
-          prix: previewProduit.prix,
+          prix: eff,
+          prixCatalogue: showOld ? Number(previewProduit.prix) : undefined,
+          promoLivraisonGratuite: !!previewProduit.promoLivraisonGratuite,
           image: imageUrl,
           quantite: 1,
           restaurantId: rid,
@@ -298,6 +304,8 @@ const Home = () => {
           : item
       );
     } else {
+      const eff = effectiveProductPrice(produit);
+      const showOld = hasPricePromo(produit);
       newCart = [
         ...newCart,
         {
@@ -306,7 +314,9 @@ const Home = () => {
           nomEn: produit.nomEn,
           nomAfficheAccueil: produit.nomAfficheAccueil,
           nomAfficheAccueilEn: produit.nomAfficheAccueilEn,
-          prix: produit.prix,
+          prix: eff,
+          prixCatalogue: showOld ? Number(produit.prix) : undefined,
+          promoLivraisonGratuite: !!produit.promoLivraisonGratuite,
           image: imageUrl,
           quantite: 1,
           restaurantId,
@@ -361,6 +371,7 @@ const Home = () => {
                   }}
                 >
                   <div className="home-product-hit-media">
+                    <ProductPromoBadges product={produit} />
                     <img
                       src={imgSrc}
                       alt=""
@@ -374,7 +385,14 @@ const Home = () => {
                     <p className="home-product-hit-shop">{localized(r, 'nom') || '—'}</p>
                     <div className="home-product-hit-row">
                       <span className="home-product-hit-price">
-                        {Number(produit.prix).toFixed(0)} FCFA
+                        {hasPricePromo(produit) ? (
+                          <>
+                            <span className="home-product-price-current">{effectiveProductPrice(produit)} FCFA</span>
+                            <span className="home-product-price-old">{Number(produit.prix).toFixed(0)} FCFA</span>
+                          </>
+                        ) : (
+                          <>{Number(produit.prix).toFixed(0)} FCFA</>
+                        )}
                       </span>
                       {dist != null && (
                         <span className="home-product-hit-dist">
@@ -587,6 +605,7 @@ const Home = () => {
                     }}
                   >
                     <div className="home-all-product-img-wrap">
+                      <ProductPromoBadges product={produit} />
                       <img
                         src={imgSrc}
                         alt=""
@@ -599,6 +618,16 @@ const Home = () => {
 
                     <div className="home-all-product-body">
                       <h3 className="home-all-product-name">{productDisplayName(produit)}</h3>
+                      <div className="home-all-product-price-row">
+                        {hasPricePromo(produit) ? (
+                          <>
+                            <span className="home-all-product-price-current">{effectiveProductPrice(produit)} FCFA</span>
+                            <span className="home-all-product-price-old">{Number(produit.prix).toFixed(0)} FCFA</span>
+                          </>
+                        ) : (
+                          <span className="home-all-product-price-single">{Number(produit.prix).toFixed(0)} FCFA</span>
+                        )}
+                      </div>
 
                       <div className="home-all-product-footer">
                         {minutes != null ? (
@@ -819,6 +848,7 @@ const Home = () => {
                       }}
                     >
                       <div className="home-all-product-img-wrap">
+                        <ProductPromoBadges product={produit} />
                         <img
                           src={imgSrc}
                           alt=""
@@ -831,6 +861,16 @@ const Home = () => {
 
                       <div className="home-all-product-body">
                         <h3 className="home-all-product-name">{productDisplayName(produit)}</h3>
+                        <div className="home-all-product-price-row">
+                          {hasPricePromo(produit) ? (
+                            <>
+                              <span className="home-all-product-price-current">{effectiveProductPrice(produit)} FCFA</span>
+                              <span className="home-all-product-price-old">{Number(produit.prix).toFixed(0)} FCFA</span>
+                            </>
+                          ) : (
+                            <span className="home-all-product-price-single">{Number(produit.prix).toFixed(0)} FCFA</span>
+                          )}
+                        </div>
 
                         <div className="home-all-product-footer">
                           {minutes != null ? (

@@ -148,6 +148,25 @@
   color: var(--primary-brown);
 }
 
+.checkout-fee-struck {
+  text-decoration: line-through;
+  color: #999;
+  font-size: 14px;
+  margin-right: 8px;
+}
+
+.checkout-fee-free {
+  font-weight: 700;
+  color: #1a7f37;
+}
+
+.checkout-promo-delivery-note {
+  margin: -6px 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1565c0;
+}
+
 @media (max-width: 968px) {
   .checkout-content {
     grid-template-columns: 1fr;
