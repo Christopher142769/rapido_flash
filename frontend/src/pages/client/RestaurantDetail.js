@@ -15,7 +15,6 @@ import {
   FaSearch,
   FaBoxOpen,
   FaShare,
-  FaPlus,
   FaShoppingCart,
   FaStore,
   FaCalendarAlt,
@@ -634,12 +633,6 @@ const RestaurantDetail = () => {
                     </div>
                     <div className="plat-details-curved">
                       <h3 className="plat-name-curved">{displayName}</h3>
-                      {localized(produit, 'description') ? (
-                        <ProductDescriptionRich
-                          text={localized(produit, 'description')}
-                          className="plat-description-curved product-description-rich--in-list"
-                        />
-                      ) : null}
                       {hasPricePromo(produit) ? (
                         <span className="plat-prix-curved plat-prix-curved--promo">
                           <span className="plat-prix-current">{effectiveProductPrice(produit)} FCFA</span>
@@ -649,8 +642,8 @@ const RestaurantDetail = () => {
                         <span className="plat-prix-curved">{Number(produit.prix).toFixed(0)} FCFA</span>
                       )}
                     </div>
-                    <button type="button" className="btn-add-cart-inline" onClick={() => addToCart(produit)} title={t('store', 'addToCart')}>
-                      <FaPlus size={22} aria-hidden />
+                    <button type="button" className="btn-add-cart-inline" onClick={() => addToCart(produit)}>
+                      {t('store', 'addToCart')}
                     </button>
                   </div>
                 );
@@ -733,15 +726,9 @@ const RestaurantDetail = () => {
                         ) : (
                           <span className="product-card-price">{Number(produit.prix).toFixed(0)} FCFA</span>
                         )}
-                        {localized(produit, 'description') ? (
-                          <ProductDescriptionRich
-                            text={localized(produit, 'description')}
-                            className="product-card-desc product-description-rich--in-list"
-                          />
-                        ) : null}
                         <div className="product-card-footer">
-                          <button type="button" className="product-card-add-btn" onClick={() => addToCart(produit)} title={t('store', 'addToCart')}>
-                            <FaPlus size={22} aria-hidden />
+                          <button type="button" className="product-card-add-btn" onClick={() => addToCart(produit)}>
+                            {t('store', 'addToCart')}
                           </button>
                         </div>
                       </div>
