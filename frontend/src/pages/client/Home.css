@@ -551,8 +551,8 @@
   /* Carrousel bannières mobile — image remplit toute la zone (comme le hero desktop) */
   .banners-carousel-mobile {
     position: relative;
-    width: min(100%, 320px);
-    aspect-ratio: 320 / 145;
+    width: min(100%, 341px);
+    aspect-ratio: 341 / 122;
     height: auto;
     overflow: hidden;
     background: linear-gradient(135deg, var(--light-yellow) 0%, var(--primary-white) 100%);

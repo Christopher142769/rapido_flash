@@ -74,6 +74,7 @@ const RestaurantDetail = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [productSearch, setProductSearch] = useState('');
+  const [showAllAfterFocus, setShowAllAfterFocus] = useState(false);
 
   const BASE_URL = API_URL.replace('/api', '');
 
@@ -117,6 +118,7 @@ const RestaurantDetail = () => {
   useEffect(() => {
     setSelectedCategorieId(null);
     setProductSearch('');
+    setShowAllAfterFocus(false);
     fetchData(id);
   }, [id, fetchData]);
 
@@ -168,30 +170,6 @@ const RestaurantDetail = () => {
       setSelectedCategorieId(null);
     }
   }, [produitFocusId, loading, allProducts, setSearchParams]);
-
-  /** Scroll + surbrillance sur la carte produit */
-  useEffect(() => {
-    if (!produitFocusId || loading) return;
-    const inList = products.some((x) => String(x._id) === String(produitFocusId));
-    if (!inList) return;
-    const timer = setTimeout(() => {
-      const el = document.getElementById(`product-card-${produitFocusId}`);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        el.classList.add('product-card-highlight');
-        window.setTimeout(() => el.classList.remove('product-card-highlight'), 2400);
-      }
-      setSearchParams(
-        (prev) => {
-          const n = new URLSearchParams(prev);
-          n.delete('produit');
-          return n;
-        },
-        { replace: true }
-      );
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [produitFocusId, loading, products, setSearchParams]);
 
   const addToCart = (produit) => {
     const imageUrl = produit.imageCarteHome || (produit.images && produit.images[0]) || null;
@@ -273,6 +251,16 @@ const RestaurantDetail = () => {
   const cartForRestaurant = cart.filter((item) => String(item.restaurantId) === String(id));
   const cartCountRestaurant = cartForRestaurant.reduce((sum, item) => sum + item.quantite, 0);
   const cartTotalRestaurant = cartForRestaurant.reduce((sum, item) => sum + item.prix * item.quantite, 0);
+  const featuredProduct = produitFocusId
+    ? allProducts.find((p) => String(p._id) === String(produitFocusId)) || null
+    : null;
+  const hasFocusedProduct = Boolean(featuredProduct);
+  const otherProducts = hasFocusedProduct
+    ? products.filter((p) => String(p._id) !== String(featuredProduct._id))
+    : products;
+  const visibleProducts = hasFocusedProduct && !showAllAfterFocus
+    ? otherProducts.slice(0, 6)
+    : otherProducts;
 
   return (
     <div className="restaurant-detail-page">
@@ -377,6 +365,48 @@ const RestaurantDetail = () => {
       </div>
 
       <div className="restaurant-content-container">
+        {hasFocusedProduct && (
+          <section className="featured-product-section" aria-label="Produit mis en avant">
+            <div className="featured-product-card">
+              <div
+                className="featured-product-image-wrap"
+                onClick={() => {
+                  const src = productOpenImageSrc(featuredProduct, BASE_URL) || productCardImageSrc(featuredProduct, BASE_URL);
+                  if (src) {
+                    setSelectedImage(src);
+                    setShowImageModal(true);
+                  }
+                }}
+              >
+                <img
+                  src={productOpenImageSrc(featuredProduct, BASE_URL) || productCardImageSrc(featuredProduct, BASE_URL) || getImageUrl(null, { nom: productDisplayName(featuredProduct) }, BASE_URL)}
+                  alt={productDisplayName(featuredProduct)}
+                  className="featured-product-image"
+                />
+              </div>
+              <div className="featured-product-info">
+                <p className="featured-product-kicker">
+                  {String(language || '').toLowerCase().startsWith('en') ? 'Featured product' : 'Produit mis en avant'}
+                </p>
+                <h2 className="featured-product-name">{productDisplayName(featuredProduct)}</h2>
+                {localized(featuredProduct, 'description') ? (
+                  <p className="featured-product-description">{localized(featuredProduct, 'description')}</p>
+                ) : null}
+                <div className="featured-product-footer">
+                  <span className="featured-product-price">{Number(featuredProduct.prix).toFixed(0)} FCFA</span>
+                  <button
+                    type="button"
+                    className="featured-product-add-btn"
+                    onClick={() => addToCart(featuredProduct)}
+                  >
+                    {String(language || '').toLowerCase().startsWith('en') ? 'Add to cart' : 'Ajouter au panier'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
         {(formatJoursVente(restaurant.joursVente) || restaurant.commanderVeille) && (
           <div className="restaurant-vente-info" role="region" aria-label="Informations commandes">
             {formatJoursVente(restaurant.joursVente) && (
@@ -420,7 +450,7 @@ const RestaurantDetail = () => {
               ))}
             </div>
           )}
-          {products.length === 0 ? (
+          {visibleProducts.length === 0 ? (
             <div className="no-plats-curved">
               <p>{t('store', 'noProducts')}</p>
               <p style={{ fontSize: '14px', color: '#999', marginTop: '10px' }}>
@@ -429,7 +459,7 @@ const RestaurantDetail = () => {
             </div>
           ) : (
             <div className="plats-list-curved">
-              {products.map((produit) => {
+              {visibleProducts.map((produit) => {
                 const displayName = productDisplayName(produit);
                 const imgSrc = productCardImageSrc(produit, BASE_URL) || getImageUrl(null, { nom: displayName }, BASE_URL);
                 const zoomSrc = productOpenImageSrc(produit, BASE_URL) || imgSrc;
@@ -449,6 +479,13 @@ const RestaurantDetail = () => {
                   </div>
                 );
               })}
+            </div>
+          )}
+          {hasFocusedProduct && otherProducts.length > 6 && !showAllAfterFocus && (
+            <div className="see-more-wrap">
+              <button type="button" className="see-more-btn" onClick={() => setShowAllAfterFocus(true)}>
+                {String(language || '').toLowerCase().startsWith('en') ? 'See more products' : 'Voir plus de produits'}
+              </button>
             </div>
           )}
         </div>
@@ -493,11 +530,11 @@ const RestaurantDetail = () => {
             </nav>
           </aside>
           <main className="store-products-column">
-            {products.length === 0 ? (
+            {visibleProducts.length === 0 ? (
               <div className="no-plats-curved no-plats-desktop">{t('store', 'noProductsCategoryDesktop')}</div>
             ) : (
               <div className="products-grid-desktop">
-                {products.map((produit) => {
+                {visibleProducts.map((produit) => {
                   const displayName = productDisplayName(produit);
                   const imgSrc = productCardImageSrc(produit, BASE_URL) || getImageUrl(null, { nom: displayName }, BASE_URL);
                   const zoomSrc = productOpenImageSrc(produit, BASE_URL) || imgSrc;
@@ -522,6 +559,13 @@ const RestaurantDetail = () => {
                     </div>
                   );
                 })}
+              </div>
+            )}
+            {hasFocusedProduct && otherProducts.length > 6 && !showAllAfterFocus && (
+              <div className="see-more-wrap">
+                <button type="button" className="see-more-btn" onClick={() => setShowAllAfterFocus(true)}>
+                  {String(language || '').toLowerCase().startsWith('en') ? 'See more products' : 'Voir plus de produits'}
+                </button>
               </div>
             )}
           </main>
