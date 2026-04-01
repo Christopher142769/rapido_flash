@@ -539,11 +539,13 @@
 }
 
 .pdp-nike-description-section {
-  margin: 0 0 24px;
+  margin: 28px 0 28px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .pdp-nike-description-title {
-  margin: 0 0 10px;
+  margin: 0 0 14px;
   font-size: 14px;
   font-weight: 600;
   color: #111;
@@ -593,7 +595,7 @@
 }
 
 .pdp-nike-zoom-hint {
-  margin: 12px 0 0;
+  margin: 16px 0 0;
   font-size: 12px;
   color: #757575;
 }
