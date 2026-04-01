@@ -505,21 +505,33 @@
   color: #1565c0;
 }
 
-.pdp-nike-lede {
+.pdp-nike-description-section {
   margin: 0 0 24px;
+}
+
+.pdp-nike-description-title {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+  letter-spacing: 0.02em;
+}
+
+.pdp-nike-description-body {
+  margin: 0;
   font-size: 15px;
   line-height: 1.6;
   color: #444;
 }
 
-.pdp-nike-lede.product-description-rich .product-description-rich__p {
+.pdp-nike-description-body.product-description-rich .product-description-rich__p {
   margin: 0 0 0.5em;
   color: inherit;
   font-size: inherit;
   line-height: inherit;
 }
 
-.pdp-nike-lede.product-description-rich .product-description-rich__p:last-child {
+.pdp-nike-description-body.product-description-rich .product-description-rich__p:last-child {
   margin-bottom: 0;
 }
 
@@ -651,17 +663,6 @@
 }
 
 .pdp-nike-details-copy p:last-child {
-  margin-bottom: 0;
-}
-
-.pdp-nike-details-copy-rich .product-description-rich__p {
-  margin: 0 0 10px;
-  font-size: 14px;
-  line-height: 1.55;
-  color: #444;
-}
-
-.pdp-nike-details-copy-rich .product-description-rich__p:last-child {
   margin-bottom: 0;
 }
 
@@ -1107,7 +1108,7 @@
     font-size: 20px;
   }
 
-  .pdp-nike-lede {
+  .pdp-nike-description-body {
     font-size: 16px;
     max-width: 48ch;
   }

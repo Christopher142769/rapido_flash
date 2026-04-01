@@ -301,14 +301,9 @@ const RestaurantDetail = () => {
   const cartCountRestaurant = cartForRestaurant.reduce((sum, item) => sum + item.quantite, 0);
   const cartTotalRestaurant = cartForRestaurant.reduce((sum, item) => sum + item.prix * item.quantite, 0);
   const hasFocusedProduct = Boolean(highlightedProduct);
-  const highlightedDescriptionFull = hasFocusedProduct ? localized(highlightedProduct, 'description') : '';
-  const highlightedDescriptionParagraphs = highlightedDescriptionFull
-    ? highlightedDescriptionFull.split(/\n+/).map((s) => s.trim()).filter(Boolean)
-    : [];
-  const highlightedDescriptionLede =
-    highlightedDescriptionParagraphs.length > 1
-      ? highlightedDescriptionParagraphs[0]
-      : highlightedDescriptionFull;
+  const highlightedDescriptionFull = String(
+    hasFocusedProduct ? localized(highlightedProduct, 'description') || '' : ''
+  );
   const highlightedCaracteristiques = hasFocusedProduct
     ? productCaracteristiquesList(language, highlightedProduct)
     : [];
@@ -491,8 +486,11 @@ const RestaurantDetail = () => {
                 {hasFreeDeliveryPromo(highlightedProduct) ? (
                   <p className="pdp-nike-promo-shipping">{t('home', 'promoFreeDelivery')}</p>
                 ) : null}
-                {highlightedDescriptionLede ? (
-                  <ProductDescriptionRich text={highlightedDescriptionLede} className="pdp-nike-lede" />
+                {highlightedDescriptionFull.trim() ? (
+                  <div className="pdp-nike-description-section">
+                    <h3 className="pdp-nike-description-title">{t('store', 'productDescriptionHeading')}</h3>
+                    <ProductDescriptionRich text={highlightedDescriptionFull} className="pdp-nike-description-body" />
+                  </div>
                 ) : null}
                 <button
                   type="button"
@@ -527,12 +525,6 @@ const RestaurantDetail = () => {
                         </ul>
                       </>
                     )}
-                    {highlightedDescriptionParagraphs.length > 1 ? (
-                      <ProductDescriptionRich
-                        text={highlightedDescriptionParagraphs.slice(1).join('\n\n')}
-                        className="pdp-nike-details-copy-rich"
-                      />
-                    ) : null}
                   </div>
                 </details>
                 <details className="pdp-nike-details">

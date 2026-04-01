@@ -258,6 +258,7 @@ export const translations = {
         'Les modalités de livraison et de retour dépendent de la structure. Contactez-la pour toute question.',
       viewOtherProducts: 'Voir les autres produits',
       productCharacteristicsHeading: 'Caractéristiques',
+      productDescriptionHeading: 'Description',
     },
   },
   en: {
@@ -514,6 +515,7 @@ export const translations = {
         'Delivery and return policies depend on the shop. Contact them for details.',
       viewOtherProducts: 'See more products',
       productCharacteristicsHeading: 'Features',
+      productDescriptionHeading: 'Description',
     },
   },
 };
