@@ -1214,7 +1214,7 @@
     position: relative;
     width: min(100%, 1426px);
     height: 270px;
-    margin: 0 auto;
+    margin: 14px auto 0;
     overflow: hidden;
     background: linear-gradient(135deg, #e8dcc8 0%, #d4c4a8 100%);
     border-radius: 16px;
