@@ -2802,7 +2802,8 @@
 
 .home-all-product-img-wrap {
   width: 100%;
-  aspect-ratio: 4 / 3;
+  /* Aligné sur les visuels produit carrés (ex. 1080×1080) : remplit la zone sans rognage */
+  aspect-ratio: 1 / 1;
   position: relative;
   overflow: hidden;
   cursor: pointer;
