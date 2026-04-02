@@ -260,7 +260,18 @@ const RestaurantDetail = () => {
   /** Navigation "chaîne" : ouvrir la fiche produit dans le même `/restaurant/:id` */
   const goToProduct = (productId) => {
     if (!productId) return;
-    navigate(`/restaurant/${id}?produit=${productId}`);
+    const nextUrl = `/restaurant/${id}?produit=${productId}`;
+    const isSameProduct = String(produitFocusId || '') === String(productId);
+    navigate(nextUrl);
+
+    // Conserve l'effet de redirection vers la fiche produit sélectionnée.
+    window.requestAnimationFrame(() => {
+      const target = document.getElementById('section-product-focus');
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      else window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    if (isSameProduct) setShowAllAfterFocus(false);
   };
 
   const getCartCount = () => cart.reduce((sum, item) => sum + item.quantite, 0);
@@ -432,7 +443,7 @@ const RestaurantDetail = () => {
 
       <div className="restaurant-content-container">
         {hasFocusedProduct && (
-          <section className="pdp-nike" aria-label={t('store', 'productPageAria')}>
+          <section id="section-product-focus" className="pdp-nike" aria-label={t('store', 'productPageAria')}>
             <div className="pdp-nike-inner">
               <div className="pdp-nike-gallery">
                 <button
