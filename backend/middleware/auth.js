@@ -16,6 +16,10 @@ const auth = async (req, res, next) => {
       return res.status(401).json({ message: 'Utilisateur non trouvé' });
     }
 
+    if (req.user.banned) {
+      return res.status(403).json({ message: 'Compte suspendu' });
+    }
+
     next();
   } catch (error) {
     res.status(401).json({ message: 'Token invalide' });

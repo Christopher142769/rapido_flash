@@ -35,6 +35,15 @@ const userSchema = new mongoose.Schema({
   photo: {
     type: String
   },
+  /** Modération plateforme */
+  banned: {
+    type: Boolean,
+    default: false,
+  },
+  banReason: {
+    type: String,
+    default: '',
+  },
   createdAt: {
     type: Date,
     default: Date.now

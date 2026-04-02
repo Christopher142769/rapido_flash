@@ -11,7 +11,7 @@ import LocationEditor from '../../components/LocationEditor';
 import PageLoader from '../../components/PageLoader';
 import FreeDeliveryBanner from '../../components/FreeDeliveryBanner';
 import CategoryDomainIcon from '../../components/CategoryDomainIcon';
-import { FaPhoneAlt, FaWhatsapp, FaPlus } from 'react-icons/fa';
+import { FaPhoneAlt, FaWhatsapp, FaPlus, FaComments } from 'react-icons/fa';
 import { IoChevronBack, IoChevronForward } from 'react-icons/io5';
 import { generateBannerPlaceholderSVG } from '../../utils/imagePlaceholder';
 import { pickLocalized } from '../../utils/i18nContent';
@@ -607,7 +607,6 @@ const Home = () => {
                 const imgSrc = productHitImageSrc(produit, BASE_URL, idx);
                 const minutes = r?.distance != null ? distanceToMinutes(r.distance) : null;
                 const tel = (r?.telephone || '').trim();
-                const wa = phoneToWa(tel);
 
                 return (
                   <article
@@ -669,18 +668,18 @@ const Home = () => {
                               <FaPhoneAlt size={16} />
                             </a>
                           )}
-                          {wa && (
-                            <a
-                              href={`https://wa.me/${wa}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="home-all-product-icon-btn home-all-product-icon-btn--wa"
-                              title={t('home', 'whatsapp')}
-                              aria-label={t('home', 'whatsapp')}
-                            >
-                              <FaWhatsapp size={18} />
-                            </a>
-                          )}
+                          <button
+                            type="button"
+                            className="home-all-product-icon-btn home-all-product-icon-btn--msg"
+                            title={t('chat', 'shopChat')}
+                            aria-label={t('chat', 'shopChat')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/chat/${restaurantId}?produit=${productId}`);
+                            }}
+                          >
+                            <FaComments size={17} />
+                          </button>
                           <button
                             type="button"
                             className="home-all-product-icon-btn home-all-product-icon-btn--cart"
@@ -855,7 +854,6 @@ const Home = () => {
                   const imgSrc = productHitImageSrc(produit, BASE_URL, idx);
                   const minutes = r?.distance != null ? distanceToMinutes(r.distance) : null;
                   const tel = (r?.telephone || '').trim();
-                  const wa = phoneToWa(tel);
 
                   return (
                     <article
@@ -917,18 +915,18 @@ const Home = () => {
                                 <FaPhoneAlt size={16} />
                               </a>
                             )}
-                            {wa && (
-                              <a
-                                href={`https://wa.me/${wa}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="home-all-product-icon-btn home-all-product-icon-btn--wa"
-                                title={t('home', 'whatsapp')}
-                                aria-label={t('home', 'whatsapp')}
-                              >
-                                <FaWhatsapp size={18} />
-                              </a>
-                            )}
+                            <button
+                              type="button"
+                              className="home-all-product-icon-btn home-all-product-icon-btn--msg"
+                              title={t('chat', 'shopChat')}
+                              aria-label={t('chat', 'shopChat')}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/chat/${restaurantId}?produit=${productId}`);
+                              }}
+                            >
+                              <FaComments size={17} />
+                            </button>
                             <button
                               type="button"
                               className="home-all-product-icon-btn home-all-product-icon-btn--cart"

@@ -31,6 +31,11 @@ import Gestionnaires from './pages/restaurant/Gestionnaires';
 import RestaurantMedias from './pages/restaurant/RestaurantMedias';
 import MiseEnAvantAccueil from './pages/restaurant/MiseEnAvantAccueil';
 import RestaurantAvis from './pages/restaurant/RestaurantAvis';
+import RestaurantMessages from './pages/restaurant/RestaurantMessages';
+import PlatformChatModeration from './pages/restaurant/PlatformChatModeration';
+import ChatThread from './pages/client/ChatThread';
+import ChatsInbox from './pages/client/ChatsInbox';
+import ChatFab from './components/ChatFab';
 
 import './App.css';
 import MaintenanceGate from './components/MaintenanceGate';
@@ -47,6 +52,7 @@ function App() {
           }}
         >
           <MaintenanceGate>
+          <ChatFab />
           <Routes>
           {/* Pages publiques client */}
           <Route path="/loading" element={<Loading />} />
@@ -64,6 +70,8 @@ function App() {
           <Route path="/factures" element={<PrivateRoute><Factures /></PrivateRoute>} />
           <Route path="/facture/:id" element={<PrivateRoute><ReceiptPage /></PrivateRoute>} />
           <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+          <Route path="/chats" element={<PrivateRoute><ChatsInbox /></PrivateRoute>} />
+          <Route path="/chat/:restaurantId" element={<PrivateRoute><ChatThread /></PrivateRoute>} />
           
           {/* Pages restaurant */}
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
@@ -76,6 +84,8 @@ function App() {
           <Route path="/dashboard/bannieres" element={<PrivateRoute><Bannieres /></PrivateRoute>} />
           <Route path="/dashboard/gestionnaires" element={<PrivateRoute><Gestionnaires /></PrivateRoute>} />
           <Route path="/dashboard/avis" element={<PrivateRoute><RestaurantAvis /></PrivateRoute>} />
+          <Route path="/dashboard/messages" element={<PrivateRoute><RestaurantMessages /></PrivateRoute>} />
+          <Route path="/dashboard/messages-moderation" element={<PrivateRoute><PlatformChatModeration /></PrivateRoute>} />
           
           <Route path="/" element={<Navigate to="/loading" replace />} />
         </Routes>

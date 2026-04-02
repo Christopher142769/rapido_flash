@@ -88,6 +88,10 @@ router.post('/login', [
       return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
     }
 
+    if (user.banned) {
+      return res.status(403).json({ message: 'Compte suspendu' });
+    }
+
     res.json({
       token: generateToken(user._id),
       user: {
@@ -96,6 +100,7 @@ router.post('/login', [
         email: user.email,
         role: user.role,
         restaurantId: user.restaurantId,
+        banned: !!user.banned,
         canManageMaintenance: canManageMaintenance(user),
       }
     });
@@ -191,6 +196,7 @@ router.get('/me', auth, async (req, res) => {
         photo: user.photo,
         position: user.position,
         restaurantId: user.restaurantId,
+        banned: !!user.banned,
         canManageMaintenance: canManageMaintenance(user),
       }
     });

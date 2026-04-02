@@ -2942,6 +2942,15 @@
   background: rgba(18, 140, 126, 0.2);
 }
 
+.home-all-product-icon-btn--msg {
+  background: rgba(139, 69, 19, 0.12);
+  color: var(--primary-brown, #8b4513);
+}
+
+.home-all-product-icon-btn--msg:hover {
+  background: rgba(139, 69, 19, 0.22);
+}
+
 .home-all-product-icon-btn--cart {
   width: 40px;
   height: 40px;

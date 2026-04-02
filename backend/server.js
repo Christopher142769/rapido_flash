@@ -107,6 +107,7 @@ app.use('/api/categories-domaine', require('./routes/categoriesDomaine'));
 app.use('/api/categories-produit', require('./routes/categoriesProduit'));
 app.use('/api/produits', require('./routes/produits'));
 app.use('/api/avis-produit', require('./routes/avisProduit'));
+app.use('/api/conversations', require('./routes/conversations'));
 app.use('/api/medias', require('./routes/medias'));
 app.use('/api/app-settings', require('./routes/app-settings'));
 

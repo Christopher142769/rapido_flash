@@ -5,6 +5,7 @@ const uploadUser = require('../middleware/uploadUser');
 const fs = require('fs');
 const path = require('path');
 const { cloudinary } = require('../utils/cloudinaryClient');
+const { canManageMaintenance } = require('../utils/maintenanceAccess');
 
 const router = express.Router();
 
@@ -128,6 +129,24 @@ router.put('/photo', auth, uploadUser.single('photo'), async (req, res) => {
     });
   } catch (error) {
     console.error('Erreur lors de la mise à jour de la photo:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/** Suspension compte (modération plateforme) */
+router.patch('/:id/ban', auth, async (req, res) => {
+  try {
+    if (!canManageMaintenance(req.user)) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+    const { banned, reason } = req.body;
+    const u = await User.findById(req.params.id);
+    if (!u) return res.status(404).json({ message: 'Utilisateur introuvable' });
+    u.banned = !!banned;
+    u.banReason = banned ? String(reason || '').slice(0, 500) : '';
+    await u.save();
+    res.json({ ok: true, user: { id: u._id, banned: u.banned } });
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });

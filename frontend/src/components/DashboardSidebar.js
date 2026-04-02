@@ -25,6 +25,7 @@ const DashboardSidebar = ({ onLogout }) => {
     { id: 'categories', label: 'Catégories produits', path: '/dashboard/categories' },
     { id: 'plats', label: 'Produits', path: '/dashboard/plats' },
     { id: 'commandes', label: 'Commandes', path: '/dashboard/commandes' },
+    { id: 'messages', label: 'Messages', path: '/dashboard/messages' },
     { id: 'avis', label: t('reviews', 'sidebarReviews'), path: '/dashboard/avis' },
     { id: 'bannieres', label: 'Bannières', path: '/dashboard/bannieres' }
   ];

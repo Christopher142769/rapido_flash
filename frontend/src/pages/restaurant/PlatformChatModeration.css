@@ -1,0 +1,73 @@
+.platform-chat-mod-page {
+  display: flex;
+  min-height: 100vh;
+  background: #f6f4f0;
+}
+
+.platform-chat-mod-main {
+  flex: 1;
+  padding: 24px 24px 48px;
+}
+
+@media (min-width: 769px) {
+  .platform-chat-mod-main {
+    margin-left: 260px;
+  }
+}
+
+.platform-chat-mod-main h1 {
+  margin: 0 0 8px;
+  color: var(--primary-brown, #8b4513);
+}
+
+.platform-chat-mod-hint {
+  color: #666;
+  margin: 0 0 20px;
+  font-size: 14px;
+}
+
+.platform-chat-mod-table-wrap {
+  overflow-x: auto;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.platform-chat-mod-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.platform-chat-mod-table th,
+.platform-chat-mod-table td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.platform-chat-mod-preview {
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.platform-chat-mod-banned {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #b91c1c;
+  text-transform: uppercase;
+}
+
+.platform-chat-mod-ban {
+  border: none;
+  background: rgba(185, 28, 28, 0.12);
+  color: #b91c1c;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
