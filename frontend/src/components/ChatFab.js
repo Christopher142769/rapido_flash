@@ -15,6 +15,7 @@ const ChatFab = () => {
   if (!user || user.role !== 'client') return null;
   if (loc.pathname.startsWith('/dashboard')) return null;
   if (loc.pathname === '/login' || loc.pathname === '/register') return null;
+  if (loc.pathname === '/chats' || loc.pathname.startsWith('/chat/')) return null;
 
   return (
     <button
