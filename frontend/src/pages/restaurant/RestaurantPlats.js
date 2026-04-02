@@ -40,6 +40,7 @@ const RestaurantPlats = () => {
     promoLivraisonGratuite: false,
     promoPourcentage: '',
     recommande: false,
+    accompagnementsText: '',
   });
   const [imagePreview, setImagePreview] = useState(null);
   /** Image galerie produit (chemin /uploads/...) */
@@ -135,6 +136,16 @@ const RestaurantPlats = () => {
         .filter(Boolean);
       data.append('caracteristiques', JSON.stringify(carFr));
       data.append('caracteristiquesEn', JSON.stringify(carEn));
+      const accompagnements = (formData.accompagnementsText || '')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+          const [nom = '', nomEn = '', prixSupp = '0'] = line.split('|').map((v) => v.trim());
+          return { nom, nomEn, prixSupp: Number(prixSupp || 0), actif: true };
+        })
+        .filter((x) => x.nom);
+      data.append('accompagnements', JSON.stringify(accompagnements));
       data.append('prix', String(formData.prix));
       if (formData.categorieProduitId) data.append('categorieProduitId', formData.categorieProduitId);
       data.append('disponible', formData.disponible);
@@ -174,6 +185,7 @@ const RestaurantPlats = () => {
         promoLivraisonGratuite: false,
         promoPourcentage: '',
         recommande: false,
+        accompagnementsText: '',
       });
       resetMediaPreviews();
       await fetchData();
@@ -202,6 +214,11 @@ const RestaurantPlats = () => {
       promoPourcentage:
         p.promoPourcentage != null && Number(p.promoPourcentage) > 0 ? String(p.promoPourcentage) : '',
       recommande: !!p.recommande,
+      accompagnementsText: Array.isArray(p.accompagnements) && p.accompagnements.length
+        ? p.accompagnements
+            .map((a) => `${a.nom || ''}|${a.nomEn || ''}|${Number(a.prixSupp || 0)}`)
+            .join('\n')
+        : '',
     });
     const firstImg = (p.images && p.images[0]) ? (String(p.images[0]).startsWith('http') ? p.images[0] : `${BASE_URL}${p.images[0]}`) : null;
     setImagePreview(firstImg);
@@ -287,6 +304,7 @@ const RestaurantPlats = () => {
                 promoLivraisonGratuite: false,
                 promoPourcentage: '',
                 recommande: false,
+                accompagnementsText: '',
               });
               resetMediaPreviews();
             }} disabled={!currentRestaurantId}>
@@ -386,6 +404,16 @@ const RestaurantPlats = () => {
                       onChange={(e) => setFormData({ ...formData, caracteristiquesEnText: e.target.value })}
                       rows="3"
                       placeholder="One line per bullet"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Accompagnements (optionnels)</label>
+                    <span className="label-hint">Une ligne = Nom|Nom EN|Supplément FCFA (ex: Frites|Fries|500)</span>
+                    <textarea
+                      value={formData.accompagnementsText}
+                      onChange={(e) => setFormData({ ...formData, accompagnementsText: e.target.value })}
+                      rows="4"
+                      placeholder="Frites|Fries|500"
                     />
                   </div>
                   <div className="form-group">

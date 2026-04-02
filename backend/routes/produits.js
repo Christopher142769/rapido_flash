@@ -27,6 +27,29 @@ function parseCaracteristiques(input) {
   return str.split(/\n/).map((s) => s.trim()).filter(Boolean);
 }
 
+function parseAccompagnements(input) {
+  if (input === undefined) return undefined;
+  let arr = input;
+  if (typeof input === 'string') {
+    const s = input.trim();
+    if (!s) return [];
+    try {
+      arr = JSON.parse(s);
+    } catch (_) {
+      return [];
+    }
+  }
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .map((x) => ({
+      nom: String(x?.nom || '').trim(),
+      nomEn: String(x?.nomEn || '').trim(),
+      prixSupp: Math.max(0, Number(x?.prixSupp || 0)),
+      actif: x?.actif !== false,
+    }))
+    .filter((x) => x.nom);
+}
+
 function isAllowedUploadRef(p) {
   const s = String(p || '').trim();
   return ((s.startsWith('/uploads/') || (s.startsWith('http') && s.includes('cloudinary.com'))) && !s.includes('..'));
@@ -255,7 +278,7 @@ router.post('/', auth, isRestaurant, upload.fields(uploadProductFields), async (
       return res.status(403).json({ message: 'Accès refusé pour cette entreprise' });
     }
 
-    const { nom, nomEn, description, descriptionEn, prix, categorieProduitId, nomAfficheAccueil, nomAfficheAccueilEn, caracteristiques, caracteristiquesEn, promoLivraisonGratuite, promoPourcentage } = req.body;
+    const { nom, nomEn, description, descriptionEn, prix, categorieProduitId, nomAfficheAccueil, nomAfficheAccueilEn, caracteristiques, caracteristiquesEn, accompagnements, promoLivraisonGratuite, promoPourcentage } = req.body;
     if (!nom || !nom.trim()) return res.status(400).json({ message: 'Le nom est requis' });
     if (prix === undefined || prix === null || isNaN(parseFloat(prix))) {
       return res.status(400).json({ message: 'Le prix (FCFA) est requis' });
@@ -276,6 +299,7 @@ router.post('/', auth, isRestaurant, upload.fields(uploadProductFields), async (
       disponible: true,
       caracteristiques: parseCaracteristiques(caracteristiques) ?? [],
       caracteristiquesEn: parseCaracteristiques(caracteristiquesEn) ?? [],
+      accompagnements: parseAccompagnements(accompagnements) ?? [],
     };
     if (categorieProduitId) data.categorieProduit = categorieProduitId;
     if (nomAfficheAccueil && String(nomAfficheAccueil).trim()) {
@@ -367,6 +391,9 @@ router.put('/:id', auth, isRestaurant, upload.fields(uploadProductFields), async
     }
     if (req.body.caracteristiquesEn !== undefined) {
       prod.caracteristiquesEn = parseCaracteristiques(req.body.caracteristiquesEn) || [];
+    }
+    if (req.body.accompagnements !== undefined) {
+      prod.accompagnements = parseAccompagnements(req.body.accompagnements) || [];
     }
     if (mainFile) {
       const newImg = mainFile.path;

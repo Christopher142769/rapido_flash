@@ -166,6 +166,21 @@
   text-decoration: line-through;
 }
 
+.cart-item-acc-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.cart-item-acc-chip {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(139, 69, 19, 0.08);
+  color: var(--primary-brown);
+}
+
 .cart-fee-struck {
   text-decoration: line-through;
   color: #999;

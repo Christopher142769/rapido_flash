@@ -1,5 +1,15 @@
 const mongoose = require('mongoose');
 
+const accompagnementCommandeSchema = new mongoose.Schema(
+  {
+    optionId: { type: mongoose.Schema.Types.ObjectId, default: null },
+    nom: { type: String, required: true },
+    nomEn: { type: String, default: '' },
+    prixSupp: { type: Number, default: 0 },
+  },
+  { _id: false }
+);
+
 const commandeSchema = new mongoose.Schema({
   client: {
     type: mongoose.Schema.Types.ObjectId,
@@ -19,7 +29,11 @@ const commandeSchema = new mongoose.Schema({
   produits: [{
     produit: { type: mongoose.Schema.Types.ObjectId, ref: 'Produit' },
     quantite: { type: Number, required: true },
-    prix: { type: Number, required: true }
+    /** Prix unitaire final (base + suppléments accompagnements) */
+    prix: { type: Number, required: true },
+    prixBase: { type: Number, default: 0 },
+    supplementTotal: { type: Number, default: 0 },
+    accompagnements: { type: [accompagnementCommandeSchema], default: [] },
   }],
   adresseLivraison: {
     latitude: Number,

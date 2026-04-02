@@ -54,9 +54,34 @@ router.post('/', auth, async (req, res) => {
       for (const item of produits) {
         const produit = await Produit.findById(item.produitId);
         if (!produit) return res.status(404).json({ message: `Produit ${item.produitId} non trouvé` });
-        const prixLigne = effectiveProduitPrice(produit);
-        sousTotal += prixLigne * item.quantite;
-        produitsDetails.push({ produit: item.produitId, quantite: item.quantite, prix: prixLigne });
+        const prixBase = effectiveProduitPrice(produit);
+        const selected = Array.isArray(item.accompagnements) ? item.accompagnements : [];
+        const choix = [];
+        let supplementTotal = 0;
+        for (const raw of selected) {
+          const optionId = String(raw?.optionId || raw?._id || '');
+          if (!optionId) continue;
+          const opt = (produit.accompagnements || []).find((a) => String(a._id) === optionId && a.actif !== false);
+          if (!opt) continue;
+          const supp = Math.max(0, Number(opt.prixSupp || 0));
+          supplementTotal += supp;
+          choix.push({
+            optionId: opt._id,
+            nom: opt.nom,
+            nomEn: opt.nomEn || '',
+            prixSupp: supp,
+          });
+        }
+        const prixUnitaire = prixBase + supplementTotal;
+        sousTotal += prixUnitaire * item.quantite;
+        produitsDetails.push({
+          produit: item.produitId,
+          quantite: item.quantite,
+          prix: prixUnitaire,
+          prixBase,
+          supplementTotal,
+          accompagnements: choix,
+        });
         if (produit.promoLivraisonGratuite) commandeQualifieLivraisonGratuite = true;
       }
     }

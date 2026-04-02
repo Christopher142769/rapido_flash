@@ -32,7 +32,7 @@ const Cart = () => {
     }
   }, []);
 
-  const itemId = (item) => item.productId != null ? item.productId : item.platId;
+  const itemId = (item) => item.cartLineId || (item.productId != null ? String(item.productId) : String(item.platId));
 
   const updateQuantity = (id, newQuantity) => {
     if (newQuantity <= 0) {
@@ -132,6 +132,15 @@ const Cart = () => {
                       <>{Number(item.prix).toFixed(0)} FCFA</>
                     )}
                   </p>
+                  {Array.isArray(item.accompagnementsSelected) && item.accompagnementsSelected.length > 0 && (
+                    <div className="cart-item-acc-list">
+                      {item.accompagnementsSelected.map((acc) => (
+                        <span key={acc.optionId || acc.nom} className="cart-item-acc-chip">
+                          + {acc.nom} ({Number(acc.prixSupp || 0).toFixed(0)} FCFA)
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="cart-item-controls">
                   <button className="quantity-btn" onClick={() => updateQuantity(id, item.quantite - 1)}>−</button>

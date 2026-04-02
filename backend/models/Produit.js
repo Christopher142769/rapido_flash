@@ -1,5 +1,15 @@
 const mongoose = require('mongoose');
 
+const accompagnementSchema = new mongoose.Schema(
+  {
+    nom: { type: String, required: true, trim: true },
+    nomEn: { type: String, default: '', trim: true },
+    prixSupp: { type: Number, default: 0, min: 0 },
+    actif: { type: Boolean, default: true },
+  },
+  { _id: true }
+);
+
 const produitSchema = new mongoose.Schema({
   nom: {
     type: String,
@@ -38,6 +48,11 @@ const produitSchema = new mongoose.Schema({
   caracteristiquesEn: {
     type: [String],
     default: []
+  },
+  /** Options d'accompagnement sélectionnables au panier */
+  accompagnements: {
+    type: [accompagnementSchema],
+    default: [],
   },
   prix: {
     type: Number,

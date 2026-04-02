@@ -139,10 +139,33 @@ const RestaurantCommandes = () => {
                   {commande.plats.map((item, index) => (
                     <div key={index} className="plat-item">
                       <span>{item.plat?.nom} x {item.quantite}</span>
-                      <span>{(item.prix * item.quantite).toFixed(2)} €</span>
+                      <span>{(item.prix * item.quantite).toFixed(0)} FCFA</span>
                     </div>
                   ))}
                 </div>
+
+                {Array.isArray(commande.produits) && commande.produits.length > 0 && (
+                  <div className="commande-plats">
+                    <h4>Produits:</h4>
+                    {commande.produits.map((item, index) => (
+                      <div key={index} className="plat-item" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                          <span>{item.produit?.nom} x {item.quantite}</span>
+                          <span>{(item.prix * item.quantite).toFixed(0)} FCFA</span>
+                        </div>
+                        {Array.isArray(item.accompagnements) && item.accompagnements.length > 0 && (
+                          <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                            {item.accompagnements.map((acc, i2) => (
+                              <span key={`${index}-${i2}`} style={{ fontSize: 12, padding: '2px 8px', borderRadius: 999, background: 'rgba(139,69,19,0.08)', color: '#8B4513' }}>
+                                {acc.nom} (+{Number(acc.prixSupp || 0).toFixed(0)} FCFA)
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <div className="commande-livraison">
                   <h4>Adresse de livraison:</h4>
@@ -157,7 +180,7 @@ const RestaurantCommandes = () => {
                 </div>
 
                 <div className="commande-total">
-                  <strong>Total: {commande.total.toFixed(2)} €</strong>
+                  <strong>Total: {commande.total.toFixed(0)} FCFA</strong>
                 </div>
 
                 <div className="commande-actions">

@@ -37,7 +37,15 @@ const RestaurantMedias = () => {
   }, []);
 
   const uploadFileList = async (files) => {
-    const list = files ? Array.from(files).filter((f) => f.type && f.type.startsWith('image/')) : [];
+    const allowedExt = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif'];
+    const list = files
+      ? Array.from(files).filter((f) => {
+          const mimeOk = f.type && f.type.startsWith('image/');
+          const lowerName = String(f.name || '').toLowerCase();
+          const extOk = allowedExt.some((ext) => lowerName.endsWith(ext));
+          return mimeOk || extOk;
+        })
+      : [];
     if (!list.length) return;
     const token = localStorage.getItem('token');
     setUploading(true);
@@ -124,7 +132,7 @@ const RestaurantMedias = () => {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,.avif"
               multiple
               id="medias-batch-upload"
               className="medias-file-input-visually-hidden"

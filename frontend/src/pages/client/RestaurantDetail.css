@@ -594,6 +594,46 @@
   filter: brightness(0.98);
 }
 
+.pdp-nike-accompagnements {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid rgba(139, 69, 19, 0.14);
+  border-radius: 14px;
+  background: #fffdf9;
+}
+
+.pdp-nike-accompagnements-title {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--primary-brown);
+}
+
+.pdp-nike-accompagnements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pdp-nike-acc-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 14px;
+}
+
+.pdp-nike-acc-name {
+  color: #222;
+}
+
+.pdp-nike-acc-price {
+  font-weight: 700;
+  color: #1a7f37;
+}
+
 .pdp-nike-zoom-hint {
   margin: 16px 0 0;
   font-size: 12px;

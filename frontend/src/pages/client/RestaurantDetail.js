@@ -104,6 +104,7 @@ const RestaurantDetail = () => {
   const [productSearch, setProductSearch] = useState('');
   const [showAllAfterFocus, setShowAllAfterFocus] = useState(false);
   const [pdpImageIndex, setPdpImageIndex] = useState(0);
+  const [selectedAccompagnementIds, setSelectedAccompagnementIds] = useState([]);
   const [reviewStats, setReviewStats] = useState(null);
   const handleReviewStats = useCallback((s) => {
     setReviewStats(s);
@@ -127,6 +128,10 @@ const RestaurantDetail = () => {
 
   useEffect(() => {
     setReviewStats(null);
+  }, [produitFocusId]);
+
+  useEffect(() => {
+    setSelectedAccompagnementIds([]);
   }, [produitFocusId]);
 
   useEffect(() => {
@@ -224,29 +229,49 @@ const RestaurantDetail = () => {
     }
   }, [produitFocusId, loading, allProducts, setSearchParams]);
 
-  const addToCart = (produit) => {
+  const addToCart = (produit, accompagnementIds = []) => {
     const imageUrl = produit.imageCarteHome || (produit.images && produit.images[0]) || null;
+    const options = Array.isArray(produit.accompagnements) ? produit.accompagnements : [];
+    const selectedOptions = options
+      .filter((o) => o?.actif !== false && accompagnementIds.includes(String(o._id)))
+      .map((o) => ({
+        optionId: String(o._id),
+        nom: o.nom,
+        nomEn: o.nomEn || '',
+        prixSupp: Math.max(0, Number(o.prixSupp || 0)),
+      }));
+    const signature = selectedOptions.map((o) => o.optionId).sort().join('|');
+    const cartLineId = `${produit._id}::${signature || 'none'}`;
     const existing = cart.find(
-      (item) => String(item.productId) === String(produit._id) && String(item.restaurantId) === String(id)
+      (item) =>
+        String(item.productId) === String(produit._id) &&
+        String(item.restaurantId) === String(id) &&
+        String(item.cartLineId || `${item.productId}::none`) === cartLineId
     );
     let newCart;
     if (existing) {
       newCart = cart.map(item =>
-        String(item.productId) === String(produit._id) && String(item.restaurantId) === String(id)
+        String(item.productId) === String(produit._id) &&
+        String(item.restaurantId) === String(id) &&
+        String(item.cartLineId || `${item.productId}::none`) === cartLineId
           ? { ...item, quantite: item.quantite + 1 }
           : item
       );
     } else {
       const eff = effectiveProductPrice(produit);
+      const supplement = selectedOptions.reduce((sum, o) => sum + Number(o.prixSupp || 0), 0);
       const showOld = hasPricePromo(produit);
       newCart = [...cart, {
+        cartLineId,
         productId: produit._id,
         nom: produit.nom,
         nomEn: produit.nomEn,
         nomAfficheAccueil: produit.nomAfficheAccueil,
         nomAfficheAccueilEn: produit.nomAfficheAccueilEn,
-        prix: eff,
+        prix: eff + supplement,
+        prixBase: eff,
         prixCatalogue: showOld ? Number(produit.prix) : undefined,
+        accompagnementsSelected: selectedOptions,
         promoLivraisonGratuite: !!produit.promoLivraisonGratuite,
         image: imageUrl,
         quantite: 1,
@@ -331,6 +356,9 @@ const RestaurantDetail = () => {
   );
   const highlightedCaracteristiques = hasFocusedProduct
     ? productCaracteristiquesList(language, highlightedProduct)
+    : [];
+  const highlightedAccompagnements = hasFocusedProduct
+    ? (highlightedProduct.accompagnements || []).filter((a) => a?.actif !== false && a?.nom)
     : [];
   const otherProducts = hasFocusedProduct
     ? products.filter((p) => String(p._id) !== String(highlightedProduct._id))
@@ -530,10 +558,38 @@ const RestaurantDetail = () => {
                 <button
                   type="button"
                   className="pdp-nike-cta"
-                  onClick={() => addToCart(highlightedProduct)}
+                  onClick={() => addToCart(highlightedProduct, selectedAccompagnementIds)}
                 >
                   {t('store', 'addToCart')}
                 </button>
+                {highlightedAccompagnements.length > 0 ? (
+                  <div className="pdp-nike-accompagnements">
+                    <h3 className="pdp-nike-accompagnements-title">Accompagnements</h3>
+                    <div className="pdp-nike-accompagnements-list">
+                      {highlightedAccompagnements.map((acc) => {
+                        const checked = selectedAccompagnementIds.includes(String(acc._id));
+                        return (
+                          <label key={String(acc._id)} className="pdp-nike-acc-item">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) => {
+                                const v = String(acc._id);
+                                setSelectedAccompagnementIds((prev) =>
+                                  e.target.checked ? [...prev, v] : prev.filter((x) => x !== v)
+                                );
+                              }}
+                            />
+                            <span className="pdp-nike-acc-name">
+                              {language.startsWith('en') && acc.nomEn ? acc.nomEn : acc.nom}
+                            </span>
+                            <span className="pdp-nike-acc-price">+{Number(acc.prixSupp || 0).toFixed(0)} FCFA</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
                 {highlightedDescriptionFull.trim() ? (
                   <div className="pdp-nike-description-section">
                     <h3 className="pdp-nike-description-title">{t('store', 'productDescriptionHeading')}</h3>

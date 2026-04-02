@@ -273,7 +273,15 @@ const Checkout = () => {
       }
 
       const plats = cart.filter(item => item.platId != null).map(item => ({ platId: item.platId, quantite: item.quantite }));
-      const produits = cart.filter(item => item.productId != null).map(item => ({ produitId: item.productId, quantite: item.quantite }));
+      const produits = cart
+        .filter(item => item.productId != null)
+        .map(item => ({
+          produitId: item.productId,
+          quantite: item.quantite,
+          accompagnements: Array.isArray(item.accompagnementsSelected)
+            ? item.accompagnementsSelected.map((a) => ({ optionId: a.optionId }))
+            : [],
+        }));
 
       const commandeData = {
         restaurantId,
