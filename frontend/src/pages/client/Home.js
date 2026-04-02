@@ -14,7 +14,7 @@ import CategoryDomainIcon from '../../components/CategoryDomainIcon';
 import { FaPhoneAlt, FaWhatsapp, FaPlus } from 'react-icons/fa';
 import { IoChevronBack, IoChevronForward } from 'react-icons/io5';
 import { generateBannerPlaceholderSVG } from '../../utils/imagePlaceholder';
-import { structureProductNamesText, pickLocalized } from '../../utils/i18nContent';
+import { pickLocalized } from '../../utils/i18nContent';
 import ProductPromoBadges from '../../components/ProductPromoBadges';
 import { effectiveProductPrice, hasPricePromo } from '../../utils/productPromo';
 import './Home.css';
@@ -46,6 +46,25 @@ function structureSpotlightImageUrl(structure, baseUrl) {
   }
   const first = structure.produitsApercu?.[0];
   return productThumbUrl(first, baseUrl, 0);
+}
+
+/** Texte "produits aperçu" (Home) : nom + prix */
+function structureProductNamesWithPricesText(structure, t, productDisplayName) {
+  const fn = typeof productDisplayName === 'function' ? productDisplayName : (p) => pickLocalized('fr', p, 'nom');
+  const prods = structure?.produitsApercu || [];
+  const items = prods
+    .map((p) => {
+      const name = fn(p);
+      if (!name) return null;
+      if (p?.prix == null) return name;
+      const price = hasPricePromo(p) ? effectiveProductPrice(p) : Number(p.prix);
+      if (price == null || Number.isNaN(Number(price))) return name;
+      return `${name} ${Number(price).toFixed(0)} FCFA`;
+    })
+    .filter(Boolean);
+
+  if (items.length) return items.join(' · ');
+  return t('home', 'noProductsPreview');
 }
 
 /** Image carte recherche produit (aligné sur RestaurantDetail) */
@@ -714,7 +733,9 @@ const Home = () => {
                     />
                   </div>
                   <div className="structure-spotlight-body-mobile">
-                    <h3 className="structure-spotlight-titles-mobile">{structureProductNamesText(structure, t, productDisplayName)}</h3>
+                    <h3 className="structure-spotlight-titles-mobile">
+                      {structureProductNamesWithPricesText(structure, t, productDisplayName)}
+                    </h3>
                     <div className="structure-spotlight-row-mobile">
                       <div className="structure-card-pills-mobile">
                         {minutes != null && <span className="structure-pill-mobile">~{minutes} min</span>}
@@ -957,7 +978,9 @@ const Home = () => {
                       />
                     </div>
                     <div className="structure-spotlight-body-desktop">
-                      <h3 className="structure-spotlight-titles-desktop">{structureProductNamesText(structure, t, productDisplayName)}</h3>
+                      <h3 className="structure-spotlight-titles-desktop">
+                        {structureProductNamesWithPricesText(structure, t, productDisplayName)}
+                      </h3>
                       <div className="structure-spotlight-row-desktop">
                         <div className="structure-card-pills">
                           {minutes != null && <span className="structure-pill">~{minutes} min</span>}

@@ -257,6 +257,12 @@ const RestaurantDetail = () => {
     localStorage.setItem('cart', JSON.stringify(newCart));
   };
 
+  /** Navigation "chaîne" : ouvrir la fiche produit dans le même `/restaurant/:id` */
+  const goToProduct = (productId) => {
+    if (!productId) return;
+    navigate(`/restaurant/${id}?produit=${productId}`);
+  };
+
   const getCartCount = () => cart.reduce((sum, item) => sum + item.quantite, 0);
   const getCartTotal = () => cart.reduce((sum, item) => sum + item.prix * item.quantite, 0);
 
@@ -631,7 +637,18 @@ const RestaurantDetail = () => {
                       <ProductPromoBadges product={produit} />
                       <img src={imgSrc} alt={displayName} className="plat-image-small" onError={(e) => { e.target.src = getImageUrl(null, { nom: displayName }, BASE_URL); }} />
                     </div>
-                    <div className="plat-details-curved">
+                    <div
+                      className="plat-details-curved"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => goToProduct(produit._id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          goToProduct(produit._id);
+                        }
+                      }}
+                    >
                       <h3 className="plat-name-curved">{displayName}</h3>
                       {hasPricePromo(produit) ? (
                         <span className="plat-prix-curved plat-prix-curved--promo">
@@ -716,7 +733,18 @@ const RestaurantDetail = () => {
                           <FaShare size={15} />
                         </span>
                       </div>
-                      <div className="product-card-body">
+                      <div
+                        className="product-card-body"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => goToProduct(produit._id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            goToProduct(produit._id);
+                          }
+                        }}
+                      >
                         <h3 className="product-card-name">{displayName}</h3>
                         {hasPricePromo(produit) ? (
                           <span className="product-card-price product-card-price--promo">
@@ -727,7 +755,14 @@ const RestaurantDetail = () => {
                           <span className="product-card-price">{Number(produit.prix).toFixed(0)} FCFA</span>
                         )}
                         <div className="product-card-footer">
-                          <button type="button" className="product-card-add-btn" onClick={() => addToCart(produit)}>
+                          <button
+                            type="button"
+                            className="product-card-add-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addToCart(produit);
+                            }}
+                          >
                             {t('store', 'addToCart')}
                           </button>
                         </div>
