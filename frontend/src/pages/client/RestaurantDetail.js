@@ -646,7 +646,13 @@ const RestaurantDetail = () => {
                       }
                     }}
                   >
-                    <div className="plat-image-square" onClick={() => { setSelectedImage(zoomSrc); setShowImageModal(true); }}>
+                    <div
+                      className="plat-image-square"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        goToProduct(produit._id);
+                      }}
+                    >
                       <ProductPromoBadges product={produit} />
                       <img src={imgSrc} alt={displayName} className="plat-image-small" onError={(e) => { e.target.src = getImageUrl(null, { nom: displayName }, BASE_URL); }} />
                     </div>
@@ -748,7 +754,13 @@ const RestaurantDetail = () => {
                         }
                       }}
                     >
-                      <div className="product-card-image-wrap" onClick={() => { setSelectedImage(zoomSrc); setShowImageModal(true); }}>
+                      <div
+                        className="product-card-image-wrap"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          goToProduct(produit._id);
+                        }}
+                      >
                         <ProductPromoBadges product={produit} />
                         <img src={imgSrc} alt={displayName} onError={(e) => { e.target.src = getImageUrl(null, { nom: displayName }, BASE_URL); }} />
                         <span className="product-card-share" onClick={(e) => { e.stopPropagation(); }} title={t('store', 'share')} aria-hidden>
