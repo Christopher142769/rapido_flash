@@ -632,23 +632,25 @@ const RestaurantDetail = () => {
                 const imgSrc = productCardImageSrc(produit, BASE_URL) || getImageUrl(null, { nom: displayName }, BASE_URL);
                 const zoomSrc = productOpenImageSrc(produit, BASE_URL) || imgSrc;
                 return (
-                  <div key={produit._id} id={`product-card-${produit._id}`} className="plat-item-curved">
+                  <div
+                    key={produit._id}
+                    id={`product-card-${produit._id}`}
+                    className="plat-item-curved"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => goToProduct(produit._id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        goToProduct(produit._id);
+                      }
+                    }}
+                  >
                     <div className="plat-image-square" onClick={() => { setSelectedImage(zoomSrc); setShowImageModal(true); }}>
                       <ProductPromoBadges product={produit} />
                       <img src={imgSrc} alt={displayName} className="plat-image-small" onError={(e) => { e.target.src = getImageUrl(null, { nom: displayName }, BASE_URL); }} />
                     </div>
-                    <div
-                      className="plat-details-curved"
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => goToProduct(produit._id)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          goToProduct(produit._id);
-                        }
-                      }}
-                    >
+                    <div className="plat-details-curved">
                       <h3 className="plat-name-curved">{displayName}</h3>
                       {hasPricePromo(produit) ? (
                         <span className="plat-prix-curved plat-prix-curved--promo">
@@ -659,7 +661,14 @@ const RestaurantDetail = () => {
                         <span className="plat-prix-curved">{Number(produit.prix).toFixed(0)} FCFA</span>
                       )}
                     </div>
-                    <button type="button" className="btn-add-cart-inline" onClick={() => addToCart(produit)}>
+                    <button
+                      type="button"
+                      className="btn-add-cart-inline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(produit);
+                      }}
+                    >
                       {t('store', 'addToCart')}
                     </button>
                   </div>
@@ -725,7 +734,20 @@ const RestaurantDetail = () => {
                   const imgSrc = productCardImageSrc(produit, BASE_URL) || getImageUrl(null, { nom: displayName }, BASE_URL);
                   const zoomSrc = productOpenImageSrc(produit, BASE_URL) || imgSrc;
                   return (
-                    <div key={produit._id} id={`product-card-${produit._id}`} className="product-card-desktop">
+                    <div
+                      key={produit._id}
+                      id={`product-card-${produit._id}`}
+                      className="product-card-desktop"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => goToProduct(produit._id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          goToProduct(produit._id);
+                        }
+                      }}
+                    >
                       <div className="product-card-image-wrap" onClick={() => { setSelectedImage(zoomSrc); setShowImageModal(true); }}>
                         <ProductPromoBadges product={produit} />
                         <img src={imgSrc} alt={displayName} onError={(e) => { e.target.src = getImageUrl(null, { nom: displayName }, BASE_URL); }} />
@@ -733,18 +755,7 @@ const RestaurantDetail = () => {
                           <FaShare size={15} />
                         </span>
                       </div>
-                      <div
-                        className="product-card-body"
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => goToProduct(produit._id)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            goToProduct(produit._id);
-                          }
-                        }}
-                      >
+                      <div className="product-card-body">
                         <h3 className="product-card-name">{displayName}</h3>
                         {hasPricePromo(produit) ? (
                           <span className="product-card-price product-card-price--promo">
