@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import React, { useState, useEffect, useContext, useRef, useMemo, useCallback } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
@@ -65,6 +65,26 @@ function structureProductNamesWithPricesText(structure, t, productDisplayName) {
 
   if (items.length) return items.join(' · ');
   return t('home', 'noProductsPreview');
+}
+
+/** Structure rattachée à une catégorie domaine (boutique multi-catégories prise en charge) */
+function structureHasDomainCategory(structure, catId) {
+  const id = String(catId);
+  const c = structure.categorie;
+  if (c && String(c._id || c) === id) return true;
+  const dom = structure.categoriesDomaine || [];
+  return dom.some((x) => String(x._id || x) === id);
+}
+
+function mapPreviewToHomeProduct(p, s) {
+  return {
+    ...p,
+    productId: p.productId || p._id,
+    restaurantId: p.restaurantId || s._id,
+    restaurant: s,
+    imageCarteHome: p.image || null,
+    images: p.image ? [p.image] : [],
+  };
 }
 
 /** Image carte recherche produit (aligné sur RestaurantDetail) */
@@ -247,23 +267,40 @@ const Home = () => {
   });
 
   const productQueryActive = searchTerm.trim().length >= 2;
-  // En mode recherche produit : on montre la liste de résultats (et éventuellement les structures en cas de vide)
-  // Hors recherche : la Home doit afficher les produits des structures (selon la catégorie de domaine choisie).
   const showStructures = productQueryActive ? productSearchResults.length === 0 : false;
 
-  const homeProducts = !productQueryActive
-    ? filteredStructures.flatMap((s) =>
-        (s.produitsApercu || []).map((p) => ({
-          ...p,
-          productId: p.productId || p._id,
-          restaurantId: p.restaurantId || s._id,
-          restaurant: s,
-          // Pour réutiliser les helpers existants côté Home
-          imageCarteHome: p.image || null,
-          images: p.image ? [p.image] : [],
-        }))
-      )
-    : [];
+  /** Une section par catégorie domaine ; uniquement si la catégorie a au moins un produit */
+  const categoryProductSections = useMemo(() => {
+    if (productQueryActive) return [];
+    const flatProducts = () =>
+      filteredStructures.flatMap((s) =>
+        (s.produitsApercu || []).map((p) => mapPreviewToHomeProduct(p, s))
+      );
+    if (!categoriesDomaine.length) {
+      const products = flatProducts();
+      if (!products.length) return [];
+      return [
+        {
+          category: {
+            _id: '__all__',
+            nom: 'Tous les produits',
+            nomEn: 'All products',
+            code: 'super-marche',
+          },
+          products,
+        },
+      ];
+    }
+    return categoriesDomaine
+      .map((cat) => {
+        const catId = String(cat._id);
+        const products = filteredStructures
+          .filter((s) => structureHasDomainCategory(s, catId))
+          .flatMap((s) => (s.produitsApercu || []).map((p) => mapPreviewToHomeProduct(p, s)));
+        return { category: cat, products };
+      })
+      .filter((sec) => sec.products.length > 0);
+  }, [filteredStructures, categoriesDomaine, productQueryActive]);
 
   const addProductFromHome = (previewProduit) => {
     if (!previewProduit?.productId || !previewProduit?.restaurantId) return;
@@ -345,6 +382,139 @@ const Home = () => {
     localStorage.setItem('cart', JSON.stringify(newCart));
     setCartCount(newCart.reduce((sum, item) => sum + item.quantite, 0));
   };
+
+  const renderRailProductCard = useCallback(
+    (produit, idx) => {
+      const restaurantId = produit.restaurantId;
+      const productId = produit.productId;
+      const r = produit.restaurant;
+      const imgSrc = productHitImageSrc(produit, BASE_URL, idx);
+      const minutes = r?.distance != null ? distanceToMinutes(r.distance) : null;
+      const tel = (r?.telephone || '').trim();
+      const shopName = localized(r, 'nom');
+
+      return (
+        <article
+          className="home-rail-card"
+          role="button"
+          tabIndex={0}
+          onClick={() => navigate(`/restaurant/${restaurantId}?produit=${productId}`)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              navigate(`/restaurant/${restaurantId}?produit=${productId}`);
+            }
+          }}
+        >
+          <div className="home-rail-card__media">
+            <ProductPromoBadges product={produit} />
+            <img
+              src={imgSrc}
+              alt=""
+              onError={(e) => {
+                e.target.src = generateBannerPlaceholderSVG(idx);
+              }}
+            />
+          </div>
+          <div className="home-rail-card__body">
+            <h3 className="home-rail-card__name">{productDisplayName(produit)}</h3>
+            {shopName ? <p className="home-rail-card__shop">{shopName}</p> : null}
+            {produit.recommande ? (
+              <span className="home-rail-card__reco">{t('reviews', 'recommendedBadge')}</span>
+            ) : null}
+            <div className="home-rail-card__prices">
+              {hasPricePromo(produit) ? (
+                <>
+                  <span className="home-rail-card__price-now">{effectiveProductPrice(produit)} FCFA</span>
+                  <span className="home-rail-card__price-was">{Number(produit.prix).toFixed(0)} FCFA</span>
+                </>
+              ) : (
+                <span className="home-rail-card__price-single">{Number(produit.prix).toFixed(0)} FCFA</span>
+              )}
+            </div>
+            <div className="home-rail-card__footer">
+              {minutes != null ? (
+                <span className="home-rail-card__eta">~{minutes} {t('home', 'min')}</span>
+              ) : (
+                <span className="home-rail-card__eta home-rail-card__eta--muted">—</span>
+              )}
+              <div className="home-rail-card__actions" onClick={(e) => e.stopPropagation()}>
+                {tel ? (
+                  <a
+                    href={`tel:${tel}`}
+                    className="home-rail-card__act"
+                    title={t('home', 'call')}
+                    aria-label={t('home', 'call')}
+                  >
+                    <FaPhoneAlt size={14} />
+                  </a>
+                ) : null}
+                <button
+                  type="button"
+                  className="home-rail-card__act home-rail-card__act--msg"
+                  title={t('chat', 'shopChat')}
+                  aria-label={t('chat', 'shopChat')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/chat/${restaurantId}?produit=${productId}`);
+                  }}
+                >
+                  <FaComments size={15} />
+                </button>
+                <button
+                  type="button"
+                  className="home-rail-card__act home-rail-card__act--cart"
+                  title={t('home', 'addToCartShort')}
+                  aria-label={t('home', 'addToCartShort')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    addProductFromHome(produit);
+                  }}
+                >
+                  <FaPlus size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+      );
+    },
+    [navigate, productDisplayName, t, localized, addProductFromHome]
+  );
+
+  const renderCategoryRails = (variant) =>
+    categoryProductSections.map(({ category: cat, products }) => (
+      <section
+        key={String(cat._id)}
+        className={`home-category-rail home-category-rail--${variant}`}
+        id={variant === 'desktop' ? `section-category-${cat._id}` : undefined}
+        aria-label={pickLocalized(language, cat, 'nom')}
+      >
+        <header className="home-category-rail__head">
+          <div className="home-category-rail__head-left">
+            <span className="home-category-rail__icon-ring">
+              <CategoryDomainIcon category={cat} baseUrl={BASE_URL} size={variant === 'desktop' ? 34 : 28} />
+            </span>
+            <div className="home-category-rail__head-text">
+              <h2 className="home-category-rail__title">{pickLocalized(language, cat, 'nom')}</h2>
+              <p className="home-category-rail__subtitle">{t('home', 'railSwipeHint')}</p>
+            </div>
+          </div>
+          <span className="home-category-rail__badge">
+            {products.length} {t('home', 'productsListed')}
+          </span>
+        </header>
+        <div className="home-category-rail__scroll-wrap">
+          <div className="home-category-rail__track" role="list">
+            {products.map((produit, idx) => (
+              <div key={`${produit.productId}-${produit.restaurantId}-${idx}`} className="home-category-rail__item" role="listitem">
+                {renderRailProductCard(produit, idx)}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    ));
 
   const renderProductSearchSection = (layoutClass) => {
     if (!productQueryActive) return null;
@@ -587,119 +757,21 @@ const Home = () => {
             </div>
           </>
         )}
-        {!productQueryActive && !error && homeProducts.length === 0 && (
+        {!productQueryActive && !error && categoryProductSections.length === 0 && (
           <div className="no-results">
             <p>{t('home', 'allProductsEmpty')}</p>
           </div>
         )}
 
-        {!productQueryActive && !error && homeProducts.length > 0 && (
-          <section
-            id="section-home-products"
-            className="home-product-search-section home-product-search--mobile"
-          >
-            <h2 className="home-product-search-title">{t('home', 'allProductsTitle')}</h2>
-            <div className="home-all-products-grid">
-              {homeProducts.map((produit, idx) => {
-                const restaurantId = produit.restaurantId;
-                const productId = produit.productId;
-                const r = produit.restaurant;
-                const imgSrc = productHitImageSrc(produit, BASE_URL, idx);
-                const minutes = r?.distance != null ? distanceToMinutes(r.distance) : null;
-                const tel = (r?.telephone || '').trim();
-
-                return (
-                  <article
-                    key={`${productId}-${restaurantId}`}
-                    className="home-all-product-card"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => navigate(`/restaurant/${restaurantId}?produit=${productId}`)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        navigate(`/restaurant/${restaurantId}?produit=${productId}`);
-                      }
-                    }}
-                  >
-                    <div className="home-all-product-img-wrap">
-                      <ProductPromoBadges product={produit} />
-                      <img
-                        src={imgSrc}
-                        alt=""
-                        className="home-all-product-img"
-                        onError={(e) => {
-                          e.target.src = generateBannerPlaceholderSVG(idx);
-                        }}
-                      />
-                    </div>
-
-                    <div className="home-all-product-body">
-                      <h3 className="home-all-product-name">{productDisplayName(produit)}</h3>
-                      {produit.recommande ? (
-                        <span className="home-all-product-reco">{t('reviews', 'recommendedBadge')}</span>
-                      ) : null}
-                      <div className="home-all-product-price-row">
-                        {hasPricePromo(produit) ? (
-                          <>
-                            <span className="home-all-product-price-current">{effectiveProductPrice(produit)} FCFA</span>
-                            <span className="home-all-product-price-old">{Number(produit.prix).toFixed(0)} FCFA</span>
-                          </>
-                        ) : (
-                          <span className="home-all-product-price-single">{Number(produit.prix).toFixed(0)} FCFA</span>
-                        )}
-                      </div>
-
-                      <div className="home-all-product-footer">
-                        {minutes != null ? (
-                          <span className="home-all-product-minutes">~{minutes} min</span>
-                        ) : (
-                          <span className="home-all-product-minutes home-all-product-minutes--empty">—</span>
-                        )}
-
-                        <div className="home-all-product-actions" onClick={(e) => e.stopPropagation()}>
-                          {tel && (
-                            <a
-                              href={`tel:${tel}`}
-                              className="home-all-product-icon-btn"
-                              title={t('home', 'call')}
-                              aria-label={t('home', 'call')}
-                            >
-                              <FaPhoneAlt size={16} />
-                            </a>
-                          )}
-                          <button
-                            type="button"
-                            className="home-all-product-icon-btn home-all-product-icon-btn--msg"
-                            title={t('chat', 'shopChat')}
-                            aria-label={t('chat', 'shopChat')}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/chat/${restaurantId}?produit=${productId}`);
-                            }}
-                          >
-                            <FaComments size={17} />
-                          </button>
-                          <button
-                            type="button"
-                            className="home-all-product-icon-btn home-all-product-icon-btn--cart"
-                            title={t('home', 'addToCartShort')}
-                            aria-label={t('home', 'addToCartShort')}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              addProductFromHome(produit);
-                            }}
-                          >
-                            <FaPlus size={16} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
+        {!productQueryActive && !error && categoryProductSections.length > 0 && (
+          <div id="section-home-products-mobile" className="home-by-category home-by-category--mobile">
+            <h2 className="home-by-category-hero-title">
+              {categoriesDomaine.length === 0 && categoryProductSections.length <= 1
+                ? t('home', 'allProductsTitle')
+                : t('home', 'shopByCategory')}
+            </h2>
+            {renderCategoryRails('mobile')}
+          </div>
         )}
 
         {error && <div className="no-results"><p>{error}</p></div>}
@@ -834,119 +906,21 @@ const Home = () => {
             </section>
           )}
 
-          {!productQueryActive && !error && homeProducts.length === 0 && (
+          {!productQueryActive && !error && categoryProductSections.length === 0 && (
             <div className="no-results-desktop">
               <p>{t('home', 'allProductsEmpty')}</p>
             </div>
           )}
 
-          {!productQueryActive && !error && homeProducts.length > 0 && (
-            <section
-              id="section-home-products"
-              className="home-product-search-section home-product-search--desktop"
-            >
-              <h2 className="home-product-search-title">{t('home', 'allProductsTitle')}</h2>
-              <div className="home-all-products-grid">
-                {homeProducts.map((produit, idx) => {
-                  const restaurantId = produit.restaurantId;
-                  const productId = produit.productId;
-                  const r = produit.restaurant;
-                  const imgSrc = productHitImageSrc(produit, BASE_URL, idx);
-                  const minutes = r?.distance != null ? distanceToMinutes(r.distance) : null;
-                  const tel = (r?.telephone || '').trim();
-
-                  return (
-                    <article
-                      key={`${productId}-${restaurantId}`}
-                      className="home-all-product-card"
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => navigate(`/restaurant/${restaurantId}?produit=${productId}`)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          navigate(`/restaurant/${restaurantId}?produit=${productId}`);
-                        }
-                      }}
-                    >
-                      <div className="home-all-product-img-wrap">
-                        <ProductPromoBadges product={produit} />
-                        <img
-                          src={imgSrc}
-                          alt=""
-                          className="home-all-product-img"
-                          onError={(e) => {
-                            e.target.src = generateBannerPlaceholderSVG(idx);
-                          }}
-                        />
-                      </div>
-
-                      <div className="home-all-product-body">
-                        <h3 className="home-all-product-name">{productDisplayName(produit)}</h3>
-                        {produit.recommande ? (
-                          <span className="home-all-product-reco">{t('reviews', 'recommendedBadge')}</span>
-                        ) : null}
-                        <div className="home-all-product-price-row">
-                          {hasPricePromo(produit) ? (
-                            <>
-                              <span className="home-all-product-price-current">{effectiveProductPrice(produit)} FCFA</span>
-                              <span className="home-all-product-price-old">{Number(produit.prix).toFixed(0)} FCFA</span>
-                            </>
-                          ) : (
-                            <span className="home-all-product-price-single">{Number(produit.prix).toFixed(0)} FCFA</span>
-                          )}
-                        </div>
-
-                        <div className="home-all-product-footer">
-                          {minutes != null ? (
-                            <span className="home-all-product-minutes">~{minutes} min</span>
-                          ) : (
-                            <span className="home-all-product-minutes home-all-product-minutes--empty">—</span>
-                          )}
-
-                          <div className="home-all-product-actions" onClick={(e) => e.stopPropagation()}>
-                            {tel && (
-                              <a
-                                href={`tel:${tel}`}
-                                className="home-all-product-icon-btn"
-                                title={t('home', 'call')}
-                                aria-label={t('home', 'call')}
-                              >
-                                <FaPhoneAlt size={16} />
-                              </a>
-                            )}
-                            <button
-                              type="button"
-                              className="home-all-product-icon-btn home-all-product-icon-btn--msg"
-                              title={t('chat', 'shopChat')}
-                              aria-label={t('chat', 'shopChat')}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/chat/${restaurantId}?produit=${productId}`);
-                              }}
-                            >
-                              <FaComments size={17} />
-                            </button>
-                            <button
-                              type="button"
-                              className="home-all-product-icon-btn home-all-product-icon-btn--cart"
-                              title={t('home', 'addToCartShort')}
-                              aria-label={t('home', 'addToCartShort')}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                addProductFromHome(produit);
-                              }}
-                            >
-                              <FaPlus size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            </section>
+          {!productQueryActive && !error && categoryProductSections.length > 0 && (
+            <div id="section-home-products-desktop" className="home-by-category home-by-category--desktop">
+              <h2 className="home-by-category-hero-title">
+                {categoriesDomaine.length === 0 && categoryProductSections.length <= 1
+                  ? t('home', 'allProductsTitle')
+                  : t('home', 'shopByCategory')}
+              </h2>
+              {renderCategoryRails('desktop')}
+            </div>
           )}
 
           {!error && showStructures && filteredStructures.length === 0 && (
