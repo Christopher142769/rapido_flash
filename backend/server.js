@@ -128,6 +128,7 @@ app.use((error, req, res, next) => {
 
 // Import de la fonction d'initialisation de l'admin par défaut
 const initDefaultAdmin = require('./utils/initDefaultAdmin');
+const { ensurePlatformSupportStack } = require('./utils/ensurePlatformSupport');
 const fixStaleUserIndexes = require('./utils/fixUserIndexes');
 const ensureDefaultCategoriesDomaine = require('./utils/ensureDefaultCategoriesDomaine');
 const ensureAppSettings = require('./utils/ensureAppSettings');
@@ -157,6 +158,7 @@ mongoose.connect(MONGODB_URI, {
   setTimeout(async () => {
     try {
       await initDefaultAdmin();
+      await ensurePlatformSupportStack();
     } catch (error) {
       console.error('❌ Erreur lors de l\'initialisation:', error);
     }

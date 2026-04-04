@@ -1,8 +1,15 @@
+.chat-fab--open {
+  background: linear-gradient(145deg, #00c853 0%, #00684a 55%, #004d3a 100%) !important;
+  box-shadow:
+    0 8px 28px rgba(0, 104, 74, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.15) inset !important;
+}
+
 .chat-fab {
   position: fixed;
   right: max(16px, env(safe-area-inset-right, 0px));
   bottom: calc(88px + env(safe-area-inset-bottom, 0px));
-  z-index: 998;
+  z-index: 100003;
   width: 58px;
   height: 58px;
   border-radius: 999px;

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext';
 import { ModalProvider } from './context/ModalContext';
 import { LanguageProvider } from './context/LanguageContext';
+import { SupportWidgetProvider } from './context/SupportWidgetContext';
 import PrivateRoute from './components/PrivateRoute';
 
 // Pages Client
@@ -36,6 +37,7 @@ import PlatformChatModeration from './pages/restaurant/PlatformChatModeration';
 import ChatThread from './pages/client/ChatThread';
 import ChatsInbox from './pages/client/ChatsInbox';
 import ChatFab from './components/ChatFab';
+import SupportWidget from './components/SupportWidget';
 
 import './App.css';
 import MaintenanceGate from './components/MaintenanceGate';
@@ -44,6 +46,7 @@ function App() {
   return (
     <AuthProvider>
       <LanguageProvider>
+        <SupportWidgetProvider>
         <ModalProvider>
           <Router
           future={{
@@ -52,6 +55,7 @@ function App() {
           }}
         >
           <MaintenanceGate>
+          <SupportWidget />
           <ChatFab />
           <Routes>
           {/* Pages publiques client */}
@@ -92,6 +96,7 @@ function App() {
           </MaintenanceGate>
       </Router>
         </ModalProvider>
+        </SupportWidgetProvider>
       </LanguageProvider>
     </AuthProvider>
   );

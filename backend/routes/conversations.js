@@ -6,6 +6,19 @@ const Produit = require('../models/Produit');
 const { auth } = require('../middleware/auth');
 const uploadChat = require('../middleware/uploadChat');
 const { canManageMaintenance } = require('../utils/maintenanceAccess');
+const { ensureAssistantUser } = require('../utils/ensurePlatformSupport');
+const {
+  sendAssistantWelcomeIfEmpty,
+  sendAssistantTransferAndEscalate,
+} = require('../utils/conversationAssistant');
+
+let cachedAssistantUserId = null;
+async function getAssistantUserId() {
+  if (cachedAssistantUserId) return cachedAssistantUserId;
+  const u = await ensureAssistantUser();
+  cachedAssistantUserId = u._id;
+  return cachedAssistantUserId;
+}
 
 const router = express.Router();
 router.use(express.json({ limit: '10mb' }));
@@ -31,6 +44,20 @@ async function loadConversationForUser(convId, user) {
   return null;
 }
 
+/** ID de la fiche « Service Rapido » (messagerie plateforme) */
+router.get('/platform-support-restaurant', auth, async (req, res) => {
+  try {
+    if (req.user.role !== 'client') {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+    const r = await Restaurant.findOne({ isPlatformSupport: true }).select('_id nom nomEn').lean();
+    if (!r) return res.json({ restaurantId: null });
+    res.json({ restaurantId: r._id, nom: r.nom, nomEn: r.nomEn });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
 /** Ouvrir ou récupérer la conversation client ↔ structure */
 router.post('/open', auth, async (req, res) => {
   try {
@@ -52,6 +79,9 @@ router.post('/open', auth, async (req, res) => {
         lastMessageAt: new Date(),
       });
     }
+
+    const assistantId = await getAssistantUserId();
+    await sendAssistantWelcomeIfEmpty(conv, assistantId);
 
     if (isNew && productId) {
       const p = await Produit.findById(productId);
@@ -209,6 +239,13 @@ router.post('/:id/messages', auth, uploadChat.single('image'), async (req, res) 
     }
     await c.save();
 
+    const isAutoProductIntro = /^📦 Demande concernant le produit/i.test(body || '');
+    const hasClientIntent = (body || '').trim().length > 0 || !!imageUrl;
+    if (senderRole === 'client' && c.awaitingUserIntent && hasClientIntent && !isAutoProductIntro) {
+      const assistantId = await getAssistantUserId();
+      await sendAssistantTransferAndEscalate(c, assistantId);
+    }
+
     const populated = await Message.findById(msg._id)
       .populate('product', 'nom nomEn prix imageCarteHome images')
       .populate('sender', 'nom photo role');
@@ -232,6 +269,30 @@ router.post('/:id/read', auth, async (req, res) => {
     }
     if (side === 'client') c.unreadClient = 0;
     else c.unreadRestaurant = 0;
+    await c.save();
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+/** Accusé de lecture des alertes urgentes (structure ou plateforme) */
+router.post('/:id/urgent/ack', auth, async (req, res) => {
+  try {
+    const c = await Conversation.findById(req.params.id);
+    if (!c) return res.status(404).json({ message: 'Conversation introuvable' });
+    const side = req.body.side === 'platform' ? 'platform' : 'restaurant';
+    if (side === 'restaurant') {
+      const rid = c.restaurant;
+      const allowed = await canManageRestaurant(req.user._id, rid);
+      if (!allowed) return res.status(403).json({ message: 'Accès refusé' });
+      c.urgentSeenByRestaurantAt = new Date();
+    } else {
+      if (!canManageMaintenance(req.user)) {
+        return res.status(403).json({ message: 'Accès refusé' });
+      }
+      c.urgentSeenByPlatformAt = new Date();
+    }
     await c.save();
     res.json({ ok: true });
   } catch (e) {

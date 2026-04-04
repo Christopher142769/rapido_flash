@@ -71,6 +71,12 @@ const restaurantSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  /** Fiche technique non listée sur l’accueil — conversations « Service Rapido » */
+  isPlatformSupport: {
+    type: Boolean,
+    default: false,
+    index: true,
+  },
   fraisLivraison: {
     type: Number,
     default: 0

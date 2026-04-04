@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, useRef } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
@@ -7,6 +7,7 @@ import DashboardSidebar from '../../components/DashboardSidebar';
 import PageLoader from '../../components/PageLoader';
 import { FaPaperPlane } from 'react-icons/fa';
 import { pickLocalized } from '../../utils/i18nContent';
+import { playUrgentAlertSound } from '../../utils/urgentAlertSound';
 import './RestaurantMessages.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -24,6 +25,27 @@ const RestaurantMessages = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const pollRef = useRef(null);
+  const urgentSoundKeyRef = useRef(null);
+
+  const urgentList = useMemo(
+    () =>
+      (conversations || []).filter(
+        (c) => c.urgentEscalationAt && !c.urgentSeenByRestaurantAt
+      ),
+    [conversations]
+  );
+
+  useEffect(() => {
+    if (!urgentList.length) {
+      urgentSoundKeyRef.current = null;
+      return;
+    }
+    const key = urgentList.map((c) => c._id).join(',');
+    if (urgentSoundKeyRef.current !== key) {
+      urgentSoundKeyRef.current = key;
+      playUrgentAlertSound();
+    }
+  }, [urgentList]);
 
   const loadMessages = async (cid) => {
     const res = await axios.get(`${API_URL}/conversations/${cid}/messages?limit=80`);
@@ -53,17 +75,22 @@ const RestaurantMessages = () => {
     })();
   }, []);
 
-  useEffect(() => {
+  const loadConversations = useCallback(() => {
     if (!selectedRid) return;
     axios
       .get(`${API_URL}/conversations/restaurant/${selectedRid}`)
-      .then((res) => {
-        setConversations(res.data || []);
-        setActiveId(null);
-        setMessages([]);
-      })
+      .then((res) => setConversations(res.data || []))
       .catch(() => setConversations([]));
   }, [selectedRid]);
+
+  useEffect(() => {
+    if (!selectedRid) return;
+    setActiveId(null);
+    setMessages([]);
+    loadConversations();
+    const id = setInterval(loadConversations, 12000);
+    return () => clearInterval(id);
+  }, [selectedRid, loadConversations]);
 
   useEffect(() => {
     if (!activeId) return;
@@ -93,6 +120,19 @@ const RestaurantMessages = () => {
     }
   };
 
+  const ackUrgent = async () => {
+    try {
+      await Promise.all(
+        urgentList.map((c) =>
+          axios.post(`${API_URL}/conversations/${c._id}/urgent/ack`, { side: 'restaurant' })
+        )
+      );
+      loadConversations();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const reportClient = async () => {
     if (!activeId) return;
     const reason = window.prompt(t('chat', 'reason'));
@@ -119,6 +159,18 @@ const RestaurantMessages = () => {
           ) : null}
         </header>
 
+        {urgentList.length > 0 ? (
+          <div className="restaurant-messages-urgent-banner" role="alert">
+            <div className="restaurant-messages-urgent-text">
+              <strong>{t('chat', 'urgentAlertTitle')}</strong>
+              <p>{t('chat', 'urgentAlertBody')}</p>
+            </div>
+            <button type="button" className="restaurant-messages-urgent-btn" onClick={ackUrgent}>
+              {t('chat', 'urgentAck')}
+            </button>
+          </div>
+        ) : null}
+
         {restaurants.length > 1 ? (
           <select
             className="restaurant-messages-select"
@@ -143,7 +195,9 @@ const RestaurantMessages = () => {
                   <li key={c._id}>
                     <button
                       type="button"
-                      className={`restaurant-messages-row ${activeId === c._id ? 'active' : ''}`}
+                      className={`restaurant-messages-row ${activeId === c._id ? 'active' : ''} ${
+                        c.urgentEscalationAt && !c.urgentSeenByRestaurantAt ? 'restaurant-messages-row--urgent' : ''
+                      }`}
                       onClick={() => setActiveId(c._id)}
                     >
                       <span className="restaurant-messages-client">{c.client?.nom || 'Client'}</span>
@@ -168,8 +222,12 @@ const RestaurantMessages = () => {
                 <div className="restaurant-messages-bubbles">
                   {messages.map((m) => {
                     const mine = m.senderRole === 'restaurant';
+                    const assistant = m.senderRole === 'assistant';
                     return (
-                      <div key={m._id} className={`rm-bubble ${mine ? 'rm-bubble--mine' : ''}`}>
+                      <div
+                        key={m._id}
+                        className={`rm-bubble ${mine ? 'rm-bubble--mine' : ''} ${assistant ? 'rm-bubble--assistant' : ''}`}
+                      >
                         {m.imageUrl ? <img src={m.imageUrl} alt="" className="rm-bubble-img" /> : null}
                         {m.body ? <p>{m.body}</p> : null}
                       </div>

@@ -18,6 +18,12 @@ const conversationSchema = new mongoose.Schema(
     lastPreview: { type: String, default: '' },
     unreadClient: { type: Number, default: 0 },
     unreadRestaurant: { type: Number, default: 0 },
+    /** Après message d’accueil de l’assistant : en attente de la 1re demande client */
+    awaitingUserIntent: { type: Boolean, default: false },
+    /** Client a décrit son besoin : alerte forte structure + plateforme */
+    urgentEscalationAt: { type: Date, default: null },
+    urgentSeenByRestaurantAt: { type: Date, default: null },
+    urgentSeenByPlatformAt: { type: Date, default: null },
     reports: [reportSchema],
   },
   { timestamps: true }
