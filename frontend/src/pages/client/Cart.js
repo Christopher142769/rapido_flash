@@ -109,11 +109,11 @@ const Cart = () => {
       <div className="cart-content">
         <div className="cart-items">
           {cart.map((item) => {
-            const id = item.productId != null ? item.productId : item.platId;
+            const lineId = itemId(item);
             const lineName = productDisplayName(item);
             const imgSrc = item.image && item.image.startsWith('/') ? `${BASE_URL}${item.image}` : getImageUrl(item.image, { nom: lineName, categorie: item.categorie }, BASE_URL);
             return (
-              <div key={id} className="cart-item">
+              <div key={lineId} className="cart-item">
                 <img
                   src={imgSrc}
                   alt={lineName}
@@ -143,12 +143,12 @@ const Cart = () => {
                   )}
                 </div>
                 <div className="cart-item-controls">
-                  <button className="quantity-btn" onClick={() => updateQuantity(id, item.quantite - 1)}>−</button>
+                  <button type="button" className="quantity-btn" onClick={() => updateQuantity(lineId, item.quantite - 1)}>−</button>
                   <span className="quantity">{item.quantite}</span>
-                  <button className="quantity-btn" onClick={() => updateQuantity(id, item.quantite + 1)}>+</button>
+                  <button type="button" className="quantity-btn" onClick={() => updateQuantity(lineId, item.quantite + 1)}>+</button>
                 </div>
                 <div className="cart-item-total">{(item.prix * item.quantite).toFixed(0)} FCFA</div>
-                <button className="remove-btn" onClick={() => removeItem(id)}>×</button>
+                <button type="button" className="remove-btn" onClick={() => removeItem(lineId)} aria-label="Retirer">×</button>
               </div>
             );
           })}

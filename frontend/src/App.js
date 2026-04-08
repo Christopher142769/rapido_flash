@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect, useRef } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ModalProvider } from './context/ModalContext';
 import { LanguageProvider } from './context/LanguageContext';
@@ -42,6 +42,22 @@ import SupportWidget from './components/SupportWidget';
 import './App.css';
 import MaintenanceGate from './components/MaintenanceGate';
 
+/** Meta Pixel PageView on client-side navigations (initial load is tracked in index.html). */
+function MetaPixelPageViewOnRoute() {
+  const location = useLocation();
+  const skipFirst = useRef(true);
+  useEffect(() => {
+    if (skipFirst.current) {
+      skipFirst.current = false;
+      return;
+    }
+    if (typeof window.fbq === 'function') {
+      window.fbq('track', 'PageView');
+    }
+  }, [location.pathname, location.search]);
+  return null;
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -54,6 +70,7 @@ function App() {
             v7_relativeSplatPath: true
           }}
         >
+          <MetaPixelPageViewOnRoute />
           <MaintenanceGate>
           <SupportWidget />
           <ChatFab />
