@@ -122,6 +122,14 @@ const Home = () => {
   const [productSearchLoading, setProductSearchLoading] = useState(false);
   const categoriesScrollRef = useRef(null);
 
+  const askAuthForProduct = useCallback(
+    (restaurantId, productId) => {
+      const nextPath = `/restaurant/${restaurantId}${productId ? `?produit=${productId}` : ''}`;
+      navigate(`/login?next=${encodeURIComponent(nextPath)}`);
+    },
+    [navigate]
+  );
+
   useEffect(() => {
     const updateLocationAddress = () => {
       const userLocation = JSON.parse(localStorage.getItem('userLocation') || '{}');
@@ -304,6 +312,10 @@ const Home = () => {
 
   const addProductFromHome = (previewProduit) => {
     if (!previewProduit?.productId || !previewProduit?.restaurantId) return;
+    if (!user) {
+      askAuthForProduct(previewProduit.restaurantId, previewProduit.productId);
+      return;
+    }
 
     let newCart = JSON.parse(localStorage.getItem('cart') || '[]');
     const pid = previewProduit.productId;
@@ -347,6 +359,10 @@ const Home = () => {
 
   const addProductFromSearch = (produit, restaurantId) => {
     if (!produit?._id || !restaurantId) return;
+    if (!user) {
+      askAuthForProduct(restaurantId, produit._id);
+      return;
+    }
     let newCart = JSON.parse(localStorage.getItem('cart') || '[]');
     const imageUrl = produit.imageCarteHome || (produit.images && produit.images[0]) || null;
     const pid = produit._id;
@@ -479,7 +495,7 @@ const Home = () => {
         </article>
       );
     },
-    [navigate, productDisplayName, t, localized, addProductFromHome]
+    [navigate, productDisplayName, t, localized, addProductFromHome, user, askAuthForProduct]
   );
 
   const renderCategoryRails = (variant) =>

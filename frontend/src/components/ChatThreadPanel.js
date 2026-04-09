@@ -3,6 +3,7 @@ import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import LanguageContext from '../context/LanguageContext';
 import { FaArrowLeft, FaImage, FaPaperPlane, FaPhoneAlt, FaStore } from 'react-icons/fa';
+import { IoClose } from 'react-icons/io5';
 import { pickLocalized } from '../utils/i18nContent';
 import '../pages/client/ChatThread.css';
 
@@ -32,6 +33,7 @@ const ChatThreadPanel = ({
   restaurantId,
   productId = null,
   onBack,
+  onCloseWidget,
   compact = false,
 }) => {
   const { user } = useContext(AuthContext);
@@ -213,6 +215,13 @@ const ChatThreadPanel = ({
             )}
           </div>
         </div>
+        {typeof onCloseWidget === 'function' ? (
+          <button type="button" className="chat-thread-widget-close" onClick={onCloseWidget} aria-label={t('supportWidget', 'close')}>
+            <IoClose size={22} aria-hidden />
+          </button>
+        ) : (
+          <span className="chat-thread-header-spacer" aria-hidden />
+        )}
       </header>
 
       <div className="chat-thread-body chat-thread-body--panel">

@@ -2,7 +2,7 @@
   min-height: 100dvh;
   min-height: 100vh;
   background: linear-gradient(180deg, #faf8f5 0%, #f0e8dc 100%);
-  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: var(--bottom-nav-mobile-clearance);
 }
 
 .chats-inbox-main {

@@ -1,11 +1,16 @@
 import React, { useState, useContext } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import AuthContext from '../../context/AuthContext';
 import './Auth.css';
 
 const Register = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { register } = useContext(AuthContext);
+  const rawNext = searchParams.get('next') || '';
+  const safeNext = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '';
+  const afterAuthPath = safeNext || '/home';
+
   const [formData, setFormData] = useState({
     nom: '',
     email: '',
@@ -48,7 +53,7 @@ const Register = () => {
     setLoading(false);
 
     if (result.success) {
-      navigate('/home');
+      navigate(afterAuthPath);
     } else {
       setError(result.message);
     }
@@ -151,7 +156,7 @@ const Register = () => {
         </form>
 
         <div className="auth-footer">
-          <p>Vous avez déjà un compte ? <Link to="/login">Se connecter</Link></p>
+          <p>Vous avez déjà un compte ? <Link to={safeNext ? `/login?next=${encodeURIComponent(safeNext)}` : '/login'}>Se connecter</Link></p>
         </div>
       </div>
     </div>

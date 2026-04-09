@@ -1,6 +1,6 @@
 .receipt-page {
   min-height: 100vh;
-  padding-bottom: 100px;
+  padding-bottom: max(24px, var(--bottom-nav-mobile-clearance));
   background: #f0ebe4;
 }
 
@@ -184,7 +184,7 @@
 
 @media print {
   .no-print,
-  .bottom-navbar-mobile,
+  .bottom-navbar-mobile-shell,
   .top-navbar-desktop,
   .top-navbar-spacer {
     display: none !important;

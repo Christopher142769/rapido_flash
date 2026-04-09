@@ -1,6 +1,8 @@
 :root {
   /* Hauteur barre du haut (navbar fixe) — mobile plus compact */
   --top-navbar-height: 56px;
+  /* Espace sous le contenu pour la tab bar mobile flottante + bouton central */
+  --bottom-nav-mobile-clearance: calc(112px + env(safe-area-inset-bottom, 0px));
   --primary-brown: #8B4513;
   --primary-yellow: #FFD700;
   --primary-white: #FFFFFF;
@@ -14,6 +16,7 @@
 @media (min-width: 769px) {
   :root {
     --top-navbar-height: 76px;
+    --bottom-nav-mobile-clearance: 0px;
   }
 }
 

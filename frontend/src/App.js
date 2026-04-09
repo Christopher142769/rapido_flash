@@ -82,8 +82,8 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           
-          {/* Pages client protégées */}
-          <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
+          {/* Home public : découverte sans connexion */}
+          <Route path="/home" element={<Home />} />
           <Route path="/restaurant/:id" element={<PrivateRoute><RestaurantDetail /></PrivateRoute>} />
           <Route path="/cart" element={<PrivateRoute><Cart /></PrivateRoute>} />
           <Route path="/checkout" element={<PrivateRoute><Checkout /></PrivateRoute>} />
@@ -108,7 +108,7 @@ function App() {
           <Route path="/dashboard/messages" element={<PrivateRoute><RestaurantMessages /></PrivateRoute>} />
           <Route path="/dashboard/messages-moderation" element={<PrivateRoute><PlatformChatModeration /></PrivateRoute>} />
           
-          <Route path="/" element={<Navigate to="/loading" replace />} />
+          <Route path="/" element={<Navigate to="/home" replace />} />
         </Routes>
           </MaintenanceGate>
       </Router>

@@ -1,6 +1,7 @@
 .cart-page {
   min-height: 100vh;
   background-color: var(--gray);
+  padding-bottom: var(--bottom-nav-mobile-clearance);
 }
 
 .cart-header-mobile {

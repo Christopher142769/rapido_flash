@@ -1,7 +1,7 @@
 .settings-page {
   min-height: 100vh;
   background-color: var(--gray);
-  padding-bottom: 80px;
+  padding-bottom: var(--bottom-nav-mobile-clearance);
 }
 
 .settings-header-mobile {

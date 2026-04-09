@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
 import './Auth.css';
@@ -8,6 +8,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const Login = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login, loginWithToken, user, isAuthenticated } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     email: '',
@@ -24,15 +25,19 @@ const Login = () => {
   const [codeForm, setCodeForm] = useState({ code: '', newPassword: '' });
   const [codeSentMessage, setCodeSentMessage] = useState('');
 
+  const rawNext = searchParams.get('next') || '';
+  const safeNext = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '';
+  const afterAuthPath = safeNext || '/home';
+
   useEffect(() => {
     if (isAuthenticated && user) {
       if (user.role === 'restaurant' || user.role === 'gestionnaire') {
         navigate('/dashboard');
       } else {
-        navigate('/home');
+        navigate(afterAuthPath);
       }
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, navigate, afterAuthPath]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -174,7 +179,7 @@ const Login = () => {
               >
                 Mot de passe oublié
               </button>
-              <p>Vous n'avez pas de compte ? <Link to="/register">S'inscrire</Link></p>
+              <p>Vous n'avez pas de compte ? <Link to={safeNext ? `/register?next=${encodeURIComponent(safeNext)}` : '/register'}>S'inscrire</Link></p>
             </div>
           </>
         ) : (

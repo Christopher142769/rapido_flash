@@ -1,16 +1,19 @@
 import React, { useContext } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import PageLoader from './PageLoader';
 
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated, loading } = useContext(AuthContext);
+  const location = useLocation();
 
   if (loading) {
     return <PageLoader message="Vérification de l'authentification..." />;
   }
 
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  if (isAuthenticated) return children;
+  const nextPath = `${location.pathname}${location.search || ''}`;
+  return <Navigate to={`/login?next=${encodeURIComponent(nextPath)}`} replace />;
 };
 
 export default PrivateRoute;

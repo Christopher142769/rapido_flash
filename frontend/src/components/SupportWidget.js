@@ -19,6 +19,7 @@ import { pickLocalized } from '../utils/i18nContent';
 import './SupportWidget.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const MEDIA_BASE = process.env.REACT_APP_BASE_URL || API_URL.replace(/\/api\/?$/, '');
 
 function firstName(nom) {
   if (!nom || typeof nom !== 'string') return '';
@@ -40,6 +41,7 @@ const SupportWidget = () => {
   const [platformId, setPlatformId] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [platformLoading, setPlatformLoading] = useState(false);
+  const [convSearch, setConvSearch] = useState('');
 
   const displayName = firstName(user?.nom) || (language === 'en' ? 'there' : 'vous');
 
@@ -88,6 +90,16 @@ const SupportWidget = () => {
     [conversations]
   );
 
+  const filteredConversations = useMemo(() => {
+    const q = convSearch.trim().toLowerCase();
+    if (!q) return conversations;
+    return conversations.filter((c) => {
+      const name = pickLocalized(language, c.restaurant, 'nom') || '';
+      const prev = (c.lastPreview || '').toLowerCase();
+      return name.toLowerCase().includes(q) || prev.includes(q);
+    });
+  }, [conversations, convSearch, language]);
+
   const openRapidoThread = useCallback(() => {
     if (!platformId) return;
     setThreadRid(platformId);
@@ -131,7 +143,7 @@ const SupportWidget = () => {
     <>
       {open ? (
         <div className="support-widget-overlay" role="dialog" aria-modal="true" aria-label={t('supportWidget', 'fabOpen')}>
-          <div className="support-widget-shell">
+          <div className={`support-widget-shell ${view === 'thread' ? 'support-widget-shell--thread' : ''}`}>
             <div className="support-widget-content">
             {view === 'thread' && threadRid ? (
               <ChatThreadPanel
@@ -143,27 +155,49 @@ const SupportWidget = () => {
                   setNavTab('messages');
                   goMessagesList();
                 }}
+                onCloseWidget={() => setOpen(false)}
               />
             ) : null}
 
             {view === 'messages' ? (
               <div className="support-widget-messages">
-                <header className="support-widget-messages-head">
-                  <button type="button" className="support-widget-icon-btn" onClick={() => { setView('home'); setNavTab('home'); }} aria-label={t('supportWidget', 'back')}>
-                    <MdChevronRight style={{ transform: 'rotate(180deg)' }} size={22} />
-                  </button>
-                  <h2 className="support-widget-messages-title">{t('chat', 'inboxTitle')}</h2>
-                  <button type="button" className="support-widget-icon-btn" onClick={() => setOpen(false)} aria-label={t('supportWidget', 'close')}>
-                    <IoClose size={22} />
-                  </button>
+                <header className="support-widget-messages-head support-widget-messages-head--wave">
+                  <div className="support-widget-messages-head-row">
+                    <button type="button" className="support-widget-icon-btn support-widget-icon-btn--on-dark" onClick={() => { setView('home'); setNavTab('home'); setConvSearch(''); }} aria-label={t('supportWidget', 'back')}>
+                      <MdChevronRight style={{ transform: 'rotate(180deg)' }} size={22} />
+                    </button>
+                    <h2 className="support-widget-messages-title">{t('chat', 'inboxTitle')}</h2>
+                    <button type="button" className="support-widget-icon-btn support-widget-icon-btn--on-dark" onClick={() => setOpen(false)} aria-label={t('supportWidget', 'close')}>
+                      <IoClose size={22} />
+                    </button>
+                  </div>
+                  <div className="support-widget-inbox-search">
+                    <MdSearch className="support-widget-inbox-search-icon" aria-hidden size={20} />
+                    <input
+                      type="search"
+                      className="support-widget-inbox-search-input"
+                      placeholder={t('chat', 'inboxSearchPlaceholder')}
+                      value={convSearch}
+                      onChange={(e) => setConvSearch(e.target.value)}
+                    />
+                  </div>
                 </header>
                 <div className="support-widget-messages-scroll">
                   {conversations.length === 0 ? (
                     <p className="support-widget-empty">{t('chat', 'noConversations')}</p>
+                  ) : filteredConversations.length === 0 ? (
+                    <p className="support-widget-empty">{t('chat', 'inboxSearchNoMatch')}</p>
                   ) : (
                     <ul className="support-widget-conv-list">
-                      {conversations.map((c) => {
+                      {filteredConversations.map((c) => {
                         const rid = c.restaurant?._id || c.restaurant;
+                        const logoRaw = c.restaurant?.logo;
+                        const logoStr = logoRaw && String(logoRaw).trim();
+                        const logoUrl = logoStr
+                          ? logoStr.startsWith('http')
+                            ? logoStr
+                            : `${MEDIA_BASE}${logoStr.startsWith('/') ? '' : '/'}${logoStr}`
+                          : null;
                         return (
                           <li key={c._id}>
                             <button
@@ -175,10 +209,19 @@ const SupportWidget = () => {
                                 setView('thread');
                               }}
                             >
-                              <span className="support-widget-conv-name">{pickLocalized(language, c.restaurant, 'nom')}</span>
-                              <span className="support-widget-conv-preview">{c.lastPreview || t('chat', 'noPreview')}</span>
-                              {c.unreadClient > 0 ? <span className="support-widget-dot" /> : null}
-                              <MdChevronRight className="support-widget-chevron" />
+                              <span className="support-widget-conv-avatar" aria-hidden>
+                                {logoUrl ? <img src={logoUrl} alt="" /> : <span className="support-widget-conv-avatar-fallback" />}
+                              </span>
+                              <span className="support-widget-conv-main">
+                                <span className="support-widget-conv-name">{pickLocalized(language, c.restaurant, 'nom')}</span>
+                                <span className="support-widget-conv-preview">{c.lastPreview || t('chat', 'noPreview')}</span>
+                              </span>
+                              <span className="support-widget-conv-meta">
+                                {c.unreadClient > 0 ? (
+                                  <span className="support-widget-unread-badge">{c.unreadClient > 99 ? '99+' : c.unreadClient}</span>
+                                ) : null}
+                                <MdChevronRight className="support-widget-chevron" />
+                              </span>
                             </button>
                           </li>
                         );
@@ -191,14 +234,16 @@ const SupportWidget = () => {
 
             {view === 'structures' ? (
               <div className="support-widget-structures">
-                <header className="support-widget-messages-head">
-                  <button type="button" className="support-widget-icon-btn" onClick={() => { setView('home'); setNavTab('home'); }} aria-label={t('supportWidget', 'back')}>
-                    <MdChevronRight style={{ transform: 'rotate(180deg)' }} size={22} />
-                  </button>
-                  <h2 className="support-widget-messages-title">{t('supportWidget', 'structuresTitle')}</h2>
-                  <button type="button" className="support-widget-icon-btn" onClick={() => setOpen(false)} aria-label={t('supportWidget', 'close')}>
-                    <IoClose size={22} />
-                  </button>
+                <header className="support-widget-messages-head support-widget-messages-head--wave support-widget-messages-head--simple">
+                  <div className="support-widget-messages-head-row">
+                    <button type="button" className="support-widget-icon-btn support-widget-icon-btn--on-dark" onClick={() => { setView('home'); setNavTab('home'); }} aria-label={t('supportWidget', 'back')}>
+                      <MdChevronRight style={{ transform: 'rotate(180deg)' }} size={22} />
+                    </button>
+                    <h2 className="support-widget-messages-title">{t('supportWidget', 'structuresTitle')}</h2>
+                    <button type="button" className="support-widget-icon-btn support-widget-icon-btn--on-dark" onClick={() => setOpen(false)} aria-label={t('supportWidget', 'close')}>
+                      <IoClose size={22} />
+                    </button>
+                  </div>
                 </header>
                 <div className="support-widget-messages-scroll">
                   {structures.length === 0 ? (
@@ -221,14 +266,16 @@ const SupportWidget = () => {
 
             {view === 'help' ? (
               <div className="support-widget-help">
-                <header className="support-widget-messages-head">
-                  <button type="button" className="support-widget-icon-btn" onClick={() => { setView('home'); setNavTab('home'); }} aria-label={t('supportWidget', 'back')}>
-                    <MdChevronRight style={{ transform: 'rotate(180deg)' }} size={22} />
-                  </button>
-                  <h2 className="support-widget-messages-title">{t('supportWidget', 'navHelp')}</h2>
-                  <button type="button" className="support-widget-icon-btn" onClick={() => setOpen(false)} aria-label={t('supportWidget', 'close')}>
-                    <IoClose size={22} />
-                  </button>
+                <header className="support-widget-messages-head support-widget-messages-head--wave support-widget-messages-head--simple">
+                  <div className="support-widget-messages-head-row">
+                    <button type="button" className="support-widget-icon-btn support-widget-icon-btn--on-dark" onClick={() => { setView('home'); setNavTab('home'); }} aria-label={t('supportWidget', 'back')}>
+                      <MdChevronRight style={{ transform: 'rotate(180deg)' }} size={22} />
+                    </button>
+                    <h2 className="support-widget-messages-title">{t('supportWidget', 'navHelp')}</h2>
+                    <button type="button" className="support-widget-icon-btn support-widget-icon-btn--on-dark" onClick={() => setOpen(false)} aria-label={t('supportWidget', 'close')}>
+                      <IoClose size={22} />
+                    </button>
+                  </div>
                 </header>
                 <div className="support-widget-help-body">
                   <h3>{t('supportWidget', 'helpIntro')}</h3>
@@ -239,14 +286,16 @@ const SupportWidget = () => {
 
             {view === 'tasks' ? (
               <div className="support-widget-help">
-                <header className="support-widget-messages-head">
-                  <button type="button" className="support-widget-icon-btn" onClick={() => { setView('home'); setNavTab('home'); }} aria-label={t('supportWidget', 'back')}>
-                    <MdChevronRight style={{ transform: 'rotate(180deg)' }} size={22} />
-                  </button>
-                  <h2 className="support-widget-messages-title">{t('supportWidget', 'navTasks')}</h2>
-                  <button type="button" className="support-widget-icon-btn" onClick={() => setOpen(false)} aria-label={t('supportWidget', 'close')}>
-                    <IoClose size={22} />
-                  </button>
+                <header className="support-widget-messages-head support-widget-messages-head--wave support-widget-messages-head--simple">
+                  <div className="support-widget-messages-head-row">
+                    <button type="button" className="support-widget-icon-btn support-widget-icon-btn--on-dark" onClick={() => { setView('home'); setNavTab('home'); }} aria-label={t('supportWidget', 'back')}>
+                      <MdChevronRight style={{ transform: 'rotate(180deg)' }} size={22} />
+                    </button>
+                    <h2 className="support-widget-messages-title">{t('supportWidget', 'navTasks')}</h2>
+                    <button type="button" className="support-widget-icon-btn support-widget-icon-btn--on-dark" onClick={() => setOpen(false)} aria-label={t('supportWidget', 'close')}>
+                      <IoClose size={22} />
+                    </button>
+                  </div>
                 </header>
                 <div className="support-widget-help-body">
                   <p>{t('supportWidget', 'tasksHint')}</p>
@@ -336,6 +385,7 @@ const SupportWidget = () => {
             ) : null}
             </div>
 
+            {view !== 'thread' ? (
             <nav className="support-widget-bottom-nav" aria-label="Navigation">
               <button
                 type="button"
@@ -382,6 +432,7 @@ const SupportWidget = () => {
                 <span>{t('supportWidget', 'navTasks')}</span>
               </button>
             </nav>
+            ) : null}
           </div>
         </div>
       ) : null}
