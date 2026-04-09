@@ -136,6 +136,40 @@
   color: var(--dark-gray);
 }
 
+.install-button-download {
+  border: none;
+  border-radius: 14px;
+  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary-brown) 0%, var(--dark-brown) 100%);
+  box-shadow: 0 6px 18px rgba(139, 69, 19, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.install-button-download:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(139, 69, 19, 0.4);
+}
+
+.install-button-download:active {
+  transform: translateY(0);
+}
+
+.install-button-download.waiting {
+  opacity: 0.75;
+}
+
+.install-button-download.installing {
+  pointer-events: none;
+  opacity: 0.8;
+}
+
 /* État d'installation */
 .install-button-icon.installing {
   pointer-events: none;

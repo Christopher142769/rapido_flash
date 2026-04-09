@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useModal } from '../context/ModalContext';
+import LanguageContext from '../context/LanguageContext';
 import './InstallButton.css';
 
 const InstallButton = ({ variant = 'icon' }) => {
   const { showInfo, showWarning } = useModal();
+  const { t } = useContext(LanguageContext);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
@@ -12,6 +14,7 @@ const InstallButton = ({ variant = 'icon' }) => {
   const [isIOS, setIsIOS] = useState(false);
   const [showIOSModal, setShowIOSModal] = useState(false);
   const [waitingForPrompt, setWaitingForPrompt] = useState(false);
+  const ti = (key) => t('install', key);
 
   useEffect(() => {
     // Détecter iOS (iPad, iPhone, iPod)
@@ -121,6 +124,14 @@ const InstallButton = ({ variant = 'icon' }) => {
   const handleInstallClick = async () => {
     if (isInstalling) return;
 
+    if (isStandalone) {
+      showInfo(
+        ti('alreadyInstalledBody'),
+        ti('alreadyInstalledTitle')
+      );
+      return;
+    }
+
     // Pour iOS, afficher le modal avec les instructions
     if (isIOS) {
       setShowIOSModal(true);
@@ -142,7 +153,7 @@ const InstallButton = ({ variant = 'icon' }) => {
     if (!deferredPrompt) {
       // Vérifier si l'app est peut-être déjà installée
       if (window.matchMedia('(display-mode: standalone)').matches) {
-        showInfo('L\'application est déjà installée !', 'Application installée');
+        showInfo(ti('alreadyInstalledShort'), ti('alreadyInstalledTitle'));
         return;
       }
       
@@ -158,22 +169,16 @@ const InstallButton = ({ variant = 'icon' }) => {
         setTimeout(() => {
           setWaitingForPrompt(false);
           if (!deferredPrompt) {
-            const message = `L'installation n'est pas encore disponible.\n\n` +
-              `Vérifications nécessaires :\n` +
-              `✓ Le site doit être en HTTPS (actuellement: ${window.location.protocol})\n` +
-              `✓ Le manifest.json doit être valide\n` +
-              `✓ Un service worker doit être enregistré\n\n` +
-              `Alternative : Utilisez le menu Chrome/Edge\n` +
-              `Menu (⋮) → Installer Rapido...\n\n` +
-              `Ou attendez quelques secondes et réessayez.`;
-            showInfo(message, 'Installation');
+            const message = ti('promptUnavailableBody')
+              .replace('{protocol}', window.location.protocol);
+            showInfo(message, ti('installTitle'));
           }
         }, 3000);
         
         // Si le prompt arrive pendant l'attente, on l'utilisera
         return;
       } else {
-        showInfo('L\'installation sera bientôt disponible. Veuillez rafraîchir la page dans quelques instants.\n\nAstuce : Utilisez Chrome ou Edge pour une meilleure expérience PWA.', 'Installation');
+        showInfo(ti('soonAvailableBody'), ti('installTitle'));
         return;
       }
     }
@@ -204,8 +209,8 @@ const InstallButton = ({ variant = 'icon' }) => {
     }
   };
 
-  // Ne pas afficher si déjà installé
-  if (isStandalone) {
+  // Conserver seulement le bouton "download" quand déjà installé
+  if (isStandalone && variant !== 'download') {
     return null;
   }
 
@@ -219,7 +224,7 @@ const InstallButton = ({ variant = 'icon' }) => {
         <button 
           className={`install-button-icon ${isInstalling ? 'installing' : ''} ${!deferredPrompt ? 'waiting' : ''}`}
           onClick={handleInstallClick}
-          title={deferredPrompt ? "Télécharger l'application Rapido" : "Installation bientôt disponible"}
+          title={deferredPrompt ? ti('downloadTitle') : ti('soonTitle')}
           disabled={isInstalling}
         >
           {isInstalling ? (
@@ -239,8 +244,8 @@ const InstallButton = ({ variant = 'icon' }) => {
                 <img src="/images/logo.png" alt="Rapido Logo" />
               </div>
               <div className="install-loading-spinner"></div>
-              <h3>Installation en cours...</h3>
-              <p>Veuillez patienter pendant l'installation de l'application</p>
+              <h3>{ti('installingTitle')}</h3>
+              <p>{ti('installingBody')}</p>
             </div>
           </div>
         )}
@@ -256,9 +261,63 @@ const InstallButton = ({ variant = 'icon' }) => {
                   </svg>
                 </div>
               </div>
-              <h2>✅ Installation réussie !</h2>
-              <p>L'application Rapido a été installée avec succès.</p>
-              <p className="success-redirect">Ouverture de l'application...</p>
+              <h2>{ti('successTitle')}</h2>
+              <p>{ti('successBody')}</p>
+              <p className="success-redirect">{ti('successRedirect')}</p>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  if (variant === 'download') {
+    return (
+      <>
+        <button
+          className={`install-button-download ${isInstalling ? 'installing' : ''} ${(!deferredPrompt && !waitingForPrompt) ? 'waiting' : ''} ${waitingForPrompt ? 'checking' : ''}`}
+          onClick={handleInstallClick}
+          title={deferredPrompt ? ti('downloadTitle') : waitingForPrompt ? ti('checkingTitle') : ti('downloadTitle')}
+          disabled={isInstalling}
+        >
+          {isInstalling ? (
+            <div className="install-spinner-small" />
+          ) : (
+            <>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                <path d="M12 15V3M12 15L8 11M12 15L16 11M2 17L2 19C2 19.5304 2.21071 20.0391 2.58579 20.4142C2.96086 20.7893 3.46957 21 4 21H20C20.5304 21 21.0391 20.7893 21.4142 20.4142C21.7893 20.0391 22 19.5304 22 19V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span>{ti('downloadCta')}</span>
+            </>
+          )}
+        </button>
+
+        {isInstalling && (
+          <div className="install-loading-modal-overlay">
+            <div className="install-loading-modal">
+              <div className="install-loading-icon">
+                <img src="/images/logo.png" alt="Rapido Logo" />
+              </div>
+              <div className="install-loading-spinner"></div>
+              <h3>{ti('installingTitle')}</h3>
+              <p>{ti('installingBody')}</p>
+            </div>
+          </div>
+        )}
+
+        {showSuccessModal && installSuccess && (
+          <div className="install-success-modal-overlay">
+            <div className="install-success-modal">
+              <div className="success-icon-wrapper">
+                <div className="success-checkmark">
+                  <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+              </div>
+              <h2>{ti('successTitle')}</h2>
+              <p>{ti('successBody')}</p>
+              <p className="success-redirect">{ti('successRedirect')}</p>
             </div>
           </div>
         )}
@@ -272,7 +331,7 @@ const InstallButton = ({ variant = 'icon' }) => {
       <button 
         className={`install-button-navbar ${isInstalling ? 'installing' : ''} ${(!deferredPrompt && !waitingForPrompt) ? 'waiting' : ''} ${waitingForPrompt ? 'checking' : ''}`}
         onClick={handleInstallClick}
-        title={deferredPrompt ? "Télécharger l'application Rapido" : waitingForPrompt ? "Vérification en cours..." : "Installation bientôt disponible"}
+        title={deferredPrompt ? ti('downloadTitle') : waitingForPrompt ? ti('checkingTitle') : ti('soonTitle')}
         disabled={isInstalling || waitingForPrompt}
       >
         {isInstalling ? (
@@ -282,7 +341,7 @@ const InstallButton = ({ variant = 'icon' }) => {
             <svg className="nav-icon-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 15V3M12 15L8 11M12 15L16 11M2 17L2 19C2 19.5304 2.21071 20.0391 2.58579 20.4142C2.96086 20.7893 3.46957 21 4 21H20C20.5304 21 21.0391 20.7893 21.4142 20.4142C21.7893 20.0391 22 19.5304 22 19V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            <span className="nav-label">Installer</span>
+            <span className="nav-label">{ti('downloadNav')}</span>
           </>
         )}
       </button>
@@ -295,8 +354,8 @@ const InstallButton = ({ variant = 'icon' }) => {
               <img src="/images/logo.png" alt="Rapido Logo" />
             </div>
             <div className="install-loading-spinner"></div>
-            <h3>Installation en cours...</h3>
-            <p>Veuillez patienter pendant l'installation de l'application</p>
+            <h3>{ti('installingTitle')}</h3>
+            <p>{ti('installingBody')}</p>
           </div>
         </div>
       )}
@@ -312,9 +371,9 @@ const InstallButton = ({ variant = 'icon' }) => {
                 </svg>
               </div>
             </div>
-            <h2>✅ Installation réussie !</h2>
-            <p>L'application Rapido a été installée avec succès.</p>
-            <p className="success-redirect">Ouverture de l'application...</p>
+            <h2>{ti('successTitle')}</h2>
+            <p>{ti('successBody')}</p>
+            <p className="success-redirect">{ti('successRedirect')}</p>
           </div>
         </div>
       )}
@@ -328,11 +387,11 @@ const InstallButton = ({ variant = 'icon' }) => {
               <div className="ios-modal-icon">
                 <img src="/images/logo.png" alt="Rapido Logo" />
               </div>
-              <h3>Installer Rapido</h3>
+              <h3>{ti('iosModalTitle')}</h3>
               <p className="ios-modal-description">
                 {isIOS 
-                  ? "Ajoutez Rapido à votre écran d'accueil pour une expérience optimale"
-                  : "Ajoutez Rapido à votre Dock (macOS) ou installez l'application"
+                  ? ti('iosModalDescIOS')
+                  : ti('iosModalDescDesktop')
                 }
               </p>
               {isIOS ? (
@@ -340,22 +399,22 @@ const InstallButton = ({ variant = 'icon' }) => {
                   <div className="ios-instruction-step">
                     <div className="ios-step-number">1</div>
                     <div className="ios-step-content">
-                      <p>Appuyez sur le bouton <strong>Partager</strong> <span className="ios-icon">📤</span></p>
-                      <p className="ios-step-hint">(en bas de l'écran dans Safari)</p>
+                      <p>{ti('iosStep1')}</p>
+                      <p className="ios-step-hint">{ti('iosStep1Hint')}</p>
                     </div>
                   </div>
                   <div className="ios-instruction-step">
                     <div className="ios-step-number">2</div>
                     <div className="ios-step-content">
-                      <p>Sélectionnez <strong>"Sur l'écran d'accueil"</strong> <span className="ios-icon">➕</span></p>
-                      <p className="ios-step-hint">(dans le menu de partage)</p>
+                      <p>{ti('iosStep2')}</p>
+                      <p className="ios-step-hint">{ti('iosStep2Hint')}</p>
                     </div>
                   </div>
                   <div className="ios-instruction-step">
                     <div className="ios-step-number">3</div>
                     <div className="ios-step-content">
-                      <p>Appuyez sur <strong>"Ajouter"</strong></p>
-                      <p className="ios-step-hint">(en haut à droite)</p>
+                      <p>{ti('iosStep3')}</p>
+                      <p className="ios-step-hint">{ti('iosStep3Hint')}</p>
                     </div>
                   </div>
                 </div>
@@ -364,38 +423,34 @@ const InstallButton = ({ variant = 'icon' }) => {
                   <div className="ios-instruction-step">
                     <div className="ios-step-number">1</div>
                     <div className="ios-step-content">
-                      <p>Dans la barre d'adresse, cliquez sur l'icône <strong>Partager</strong> <span className="ios-icon">📤</span></p>
-                      <p className="ios-step-hint">(ou utilisez le menu Fichier → Partager)</p>
+                      <p>{ti('desktopStep1')}</p>
+                      <p className="ios-step-hint">{ti('desktopStep1Hint')}</p>
                     </div>
                   </div>
                   <div className="ios-instruction-step">
                     <div className="ios-step-number">2</div>
                     <div className="ios-step-content">
-                      <p>Sélectionnez <strong>"Ajouter à l'écran d'accueil"</strong> <span className="ios-icon">➕</span></p>
-                      <p className="ios-step-hint">(ou "Add to Dock" sur macOS)</p>
+                      <p>{ti('desktopStep2')}</p>
+                      <p className="ios-step-hint">{ti('desktopStep2Hint')}</p>
                     </div>
                   </div>
                   <div className="ios-instruction-step">
                     <div className="ios-step-number">3</div>
                     <div className="ios-step-content">
-                      <p>Cliquez sur <strong>"Ajouter"</strong> pour confirmer</p>
-                      <p className="ios-step-hint">(l'application apparaîtra dans votre Dock)</p>
+                      <p>{ti('desktopStep3')}</p>
+                      <p className="ios-step-hint">{ti('desktopStep3Hint')}</p>
                     </div>
                   </div>
                   <div className="ios-instruction-step" style={{ marginTop: '20px', padding: '15px', background: 'rgba(139, 69, 19, 0.1)', borderRadius: '10px' }}>
                     <div className="ios-step-content" style={{ textAlign: 'center', width: '100%' }}>
-                      <p style={{ fontWeight: '600', color: 'var(--primary-brown)', marginBottom: '5px' }}>
-                        💡 Astuce : Utilisez Chrome ou Edge pour une installation automatique
-                      </p>
-                      <p className="ios-step-hint">
-                        Ces navigateurs proposent un bouton d'installation dans la barre d'adresse
-                      </p>
+                      <p style={{ fontWeight: '600', color: 'var(--primary-brown)', marginBottom: '5px' }}>{ti('desktopTipTitle')}</p>
+                      <p className="ios-step-hint">{ti('desktopTipBody')}</p>
                     </div>
                   </div>
                 </div>
               )}
               <button className="ios-modal-got-it" onClick={() => setShowIOSModal(false)}>
-                J'ai compris
+                {ti('understood')}
               </button>
             </div>
           </div>

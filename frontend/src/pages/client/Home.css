@@ -2182,6 +2182,135 @@
   }
 }
 
+/* ---------- Download callout + category visual upgrades ---------- */
+@media (min-width: 769px) {
+  .install-fab-desktop-wrap {
+    align-items: flex-end;
+    justify-content: flex-end;
+    right: 22px;
+    bottom: 20px;
+  }
+
+  .install-download-callout {
+    width: min(330px, calc(100vw - 32px));
+    border-radius: 18px;
+    padding: 14px;
+    background: linear-gradient(160deg, #ffffff 0%, #fff8eb 100%);
+    border: 1px solid rgba(139, 69, 19, 0.14);
+    box-shadow: 0 18px 42px rgba(61, 41, 20, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .install-download-callout__eyebrow {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #a16207;
+  }
+
+  .install-download-callout__title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.3;
+    color: #3d2914;
+  }
+
+  .install-download-callout__desc {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.45;
+    color: #6b4f37;
+  }
+}
+
+@media (max-width: 768px) {
+  .categories-filter-home-mobile {
+    padding: 12px 0 18px;
+    margin-bottom: 18px;
+  }
+}
+
+@media (min-width: 769px) {
+  .home-categories-section-desktop {
+    margin-bottom: 52px;
+  }
+
+  .home-section-title-desktop {
+    margin-bottom: 18px;
+    font-size: 24px;
+  }
+
+  .categories-scroll-wrap-desktop {
+    margin-bottom: 0;
+    gap: 14px;
+  }
+
+  .categories-scroll-arrow {
+    background: rgba(255, 255, 255, 0.94);
+    border-color: rgba(139, 69, 19, 0.24);
+    box-shadow: 0 8px 18px rgba(101, 67, 33, 0.12);
+  }
+
+  .categories-scroll-arrow:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 22px rgba(139, 69, 19, 0.18);
+  }
+}
+
+.category-square-img,
+.category-btn-home-icon .category-circle-wrap {
+  background: #ffffff !important;
+  border-color: rgba(139, 69, 19, 0.2) !important;
+}
+
+.category-square-img .category-domain-icon-wrap,
+.category-btn-home-icon .category-domain-icon-wrap {
+  width: 84%;
+  height: 84%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 28% 22%, #fff9ef 0%, #ffe8bf 58%, #f0c88e 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 7px 15px rgba(139, 69, 19, 0.16);
+}
+
+.category-square-img .category-domain-icon-svg,
+.category-btn-home-icon .category-domain-icon-svg {
+  filter: drop-shadow(0 4px 8px rgba(61, 41, 20, 0.22));
+}
+
+/* Fix lisibilité de l'icône "Tous/All" (état actif) */
+.category-square-desktop.active .category-square-all,
+.category-btn-home-icon.active .category-icon-all {
+  color: var(--primary-brown) !important;
+}
+
+.category-square-all,
+.category-icon-all {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  line-height: 1;
+}
+
+/* Mettre encore plus en valeur les catégories sans conteneur */
+.category-square-desktop:hover .category-square-img,
+.category-btn-home-icon:hover .category-circle-wrap {
+  transform: translateY(-2px) scale(1.03);
+}
+
+.category-square-desktop .category-square-label,
+.category-btn-home-icon .category-label {
+  font-weight: 700;
+}
+
 /* Modal pour voir l'image en grand */
 .image-modal-overlay {
   position: fixed;

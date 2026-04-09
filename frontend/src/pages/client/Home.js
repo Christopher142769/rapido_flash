@@ -97,6 +97,24 @@ function productHitImageSrc(produit, baseUrl, idx) {
   return generateBannerPlaceholderSVG(idx);
 }
 
+function categoryDisplayName(language, category) {
+  const code = String(category?.code || '').toLowerCase();
+  const labels = {
+    restaurant: { fr: 'Restaurant', en: 'Restaurant' },
+    'marche-frais': { fr: 'Marché frais', en: 'Fresh market' },
+    construction: { fr: 'Construction', en: 'Construction' },
+    'repas-sain': { fr: 'Repas sain', en: 'Healthy meals' },
+    'cuisine-traditionnelle': { fr: 'Cuisine traditionnelle', en: 'Traditional cuisine' },
+    'super-marche': { fr: 'Supermarché', en: 'Supermarket' },
+    'fleurs-jardins': { fr: 'Fleurs & jardins', en: 'Flowers & gardens' },
+    'nettoyage-sec': { fr: 'Nettoyage à sec', en: 'Dry cleaning' },
+    'services-location': { fr: 'Services & location', en: 'Services & rental' },
+    cosmetique: { fr: 'Cosmétique', en: 'Cosmetics' },
+  };
+  if (labels[code]) return language === 'en' ? labels[code].en : labels[code].fr;
+  return pickLocalized(language, category, 'nom');
+}
+
 const Home = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -504,7 +522,7 @@ const Home = () => {
         key={String(cat._id)}
         className={`home-category-rail home-category-rail--${variant}`}
         id={variant === 'desktop' ? `section-category-${cat._id}` : undefined}
-        aria-label={pickLocalized(language, cat, 'nom')}
+        aria-label={categoryDisplayName(language, cat)}
       >
         <header className="home-category-rail__head">
           <div className="home-category-rail__head-left">
@@ -512,7 +530,7 @@ const Home = () => {
               <CategoryDomainIcon category={cat} baseUrl={BASE_URL} size={variant === 'desktop' ? 34 : 28} />
             </span>
             <div className="home-category-rail__head-text">
-              <h2 className="home-category-rail__title">{pickLocalized(language, cat, 'nom')}</h2>
+              <h2 className="home-category-rail__title">{categoryDisplayName(language, cat)}</h2>
               <p className="home-category-rail__subtitle">{t('home', 'railSwipeHint')}</p>
             </div>
           </div>
@@ -754,7 +772,9 @@ const Home = () => {
               onClick={() => setSelectedCategorieId(null)}
             >
               <span className="category-circle-wrap">
-                <span className="category-icon-all">{t('home', 'all').toUpperCase()}</span>
+                <span className="category-domain-icon-wrap">
+                  <span className="category-icon-all">{t('home', 'all').toUpperCase()}</span>
+                </span>
               </span>
               <span className="category-label">{t('home', 'all')}</span>
             </button>
@@ -767,7 +787,7 @@ const Home = () => {
                 <span className="category-circle-wrap">
                   <CategoryDomainIcon category={cat} baseUrl={BASE_URL} size={34} />
                 </span>
-                <span className="category-label">{pickLocalized(language, cat, 'nom')}</span>
+                <span className="category-label">{categoryDisplayName(language, cat)}</span>
               </button>
             ))}
             </div>
@@ -897,7 +917,9 @@ const Home = () => {
                     onClick={() => setSelectedCategorieId(null)}
                   >
                     <span className="category-square-img">
-                      <span className="category-square-all">{t('home', 'all').toUpperCase()}</span>
+                      <span className="category-domain-icon-wrap">
+                        <span className="category-square-all">{t('home', 'all').toUpperCase()}</span>
+                      </span>
                     </span>
                     <span className="category-square-label">{t('home', 'all')}</span>
                   </button>
@@ -911,7 +933,7 @@ const Home = () => {
                       <span className="category-square-img">
                         <CategoryDomainIcon category={cat} baseUrl={BASE_URL} size={40} />
                       </span>
-                      <span className="category-square-label">{pickLocalized(language, cat, 'nom')}</span>
+                      <span className="category-square-label">{categoryDisplayName(language, cat)}</span>
                     </button>
                   ))}
                 </div>
@@ -1003,7 +1025,12 @@ const Home = () => {
 
       {/* Bouton d'installation desktop : bas à droite, animation haut → bas */}
       <div className="install-fab-desktop-wrap">
-        <InstallButton variant="icon" />
+        <div className="install-download-callout">
+          <p className="install-download-callout__eyebrow">{t('install', 'calloutEyebrow')}</p>
+          <p className="install-download-callout__title">{t('install', 'calloutTitle')}</p>
+          <p className="install-download-callout__desc">{t('install', 'calloutDesc')}</p>
+          <InstallButton variant="download" />
+        </div>
       </div>
 
       <BottomNavbar />
