@@ -17,6 +17,7 @@ import { generateBannerPlaceholderSVG } from '../../utils/imagePlaceholder';
 import { pickLocalized } from '../../utils/i18nContent';
 import ProductPromoBadges from '../../components/ProductPromoBadges';
 import { effectiveProductPrice, hasPricePromo } from '../../utils/productPromo';
+import { getRapidoTelHref, getRapidoWhatsAppLink } from '../../config/rapidoWhatsApp';
 import './Home.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -25,10 +26,6 @@ const BASE_URL = API_URL.replace('/api', '');
 function distanceToMinutes(distanceKm) {
   if (distanceKm == null || typeof distanceKm !== 'number') return null;
   return Math.max(1, Math.round(distanceKm * 3));
-}
-
-function phoneToWa(phone) {
-  return (phone || '').trim().replace(/\D/g, '');
 }
 
 function productThumbUrl(produit, baseUrl, index) {
@@ -424,7 +421,7 @@ const Home = () => {
       const r = produit.restaurant;
       const imgSrc = productHitImageSrc(produit, BASE_URL, idx);
       const minutes = r?.distance != null ? distanceToMinutes(r.distance) : null;
-      const tel = (r?.telephone || '').trim();
+      const rapidoTel = getRapidoTelHref();
       const shopName = localized(r, 'nom');
 
       return (
@@ -473,9 +470,9 @@ const Home = () => {
                 <span className="home-rail-card__eta home-rail-card__eta--muted">—</span>
               )}
               <div className="home-rail-card__actions" onClick={(e) => e.stopPropagation()}>
-                {tel ? (
+                {rapidoTel !== '#' ? (
                   <a
-                    href={`tel:${tel}`}
+                    href={rapidoTel}
                     className="home-rail-card__act"
                     title={t('home', 'call')}
                     aria-label={t('home', 'call')}
@@ -848,23 +845,21 @@ const Home = () => {
                         {minutes != null && <span className="structure-pill-mobile">~{minutes} min</span>}
                         {distanceKm != null && <span className="structure-pill-mobile">{distanceKm} km</span>}
                       </div>
-                      {structure.telephone && (
-                        <div className="structure-spotlight-icons-mobile" onClick={(e) => e.stopPropagation()}>
-                          <a href={`tel:${structure.telephone.trim()}`} className="structure-spotlight-icon-btn-mobile" title={t('home', 'call')} aria-label={t('home', 'call')}>
-                            <FaPhoneAlt size={17} />
-                          </a>
-                          <a
-                            href={phoneToWa(structure.telephone) ? `https://wa.me/${phoneToWa(structure.telephone)}` : '#'}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="structure-spotlight-icon-btn-mobile structure-spotlight-icon-wa-mobile"
-                            title={t('home', 'whatsapp')}
-                            aria-label={t('home', 'whatsapp')}
-                          >
-                            <FaWhatsapp size={19} />
-                          </a>
-                        </div>
-                      )}
+                      <div className="structure-spotlight-icons-mobile" onClick={(e) => e.stopPropagation()}>
+                        <a href={getRapidoTelHref()} className="structure-spotlight-icon-btn-mobile" title={t('home', 'call')} aria-label={t('home', 'call')}>
+                          <FaPhoneAlt size={17} />
+                        </a>
+                        <a
+                          href={getRapidoWhatsAppLink()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="structure-spotlight-icon-btn-mobile structure-spotlight-icon-wa-mobile"
+                          title={t('home', 'whatsapp')}
+                          aria-label={t('home', 'whatsapp')}
+                        >
+                          <FaWhatsapp size={19} />
+                        </a>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -996,23 +991,21 @@ const Home = () => {
                           {minutes != null && <span className="structure-pill">~{minutes} min</span>}
                           {distanceKm != null && <span className="structure-pill">{distanceKm} km</span>}
                         </div>
-                        {structure.telephone && (
-                          <div className="structure-spotlight-icons-desktop" onClick={(e) => e.stopPropagation()}>
-                            <a href={`tel:${structure.telephone.trim()}`} className="structure-spotlight-icon-btn-desktop" title={t('home', 'call')} aria-label={t('home', 'call')}>
-                              <FaPhoneAlt size={18} />
-                            </a>
-                            <a
-                              href={phoneToWa(structure.telephone) ? `https://wa.me/${phoneToWa(structure.telephone)}` : '#'}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="structure-spotlight-icon-btn-desktop structure-spotlight-icon-wa-desktop"
-                              title={t('home', 'whatsapp')}
-                              aria-label={t('home', 'whatsapp')}
-                            >
-                              <FaWhatsapp size={20} />
-                            </a>
-                          </div>
-                        )}
+                        <div className="structure-spotlight-icons-desktop" onClick={(e) => e.stopPropagation()}>
+                          <a href={getRapidoTelHref()} className="structure-spotlight-icon-btn-desktop" title={t('home', 'call')} aria-label={t('home', 'call')}>
+                            <FaPhoneAlt size={18} />
+                          </a>
+                          <a
+                            href={getRapidoWhatsAppLink()}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="structure-spotlight-icon-btn-desktop structure-spotlight-icon-wa-desktop"
+                            title={t('home', 'whatsapp')}
+                            aria-label={t('home', 'whatsapp')}
+                          >
+                            <FaWhatsapp size={20} />
+                          </a>
+                        </div>
                       </div>
                     </div>
                   </div>

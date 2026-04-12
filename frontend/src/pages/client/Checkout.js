@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import React, { useState, useEffect, useContext, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { FaMap, FaMapMarkerAlt } from 'react-icons/fa';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
 import LanguageContext from '../../context/LanguageContext';
@@ -67,6 +68,18 @@ const Checkout = () => {
   const [instruction, setInstruction] = useState('');
   const [telephoneContact, setTelephoneContact] = useState('');
 
+  const MIN_INSTRUCTION_LEN = 3;
+
+  const phoneOk = useMemo(
+    () => String(telephoneContact || '').replace(/\D/g, '').length >= 8,
+    [telephoneContact]
+  );
+
+  const instructionOk = useMemo(
+    () => String(instruction || '').trim().length >= MIN_INSTRUCTION_LEN,
+    [instruction]
+  );
+
   useEffect(() => {
     const savedCart = JSON.parse(localStorage.getItem('cart') || '[]');
     if (savedCart.length === 0) {
@@ -104,10 +117,10 @@ const Checkout = () => {
     // Vérifier si Kkiapay est chargé
     const checkKkiapay = () => {
       if (window.Kkiapay) {
-        console.log('✅ Kkiapay détecté au chargement de la page');
+        console.log('Kkiapay détecté au chargement de la page');
         return;
       }
-      console.log('⚠️ Kkiapay non détecté, sera chargé dynamiquement si nécessaire');
+      console.log('Kkiapay non détecté, sera chargé dynamiquement si nécessaire');
     };
     
     // Vérifier immédiatement
@@ -118,7 +131,7 @@ const Checkout = () => {
     const interval = setInterval(() => {
       attempts++;
       if (window.Kkiapay) {
-        console.log('✅ Kkiapay détecté après', attempts * 100, 'ms');
+        console.log('Kkiapay détecté après', attempts * 100, 'ms');
         clearInterval(interval);
       } else if (attempts > 30) { // 3 secondes max
         clearInterval(interval);
@@ -187,7 +200,7 @@ const Checkout = () => {
               }
             });
         },
-        () => showError('Impossible de récupérer votre position', 'Erreur de géolocalisation')
+        () => showError(t('locationEditor', 'geolocError'), t('locationEditor', 'geolocErrorTitle'))
       );
     }
   };
@@ -247,6 +260,14 @@ const Checkout = () => {
   const handlePayment = async () => {
     if (!mapPosition) {
       showWarning(t('checkout', 'selectAddress'), t('checkout', 'addressRequired'));
+      return;
+    }
+    if (!phoneOk) {
+      showWarning(t('checkout', 'telephoneRequired'), t('common', 'error'));
+      return;
+    }
+    if (!instructionOk) {
+      showWarning(t('checkout', 'instructionRequired'), t('common', 'error'));
       return;
     }
 
@@ -425,15 +446,15 @@ const Checkout = () => {
       <TopNavbar />
       <div className="checkout-header-mobile">
         <button className="back-btn-mobile" onClick={() => navigate('/cart')}>
-          ← Retour
+          {t('checkout', 'backToCart')}
         </button>
-        <h1>Finaliser la commande</h1>
+        <h1>{t('checkout', 'finalizeTitle')}</h1>
       </div>
 
       <div className="checkout-content">
         <div className="checkout-main">
           <div className="delivery-section">
-            <h2>Adresse de livraison</h2>
+            <h2>{t('checkout', 'deliveryAddressTitle')}</h2>
 
             <div className="checkout-address-search-wrap">
               <label className="checkout-field-label" htmlFor="checkout-search-addr">
@@ -466,23 +487,31 @@ const Checkout = () => {
 
             <div className="delivery-options">
               <button
+                type="button"
                 className={`option-btn ${deliveryOption === 'current' ? 'active' : ''}`}
                 onClick={() => {
                   setDeliveryOption('current');
                   getCurrentLocation();
                 }}
               >
-                📍 Utiliser ma position actuelle
+                <span className="checkout-option-inner">
+                  <FaMapMarkerAlt className="checkout-option-icon" aria-hidden />
+                  <span>{t('checkout', 'useCurrentLocation')}</span>
+                </span>
               </button>
               <button
+                type="button"
                 className={`option-btn ${deliveryOption === 'map' ? 'active' : ''}`}
                 onClick={() => setDeliveryOption('map')}
               >
-                🗺️ Choisir sur la carte
+                <span className="checkout-option-inner">
+                  <FaMap className="checkout-option-icon" aria-hidden />
+                  <span>{t('checkout', 'chooseOnMap')}</span>
+                </span>
               </button>
             </div>
 
-            {mapPosition && (
+            {deliveryOption === 'map' && mapPosition && (
               <div className="map-container">
                 <MapContainer
                   center={mapPosition}
@@ -501,7 +530,7 @@ const Checkout = () => {
 
             {address && (
               <div className="address-display">
-                <strong>Adresse:</strong> {address}
+                <strong>{t('checkout', 'selectedAddressLabel')}:</strong> {address}
               </div>
             )}
 
@@ -528,7 +557,7 @@ const Checkout = () => {
           </div>
 
           <div className="order-summary-section">
-            <h2>Récapitulatif</h2>
+            <h2>{t('checkout', 'recapTitle')}</h2>
             <div className="order-items">
               {cart.map((item) => (
                 <div key={item.productId || item.platId} className="order-item">
@@ -551,9 +580,12 @@ const Checkout = () => {
                   checked={paymentMode === 'especes'}
                   onChange={() => setPaymentMode('especes')}
                 />
-                <span className="checkout-pay-label">
-                  <strong>{t('checkout', 'cashOnDelivery')}</strong>
-                  <small>{t('checkout', 'cashOnDeliveryHint')}</small>
+                <span className="checkout-pay-row">
+                  <img src="/images/payment/cash.svg" alt="" className="checkout-pay-icon" />
+                  <span className="checkout-pay-label">
+                    <strong>{t('checkout', 'cashOnDelivery')}</strong>
+                    <small>{t('checkout', 'cashOnDeliveryHint')}</small>
+                  </span>
                 </span>
               </label>
               <label className={`checkout-pay-option ${paymentMode === 'momo_avant' ? 'active' : ''}`}>
@@ -563,9 +595,12 @@ const Checkout = () => {
                   checked={paymentMode === 'momo_avant'}
                   onChange={() => setPaymentMode('momo_avant')}
                 />
-                <span className="checkout-pay-label">
-                  <strong>{t('checkout', 'momoBefore')}</strong>
-                  <small>{t('checkout', 'momoBeforeHint')}</small>
+                <span className="checkout-pay-row">
+                  <img src="/images/payment/momo.webp" alt="" className="checkout-pay-icon" />
+                  <span className="checkout-pay-label">
+                    <strong>{t('checkout', 'momoBefore')}</strong>
+                    <small>{t('checkout', 'momoBeforeHint')}</small>
+                  </span>
                 </span>
               </label>
               <label className={`checkout-pay-option ${paymentMode === 'momo_apres' ? 'active' : ''}`}>
@@ -575,20 +610,23 @@ const Checkout = () => {
                   checked={paymentMode === 'momo_apres'}
                   onChange={() => setPaymentMode('momo_apres')}
                 />
-                <span className="checkout-pay-label">
-                  <strong>{t('checkout', 'momoAfter')}</strong>
-                  <small>{t('checkout', 'momoAfterHint')}</small>
+                <span className="checkout-pay-row">
+                  <img src="/images/payment/momo.webp" alt="" className="checkout-pay-icon" />
+                  <span className="checkout-pay-label">
+                    <strong>{t('checkout', 'momoAfter')}</strong>
+                    <small>{t('checkout', 'momoAfterHint')}</small>
+                  </span>
                 </span>
               </label>
             </div>
 
-            <h2>Total</h2>
+            <h2>{t('cart', 'total')}</h2>
             <div className="summary-row">
-              <span>Sous-total</span>
+              <span>{t('cart', 'subTotal')}</span>
               <span>{getSubTotal().toFixed(0)} FCFA</span>
             </div>
             <div className="summary-row">
-              <span>Frais de livraison</span>
+              <span>{t('cart', 'deliveryFee')}</span>
               <span>
                 {cartQualifiesFreeDeliveryPromo(cart) ? (
                   <>
@@ -604,13 +642,13 @@ const Checkout = () => {
               <p className="checkout-promo-delivery-note">{t('cart', 'freeDeliveryPromoNote')}</p>
             )}
             <div className="summary-row total">
-              <span>Total</span>
+              <span>{t('cart', 'total')}</span>
               <span>{getTotal().toFixed(0)} FCFA</span>
             </div>
             <button
               className="btn btn-primary btn-large"
               onClick={handlePayment}
-              disabled={loading || !mapPosition}
+              disabled={loading || !mapPosition || !phoneOk || !instructionOk}
             >
               {loading
                 ? t('checkout', 'processing')

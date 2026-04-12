@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FaMapMarkerAlt } from 'react-icons/fa';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import './LocationSelect.css';
@@ -183,7 +184,9 @@ const LocationSelect = () => {
         {/* Demande de permission */}
         {permissionStatus === 'prompt' && (
           <div className="permission-request">
-            <div className="permission-icon">📍</div>
+            <div className="permission-icon" aria-hidden>
+              <FaMapMarkerAlt size={28} />
+            </div>
             <h3>Autoriser la localisation</h3>
             <p>Cette application souhaite utiliser votre position actuelle pour vous proposer les meilleurs restaurants à proximité.</p>
             <div className="permission-buttons">
@@ -218,7 +221,7 @@ const LocationSelect = () => {
                 </>
               ) : (
                 <>
-                  <span>📍</span>
+                  <FaMapMarkerAlt aria-hidden />
                   <span>Utiliser ma position</span>
                 </>
               )}
@@ -240,7 +243,9 @@ const LocationSelect = () => {
         <div className="location-modal-overlay" onClick={() => setShowModal(false)}>
           <div className="location-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-icon">📍</div>
+              <div className="modal-icon" aria-hidden>
+                <FaMapMarkerAlt size={28} />
+              </div>
               <h3>Position récupérée</h3>
             </div>
             <div className="modal-content">

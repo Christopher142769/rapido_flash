@@ -2,6 +2,7 @@ const express = require('express');
 const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
 const Restaurant = require('../models/Restaurant');
+const PlatformCall = require('../models/PlatformCall');
 const Produit = require('../models/Produit');
 const { auth } = require('../middleware/auth');
 const uploadChat = require('../middleware/uploadChat');
@@ -30,9 +31,13 @@ async function canManageRestaurant(userId, restaurantId) {
   return (restaurant.gestionnaires || []).some((g) => g.toString() === userId.toString());
 }
 
+const RESTAURANT_POP_CLIENT = 'nom nomEn logo platformLineCode isPlatformSupport';
+const RESTAURANT_POP_STAFF = 'nom nomEn logo telephone platformLineCode isPlatformSupport';
+
 async function loadConversationForUser(convId, user) {
+  const restFields = user.role === 'client' ? RESTAURANT_POP_CLIENT : RESTAURANT_POP_STAFF;
   const c = await Conversation.findById(convId)
-    .populate('restaurant', 'nom nomEn logo telephone')
+    .populate('restaurant', restFields)
     .populate('client', 'nom email telephone photo banned banReason');
   if (!c) return null;
   const rid = c.restaurant._id || c.restaurant;
@@ -42,6 +47,15 @@ async function loadConversationForUser(convId, user) {
   if (ok) return c;
   if (canManageMaintenance(user)) return c;
   return null;
+}
+
+async function canAnswerCall(user, convDoc) {
+  const rid = convDoc.restaurant._id || convDoc.restaurant;
+  const okRest = await canManageRestaurant(user._id, rid);
+  if (okRest) return true;
+  const r = await Restaurant.findById(rid).select('isPlatformSupport').lean();
+  if (r?.isPlatformSupport && canManageMaintenance(user)) return true;
+  return false;
 }
 
 /** ID de la fiche « Service Rapido » (messagerie plateforme) */
@@ -103,7 +117,7 @@ router.post('/open', auth, async (req, res) => {
     }
 
     const populated = await Conversation.findById(conv._id)
-      .populate('restaurant', 'nom nomEn logo telephone')
+      .populate('restaurant', RESTAURANT_POP_CLIENT)
       .populate('client', 'nom email telephone photo banned banReason');
     res.json(populated);
   } catch (e) {
@@ -119,7 +133,7 @@ router.get('/client', auth, async (req, res) => {
     }
     const list = await Conversation.find({ client: req.user._id })
       .sort({ lastMessageAt: -1 })
-      .populate('restaurant', 'nom nomEn logo')
+      .populate('restaurant', 'nom nomEn logo platformLineCode isPlatformSupport')
       .lean();
     res.json(list);
   } catch (e) {
@@ -151,11 +165,184 @@ router.get('/admin/all', auth, async (req, res) => {
     }
     const list = await Conversation.find()
       .sort({ lastMessageAt: -1 })
-      .populate('restaurant', 'nom nomEn logo telephone')
+      .populate('restaurant', 'nom nomEn logo telephone platformLineCode isPlatformSupport')
       .populate('client', 'nom email telephone photo banned banReason')
       .limit(500)
       .lean();
     res.json(list);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+/** Appels « ligne Rapido » : sonneries côté modération (fiche Service Rapido uniquement) */
+router.get('/admin/calls/pending', auth, async (req, res) => {
+  try {
+    if (!canManageMaintenance(req.user)) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+    const plat = await Restaurant.findOne({ isPlatformSupport: true }).select('_id').lean();
+    if (!plat) return res.json([]);
+    const convIds = await Conversation.find({ restaurant: plat._id }).distinct('_id');
+    const list = await PlatformCall.find({ conversation: { $in: convIds }, status: 'ringing' })
+      .sort({ createdAt: -1 })
+      .populate('conversation', 'client lastPreview restaurant')
+      .populate('initiatedBy', 'nom')
+      .limit(20)
+      .lean();
+    res.json(list);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+/** Sonneries entrantes pour le tableau de bord d’une structure */
+router.get('/restaurant/:restaurantId/calls/pending', auth, async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+    const allowed = await canManageRestaurant(req.user._id, restaurantId);
+    if (!allowed) return res.status(403).json({ message: 'Accès refusé' });
+    const convIds = await Conversation.find({ restaurant: restaurantId }).distinct('_id');
+    const list = await PlatformCall.find({ conversation: { $in: convIds }, status: 'ringing' })
+      .sort({ createdAt: -1 })
+      .populate('conversation', 'client lastPreview')
+      .populate('initiatedBy', 'nom')
+      .limit(20)
+      .lean();
+    res.json(list);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.post('/:id/calls', auth, async (req, res) => {
+  try {
+    const c = await loadConversationForUser(req.params.id, req.user);
+    if (!c) return res.status(404).json({ message: 'Conversation introuvable' });
+    if (req.user.role !== 'client') {
+      return res.status(403).json({ message: 'Seul le client peut lancer un appel depuis la messagerie' });
+    }
+    if (String(c.client._id || c.client) !== String(req.user._id)) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+    await PlatformCall.updateMany(
+      { conversation: c._id, status: 'ringing' },
+      { $set: { status: 'cancelled', endedAt: new Date() } }
+    );
+    const call = await PlatformCall.create({
+      conversation: c._id,
+      initiatedBy: req.user._id,
+      status: 'ringing',
+    });
+    const populated = await PlatformCall.findById(call._id).populate('initiatedBy', 'nom').lean();
+    res.status(201).json(populated);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.get('/:id/calls/current', auth, async (req, res) => {
+  try {
+    const c = await loadConversationForUser(req.params.id, req.user);
+    if (!c) return res.status(404).json({ message: 'Conversation introuvable' });
+    const call = await PlatformCall.findOne({
+      conversation: c._id,
+      status: { $in: ['ringing', 'accepted'] },
+    })
+      .sort({ createdAt: -1 })
+      .populate('initiatedBy', 'nom')
+      .lean();
+    res.json(call || null);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.post('/:id/calls/:callId/accept', auth, async (req, res) => {
+  try {
+    const c = await loadConversationForUser(req.params.id, req.user);
+    if (!c) return res.status(404).json({ message: 'Conversation introuvable' });
+    if (!(await canAnswerCall(req.user, c))) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+    const call = await PlatformCall.findOne({ _id: req.params.callId, conversation: c._id });
+    if (!call) return res.status(404).json({ message: 'Appel introuvable' });
+    if (call.status !== 'ringing') {
+      return res.status(400).json({ message: 'Cet appel n’est plus en sonnerie' });
+    }
+    call.status = 'accepted';
+    call.answeredAt = new Date();
+    await call.save();
+    res.json(call);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.post('/:id/calls/:callId/reject', auth, async (req, res) => {
+  try {
+    const c = await loadConversationForUser(req.params.id, req.user);
+    if (!c) return res.status(404).json({ message: 'Conversation introuvable' });
+    if (!(await canAnswerCall(req.user, c))) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+    const call = await PlatformCall.findOne({ _id: req.params.callId, conversation: c._id });
+    if (!call) return res.status(404).json({ message: 'Appel introuvable' });
+    if (call.status !== 'ringing') {
+      return res.status(400).json({ message: 'Cet appel n’est plus en sonnerie' });
+    }
+    call.status = 'rejected';
+    call.endedAt = new Date();
+    await call.save();
+    res.json(call);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.post('/:id/calls/:callId/end', auth, async (req, res) => {
+  try {
+    const c = await loadConversationForUser(req.params.id, req.user);
+    if (!c) return res.status(404).json({ message: 'Conversation introuvable' });
+    const call = await PlatformCall.findOne({ _id: req.params.callId, conversation: c._id });
+    if (!call) return res.status(404).json({ message: 'Appel introuvable' });
+    const isClient = req.user.role === 'client' && String(c.client._id || c.client) === String(req.user._id);
+    const isCallee = await canAnswerCall(req.user, c);
+    if (!isClient && !isCallee) return res.status(403).json({ message: 'Accès refusé' });
+    if (call.status === 'ended' || call.status === 'rejected' || call.status === 'cancelled') {
+      return res.json(call);
+    }
+    if (call.status === 'ringing' && isCallee) {
+      call.status = 'rejected';
+    } else if (call.status === 'ringing' && isClient) {
+      call.status = 'cancelled';
+    } else {
+      call.status = 'ended';
+    }
+    call.endedAt = new Date();
+    await call.save();
+    res.json(call);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.post('/:id/calls/:callId/cancel', auth, async (req, res) => {
+  try {
+    const c = await loadConversationForUser(req.params.id, req.user);
+    if (!c) return res.status(404).json({ message: 'Conversation introuvable' });
+    if (req.user.role !== 'client' || String(c.client._id || c.client) !== String(req.user._id)) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+    const call = await PlatformCall.findOne({ _id: req.params.callId, conversation: c._id });
+    if (!call) return res.status(404).json({ message: 'Appel introuvable' });
+    if (call.status !== 'ringing') {
+      return res.status(400).json({ message: 'Impossible d’annuler cet appel' });
+    }
+    call.status = 'cancelled';
+    call.endedAt = new Date();
+    await call.save();
+    res.json(call);
   } catch (e) {
     res.status(500).json({ message: e.message });
   }

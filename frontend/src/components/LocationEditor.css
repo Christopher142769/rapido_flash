@@ -162,6 +162,9 @@
 .btn-use-location {
   width: 100%;
   padding: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: linear-gradient(135deg, var(--primary-brown) 0%, var(--dark-brown) 100%);
   color: var(--primary-white);
   border: none;
@@ -175,6 +178,40 @@
 
 .btn-use-location:active {
   transform: scale(0.98);
+}
+
+.location-editor-btn-inner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.location-editor-btn-icon {
+  flex-shrink: 0;
+}
+
+.btn-toggle-map {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 16px;
+  border-radius: 20px;
+  border: 2px solid var(--primary-brown);
+  background: var(--primary-white);
+  color: var(--primary-brown);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.btn-toggle-map:hover {
+  background: var(--light-yellow);
+}
+
+.btn-toggle-map-secondary {
+  border-color: #c4b8a8;
+  color: var(--dark-gray);
 }
 
 .map-container-editor {

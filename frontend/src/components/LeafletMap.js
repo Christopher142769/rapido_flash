@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -56,7 +56,10 @@ function MapMoveHandler({ onMove }) {
 }
 
 // Composant pour le contrôle de géolocalisation
-function GeolocateControl({ onGeolocate }) {
+const GEOLOCATE_PIN_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="#8B4513" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5 14.5 7.62 14.5 9 13.38 11.5 12 11.5z"/></svg>';
+
+function GeolocateControl({ onGeolocate, title = 'Utiliser ma position' }) {
   const map = useMap();
 
   useEffect(() => {
@@ -68,7 +71,12 @@ function GeolocateControl({ onGeolocate }) {
 
     geolocateControl.onAdd = function() {
       const div = L.DomUtil.create('div', 'leaflet-control-geolocate');
-      div.innerHTML = '<button style="background: white; border: 2px solid rgba(0,0,0,0.2); border-radius: 4px; padding: 8px; cursor: pointer; font-size: 18px;" title="Utiliser ma position">📍</button>';
+      const safeTitle = String(title || 'Utiliser ma position')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;');
+      div.innerHTML =
+        `<button type="button" style="background: white; border: 2px solid rgba(0,0,0,0.2); border-radius: 4px; padding: 6px 8px; cursor: pointer; display:flex;align-items:center;justify-content:center;" title="${safeTitle}" aria-label="${safeTitle}">${GEOLOCATE_PIN_SVG}</button>`;
       
       L.DomEvent.on(div, 'click', (e) => {
         L.DomEvent.stopPropagation(e);
@@ -102,7 +110,7 @@ function GeolocateControl({ onGeolocate }) {
     return () => {
       map.removeControl(geolocateControl);
     };
-  }, [map, onGeolocate]);
+  }, [map, onGeolocate, title]);
 
   return null;
 }
@@ -132,7 +140,12 @@ const LeafletMap = ({
       
       {onClick && <MapClickHandler onClick={onClick} />}
       {onMove && <MapMoveHandler onMove={onMove} />}
-      {geolocateControl && <GeolocateControl onGeolocate={geolocateControl.onGeolocate} />}
+      {geolocateControl && (
+        <GeolocateControl
+          onGeolocate={geolocateControl.onGeolocate}
+          title={geolocateControl.title}
+        />
+      )}
       
       {markers.map((marker, index) => {
         if (!marker.latitude || !marker.longitude) return null;

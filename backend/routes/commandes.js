@@ -28,6 +28,20 @@ router.post('/', auth, async (req, res) => {
         telephoneContact: adresseLivraison.telephoneContact || ''
       };
     }
+    const deliveryPhoneDigits = String(adressePayload.telephoneContact || '').replace(/\D/g, '');
+    if (deliveryPhoneDigits.length < 8) {
+      return res.status(400).json({
+        message: 'Le numéro pour la livraison est obligatoire (minimum 8 chiffres).'
+      });
+    }
+    const instructionTrim = String(adressePayload.instruction || '').trim();
+    if (instructionTrim.length < 3) {
+      return res.status(400).json({
+        message: 'Les indications pour le livreur sont obligatoires.'
+      });
+    }
+    adressePayload.instruction = instructionTrim;
+    adressePayload.telephoneContact = String(adressePayload.telephoneContact || '').trim();
     const Restaurant = require('../models/Restaurant');
     const restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) {
@@ -97,12 +111,9 @@ router.post('/', auth, async (req, res) => {
     const modesValides = ['especes', 'momo_avant', 'momo_apres'];
     const mode = modesValides.includes(modePaiement) ? modePaiement : 'momo_avant';
 
-    /** Espèces ou MoMo après livraison : commande validée tout de suite. MoMo avant : en attente jusqu’au paiement. */
-    let statutInitial = 'en_attente';
+    /** Toute nouvelle commande reste « en attente » jusqu’à traitement (structure / plateforme / paiement en ligne). */
+    const statutInitial = 'en_attente';
     let paiementEnLigneEffectue = false;
-    if (mode === 'especes' || mode === 'momo_apres') {
-      statutInitial = 'confirmee';
-    }
 
     const commande = new Commande({
       client: req.user._id,

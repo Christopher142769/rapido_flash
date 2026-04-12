@@ -5,6 +5,7 @@ import LanguageContext from '../context/LanguageContext';
 import { FaArrowLeft, FaImage, FaPaperPlane, FaPhoneAlt, FaStore } from 'react-icons/fa';
 import { IoClose } from 'react-icons/io5';
 import { pickLocalized } from '../utils/i18nContent';
+import { getMessagerieDirectTelDisplay, getMessagerieDirectTelHref } from '../config/rapidoWhatsApp';
 import '../pages/client/ChatThread.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -189,10 +190,11 @@ const ChatThreadPanel = ({
     }
   };
 
-  const tel = String(conv?.restaurant?.telephone || '').trim();
   const shopName = conv?.restaurant ? pickLocalized(language, conv.restaurant, 'nom') : '';
   const logoRaw = conv?.restaurant?.logo;
   const logoUrl = logoRaw ? resolveMediaUrl(logoRaw) : '';
+  const messagerieTelHref = getMessagerieDirectTelHref();
+  const messagerieTelDisplay = getMessagerieDirectTelDisplay();
 
   return (
     <div className={`chat-thread-panel-embed ${compact ? 'chat-thread-panel-embed--compact' : ''}`}>
@@ -206,13 +208,22 @@ const ChatThreadPanel = ({
           </div>
           <div className="chat-thread-head-text">
             <h1 className="chat-thread-title">{shopName || t('chat', 'threadTitle')}</h1>
-            {tel ? (
-              <a href={`tel:${tel}`} className="chat-thread-call">
-                <FaPhoneAlt size={12} aria-hidden /> {t('chat', 'call')}
-              </a>
-            ) : (
+            {conv && !loadError && messagerieTelHref !== '#' ? (
+              <div className="chat-thread-platform-phone">
+                <span className="chat-thread-platform-line-label">{t('chat', 'platformDirectCallLabel')}</span>
+                <a
+                  href={messagerieTelHref}
+                  className="chat-thread-platform-call-btn chat-thread-platform-call-btn--tel"
+                  aria-label={`${t('chat', 'platformDirectCallButton')} ${messagerieTelDisplay}`}
+                >
+                  <FaPhoneAlt size={12} aria-hidden />
+                  {t('chat', 'platformDirectCallButton')}
+                </a>
+                <span className="chat-thread-platform-call-hint">{t('chat', 'platformDirectCallHint')}</span>
+              </div>
+            ) : !loadError ? (
               <span className="chat-thread-subtle">{t('chat', 'threadSubtitle')}</span>
-            )}
+            ) : null}
           </div>
         </div>
         {typeof onCloseWidget === 'function' ? (

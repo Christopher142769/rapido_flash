@@ -8,6 +8,7 @@ import PageLoader from '../../components/PageLoader';
 import { FaPaperPlane } from 'react-icons/fa';
 import { pickLocalized } from '../../utils/i18nContent';
 import { playUrgentAlertSound } from '../../utils/urgentAlertSound';
+import { playIncomingCallSound } from '../../utils/incomingCallSound';
 import './RestaurantMessages.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -26,6 +27,8 @@ const RestaurantMessages = () => {
   const [sending, setSending] = useState(false);
   const pollRef = useRef(null);
   const urgentSoundKeyRef = useRef(null);
+  const [pendingCalls, setPendingCalls] = useState([]);
+  const incomingRingRef = useRef(null);
 
   const urgentList = useMemo(
     () =>
@@ -93,6 +96,57 @@ const RestaurantMessages = () => {
   }, [selectedRid, loadConversations]);
 
   useEffect(() => {
+    if (!selectedRid) return undefined;
+    const poll = () => {
+      axios
+        .get(`${API_URL}/conversations/restaurant/${selectedRid}/calls/pending`)
+        .then((r) => setPendingCalls(r.data || []))
+        .catch(() => setPendingCalls([]));
+    };
+    poll();
+    const id = setInterval(poll, 3200);
+    return () => clearInterval(id);
+  }, [selectedRid]);
+
+  const topIncoming = pendingCalls[0];
+
+  useEffect(() => {
+    if (!topIncoming?._id) {
+      incomingRingRef.current = null;
+      return;
+    }
+    if (incomingRingRef.current !== topIncoming._id) {
+      incomingRingRef.current = topIncoming._id;
+      playIncomingCallSound();
+    }
+  }, [topIncoming?._id]);
+
+  const acceptIncomingCall = async () => {
+    if (!topIncoming?.conversation?._id) return;
+    const convId = topIncoming.conversation._id;
+    try {
+      await axios.post(`${API_URL}/conversations/${convId}/calls/${topIncoming._id}/accept`);
+      setPendingCalls([]);
+      setActiveId(convId);
+      await loadMessages(convId);
+      loadConversations();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const rejectIncomingCall = async () => {
+    if (!topIncoming?.conversation?._id) return;
+    const convId = topIncoming.conversation._id;
+    try {
+      await axios.post(`${API_URL}/conversations/${convId}/calls/${topIncoming._id}/reject`);
+      setPendingCalls((prev) => prev.filter((c) => c._id !== topIncoming._id));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
     if (!activeId) return;
     loadMessages(activeId).catch(() => {});
     pollRef.current = setInterval(() => {
@@ -150,6 +204,25 @@ const RestaurantMessages = () => {
     <div className="restaurant-messages-page">
       <DashboardSidebar onLogout={logout} />
       <main className="restaurant-messages-main">
+        {topIncoming ? (
+          <div className="incoming-call-overlay" role="dialog" aria-modal="true" aria-labelledby="incoming-call-title">
+            <div className="incoming-call-card">
+              <h2 id="incoming-call-title" className="incoming-call-title">
+                {t('chat', 'incomingCallTitle')}
+              </h2>
+              <p className="incoming-call-body">{t('chat', 'incomingCallBody')}</p>
+              <p className="incoming-call-client">{topIncoming.initiatedBy?.nom || 'Client'}</p>
+              <div className="incoming-call-actions">
+                <button type="button" className="incoming-call-btn incoming-call-btn--accept" onClick={acceptIncomingCall}>
+                  {t('chat', 'incomingCallAccept')}
+                </button>
+                <button type="button" className="incoming-call-btn incoming-call-btn--reject" onClick={rejectIncomingCall}>
+                  {t('chat', 'incomingCallReject')}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
         <header className="restaurant-messages-header">
           <h1>{t('chat', 'dashboardTitle')}</h1>
           {user?.canManageMaintenance ? (

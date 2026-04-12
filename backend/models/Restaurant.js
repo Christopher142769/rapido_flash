@@ -42,6 +42,13 @@ const restaurantSchema = new mongoose.Schema({
   telephone: {
     type: String
   },
+  /** Identifiant « ligne Rapido » (messagerie / appels passant par la plateforme) — unique */
+  platformLineCode: {
+    type: String,
+    trim: true,
+    sparse: true,
+    unique: true,
+  },
   whatsapp: {
     type: String
   },
@@ -96,6 +103,18 @@ const restaurantSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
+});
+
+const { generateUniqueRestaurantLineCode } = require('../utils/platformLineCode');
+
+restaurantSchema.pre('save', async function assignPlatformLine(next) {
+  if (this.platformLineCode && String(this.platformLineCode).trim()) return next();
+  try {
+    this.platformLineCode = await generateUniqueRestaurantLineCode(this.constructor);
+  } catch (e) {
+    return next(e);
+  }
+  return next();
 });
 
 module.exports = mongoose.model('Restaurant', restaurantSchema);

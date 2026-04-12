@@ -6,6 +6,7 @@ import LanguageContext from '../../context/LanguageContext';
 import { useModal } from '../../context/ModalContext';
 import BottomNavbar from '../../components/BottomNavbar';
 import TopNavbar from '../../components/TopNavbar';
+import { FaMapMarkerAlt } from 'react-icons/fa';
 import LocationEditor from '../../components/LocationEditor';
 import './Settings.css';
 
@@ -194,7 +195,9 @@ const Settings = () => {
           <div className="delivery-address-section">
             {userLocation?.adresse ? (
               <div className="address-display">
-                <div className="address-icon">📍</div>
+                <div className="address-icon" aria-hidden>
+                  <FaMapMarkerAlt size={22} />
+                </div>
                 <div className="address-details">
                   <p className="address-text">{userLocation.adresse}</p>
                   <p className="address-coords">{userLocation.latitude?.toFixed(6)}, {userLocation.longitude?.toFixed(6)}</p>

@@ -132,6 +132,7 @@ const { ensurePlatformSupportStack } = require('./utils/ensurePlatformSupport');
 const fixStaleUserIndexes = require('./utils/fixUserIndexes');
 const ensureDefaultCategoriesDomaine = require('./utils/ensureDefaultCategoriesDomaine');
 const ensureAppSettings = require('./utils/ensureAppSettings');
+const ensurePlatformLineCodes = require('./utils/ensurePlatformLineCodes');
 
 // MongoDB : par défaut instance locale (voir backend/.env ou .env racine pour Atlas)
 const DEFAULT_LOCAL_MONGODB = 'mongodb://127.0.0.1:27017/rapido_flash';
@@ -153,6 +154,7 @@ mongoose.connect(MONGODB_URI, {
   await fixStaleUserIndexes();
   await ensureDefaultCategoriesDomaine();
   await ensureAppSettings();
+  await ensurePlatformLineCodes();
 
   // Initialiser l'admin par défaut après la connexion MongoDB (plus de plats par défaut)
   setTimeout(async () => {

@@ -6,6 +6,7 @@ import LanguageContext from '../../context/LanguageContext';
 import TopNavbar from '../../components/TopNavbar';
 import BottomNavbar from '../../components/BottomNavbar';
 import PageLoader from '../../components/PageLoader';
+import { exportElementToPdf } from '../../utils/receiptPdf';
 import './ReceiptPage.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -19,6 +20,7 @@ const ReceiptPage = () => {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pdfBusy, setPdfBusy] = useState(false);
   const autoDownloadDone = useRef(false);
 
   useEffect(() => {
@@ -38,21 +40,19 @@ const ReceiptPage = () => {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const buildDownload = useCallback(() => {
+  const downloadPdf = useCallback(async () => {
     const el = document.getElementById('receipt-print-area');
     if (!el) return;
-    const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Reçu Rapido Flash</title><style>body{font-family:system-ui,-apple-system,sans-serif;padding:24px;max-width:520px;margin:0 auto;color:#333;background:#f0ebe4}</style></head><body>${el.outerHTML}</body></html>`;
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `recu-rapido-${id}.html`;
-    a.rel = 'noopener';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, [id]);
+    setPdfBusy(true);
+    try {
+      await exportElementToPdf(el, `recu-rapido-${id}.pdf`);
+    } catch (e) {
+      console.error(e);
+      window.alert(t('receipt', 'pdfError'));
+    } finally {
+      setPdfBusy(false);
+    }
+  }, [id, t]);
 
   const autoDownloadFlag = Boolean(location.state?.autoDownload);
 
@@ -62,11 +62,12 @@ const ReceiptPage = () => {
       const el = document.getElementById('receipt-print-area');
       if (!el) return;
       autoDownloadDone.current = true;
-      buildDownload();
-      navigate(location.pathname, { replace: true, state: {} });
-    }, 120);
+      downloadPdf().finally(() => {
+        navigate(location.pathname, { replace: true, state: {} });
+      });
+    }, 400);
     return () => clearTimeout(timer);
-  }, [data, autoDownloadFlag, buildDownload, navigate, location.pathname]);
+  }, [data, autoDownloadFlag, downloadPdf, navigate, location.pathname]);
 
   const handlePrint = () => {
     window.print();
@@ -100,11 +101,16 @@ const ReceiptPage = () => {
     <div className="receipt-page">
       <TopNavbar />
       <div className="receipt-actions no-print">
+        <button
+          type="button"
+          className="receipt-btn-pdf"
+          onClick={downloadPdf}
+          disabled={pdfBusy}
+        >
+          {pdfBusy ? '…' : t('receipt', 'download')}
+        </button>
         <button type="button" className="receipt-btn-print" onClick={handlePrint}>
           {t('receipt', 'print')}
-        </button>
-        <button type="button" className="receipt-btn-download" onClick={buildDownload}>
-          {t('receipt', 'download')}
         </button>
         <button type="button" className="receipt-btn-back" onClick={() => navigate('/factures')}>
           ← {t('invoices', 'title')}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FaMapMarkerAlt } from 'react-icons/fa';
 import LeafletMap from '../../components/LeafletMap';
 import AuthContext from '../../context/AuthContext';
 import axios from 'axios';
@@ -213,10 +214,10 @@ const LocationSelect = () => {
           onClick={handleMapClick}
           markers={position ? [{
             longitude: position.longitude,
-            latitude: position.latitude,
-            content: '📍'
+            latitude: position.latitude
           }] : []}
           geolocateControl={{
+            title: 'Utiliser ma position',
             onGeolocate: (e) => {
               const newPos = {
                 longitude: e.coords.longitude,
@@ -266,7 +267,14 @@ const LocationSelect = () => {
             onClick={requestLocationPermission}
             disabled={loading || permissionStatus === 'denied'}
           >
-            {loading ? '⏳ Récupération...' : '📍 Utiliser ma position'}
+            {loading ? (
+              <span className="location-select-btn-inner">Récupération...</span>
+            ) : (
+              <span className="location-select-btn-inner">
+                <FaMapMarkerAlt aria-hidden />
+                <span>Utiliser ma position</span>
+              </span>
+            )}
           </button>
           <button
             className="btn-confirm-location"
@@ -288,7 +296,9 @@ const LocationSelect = () => {
       {showModal && (
         <div className="location-modal-overlay" onClick={handleModalOk}>
           <div className="location-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-icon">📍</div>
+            <div className="modal-icon" aria-hidden>
+              <FaMapMarkerAlt size={36} />
+            </div>
             <h2>Localisation enregistrée !</h2>
             <p>Votre adresse de livraison a été sauvegardée.</p>
             {address && (

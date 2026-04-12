@@ -27,6 +27,7 @@ import ProductPromoBadges from '../../components/ProductPromoBadges';
 import ProductDescriptionRich from '../../components/ProductDescriptionRich';
 import ProductReviewsSection, { StarsDisplay } from '../../components/ProductReviewsSection';
 import { effectiveProductPrice, hasFreeDeliveryPromo, hasPricePromo } from '../../utils/productPromo';
+import { getRapidoTelHref, getRapidoWhatsAppLink, getRapidoPhoneDisplay } from '../../config/rapidoWhatsApp';
 import './RestaurantDetail.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -282,6 +283,12 @@ const RestaurantDetail = () => {
     localStorage.setItem('cart', JSON.stringify(newCart));
   };
 
+  /** Ajoute au panier puis ouvre la page panier (bouton Acheter). */
+  const buyProduct = (produit, accompagnementIds = []) => {
+    addToCart(produit, accompagnementIds);
+    navigate('/cart');
+  };
+
   /** Navigation "chaîne" : ouvrir la fiche produit dans le même `/restaurant/:id` */
   const goToProduct = (productId) => {
     if (!productId) return;
@@ -344,8 +351,9 @@ const RestaurantDetail = () => {
       ? (String(restaurant.banniere).startsWith('http') ? restaurant.banniere : `${BASE_URL}${restaurant.banniere}`)
       : generateBannerPlaceholderSVG(0);
 
-  const tel = (restaurant.telephone || '').trim();
-  const waNumber = tel.replace(/\D/g, '');
+  const rapidoTelHref = getRapidoTelHref();
+  const rapidoWaHref = getRapidoWhatsAppLink();
+  const rapidoPhoneLabel = getRapidoPhoneDisplay();
 
   const cartForRestaurant = cart.filter((item) => String(item.restaurantId) === String(id));
   const cartCountRestaurant = cartForRestaurant.reduce((sum, item) => sum + item.quantite, 0);
@@ -420,12 +428,14 @@ const RestaurantDetail = () => {
           </div>
           <h1 className="store-info-name-mobile">{localized(restaurant, 'nom')}</h1>
           {localized(restaurant, 'description') ? <p className="store-info-desc-mobile">{localized(restaurant, 'description')}</p> : null}
-          {restaurant.telephone && (
+          {rapidoTelHref !== '#' && rapidoPhoneLabel ? (
             <p className="store-info-phone-mobile">
-              <FaPhoneAlt className="store-info-phone-icon" size={16} aria-hidden />
-              {restaurant.telephone}
+              <a href={rapidoTelHref} className="store-info-phone-mobile-link">
+                <FaPhoneAlt className="store-info-phone-icon" size={16} aria-hidden />
+                {rapidoPhoneLabel}
+              </a>
             </p>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -453,13 +463,13 @@ const RestaurantDetail = () => {
           </div>
           <div className="store-hero-contact">
             <span className="store-hero-contact-title">{t('store', 'contact')}</span>
-            {tel && (
+            {rapidoTelHref !== '#' && (
               <div className="store-hero-contact-links">
-                <a href={`tel:${tel}`} className="store-hero-contact-link" title={t('store', 'callTitle')} onClick={(e) => e.stopPropagation()}>
+                <a href={rapidoTelHref} className="store-hero-contact-link" title={t('store', 'callTitle')} onClick={(e) => e.stopPropagation()}>
                   <FaPhoneAlt size={18} aria-hidden />
-                  <span>{restaurant.telephone}</span>
+                  <span>{rapidoPhoneLabel}</span>
                 </a>
-                <a href={waNumber ? `https://wa.me/${waNumber}` : '#'} target="_blank" rel="noopener noreferrer" className="store-hero-contact-link store-hero-contact-wa" title={t('store', 'whatsappTitle')} onClick={(e) => e.stopPropagation()}>
+                <a href={rapidoWaHref} target="_blank" rel="noopener noreferrer" className="store-hero-contact-link store-hero-contact-wa" title={t('store', 'whatsappTitle')} onClick={(e) => e.stopPropagation()}>
                   <FaWhatsapp size={20} aria-hidden />
                   <span>WhatsApp</span>
                 </a>
@@ -558,9 +568,9 @@ const RestaurantDetail = () => {
                 <button
                   type="button"
                   className="pdp-nike-cta"
-                  onClick={() => addToCart(highlightedProduct, selectedAccompagnementIds)}
+                  onClick={() => buyProduct(highlightedProduct, selectedAccompagnementIds)}
                 >
-                  {t('store', 'addToCart')}
+                  {t('store', 'buy')}
                 </button>
                 {highlightedAccompagnements.length > 0 ? (
                   <div className="pdp-nike-accompagnements">
@@ -591,10 +601,12 @@ const RestaurantDetail = () => {
                   </div>
                 ) : null}
                 {highlightedDescriptionFull.trim() ? (
-                  <div className="pdp-nike-description-section">
-                    <h3 className="pdp-nike-description-title">{t('store', 'productDescriptionHeading')}</h3>
-                    <ProductDescriptionRich text={highlightedDescriptionFull} className="pdp-nike-description-body" />
-                  </div>
+                  <details className="pdp-nike-details pdp-nike-description-details">
+                    <summary className="pdp-nike-details-summary">{t('store', 'productDescriptionHeading')}</summary>
+                    <div className="pdp-nike-details-body">
+                      <ProductDescriptionRich text={highlightedDescriptionFull} className="pdp-nike-description-body" />
+                    </div>
+                  </details>
                 ) : null}
                 <p className="pdp-nike-zoom-hint">{t('store', 'zoomHint')}</p>
                 <details className="pdp-nike-details">
@@ -739,10 +751,10 @@ const RestaurantDetail = () => {
                       className="btn-add-cart-inline"
                       onClick={(e) => {
                         e.stopPropagation();
-                        addToCart(produit);
+                        buyProduct(produit);
                       }}
                     >
-                      {t('store', 'addToCart')}
+                      {t('store', 'buy')}
                     </button>
                   </div>
                 );
@@ -850,10 +862,10 @@ const RestaurantDetail = () => {
                             className="product-card-add-btn"
                             onClick={(e) => {
                               e.stopPropagation();
-                              addToCart(produit);
+                              buyProduct(produit);
                             }}
                           >
-                            {t('store', 'addToCart')}
+                            {t('store', 'buy')}
                           </button>
                         </div>
                       </div>

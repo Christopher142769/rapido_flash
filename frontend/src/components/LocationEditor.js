@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
+import { FaMapMarkerAlt } from 'react-icons/fa';
 import LeafletMap from './LeafletMap';
 import axios from 'axios';
 import LanguageContext from '../context/LanguageContext';
@@ -8,6 +9,7 @@ import './LocationEditor.css';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 // Utilisation de Nominatim (OpenStreetMap) - Gratuit et open source
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
+const MIN_INSTRUCTION_LEN = 3;
 
 const LocationEditor = ({ onClose, onSave }) => {
   const { t } = useContext(LanguageContext);
@@ -27,6 +29,7 @@ const LocationEditor = ({ onClose, onSave }) => {
   const searchTimeoutRef = useRef(null);
   const [instruction, setInstruction] = useState('');
   const [telephoneContact, setTelephoneContact] = useState('');
+  const [showMap, setShowMap] = useState(false);
 
   useEffect(() => {
     // Récupérer la localisation actuelle
@@ -177,6 +180,16 @@ const LocationEditor = ({ onClose, onSave }) => {
   const handleSave = async () => {
     if (!position) return;
 
+    const telDigits = String(telephoneContact || '').replace(/\D/g, '');
+    if (telDigits.length < 8) {
+      showError(t('checkout', 'telephoneRequired'), t('common', 'error'));
+      return;
+    }
+    if (String(instruction || '').trim().length < MIN_INSTRUCTION_LEN) {
+      showError(t('checkout', 'instructionRequired'), t('common', 'error'));
+      return;
+    }
+
     setSaving(true);
     try {
       const locationData = {
@@ -246,14 +259,35 @@ const LocationEditor = ({ onClose, onSave }) => {
               )}
             </div>
             <button
+              type="button"
               className="btn-use-location"
               onClick={handleUseCurrentLocation}
             >
-              📍 {t('locationEditor', 'useMyLocation')}
+              <span className="location-editor-btn-inner">
+                <FaMapMarkerAlt className="location-editor-btn-icon" aria-hidden />
+                <span>{t('locationEditor', 'useMyLocation')}</span>
+              </span>
             </button>
+            {!showMap ? (
+              <button
+                type="button"
+                className="btn-toggle-map"
+                onClick={() => setShowMap(true)}
+              >
+                {t('checkout', 'openMapToChoose')}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn-toggle-map btn-toggle-map-secondary"
+                onClick={() => setShowMap(false)}
+              >
+                {t('locationEditor', 'hideMap')}
+              </button>
+            )}
           </div>
 
-          {!loading && (
+          {!loading && showMap && (
             <div className="map-container-editor">
               <LeafletMap
                 initialViewState={viewState}
@@ -261,10 +295,10 @@ const LocationEditor = ({ onClose, onSave }) => {
                 onClick={handleMapClick}
                 markers={position ? [{
                   longitude: position.longitude,
-                  latitude: position.latitude,
-                  content: '📍'
+                  latitude: position.latitude
                 }] : []}
                 geolocateControl={{
+                  title: t('locationEditor', 'useMyLocation'),
                   onGeolocate: (e) => {
                     const newPos = {
                       longitude: e.coords.longitude,

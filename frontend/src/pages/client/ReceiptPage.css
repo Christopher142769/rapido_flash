@@ -17,40 +17,67 @@
   gap: 12px;
   flex-wrap: wrap;
   justify-content: center;
+  align-items: center;
+}
+
+.receipt-btn-pdf {
+  padding: 14px 28px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #c9a227 0%, #e8c547 42%, #b8891f 100%);
+  color: #3d2a0a;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow:
+    0 8px 28px rgba(180, 140, 40, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  transition: transform 0.18s ease, filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+.receipt-btn-pdf:hover:not(:disabled) {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+  box-shadow:
+    0 12px 34px rgba(180, 140, 40, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.receipt-btn-pdf:disabled {
+  opacity: 0.65;
+  cursor: wait;
 }
 
 .receipt-btn-print {
   padding: 12px 22px;
-  border: none;
-  border-radius: 12px;
-  background: var(--primary-brown, #8b4513);
-  color: #fff;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.receipt-btn-download {
-  padding: 12px 22px;
   border: 2px solid rgba(139, 69, 19, 0.45);
-  border-radius: 12px;
+  border-radius: 999px;
   background: #fff;
   color: var(--primary-brown, #8b4513);
   font-weight: 700;
   cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
-.receipt-btn-download:hover {
+.receipt-btn-print:hover {
   background: rgba(139, 69, 19, 0.06);
+  border-color: rgba(139, 69, 19, 0.6);
 }
 
 .receipt-btn-back {
   padding: 12px 18px;
-  border-radius: 12px;
-  border: 2px solid rgba(139, 69, 19, 0.35);
-  background: #fff;
+  border-radius: 999px;
+  border: 2px solid rgba(139, 69, 19, 0.22);
+  background: rgba(255, 255, 255, 0.85);
   color: var(--primary-brown, #8b4513);
   cursor: pointer;
   font-weight: 600;
+}
+
+.receipt-btn-back:hover {
+  border-color: rgba(139, 69, 19, 0.4);
+  background: #fff;
 }
 
 .receipt-sheet {

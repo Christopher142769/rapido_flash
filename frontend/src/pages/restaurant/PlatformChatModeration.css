@@ -114,3 +114,70 @@
   background: #fff7f7 !important;
   border-left: 4px solid #dc2626;
 }
+
+.incoming-call-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(28, 20, 16, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.incoming-call-card {
+  max-width: 380px;
+  width: 100%;
+  background: #fff;
+  border-radius: 18px;
+  padding: 24px 22px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
+}
+
+.incoming-call-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  color: var(--primary-brown, #8b4513);
+}
+
+.incoming-call-body {
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: #5c534c;
+  line-height: 1.45;
+}
+
+.incoming-call-client {
+  margin: 0 0 18px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #1c1410;
+}
+
+.incoming-call-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.incoming-call-btn {
+  flex: 1;
+  min-width: 120px;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.incoming-call-btn--accept {
+  background: #15803d;
+  color: #fff;
+}
+
+.incoming-call-btn--reject {
+  background: rgba(139, 69, 19, 0.12);
+  color: var(--primary-brown, #8b4513);
+}

@@ -100,7 +100,7 @@ export const translations = {
       subtitle: 'Reçus de paiement en ligne (Kkiapay)',
       empty: 'Aucune facture numérique pour le moment.',
       viewReceipt: 'Voir le reçu',
-      downloadReceipt: 'Télécharger',
+      downloadReceipt: 'Télécharger PDF',
       expired: 'Expiré',
     },
     maintenance: {
@@ -122,8 +122,9 @@ export const translations = {
     receipt: {
       title: 'Reçu de paiement',
       expiredMessage: 'Ce reçu n’est plus valide (30 jours dépassés).',
-      print: 'Imprimer / PDF',
-      download: 'Télécharger (HTML)',
+      print: 'Imprimer',
+      download: 'Télécharger PDF',
+      pdfError: 'Impossible de générer le PDF. Réessayez ou utilisez « Imprimer ».',
       orderRef: 'Référence commande',
       date: 'Date',
       amount: 'Montant payé',
@@ -144,9 +145,9 @@ export const translations = {
     },
     locationEditor: {
       title: "Modifier l'adresse de livraison",
-      instructionLabel: 'Indications pour le livreur (optionnel)',
+      instructionLabel: 'Indications pour le livreur (obligatoire)',
       instructionPlaceholder: 'Ex. : code portail, étage, repères…',
-      telephoneLabel: 'Numéro à appeler pour la livraison (optionnel)',
+      telephoneLabel: 'Numéro à appeler pour la livraison (obligatoire)',
       telephonePlaceholder: 'Ex. : +229 …',
       searchPlaceholder: 'Rechercher une adresse...',
       useMyLocation: 'Utiliser ma position',
@@ -157,16 +158,64 @@ export const translations = {
       geolocError: 'Impossible de récupérer votre position',
       geolocErrorTitle: 'Erreur de géolocalisation',
       saveError: 'Erreur lors de la sauvegarde',
+      hideMap: 'Masquer la carte',
     },
     orders: {
       title: 'Commandes',
+      pageTitle: 'Mes commandes',
+      loading: 'Chargement de vos commandes…',
       noOrders: 'Aucune commande',
+      noOrdersBody: "Vous n'avez pas encore passé de commande.",
+      browseProducts: 'Découvrir les boutiques',
+      totalLabel: 'Total',
+      viewReceipt: 'Voir le reçu / facture',
+      followOrder: 'Suivre ma commande',
+      followOrderAria: 'Suivre ma commande',
       statusPending: 'En attente',
       statusConfirmed: 'Confirmée',
       statusPreparing: 'En préparation',
       statusDelivery: 'En livraison',
       statusDelivered: 'Livrée',
       statusCancelled: 'Annulée',
+      paymentCash: 'Espèces à la livraison',
+      paymentMomoBefore: 'Mobile Money avant livraison',
+      paymentMomoAfter: 'Mobile Money après livraison',
+      whatsappPaidLine: 'OK - Paiement en ligne (MoMo) : recu',
+      whatsappTemplate:
+        'Bonjour \u00e9quipe Rapido Flash\n\n' +
+        'Je souhaite suivre ma commande pass\u00e9e sur l\u2019application et conna\u00eetre son avancement.\n\n' +
+        '--------------------------------\n' +
+        'RECAPITULATIF\n' +
+        '--------------------------------\n' +
+        '- Reference courte : {{ref}}\n' +
+        '- ID commande : {{id}}\n' +
+        '- Structure : {{shop}}\n' +
+        '- Date : {{date}}\n' +
+        '- Statut sur l\u2019app : {{status}}\n' +
+        '- Sous-total produits : {{subtotal}} FCFA\n' +
+        '- Frais de livraison : {{shipping}} FCFA\n' +
+        '- Total : {{total}} FCFA\n' +
+        '- Mode de paiement : {{payment}}\n' +
+        '{{paidExtra}}\n\n' +
+        '--------------------------------\n' +
+        'LIVRAISON\n' +
+        '--------------------------------\n' +
+        '- Adresse : {{address}}\n' +
+        '- Telephone (livraison) : {{deliveryPhone}}\n' +
+        '- Consignes : {{instruction}}\n\n' +
+        '--------------------------------\n' +
+        'DETAIL DES ARTICLES\n' +
+        '--------------------------------\n' +
+        '{{items}}\n\n' +
+        '--------------------------------\n' +
+        'CLIENT\n' +
+        '--------------------------------\n' +
+        '- Nom : {{clientName}}\n' +
+        '- Email : {{clientEmail}}\n' +
+        '- Telephone (compte) : {{accountPhone}}\n\n' +
+        'Merci de me tenir inform\u00e9(e) de la progression de ma commande.\n\n' +
+        'Bien cordialement,\n' +
+        '{{clientName}}',
     },
     checkout: {
       title: 'Paiement',
@@ -189,6 +238,16 @@ export const translations = {
       momoAfterHint: 'Commande enregistrée ; vous paierez en MoMo à réception.',
       confirmOrder: 'Confirmer la commande',
       orderCreated: 'Commande enregistrée !',
+      telephoneRequired: 'Le numéro pour la livraison est obligatoire (minimum 8 chiffres).',
+      instructionRequired: 'Les indications pour le livreur sont obligatoires (code portail, étage, repères, etc.).',
+      openMapToChoose: 'Afficher la carte pour choisir le point exact',
+      deliveryAddressTitle: 'Adresse de livraison',
+      backToCart: 'Retour',
+      finalizeTitle: 'Finaliser la commande',
+      recapTitle: 'Récapitulatif',
+      selectedAddressLabel: 'Adresse',
+      useCurrentLocation: 'Utiliser ma position actuelle',
+      chooseOnMap: 'Choisir sur la carte',
     },
     common: {
       cancel: 'Annuler',
@@ -248,6 +307,7 @@ export const translations = {
       viewCart: 'Voir le panier',
       articles: 'article(s)',
       addToCart: 'Ajouter au panier',
+      buy: 'Acheter',
       share: 'Partager',
       zoomAlt: 'Vue agrandie',
       close: 'Fermer',
@@ -300,6 +360,19 @@ export const translations = {
       photo: 'Photo',
       catalog: 'Catalogue',
       call: 'Appeler la structure',
+      platformLineLabel: 'Ligne Rapido',
+      platformDirectCallLabel: 'Appel téléphone',
+      platformDirectCallButton: 'Appeler',
+      platformDirectCallHint: 'Ouvre l’application Téléphone sur votre appareil.',
+      platformCallStart: 'Appeler via Rapido',
+      platformCallRinging: 'Sonnerie côté structure…',
+      platformCallCancel: 'Annuler',
+      platformCallHangup: 'Raccrocher',
+      platformCallAcceptedHint: 'Connexion établie — poursuivez par message ou voix (audio navigateur à brancher).',
+      incomingCallTitle: 'Appel Rapido entrant',
+      incomingCallBody: 'Un client vous appelle depuis la messagerie.',
+      incomingCallAccept: 'Décrocher',
+      incomingCallReject: 'Refuser',
       attachProduct: 'Produit',
       report: 'Signaler',
       reportClient: 'Signaler le client',
@@ -366,9 +439,9 @@ export const translations = {
         'L’application est déjà installée sur cet appareil. Vous pouvez la lancer depuis votre écran d’accueil (mobile) ou vos applications (desktop).',
       alreadyInstalledShort: "L'application est déjà installée !",
       promptUnavailableBody:
-        "L'installation n'est pas encore disponible.\n\nVérifications nécessaires :\n✓ Le site doit être en HTTPS (actuellement: {protocol})\n✓ Le manifest.json doit être valide\n✓ Un service worker doit être enregistré\n\nAlternative : utilisez le menu Chrome/Edge\nMenu (⋮) → Installer Rapido...\n\nOu attendez quelques secondes et réessayez.",
+        "L'installation n'est pas encore disponible sur cet appareil pour le moment.\n\nLe bouton Download reste le moyen principal : réessayez dans quelques secondes après avoir continué la navigation sur Rapido.",
       soonAvailableBody:
-        "L'installation sera bientôt disponible. Veuillez rafraîchir la page dans quelques instants.\n\nAstuce : utilisez Chrome ou Edge pour une meilleure expérience PWA.",
+        "L'installation sera bientôt disponible. Réessayez via le bouton Download dans quelques instants.",
       downloadTitle: "Télécharger l'application Rapido",
       soonTitle: 'Installation bientôt disponible',
       checkingTitle: 'Vérification en cours...',
@@ -376,25 +449,25 @@ export const translations = {
       downloadNav: 'Télécharger',
       installingTitle: 'Installation en cours...',
       installingBody: "Veuillez patienter pendant l'installation de l'application",
-      successTitle: '✅ Installation réussie !',
+      successTitle: 'Installation réussie !',
       successBody: "L'application Rapido a été installée avec succès.",
       successRedirect: "Ouverture de l'application...",
       iosModalTitle: 'Installer Rapido',
       iosModalDescIOS: "Ajoutez Rapido à votre écran d'accueil pour une expérience optimale",
       iosModalDescDesktop: "Ajoutez Rapido à votre Dock (macOS) ou installez l'application",
-      iosStep1: 'Appuyez sur le bouton Partager 📤',
+      iosStep1: 'Appuyez sur le bouton Partager (icône en bas de Safari)',
       iosStep1Hint: "(en bas de l'écran dans Safari)",
-      iosStep2: 'Sélectionnez "Sur l’écran d’accueil" ➕',
+      iosStep2: 'Sélectionnez « Sur l’écran d’accueil »',
       iosStep2Hint: '(dans le menu de partage)',
       iosStep3: 'Appuyez sur "Ajouter"',
       iosStep3Hint: '(en haut à droite)',
-      desktopStep1: "Dans la barre d'adresse, cliquez sur l'icône Partager 📤",
+      desktopStep1: "Dans la barre d'adresse, cliquez sur l'icône Partager",
       desktopStep1Hint: '(ou utilisez le menu Fichier → Partager)',
-      desktopStep2: 'Sélectionnez "Ajouter à l’écran d’accueil" ➕',
+      desktopStep2: 'Sélectionnez « Ajouter à l’écran d’accueil »',
       desktopStep2Hint: '(ou "Add to Dock" sur macOS)',
       desktopStep3: 'Cliquez sur "Ajouter" pour confirmer',
       desktopStep3Hint: "(l'application apparaîtra dans votre Dock)",
-      desktopTipTitle: '💡 Astuce : utilisez Chrome ou Edge pour une installation automatique',
+      desktopTipTitle: 'Astuce : utilisez Chrome ou Edge pour une installation automatique',
       desktopTipBody: "Ces navigateurs proposent un bouton d'installation dans la barre d'adresse",
       understood: "J'ai compris",
       calloutEyebrow: 'Version application',
@@ -498,7 +571,7 @@ export const translations = {
       subtitle: 'Online payment receipts (Kkiapay)',
       empty: 'No digital invoices yet.',
       viewReceipt: 'View receipt',
-      downloadReceipt: 'Download',
+      downloadReceipt: 'Download PDF',
       expired: 'Expired',
     },
     maintenance: {
@@ -520,8 +593,9 @@ export const translations = {
     receipt: {
       title: 'Payment receipt',
       expiredMessage: 'This receipt is no longer valid (30 days passed).',
-      print: 'Print / PDF',
-      download: 'Download (HTML)',
+      print: 'Print',
+      download: 'Download PDF',
+      pdfError: 'Could not generate the PDF. Try again or use Print.',
       orderRef: 'Order reference',
       date: 'Date',
       amount: 'Amount paid',
@@ -542,9 +616,9 @@ export const translations = {
     },
     locationEditor: {
       title: 'Change delivery address',
-      instructionLabel: 'Delivery notes (optional)',
+      instructionLabel: 'Delivery notes (required)',
       instructionPlaceholder: 'E.g. gate code, floor, landmarks…',
-      telephoneLabel: 'Phone to call for delivery (optional)',
+      telephoneLabel: 'Phone to call for delivery (required)',
       telephonePlaceholder: 'E.g. +229 …',
       searchPlaceholder: 'Search for an address...',
       useMyLocation: 'Use my location',
@@ -555,16 +629,64 @@ export const translations = {
       geolocError: 'Unable to get your position',
       geolocErrorTitle: 'Geolocation error',
       saveError: 'Error saving',
+      hideMap: 'Hide map',
     },
     orders: {
       title: 'Orders',
-      noOrders: 'No orders',
+      pageTitle: 'My orders',
+      loading: 'Loading your orders…',
+      noOrders: 'No orders yet',
+      noOrdersBody: 'You have not placed an order yet.',
+      browseProducts: 'Browse shops',
+      totalLabel: 'Total',
+      viewReceipt: 'View receipt / invoice',
+      followOrder: 'Track my order',
+      followOrderAria: 'Track my order',
       statusPending: 'Pending',
       statusConfirmed: 'Confirmed',
       statusPreparing: 'Preparing',
       statusDelivery: 'Out for delivery',
       statusDelivered: 'Delivered',
       statusCancelled: 'Cancelled',
+      paymentCash: 'Cash on delivery',
+      paymentMomoBefore: 'Mobile Money before delivery',
+      paymentMomoAfter: 'Mobile Money after delivery',
+      whatsappPaidLine: 'OK - Online payment (MoMo): received',
+      whatsappTemplate:
+        'Hello Rapido Flash team\n\n' +
+        'I would like to track my order placed on the app and know its status.\n\n' +
+        '--------------------------------\n' +
+        'ORDER SUMMARY\n' +
+        '--------------------------------\n' +
+        '- Short reference: {{ref}}\n' +
+        '- Order ID: {{id}}\n' +
+        '- Shop: {{shop}}\n' +
+        '- Date: {{date}}\n' +
+        '- Status in the app: {{status}}\n' +
+        '- Items subtotal: {{subtotal}} FCFA\n' +
+        '- Delivery fee: {{shipping}} FCFA\n' +
+        '- Total: {{total}} FCFA\n' +
+        '- Payment method: {{payment}}\n' +
+        '{{paidExtra}}\n\n' +
+        '--------------------------------\n' +
+        'DELIVERY\n' +
+        '--------------------------------\n' +
+        '- Address: {{address}}\n' +
+        '- Delivery phone: {{deliveryPhone}}\n' +
+        '- Instructions: {{instruction}}\n\n' +
+        '--------------------------------\n' +
+        'LINE ITEMS\n' +
+        '--------------------------------\n' +
+        '{{items}}\n\n' +
+        '--------------------------------\n' +
+        'CUSTOMER\n' +
+        '--------------------------------\n' +
+        '- Name: {{clientName}}\n' +
+        '- Email: {{clientEmail}}\n' +
+        '- Account phone: {{accountPhone}}\n\n' +
+        'Please keep me updated on my order.\n\n' +
+        'Kind regards,\n' +
+        '{{clientName}}',
     },
     checkout: {
       title: 'Payment',
@@ -587,6 +709,16 @@ export const translations = {
       momoAfterHint: 'Order placed; you will pay by MoMo on receipt.',
       confirmOrder: 'Confirm order',
       orderCreated: 'Order placed!',
+      telephoneRequired: 'Delivery phone number is required (at least 8 digits).',
+      instructionRequired: 'Delivery instructions are required (gate code, floor, landmarks, etc.).',
+      openMapToChoose: 'Show map to pick the exact spot',
+      deliveryAddressTitle: 'Delivery address',
+      backToCart: 'Back',
+      finalizeTitle: 'Complete your order',
+      recapTitle: 'Order summary',
+      selectedAddressLabel: 'Address',
+      useCurrentLocation: 'Use my current location',
+      chooseOnMap: 'Choose on the map',
     },
     common: {
       cancel: 'Cancel',
@@ -646,6 +778,7 @@ export const translations = {
       viewCart: 'View cart',
       articles: 'item(s)',
       addToCart: 'Add to cart',
+      buy: 'Buy',
       share: 'Share',
       zoomAlt: 'Enlarged view',
       close: 'Close',
@@ -698,6 +831,19 @@ export const translations = {
       photo: 'Photo',
       catalog: 'Catalog',
       call: 'Call the shop',
+      platformLineLabel: 'Rapido line',
+      platformDirectCallLabel: 'Phone call',
+      platformDirectCallButton: 'Call',
+      platformDirectCallHint: 'Opens the Phone app on your device.',
+      platformCallStart: 'Call via Rapido',
+      platformCallRinging: 'Ringing the business…',
+      platformCallCancel: 'Cancel',
+      platformCallHangup: 'Hang up',
+      platformCallAcceptedHint: 'Connected — continue in chat or voice (in-browser audio coming soon).',
+      incomingCallTitle: 'Incoming Rapido call',
+      incomingCallBody: 'A customer is calling from messaging.',
+      incomingCallAccept: 'Answer',
+      incomingCallReject: 'Decline',
       attachProduct: 'Product',
       report: 'Report',
       reportClient: 'Report customer',
@@ -764,9 +910,9 @@ export const translations = {
         'The app is already installed on this device. You can open it from your home screen (mobile) or applications (desktop).',
       alreadyInstalledShort: 'The app is already installed!',
       promptUnavailableBody:
-        'Installation is not available yet.\n\nRequired checks:\n✓ The site must use HTTPS (current: {protocol})\n✓ manifest.json must be valid\n✓ A service worker must be registered\n\nAlternative: use Chrome/Edge menu\nMenu (⋮) → Install Rapido...\n\nOr wait a few seconds and try again.',
+        'Installation is not available on this device yet.\n\nThe Download button remains the primary way: try again in a few seconds while continuing to browse Rapido.',
       soonAvailableBody:
-        'Installation will be available soon. Please refresh the page in a few moments.\n\nTip: use Chrome or Edge for a better PWA experience.',
+        'Installation will be available shortly. Please try again using the Download button.',
       downloadTitle: 'Download Rapido app',
       soonTitle: 'Installation coming soon',
       checkingTitle: 'Checking availability...',
@@ -774,25 +920,25 @@ export const translations = {
       downloadNav: 'Download',
       installingTitle: 'Installing...',
       installingBody: 'Please wait while the app is being installed.',
-      successTitle: '✅ Installation successful!',
+      successTitle: 'Installation successful!',
       successBody: 'Rapido app has been installed successfully.',
       successRedirect: 'Opening the app...',
       iosModalTitle: 'Install Rapido',
       iosModalDescIOS: 'Add Rapido to your home screen for the best experience',
       iosModalDescDesktop: 'Add Rapido to your Dock (macOS) or install the app',
-      iosStep1: 'Tap the Share button 📤',
+      iosStep1: 'Tap the Share button (bottom of Safari)',
       iosStep1Hint: '(at the bottom in Safari)',
-      iosStep2: 'Select "Add to Home Screen" ➕',
+      iosStep2: 'Select "Add to Home Screen"',
       iosStep2Hint: '(from the share menu)',
       iosStep3: 'Tap "Add"',
       iosStep3Hint: '(top-right corner)',
-      desktopStep1: 'In the address bar, click the Share icon 📤',
+      desktopStep1: 'In the address bar, click the Share icon',
       desktopStep1Hint: '(or use File → Share)',
-      desktopStep2: 'Select "Add to Home Screen" ➕',
+      desktopStep2: 'Select "Add to Home Screen"',
       desktopStep2Hint: '(or "Add to Dock" on macOS)',
       desktopStep3: 'Click "Add" to confirm',
       desktopStep3Hint: '(the app will appear in your Dock)',
-      desktopTipTitle: '💡 Tip: use Chrome or Edge for automatic install',
+      desktopTipTitle: 'Tip: use Chrome or Edge for automatic install',
       desktopTipBody: 'These browsers provide an install button in the address bar',
       understood: 'Got it',
       calloutEyebrow: 'App version',

@@ -7,6 +7,7 @@ import DashboardSidebar from '../../components/DashboardSidebar';
 import PageLoader from '../../components/PageLoader';
 import { pickLocalized } from '../../utils/i18nContent';
 import { playUrgentAlertSound } from '../../utils/urgentAlertSound';
+import { playIncomingCallSound } from '../../utils/incomingCallSound';
 import './PlatformChatModeration.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -18,6 +19,8 @@ const PlatformChatModeration = () => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const urgentSoundKeyRef = useRef(null);
+  const [pendingCalls, setPendingCalls] = useState([]);
+  const incomingRingRef = useRef(null);
 
   const urgentPlatform = useMemo(
     () =>
@@ -49,6 +52,55 @@ const PlatformChatModeration = () => {
       clearInterval(id);
     };
   }, [loadRows]);
+
+  useEffect(() => {
+    if (!user?.canManageMaintenance) return undefined;
+    const poll = () => {
+      axios
+        .get(`${API_URL}/conversations/admin/calls/pending`)
+        .then((r) => setPendingCalls(r.data || []))
+        .catch(() => setPendingCalls([]));
+    };
+    poll();
+    const id = setInterval(poll, 3400);
+    return () => clearInterval(id);
+  }, [user?.canManageMaintenance]);
+
+  const topIncoming = pendingCalls[0];
+
+  useEffect(() => {
+    if (!topIncoming?._id) {
+      incomingRingRef.current = null;
+      return;
+    }
+    if (incomingRingRef.current !== topIncoming._id) {
+      incomingRingRef.current = topIncoming._id;
+      playIncomingCallSound();
+    }
+  }, [topIncoming?._id]);
+
+  const acceptIncomingCall = async () => {
+    if (!topIncoming?.conversation?._id) return;
+    const convId = topIncoming.conversation._id;
+    try {
+      await axios.post(`${API_URL}/conversations/${convId}/calls/${topIncoming._id}/accept`);
+      setPendingCalls([]);
+      await loadRows();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const rejectIncomingCall = async () => {
+    if (!topIncoming?.conversation?._id) return;
+    const convId = topIncoming.conversation._id;
+    try {
+      await axios.post(`${API_URL}/conversations/${convId}/calls/${topIncoming._id}/reject`);
+      setPendingCalls((prev) => prev.filter((c) => c._id !== topIncoming._id));
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   useEffect(() => {
     if (!urgentPlatform.length) {
@@ -97,6 +149,25 @@ const PlatformChatModeration = () => {
     <div className="platform-chat-mod-page">
       <DashboardSidebar onLogout={logout} />
       <main className="platform-chat-mod-main">
+        {topIncoming ? (
+          <div className="incoming-call-overlay" role="dialog" aria-modal="true" aria-labelledby="platform-incoming-call-title">
+            <div className="incoming-call-card">
+              <h2 id="platform-incoming-call-title" className="incoming-call-title">
+                {t('chat', 'incomingCallTitle')}
+              </h2>
+              <p className="incoming-call-body">{t('chat', 'incomingCallBody')}</p>
+              <p className="incoming-call-client">{topIncoming.initiatedBy?.nom || 'Client'}</p>
+              <div className="incoming-call-actions">
+                <button type="button" className="incoming-call-btn incoming-call-btn--accept" onClick={acceptIncomingCall}>
+                  {t('chat', 'incomingCallAccept')}
+                </button>
+                <button type="button" className="incoming-call-btn incoming-call-btn--reject" onClick={rejectIncomingCall}>
+                  {t('chat', 'incomingCallReject')}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
         <h1>{t('chat', 'moderationTitle')}</h1>
         <p className="platform-chat-mod-hint">
           Analyse des conversations — signalements visibles côté structure et ici.

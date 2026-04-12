@@ -15,6 +15,36 @@ const InstallButton = ({ variant = 'icon' }) => {
   const [showIOSModal, setShowIOSModal] = useState(false);
   const [waitingForPrompt, setWaitingForPrompt] = useState(false);
   const ti = (key) => t('install', key);
+  const browserName = (() => {
+    const ua = navigator.userAgent || '';
+    if (/Edg\//.test(ua)) return 'Edge';
+    if (/OPR\//.test(ua)) return 'Opera';
+    if (/Brave/i.test(navigator.brave ? 'Brave' : '')) return 'Brave';
+    if (/Firefox\//.test(ua)) return 'Firefox';
+    if (/Arc\//.test(ua)) return 'Arc';
+    if (/Safari\//.test(ua) && !/Chrome|Chromium|Edg\//.test(ua)) return 'Safari';
+    if (/Chrome\//.test(ua)) return 'Chrome';
+    return 'navigateur';
+  })();
+
+  const waitForInstallPrompt = (timeoutMs = 4500) =>
+    new Promise((resolve) => {
+      let settled = false;
+      const done = (value) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        window.removeEventListener('beforeinstallprompt', onPrompt);
+        resolve(value);
+      };
+      const onPrompt = (e) => {
+        e.preventDefault();
+        setDeferredPrompt(e);
+        done(e);
+      };
+      const timer = setTimeout(() => done(null), timeoutMs);
+      window.addEventListener('beforeinstallprompt', onPrompt, { once: true });
+    });
 
   useEffect(() => {
     // Détecter iOS (iPad, iPhone, iPod)
@@ -38,7 +68,7 @@ const InstallButton = ({ variant = 'icon' }) => {
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      console.log('✅ Prompt d\'installation disponible (Chrome/Edge sur Desktop/Mobile)');
+      console.log('Prompt d\'installation disponible (Chrome/Edge sur Desktop/Mobile)');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -47,7 +77,7 @@ const InstallButton = ({ variant = 'icon' }) => {
     // Le prompt peut prendre quelques secondes à apparaître
     const checkPromptDelay = setTimeout(() => {
       if (!deferredPrompt && !isStandalone && !iOS) {
-        console.log('⚠️ beforeinstallprompt non disponible après 2 secondes');
+        console.log('beforeinstallprompt non disponible après 2 secondes');
         console.log('User Agent:', navigator.userAgent);
         console.log('Standalone:', window.matchMedia('(display-mode: standalone)').matches);
         console.log('navigator.standalone:', window.navigator.standalone);
@@ -58,7 +88,7 @@ const InstallButton = ({ variant = 'icon' }) => {
           navigator.serviceWorker.getRegistrations().then(registrations => {
             console.log('Service Workers enregistrés:', registrations.length);
             if (registrations.length === 0) {
-              console.warn('⚠️ Aucun service worker enregistré - cela peut empêcher l\'installation');
+              console.warn('Aucun service worker enregistré - cela peut empêcher l\'installation');
             }
           });
         }
@@ -67,12 +97,12 @@ const InstallButton = ({ variant = 'icon' }) => {
         fetch('/manifest.json')
           .then(res => res.json())
           .then(manifest => {
-            console.log('✅ Manifest.json chargé:', manifest);
+            console.log('Manifest.json chargé:', manifest);
             if (!manifest.icons || manifest.icons.length === 0) {
-              console.warn('⚠️ Manifest.json: Aucune icône définie');
+              console.warn('Manifest.json: Aucune icône définie');
             }
             if (!manifest.start_url) {
-              console.warn('⚠️ Manifest.json: start_url manquant');
+              console.warn('Manifest.json: start_url manquant');
             }
           })
           .catch(err => {
@@ -83,7 +113,7 @@ const InstallButton = ({ variant = 'icon' }) => {
 
     // Écouter l'événement appinstalled (quand l'app est installée)
     const handleAppInstalled = () => {
-      console.log('✅ Application installée avec succès');
+      console.log('Application installée avec succès');
       setIsInstalling(false);
       setInstallSuccess(true);
       setShowSuccessModal(true);
@@ -149,36 +179,19 @@ const InstallButton = ({ variant = 'icon' }) => {
       return;
     }
 
-    // Pour Chrome/Edge sur macOS/Windows/Linux, si le prompt n'est pas disponible
+    // Si le prompt n'est pas encore prêt, le bouton attend automatiquement.
     if (!deferredPrompt) {
-      // Vérifier si l'app est peut-être déjà installée
       if (window.matchMedia('(display-mode: standalone)').matches) {
         showInfo(ti('alreadyInstalledShort'), ti('alreadyInstalledTitle'));
         return;
       }
-      
-      // Pour Chrome/Edge, le prompt peut prendre quelques secondes à apparaître
-      // Afficher un message plus informatif avec des instructions alternatives
-      const isChrome = /Chrome/.test(navigator.userAgent) && !/Edge|Edg/.test(navigator.userAgent);
-      const isEdge = /Edge|Edg/.test(navigator.userAgent);
-      
-      if (isChrome || isEdge) {
-        setWaitingForPrompt(true);
-        
-        // Attendre encore 3 secondes pour voir si le prompt arrive
-        setTimeout(() => {
-          setWaitingForPrompt(false);
-          if (!deferredPrompt) {
-            const message = ti('promptUnavailableBody')
-              .replace('{protocol}', window.location.protocol);
-            showInfo(message, ti('installTitle'));
-          }
-        }, 3000);
-        
-        // Si le prompt arrive pendant l'attente, on l'utilisera
-        return;
-      } else {
-        showInfo(ti('soonAvailableBody'), ti('installTitle'));
+
+      setWaitingForPrompt(true);
+      const freshPrompt = await waitForInstallPrompt(5000);
+      setWaitingForPrompt(false);
+
+      if (!freshPrompt && !deferredPrompt) {
+        setShowIOSModal(true);
         return;
       }
     }
@@ -194,7 +207,7 @@ const InstallButton = ({ variant = 'icon' }) => {
       const { outcome } = await deferredPrompt.userChoice;
       
       if (outcome === 'accepted') {
-        console.log('✅ Utilisateur a accepté l\'installation');
+        console.log('Utilisateur a accepté l\'installation');
         // L'événement appinstalled sera déclenché automatiquement
         // On garde isInstalling à true jusqu'à ce que appinstalled soit déclenché
       } else {
@@ -391,7 +404,7 @@ const InstallButton = ({ variant = 'icon' }) => {
               <p className="ios-modal-description">
                 {isIOS 
                   ? ti('iosModalDescIOS')
-                  : ti('iosModalDescDesktop')
+                  : `${ti('iosModalDescDesktop')} (${browserName})`
                 }
               </p>
               {isIOS ? (
