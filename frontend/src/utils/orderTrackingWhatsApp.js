@@ -51,5 +51,72 @@ export function normalizeTextForWhatsAppPrefill(text) {
   return String(text || '')
     .normalize('NFC')
     .replace(/\uFFFD/g, '')
+    // eslint-disable-next-line no-control-regex -- strip control chars before wa.me encodeURIComponent
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+}
+
+function statutLabelForTemplate(statut, t) {
+  const map = {
+    en_attente: 'statusPending',
+    confirmee: 'statusConfirmed',
+    en_preparation: 'statusPreparing',
+    en_livraison: 'statusDelivery',
+    livree: 'statusDelivered',
+    annulee: 'statusCancelled',
+  };
+  const k = map[statut];
+  return k ? t('orders', k) : statut;
+}
+
+function paymentLabelForTemplate(mode, t) {
+  if (mode === 'especes') return t('orders', 'paymentCash');
+  if (mode === 'momo_apres') return t('orders', 'paymentMomoAfter');
+  return t('orders', 'paymentMomoBefore');
+}
+
+/** Ouvre WhatsApp avec le message de suivi (même logique que la page Commandes). */
+export function openOrderTrackingWhatsApp(commande, { language, t, user }) {
+  const rapidoWaDigits = getRapidoWhatsAppDigits();
+  if (!rapidoWaDigits || !commande) return;
+
+  const addr = commande.adresseLivraison || {};
+  const lineAddr = (addr.adresse || '').trim();
+  const geo =
+    addr.latitude != null && addr.longitude != null
+      ? `${Number(addr.latitude).toFixed(5)}, ${Number(addr.longitude).toFixed(5)}`
+      : '';
+  const addressFull = [lineAddr, geo].filter(Boolean).join(' | ') || '-';
+
+  const paidExtra =
+    commande.paiementEnLigneEffectue && commande.modePaiement === 'momo_avant'
+      ? `- ${t('orders', 'whatsappPaidLine')}`
+      : '';
+
+  const vars = {
+    ref: String(commande._id).slice(-8).toUpperCase(),
+    id: String(commande._id),
+    shop: commande.restaurant?.nom || '-',
+    date: new Date(commande.createdAt).toLocaleString(
+      String(language || '').toLowerCase().startsWith('en') ? 'en-GB' : 'fr-FR',
+      { dateStyle: 'long', timeStyle: 'short' }
+    ),
+    status: statutLabelForTemplate(commande.statut, t),
+    subtotal: Number(commande.sousTotal || 0).toFixed(0),
+    shipping: Number(commande.fraisLivraison || 0).toFixed(0),
+    total: Number(commande.total || 0).toFixed(0),
+    payment: paymentLabelForTemplate(commande.modePaiement, t),
+    paidExtra,
+    address: addressFull,
+    deliveryPhone: (addr.telephoneContact || '').trim() || '-',
+    instruction: (addr.instruction || '').trim() || '-',
+    items: buildOrderItemsBlock(commande, language),
+    clientName: user?.nom || '-',
+    clientEmail: user?.email || '-',
+    accountPhone: (user?.telephone || '').trim() || '-',
+  };
+
+  const rawText = applyWhatsAppTemplate(t('orders', 'whatsappTemplate'), vars);
+  const text = normalizeTextForWhatsAppPrefill(rawText);
+  const url = `https://wa.me/${rapidoWaDigits}?text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
 }

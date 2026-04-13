@@ -1,66 +1,39 @@
-import React, { useState, useEffect, useContext, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useContext, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import { FaMap, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaChevronLeft, FaMapMarkerAlt, FaCheckCircle, FaWhatsapp } from 'react-icons/fa';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
 import LanguageContext from '../../context/LanguageContext';
 import { useModal } from '../../context/ModalContext';
 import TopNavbar from '../../components/TopNavbar';
 import { cartQualifiesFreeDeliveryPromo } from '../../utils/cartPromo';
+import { openOrderTrackingWhatsApp } from '../../utils/orderTrackingWhatsApp';
 import './Checkout.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
 
-// Clé publique KkiaPay (Public Api Key)
 const KKIAPAY_PUBLIC_KEY = process.env.REACT_APP_KKIAPAY_PUBLIC_KEY || '261f38e09ef211f0989243766f89f726';
-// Sandbox par défaut (clé sandbox). Mettre REACT_APP_KKIAPAY_SANDBOX=false en production avec clé live.
 const KKIAPAY_SANDBOX = process.env.REACT_APP_KKIAPAY_SANDBOX !== 'false';
-
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-});
-
-function LocationMarker({ position, setPosition }) {
-  useMapEvents({
-    click(e) {
-      setPosition([e.latlng.lat, e.latlng.lng]);
-    },
-  });
-
-  return position ? <Marker position={position} /> : null;
-}
-
-function MapPanToCenter({ center }) {
-  const map = useMap();
-  useEffect(() => {
-    if (center && center[0] && center[1]) {
-      map.setView(center, 15);
-    }
-  }, [center, map]);
-  return null;
-}
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { user, updatePosition } = useContext(AuthContext);
-  const { t, productDisplayName } = useContext(LanguageContext);
+  const { language, t, productDisplayName } = useContext(LanguageContext);
   const { showSuccess, showError, showWarning } = useModal();
+
+  const [checkoutStep, setCheckoutStep] = useState('payment');
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [completedOrder, setCompletedOrder] = useState(null);
+
   const [cart, setCart] = useState([]);
-  const [deliveryOption, setDeliveryOption] = useState('current'); // 'current' or 'map'
-  const [mapPosition, setMapPosition] = useState(null);
-  const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [restaurantId, setRestaurantId] = useState(null);
-  const [restaurant, setRestaurant] = useState(null);
   const [fraisLivraison, setFraisLivraison] = useState(0);
-  /** especes | momo_avant | momo_apres */
   const [paymentMode, setPaymentMode] = useState('momo_avant');
+
+  const [mapPosition, setMapPosition] = useState(null);
+  const [address, setAddress] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -80,66 +53,75 @@ const Checkout = () => {
     [instruction]
   );
 
+  const addressOk = useMemo(() => String(address || '').trim().length >= 3, [address]);
+
+  const coordsOk = useMemo(
+    () =>
+      mapPosition &&
+      mapPosition.length === 2 &&
+      typeof mapPosition[0] === 'number' &&
+      typeof mapPosition[1] === 'number',
+    [mapPosition]
+  );
+
   useEffect(() => {
+    if (checkoutStep === 'success') return;
+
     const savedCart = JSON.parse(localStorage.getItem('cart') || '[]');
     if (savedCart.length === 0) {
       navigate('/home');
       return;
     }
     setCart(savedCart);
-    const rid = savedCart[0].restaurantId;
+    const rid = savedCart[0]?.restaurantId;
     setRestaurantId(rid);
 
-    // Récupérer les informations du restaurant pour obtenir les frais de livraison
     if (rid) {
-      axios.get(`${API_URL}/restaurants/${rid}`)
-        .then(res => {
-          setRestaurant(res.data);
+      axios
+        .get(`${API_URL}/restaurants/${rid}`)
+        .then((res) => {
           setFraisLivraison(res.data.fraisLivraison || 0);
         })
-        .catch(err => console.error('Erreur récupération restaurant:', err));
+        .catch((err) => console.error(err));
     }
 
-    // Position par défaut depuis localStorage ou position utilisateur
     const userLocation = JSON.parse(localStorage.getItem('userLocation') || '{}');
     if (userLocation.latitude) {
       setMapPosition([userLocation.latitude, userLocation.longitude]);
       setAddress(userLocation.adresse || '');
       setInstruction(userLocation.instruction || '');
       setTelephoneContact(userLocation.telephoneContact || '');
+      setSearchQuery(userLocation.adresse || '');
     } else if (user?.position?.latitude) {
       setMapPosition([user.position.latitude, user.position.longitude]);
       setAddress(user.position.adresse || '');
+      setSearchQuery(user.position.adresse || '');
     } else {
-      setMapPosition([48.8566, 2.3522]);
+      setMapPosition([6.3725, 2.4253]);
     }
+  }, [navigate, user, checkoutStep]);
 
-    // Vérifier si Kkiapay est chargé
-    const checkKkiapay = () => {
-      if (window.Kkiapay) {
-        console.log('Kkiapay détecté au chargement de la page');
-        return;
-      }
-      console.log('Kkiapay non détecté, sera chargé dynamiquement si nécessaire');
+  useEffect(() => {
+    if (!showAddressModal) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setShowAddressModal(false);
     };
-    
-    // Vérifier immédiatement
-    checkKkiapay();
-    
-    // Vérifier périodiquement pendant 3 secondes
-    let attempts = 0;
-    const interval = setInterval(() => {
-      attempts++;
-      if (window.Kkiapay) {
-        console.log('Kkiapay détecté après', attempts * 100, 'ms');
-        clearInterval(interval);
-      } else if (attempts > 30) { // 3 secondes max
-        clearInterval(interval);
-      }
-    }, 100);
-    
-    return () => clearInterval(interval);
-  }, [navigate, user]);
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [showAddressModal]);
+
+  const getSubTotal = () => cart.reduce((sum, item) => sum + item.prix * item.quantite, 0);
+
+  const getFraisLivraisonEffectif = () => {
+    if (cartQualifiesFreeDeliveryPromo(cart)) return 0;
+    return fraisLivraison;
+  };
+
+  const getTotal = () => getSubTotal() + getFraisLivraisonEffectif();
 
   const handleAddressSearch = (query) => {
     setSearchQuery(query);
@@ -164,7 +146,7 @@ const Checkout = () => {
             setShowSearchResults(true);
           }
         })
-        .catch(err => console.error('Recherche adresse:', err));
+        .catch((err) => console.error(err));
     }, 300);
   };
 
@@ -185,41 +167,40 @@ const Checkout = () => {
   };
 
   const getCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          setMapPosition([lat, lng]);
-          
-          fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
-            .then(res => res.json())
-            .then(data => {
-              if (data.display_name) {
-                setAddress(data.display_name);
-              }
-            });
-        },
-        () => showError(t('locationEditor', 'geolocError'), t('locationEditor', 'geolocErrorTitle'))
-      );
-    }
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setMapPosition([lat, lng]);
+        fetch(`${NOMINATIM_URL}/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+          headers: { 'User-Agent': 'RapidoFlash/1.0' },
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.display_name) {
+              setAddress(data.display_name);
+              setSearchQuery(data.display_name);
+            }
+          })
+          .catch(() => {});
+      },
+      () => showError(t('locationEditor', 'geolocError'), t('locationEditor', 'geolocErrorTitle'))
+    );
   };
 
-  // Fonction pour charger dynamiquement le script Kkiapay si nécessaire
   const loadKkiapayScript = () => {
-    return new Promise((resolve, reject) => {
-      // Le SDK KkiaPay peut exposer openKkiapayWidget OU window.Kkiapay
+    return new Promise((resolve) => {
       const isReady = () => window.openKkiapayWidget || window.Kkiapay;
       if (isReady()) {
         resolve();
         return;
       }
-
       const existingScript = document.querySelector('script[src*="kkiapay"]');
       const url = 'https://cdn.kkiapay.me/k.js';
 
-      const waitForReady = (maxMs = 5000) => {
-        return new Promise((res) => {
+      const waitForReady = (maxMs = 5000) =>
+        new Promise((res) => {
           if (isReady()) {
             res();
             return;
@@ -232,33 +213,38 @@ const Checkout = () => {
               res();
             } else if (elapsed >= maxMs) {
               clearInterval(iv);
-              res(); // résoudre quand même pour tenter le paiement
+              res();
             }
           }, 200);
         });
-      };
 
-      // Script déjà dans le DOM (index.html) : attendre un peu que le SDK s’initialise
       if (existingScript) {
         waitForReady(3000).then(resolve);
         return;
       }
-
-      // Charger le script une seule fois (pas de fallback .com qui échoue)
       const script = document.createElement('script');
       script.src = url;
       script.async = false;
       script.onload = () => waitForReady(5000).then(resolve);
-      script.onerror = () => {
-        // Ne pas bloquer : on résout pour afficher un message clair dans handlePayment
-        resolve();
-      };
+      script.onerror = () => resolve();
       document.body.appendChild(script);
     });
   };
 
-  const handlePayment = async () => {
-    if (!mapPosition) {
+  const goToSuccess = useCallback((commande) => {
+    setCompletedOrder(commande);
+    setShowAddressModal(false);
+    setCheckoutStep('success');
+    localStorage.removeItem('cart');
+    setCart([]);
+  }, []);
+
+  const handlePlaceOrder = async () => {
+    if (!coordsOk) {
+      showWarning(t('checkout', 'selectAddress'), t('checkout', 'addressRequired'));
+      return;
+    }
+    if (!addressOk) {
       showWarning(t('checkout', 'selectAddress'), t('checkout', 'addressRequired'));
       return;
     }
@@ -274,7 +260,6 @@ const Checkout = () => {
     setLoading(true);
 
     try {
-      // Mettre à jour la position de l'utilisateur
       await updatePosition(mapPosition[0], mapPosition[1], address);
       try {
         const prev = JSON.parse(localStorage.getItem('userLocation') || '{}');
@@ -293,10 +278,10 @@ const Checkout = () => {
         /* ignore */
       }
 
-      const plats = cart.filter(item => item.platId != null).map(item => ({ platId: item.platId, quantite: item.quantite }));
+      const plats = cart.filter((item) => item.platId != null).map((item) => ({ platId: item.platId, quantite: item.quantite }));
       const produits = cart
-        .filter(item => item.productId != null)
-        .map(item => ({
+        .filter((item) => item.productId != null)
+        .map((item) => ({
           produitId: item.productId,
           quantite: item.quantite,
           accompagnements: Array.isArray(item.accompagnementsSelected)
@@ -313,60 +298,56 @@ const Checkout = () => {
           longitude: mapPosition[1],
           adresse: address,
           instruction: (instruction || '').trim(),
-          telephoneContact: (telephoneContact || '').trim()
+          telephoneContact: (telephoneContact || '').trim(),
         },
-        modePaiement: paymentMode
+        modePaiement: paymentMode,
       };
 
       const res = await axios.post(`${API_URL}/commandes`, commandeData);
-      const commande = res.data;
+      let commande = res.data;
 
-      // Espèces ou MoMo après livraison : pas de widget KkiaPay
       if (paymentMode === 'especes' || paymentMode === 'momo_apres') {
-        localStorage.removeItem('cart');
         showSuccess(t('checkout', 'orderCreated'), 'Rapido');
-        setTimeout(() => navigate('/orders'), 1200);
+        goToSuccess(commande);
         setLoading(false);
         return;
       }
-      
+
       const total = getTotal();
-
       await loadKkiapayScript();
-
-      // URL de retour après paiement (pour redirection KkiaPay)
       const callbackUrl = `${window.location.origin}/orders?payment=success&commandeId=${commande._id}`;
 
       const onPaymentSuccess = async () => {
         try {
           await axios.put(`${API_URL}/commandes/${commande._id}/statut`, { statut: 'confirmee' });
-          localStorage.removeItem('cart');
-          showSuccess('Paiement effectué avec succès !', 'Paiement réussi');
-          setTimeout(() => navigate(`/facture/${commande._id}`), 1200);
+          commande = {
+            ...commande,
+            statut: 'confirmee',
+            paiementEnLigneEffectue: true,
+          };
+          showSuccess(t('checkout', 'paymentSuccess'), t('checkout', 'paymentSuccessTitle'));
+          goToSuccess(commande);
         } catch (err) {
-          console.error('Erreur mise à jour commande:', err);
+          console.error(err);
           showWarning('Paiement effectué mais erreur lors de la mise à jour de la commande', 'Attention');
         }
         setLoading(false);
       };
 
       const onPaymentFailure = () => {
-        showWarning('Paiement annulé ou échoué', 'Paiement annulé');
+        showWarning(t('checkout', 'paymentCancelled'), t('checkout', 'paymentSuccessTitle'));
         setLoading(false);
       };
 
-      // Méthode 1 : openKkiapayWidget (API documentée KkiaPay)
       if (typeof window.openKkiapayWidget === 'function') {
-        console.log('Ouverture KkiaPay via openKkiapayWidget, montant:', total);
         window.openKkiapayWidget({
           amount: String(total),
           key: KKIAPAY_PUBLIC_KEY,
           callback: callbackUrl,
           position: 'center',
           theme: '#8B4513',
-          sandbox: KKIAPAY_SANDBOX
+          sandbox: KKIAPAY_SANDBOX,
         });
-        // Écouter le succès (si le SDK émet un événement en restant sur la page)
         if (typeof window.addKkiapayListener === 'function') {
           window.addKkiapayListener('success', onPaymentSuccess);
           window.addKkiapayListener('failed', onPaymentFailure);
@@ -375,9 +356,7 @@ const Checkout = () => {
         return;
       }
 
-      // Méthode 2 : Kkiapay.init() + open()
       if (window.Kkiapay && typeof window.Kkiapay.init === 'function') {
-        console.log('Initialisation KkiaPay avec montant:', total);
         window.Kkiapay.init({
           public_key: KKIAPAY_PUBLIC_KEY,
           key: KKIAPAY_PUBLIC_KEY,
@@ -385,27 +364,26 @@ const Checkout = () => {
           position: 'center',
           theme: '#8B4513',
           sandbox: KKIAPAY_SANDBOX,
-          data: { commandeId: commande._id, restaurantId, clientId: user?._id },
+          data: { commandeId: commande._id, restaurantId, clientId: user?._id || user?.id },
           callback: (response) => {
             if (response && response.status === 'success') onPaymentSuccess();
             else onPaymentFailure();
           },
-          error: (err) => {
-            console.error('Erreur Kkiapay:', err);
-            showError('Erreur lors du paiement. Veuillez réessayer.', 'Erreur de paiement');
+          error: () => {
+            showError(t('checkout', 'paymentError'), t('checkout', 'paymentSuccessTitle'));
             setLoading(false);
-          }
+          },
         });
         window.Kkiapay.open();
         return;
       }
 
-      // Méthode 3 : widget HTML <kkiapay-widget> (script peut n’exposer que le custom element)
       const widgetKey = 'kkiapay-widget';
       if (typeof customElements !== 'undefined' && customElements.get(widgetKey)) {
         const container = document.createElement('div');
         container.id = 'kkiapay-widget-container';
-        container.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);';
+        container.style.cssText =
+          'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);';
         const widget = document.createElement(widgetKey);
         widget.setAttribute('amount', String(total));
         widget.setAttribute('key', KKIAPAY_PUBLIC_KEY);
@@ -414,218 +392,174 @@ const Checkout = () => {
         widget.setAttribute('sandbox', KKIAPAY_SANDBOX ? 'true' : 'false');
         container.appendChild(widget);
         document.body.appendChild(container);
-        container.onclick = (e) => { if (e.target === container) container.remove(); };
+        container.onclick = (e) => {
+          if (e.target === container) container.remove();
+        };
         setLoading(false);
         return;
       }
 
-      showError('Service de paiement KkiaPay non disponible. Vérifiez que le script est chargé (rafraîchissez la page) ou réessayez plus tard.', 'Paiement indisponible');
+      showError(t('checkout', 'serviceError'), t('checkout', 'paymentSuccessTitle'));
       setLoading(false);
     } catch (error) {
-      console.error('Erreur:', error);
-      showError('Erreur lors de la commande. Veuillez réessayer.', 'Erreur');
+      console.error(error);
+      showError(t('checkout', 'orderError'), t('common', 'error'));
       setLoading(false);
     }
   };
 
-  const getSubTotal = () => {
-    return cart.reduce((sum, item) => sum + (item.prix * item.quantite), 0);
-  };
+  const openWhatsApp = useCallback(() => {
+    if (completedOrder) openOrderTrackingWhatsApp(completedOrder, { language, t, user });
+  }, [completedOrder, language, t, user]);
 
-  const getFraisLivraisonEffectif = () => {
-    if (cartQualifiesFreeDeliveryPromo(cart)) return 0;
-    return fraisLivraison;
-  };
+  const modalCanSubmit = coordsOk && addressOk && phoneOk && instructionOk;
 
-  const getTotal = () => {
-    return getSubTotal() + getFraisLivraisonEffectif();
-  };
+  if (checkoutStep === 'success' && completedOrder) {
+    const addr = completedOrder.adresseLivraison || {};
+    return (
+      <div className="checkout-page checkout-page--success">
+        <TopNavbar />
+        <div className="checkout-success-wrap">
+          <div className="checkout-success-card">
+            <div className="checkout-success-icon" aria-hidden>
+              <FaCheckCircle size={56} />
+            </div>
+            <h1 className="checkout-success-title">{t('checkout', 'successTitle')}</h1>
+            <p className="checkout-success-sub">{t('checkout', 'successSubtitle')}</p>
 
-  return (
-    <div className="checkout-page">
-      <TopNavbar />
-      <div className="checkout-header-mobile">
-        <button className="back-btn-mobile" onClick={() => navigate('/cart')}>
-          {t('checkout', 'backToCart')}
-        </button>
-        <h1>{t('checkout', 'finalizeTitle')}</h1>
-      </div>
-
-      <div className="checkout-content">
-        <div className="checkout-main">
-          <div className="delivery-section">
-            <h2>{t('checkout', 'deliveryAddressTitle')}</h2>
-
-            <div className="checkout-address-search-wrap">
-              <label className="checkout-field-label" htmlFor="checkout-search-addr">
-                {t('locationEditor', 'searchPlaceholder')}
-              </label>
-              <input
-                id="checkout-search-addr"
-                type="text"
-                className="checkout-address-search-input"
-                placeholder={t('locationEditor', 'searchPlaceholder')}
-                value={searchQuery}
-                onChange={(e) => handleAddressSearch(e.target.value)}
-                onFocus={() => searchQuery.length >= 3 && searchResults.length > 0 && setShowSearchResults(true)}
-              />
-              {showSearchResults && searchResults.length > 0 && (
-                <div className="checkout-search-dropdown">
-                  {searchResults.map((r, idx) => (
-                    <button
-                      type="button"
-                      key={idx}
-                      className="checkout-search-item"
-                      onClick={() => handleSelectSearchResult(r)}
-                    >
-                      {r.place_name}
-                    </button>
-                  ))}
-                </div>
-              )}
+            <div className="checkout-success-recap">
+              <h2>{t('checkout', 'recapTitle')}</h2>
+              <p className="checkout-success-shop">{completedOrder.restaurant?.nom}</p>
+              <ul className="checkout-success-lines">
+                {(completedOrder.plats || []).map((item, i) => (
+                  <li key={`pl-${i}`}>
+                    <span>
+                      {item.plat?.nom} × {item.quantite}
+                    </span>
+                    <span>{(Number(item.prix) * Number(item.quantite)).toFixed(0)} FCFA</span>
+                  </li>
+                ))}
+                {(completedOrder.produits || []).map((item, i) => (
+                  <li key={`pr-${i}`}>
+                    <span>
+                      {item.produit?.nom} × {item.quantite}
+                    </span>
+                    <span>{(Number(item.prix) * Number(item.quantite)).toFixed(0)} FCFA</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="checkout-success-addr">
+                <strong>{t('checkout', 'selectedAddressLabel')}</strong>
+                <p>{addr.adresse || '—'}</p>
+                {addr.instruction ? (
+                  <p className="checkout-success-instr">
+                    <strong>{t('locationEditor', 'instructionLabel')}</strong> {addr.instruction}
+                  </p>
+                ) : null}
+              </div>
+              <div className="checkout-success-total">
+                <span>{t('cart', 'total')}</span>
+                <span>{Number(completedOrder.total || 0).toFixed(0)} FCFA</span>
+              </div>
             </div>
 
-            <div className="delivery-options">
-              <button
-                type="button"
-                className={`option-btn ${deliveryOption === 'current' ? 'active' : ''}`}
-                onClick={() => {
-                  setDeliveryOption('current');
-                  getCurrentLocation();
-                }}
-              >
-                <span className="checkout-option-inner">
-                  <FaMapMarkerAlt className="checkout-option-icon" aria-hidden />
-                  <span>{t('checkout', 'useCurrentLocation')}</span>
-                </span>
+            <div className="checkout-success-actions">
+              <button type="button" className="checkout-btn-whatsapp" onClick={openWhatsApp}>
+                <FaWhatsapp size={22} aria-hidden />
+                {t('orders', 'followOrder')}
               </button>
-              <button
-                type="button"
-                className={`option-btn ${deliveryOption === 'map' ? 'active' : ''}`}
-                onClick={() => setDeliveryOption('map')}
-              >
-                <span className="checkout-option-inner">
-                  <FaMap className="checkout-option-icon" aria-hidden />
-                  <span>{t('checkout', 'chooseOnMap')}</span>
-                </span>
-              </button>
-            </div>
-
-            {deliveryOption === 'map' && mapPosition && (
-              <div className="map-container">
-                <MapContainer
-                  center={mapPosition}
-                  zoom={15}
-                  style={{ height: '300px', width: '100%', borderRadius: '12px' }}
+              {completedOrder.paiementEnLigneEffectue && completedOrder.modePaiement === 'momo_avant' ? (
+                <button
+                  type="button"
+                  className="btn btn-outline checkout-success-secondary"
+                  onClick={() => navigate(`/facture/${completedOrder._id}`)}
                 >
-                  <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  />
-                  <MapPanToCenter center={mapPosition} />
-                  <LocationMarker position={mapPosition} setPosition={setMapPosition} />
-                </MapContainer>
-              </div>
-            )}
-
-            {address && (
-              <div className="address-display">
-                <strong>{t('checkout', 'selectedAddressLabel')}:</strong> {address}
-              </div>
-            )}
-
-            <div className="checkout-extra-fields">
-              <label className="checkout-field-label" htmlFor="checkout-instr">{t('locationEditor', 'instructionLabel')}</label>
-              <textarea
-                id="checkout-instr"
-                className="checkout-textarea"
-                rows={2}
-                placeholder={t('locationEditor', 'instructionPlaceholder')}
-                value={instruction}
-                onChange={(e) => setInstruction(e.target.value)}
-              />
-              <label className="checkout-field-label" htmlFor="checkout-tel">{t('locationEditor', 'telephoneLabel')}</label>
-              <input
-                id="checkout-tel"
-                type="tel"
-                className="checkout-input"
-                placeholder={t('locationEditor', 'telephonePlaceholder')}
-                value={telephoneContact}
-                onChange={(e) => setTelephoneContact(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="order-summary-section">
-            <h2>{t('checkout', 'recapTitle')}</h2>
-            <div className="order-items">
-              {cart.map((item) => (
-                <div key={item.productId || item.platId} className="order-item">
-                  <span>{productDisplayName(item)} x {item.quantite}</span>
-                  <span>{(item.prix * item.quantite).toFixed(0)} FCFA</span>
-                </div>
-              ))}
+                  {t('orders', 'viewReceipt')}
+                </button>
+              ) : null}
+              <button type="button" className="btn btn-primary checkout-success-secondary" onClick={() => navigate('/orders')}>
+                {t('checkout', 'viewOrders')}
+              </button>
+              <button type="button" className="btn btn-outline checkout-success-secondary" onClick={() => navigate('/home')}>
+                {t('checkout', 'backHome')}
+              </button>
             </div>
           </div>
         </div>
+      </div>
+    );
+  }
 
-        <div className="checkout-sidebar">
-          <div className="payment-summary">
-            <h2 className="checkout-payment-title">{t('checkout', 'paymentMethod')}</h2>
-            <div className="checkout-payment-options">
-              <label className={`checkout-pay-option ${paymentMode === 'especes' ? 'active' : ''}`}>
-                <input
-                  type="radio"
-                  name="paymentMode"
-                  checked={paymentMode === 'especes'}
-                  onChange={() => setPaymentMode('especes')}
-                />
-                <span className="checkout-pay-row">
-                  <img src="/images/payment/cash.svg" alt="" className="checkout-pay-icon" />
-                  <span className="checkout-pay-label">
-                    <strong>{t('checkout', 'cashOnDelivery')}</strong>
-                    <small>{t('checkout', 'cashOnDeliveryHint')}</small>
-                  </span>
-                </span>
-              </label>
-              <label className={`checkout-pay-option ${paymentMode === 'momo_avant' ? 'active' : ''}`}>
-                <input
-                  type="radio"
-                  name="paymentMode"
-                  checked={paymentMode === 'momo_avant'}
-                  onChange={() => setPaymentMode('momo_avant')}
-                />
-                <span className="checkout-pay-row">
-                  <img src="/images/payment/momo.webp" alt="" className="checkout-pay-icon" />
-                  <span className="checkout-pay-label">
-                    <strong>{t('checkout', 'momoBefore')}</strong>
-                    <small>{t('checkout', 'momoBeforeHint')}</small>
-                  </span>
-                </span>
-              </label>
-              <label className={`checkout-pay-option ${paymentMode === 'momo_apres' ? 'active' : ''}`}>
-                <input
-                  type="radio"
-                  name="paymentMode"
-                  checked={paymentMode === 'momo_apres'}
-                  onChange={() => setPaymentMode('momo_apres')}
-                />
-                <span className="checkout-pay-row">
-                  <img src="/images/payment/momo.webp" alt="" className="checkout-pay-icon" />
-                  <span className="checkout-pay-label">
-                    <strong>{t('checkout', 'momoAfter')}</strong>
-                    <small>{t('checkout', 'momoAfterHint')}</small>
-                  </span>
-                </span>
-              </label>
-            </div>
+  return (
+    <div className="checkout-page checkout-page--tunnel">
+      <TopNavbar />
+      <div className="checkout-header-mobile">
+        <button type="button" className="back-btn-mobile" onClick={() => navigate('/cart')}>
+          {t('checkout', 'backToCart')}
+        </button>
+        <h1>{t('checkout', 'paymentStepTitle')}</h1>
+      </div>
 
-            <h2>{t('cart', 'total')}</h2>
-            <div className="summary-row">
+      <div className="checkout-tunnel-inner">
+        <button type="button" className="checkout-back-desktop" onClick={() => navigate('/cart')}>
+          <FaChevronLeft aria-hidden />
+          {t('checkout', 'backToCart')}
+        </button>
+        <p className="checkout-tunnel-eyebrow">{t('checkout', 'finalizeTitle')}</p>
+        <h2 className="checkout-tunnel-title-desktop">{t('checkout', 'paymentStepTitle')}</h2>
+        <p className="checkout-tunnel-lead">{t('checkout', 'paymentStepSubtitle')}</p>
+
+        <div className="checkout-pay-cards">
+          <label className={`checkout-pay-card ${paymentMode === 'especes' ? 'active' : ''}`}>
+            <input type="radio" name="paymentModeTunnel" checked={paymentMode === 'especes'} onChange={() => setPaymentMode('especes')} />
+            <span className="checkout-pay-card-inner">
+              <img src="/images/payment/cash.svg" alt="" className="checkout-pay-card-icon" />
+              <span className="checkout-pay-card-text">
+                <strong>{t('checkout', 'cashOnDelivery')}</strong>
+                <small>{t('checkout', 'cashOnDeliveryHint')}</small>
+              </span>
+            </span>
+          </label>
+          <label className={`checkout-pay-card ${paymentMode === 'momo_avant' ? 'active' : ''}`}>
+            <input type="radio" name="paymentModeTunnel" checked={paymentMode === 'momo_avant'} onChange={() => setPaymentMode('momo_avant')} />
+            <span className="checkout-pay-card-inner">
+              <img src="/images/payment/momo.webp" alt="" className="checkout-pay-card-icon" />
+              <span className="checkout-pay-card-text">
+                <strong>{t('checkout', 'momoBefore')}</strong>
+                <small>{t('checkout', 'momoBeforeHint')}</small>
+              </span>
+            </span>
+          </label>
+          <label className={`checkout-pay-card ${paymentMode === 'momo_apres' ? 'active' : ''}`}>
+            <input type="radio" name="paymentModeTunnel" checked={paymentMode === 'momo_apres'} onChange={() => setPaymentMode('momo_apres')} />
+            <span className="checkout-pay-card-inner">
+              <img src="/images/payment/momo.webp" alt="" className="checkout-pay-card-icon" />
+              <span className="checkout-pay-card-text">
+                <strong>{t('checkout', 'momoAfter')}</strong>
+                <small>{t('checkout', 'momoAfterHint')}</small>
+              </span>
+            </span>
+          </label>
+        </div>
+
+        <div className="checkout-tunnel-order-preview">
+          <h3>{t('checkout', 'recapTitle')}</h3>
+          <ul>
+            {cart.map((item) => (
+              <li key={item.productId || item.platId}>
+                <span>
+                  {productDisplayName(item)} × {item.quantite}
+                </span>
+                <span>{(item.prix * item.quantite).toFixed(0)} FCFA</span>
+              </li>
+            ))}
+          </ul>
+          <div className="checkout-tunnel-totals">
+            <div>
               <span>{t('cart', 'subTotal')}</span>
               <span>{getSubTotal().toFixed(0)} FCFA</span>
             </div>
-            <div className="summary-row">
+            <div>
               <span>{t('cart', 'deliveryFee')}</span>
               <span>
                 {cartQualifiesFreeDeliveryPromo(cart) ? (
@@ -634,29 +568,124 @@ const Checkout = () => {
                     <span className="checkout-fee-free">0 FCFA</span>
                   </>
                 ) : (
-                  <>{fraisLivraison.toFixed(0)} FCFA</>
+                  `${fraisLivraison.toFixed(0)} FCFA`
                 )}
               </span>
             </div>
-            {cartQualifiesFreeDeliveryPromo(cart) && (
+            {cartQualifiesFreeDeliveryPromo(cart) ? (
               <p className="checkout-promo-delivery-note">{t('cart', 'freeDeliveryPromoNote')}</p>
-            )}
-            <div className="summary-row total">
+            ) : null}
+            <div className="checkout-tunnel-total-row">
               <span>{t('cart', 'total')}</span>
               <span>{getTotal().toFixed(0)} FCFA</span>
             </div>
-            <button
-              className="btn btn-primary btn-large"
-              onClick={handlePayment}
-              disabled={loading || !mapPosition || !phoneOk || !instructionOk}
-            >
-              {loading
-                ? t('checkout', 'processing')
-                : (paymentMode === 'momo_avant' ? t('checkout', 'pay') : t('checkout', 'confirmOrder'))}
-            </button>
           </div>
         </div>
+
+        <button type="button" className="checkout-tunnel-cta" onClick={() => setShowAddressModal(true)}>
+          {t('checkout', 'continueToDelivery')}
+        </button>
       </div>
+
+      {showAddressModal ? (
+        <div className="checkout-modal-overlay" role="presentation" onClick={() => setShowAddressModal(false)}>
+          <div
+            className="checkout-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="checkout-modal-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="checkout-modal-header">
+              <h2 id="checkout-modal-title">{t('checkout', 'addressModalTitle')}</h2>
+              <button type="button" className="checkout-modal-close" onClick={() => setShowAddressModal(false)} aria-label={t('common', 'cancel')}>
+                ×
+              </button>
+            </div>
+            <p className="checkout-modal-lead">{t('checkout', 'addressModalSubtitle')}</p>
+
+            <div className="checkout-modal-body">
+              <div className="checkout-address-search-wrap checkout-modal-search">
+                <label className="checkout-field-label" htmlFor="checkout-modal-search">
+                  {t('locationEditor', 'searchPlaceholder')}
+                </label>
+                <input
+                  id="checkout-modal-search"
+                  type="text"
+                  className="checkout-address-search-input"
+                  placeholder={t('locationEditor', 'searchPlaceholder')}
+                  value={searchQuery}
+                  onChange={(e) => handleAddressSearch(e.target.value)}
+                  onFocus={() => searchQuery.length >= 3 && searchResults.length > 0 && setShowSearchResults(true)}
+                />
+                {showSearchResults && searchResults.length > 0 ? (
+                  <div className="checkout-search-dropdown">
+                    {searchResults.map((r, idx) => (
+                      <button type="button" key={idx} className="checkout-search-item" onClick={() => handleSelectSearchResult(r)}>
+                        {r.place_name}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+
+              <button type="button" className="checkout-modal-geoloc" onClick={getCurrentLocation}>
+                <FaMapMarkerAlt aria-hidden />
+                {t('checkout', 'useCurrentLocation')}
+              </button>
+
+              {address ? (
+                <div className="checkout-modal-address-pill">
+                  <strong>{t('checkout', 'selectedAddressLabel')}</strong>
+                  <p>{address}</p>
+                </div>
+              ) : null}
+
+              <label className="checkout-field-label" htmlFor="checkout-modal-instr">
+                {t('locationEditor', 'instructionLabel')}
+              </label>
+              <textarea
+                id="checkout-modal-instr"
+                className="checkout-textarea"
+                rows={3}
+                placeholder={t('locationEditor', 'instructionPlaceholder')}
+                value={instruction}
+                onChange={(e) => setInstruction(e.target.value)}
+              />
+
+              <label className="checkout-field-label" htmlFor="checkout-modal-tel">
+                {t('locationEditor', 'telephoneLabel')}
+              </label>
+              <input
+                id="checkout-modal-tel"
+                type="tel"
+                className="checkout-input"
+                placeholder={t('locationEditor', 'telephonePlaceholder')}
+                value={telephoneContact}
+                onChange={(e) => setTelephoneContact(e.target.value)}
+              />
+            </div>
+
+            <div className="checkout-modal-footer">
+              <button type="button" className="btn btn-outline checkout-modal-btn-secondary" onClick={() => setShowAddressModal(false)}>
+                {t('common', 'cancel')}
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary checkout-modal-btn-primary"
+                onClick={handlePlaceOrder}
+                disabled={loading || !modalCanSubmit}
+              >
+                {loading
+                  ? t('checkout', 'processing')
+                  : paymentMode === 'momo_avant'
+                    ? t('checkout', 'pay')
+                    : t('checkout', 'confirmAndOrder')}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };

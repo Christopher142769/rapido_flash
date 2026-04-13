@@ -7,12 +7,7 @@ import LanguageContext from '../../context/LanguageContext';
 import BottomNavbar from '../../components/BottomNavbar';
 import TopNavbar from '../../components/TopNavbar';
 import PageLoader from '../../components/PageLoader';
-import {
-  applyWhatsAppTemplate,
-  buildOrderItemsBlock,
-  getRapidoWhatsAppDigits,
-  normalizeTextForWhatsAppPrefill,
-} from '../../utils/orderTrackingWhatsApp';
+import { openOrderTrackingWhatsApp } from '../../utils/orderTrackingWhatsApp';
 import './Orders.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -25,8 +20,6 @@ const Orders = () => {
   const { language, t } = useContext(LanguageContext);
   const [commandes, setCommandes] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const rapidoWaDigits = getRapidoWhatsAppDigits();
 
   // Retour après paiement KkiaPay (callback URL)
   useEffect(() => {
@@ -88,60 +81,11 @@ const Orders = () => {
     [t]
   );
 
-  const paymentLabel = useCallback(
-    (mode) => {
-      if (mode === 'especes') return t('orders', 'paymentCash');
-      if (mode === 'momo_apres') return t('orders', 'paymentMomoAfter');
-      return t('orders', 'paymentMomoBefore');
-    },
-    [t]
-  );
-
   const openTrackingWhatsApp = useCallback(
     (commande) => {
-      if (!rapidoWaDigits) return;
-      const addr = commande.adresseLivraison || {};
-      const lineAddr = (addr.adresse || '').trim();
-      const geo =
-        addr.latitude != null && addr.longitude != null
-          ? `${Number(addr.latitude).toFixed(5)}, ${Number(addr.longitude).toFixed(5)}`
-          : '';
-      const addressFull = [lineAddr, geo].filter(Boolean).join(' | ') || '-';
-
-      const paidExtra =
-        commande.paiementEnLigneEffectue && commande.modePaiement === 'momo_avant'
-          ? `- ${t('orders', 'whatsappPaidLine')}`
-          : '';
-
-      const vars = {
-        ref: String(commande._id).slice(-8).toUpperCase(),
-        id: String(commande._id),
-        shop: commande.restaurant?.nom || '-',
-        date: new Date(commande.createdAt).toLocaleString(
-          String(language || '').toLowerCase().startsWith('en') ? 'en-GB' : 'fr-FR',
-          { dateStyle: 'long', timeStyle: 'short' }
-        ),
-        status: statutLabel(commande.statut),
-        subtotal: Number(commande.sousTotal || 0).toFixed(0),
-        shipping: Number(commande.fraisLivraison || 0).toFixed(0),
-        total: Number(commande.total || 0).toFixed(0),
-        payment: paymentLabel(commande.modePaiement),
-        paidExtra,
-        address: addressFull,
-        deliveryPhone: (addr.telephoneContact || '').trim() || '-',
-        instruction: (addr.instruction || '').trim() || '-',
-        items: buildOrderItemsBlock(commande, language),
-        clientName: user?.nom || '-',
-        clientEmail: user?.email || '-',
-        accountPhone: (user?.telephone || '').trim() || '-',
-      };
-
-      const rawText = applyWhatsAppTemplate(t('orders', 'whatsappTemplate'), vars);
-      const text = normalizeTextForWhatsAppPrefill(rawText);
-      const url = `https://wa.me/${rapidoWaDigits}?text=${encodeURIComponent(text)}`;
-      window.open(url, '_blank', 'noopener,noreferrer');
+      openOrderTrackingWhatsApp(commande, { language, t, user });
     },
-    [language, paymentLabel, rapidoWaDigits, statutLabel, t, user]
+    [language, t, user]
   );
 
   if (loading) {
