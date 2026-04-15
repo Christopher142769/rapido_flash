@@ -106,6 +106,7 @@ const RestaurantDetail = () => {
   const [showAllAfterFocus, setShowAllAfterFocus] = useState(false);
   const [pdpImageIndex, setPdpImageIndex] = useState(0);
   const [selectedAccompagnementIds, setSelectedAccompagnementIds] = useState([]);
+  const [volumeM3Input, setVolumeM3Input] = useState('1');
   const [reviewStats, setReviewStats] = useState(null);
   const handleReviewStats = useCallback((s) => {
     setReviewStats(s);
@@ -133,6 +134,7 @@ const RestaurantDetail = () => {
 
   useEffect(() => {
     setSelectedAccompagnementIds([]);
+    setVolumeM3Input('1');
   }, [produitFocusId]);
 
   useEffect(() => {
@@ -230,9 +232,37 @@ const RestaurantDetail = () => {
     }
   }, [produitFocusId, loading, allProducts, setSearchParams]);
 
-  const addToCart = (produit, accompagnementIds = []) => {
+  const addToCart = (produit, accompagnementIds = [], quantityOverride = null) => {
     const imageUrl = produit.imageCarteHome || (produit.images && produit.images[0]) || null;
     const options = Array.isArray(produit.accompagnements) ? produit.accompagnements : [];
+    const activeOptions = options.filter((o) => o?.actif !== false);
+    const selectionMode = String(produit.accompagnementsMode || 'multiple');
+    if (activeOptions.length > 0 && accompagnementIds.length === 0) {
+      alert(
+        String(language || '').toLowerCase().startsWith('en')
+          ? 'Please choose at least one side option before adding this product.'
+          : 'Veuillez choisir au moins un accompagnement avant d’ajouter ce produit.'
+      );
+      return false;
+    }
+    if (selectionMode === 'unique' && accompagnementIds.length > 1) {
+      alert(
+        String(language || '').toLowerCase().startsWith('en')
+          ? 'Only one side option is allowed for this product.'
+          : 'Un seul accompagnement est autorisé pour ce produit.'
+      );
+      return false;
+    }
+    const quantiteSaisie = quantityOverride != null ? Number(quantityOverride) : 1;
+    const quantite = Number.isFinite(quantiteSaisie) && quantiteSaisie > 0 ? quantiteSaisie : 1;
+    if (String(produit.uniteVente || 'piece') === 'm3' && (!Number.isFinite(quantiteSaisie) || quantiteSaisie <= 0)) {
+      alert(
+        String(language || '').toLowerCase().startsWith('en')
+          ? 'Please enter the number of m3 before adding this product.'
+          : 'Veuillez saisir le nombre de m3 avant d’ajouter ce produit.'
+      );
+      return false;
+    }
     const selectedOptions = options
       .filter((o) => o?.actif !== false && accompagnementIds.includes(String(o._id)))
       .map((o) => ({
@@ -255,7 +285,7 @@ const RestaurantDetail = () => {
         String(item.productId) === String(produit._id) &&
         String(item.restaurantId) === String(id) &&
         String(item.cartLineId || `${item.productId}::none`) === cartLineId
-          ? { ...item, quantite: item.quantite + 1 }
+          ? { ...item, quantite: Number(item.quantite || 0) + quantite }
           : item
       );
     } else {
@@ -275,18 +305,20 @@ const RestaurantDetail = () => {
         accompagnementsSelected: selectedOptions,
         promoLivraisonGratuite: !!produit.promoLivraisonGratuite,
         image: imageUrl,
-        quantite: 1,
-        restaurantId: id
+        quantite,
+        restaurantId: id,
+        uniteVente: produit.uniteVente === 'm3' ? 'm3' : 'piece',
       }];
     }
     setCart(newCart);
     localStorage.setItem('cart', JSON.stringify(newCart));
+    return true;
   };
 
   /** Ajoute au panier puis ouvre la page panier (bouton Acheter). */
-  const buyProduct = (produit, accompagnementIds = []) => {
-    addToCart(produit, accompagnementIds);
-    navigate('/cart');
+  const buyProduct = (produit, accompagnementIds = [], quantityOverride = null) => {
+    const done = addToCart(produit, accompagnementIds, quantityOverride);
+    if (done) navigate('/cart');
   };
 
   /** Navigation "chaîne" : ouvrir la fiche produit dans le même `/restaurant/:id` */
@@ -310,7 +342,7 @@ const RestaurantDetail = () => {
   const getCartTotal = () => cart.reduce((sum, item) => sum + item.prix * item.quantite, 0);
 
   if (loading) {
-    return <PageLoader message={t('store', 'loading')} />;
+    return <PageLoader />;
   }
 
   if (!restaurant) {
@@ -368,6 +400,8 @@ const RestaurantDetail = () => {
   const highlightedAccompagnements = hasFocusedProduct
     ? (highlightedProduct.accompagnements || []).filter((a) => a?.actif !== false && a?.nom)
     : [];
+  const highlightedAccMode = String(highlightedProduct?.accompagnementsMode || 'multiple');
+  const isM3Product = String(highlightedProduct?.uniteVente || 'piece') === 'm3';
   const otherProducts = hasFocusedProduct
     ? products.filter((p) => String(p._id) !== String(highlightedProduct._id))
     : products;
@@ -568,10 +602,26 @@ const RestaurantDetail = () => {
                 <button
                   type="button"
                   className="pdp-nike-cta"
-                  onClick={() => buyProduct(highlightedProduct, selectedAccompagnementIds)}
+                  onClick={() => buyProduct(highlightedProduct, selectedAccompagnementIds, isM3Product ? volumeM3Input : null)}
                 >
                   {t('store', 'buy')}
                 </button>
+                {isM3Product ? (
+                  <div className="pdp-nike-accompagnements">
+                    <h3 className="pdp-nike-accompagnements-title">
+                      {String(language || '').toLowerCase().startsWith('en') ? 'Volume (m3)' : 'Volume (m3)'}
+                    </h3>
+                    <input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      value={volumeM3Input}
+                      onChange={(e) => setVolumeM3Input(e.target.value)}
+                      className="pdp-nike-m3-input"
+                      placeholder={String(language || '').toLowerCase().startsWith('en') ? 'Enter m3 volume' : 'Entrez le volume en m3'}
+                    />
+                  </div>
+                ) : null}
                 {highlightedAccompagnements.length > 0 ? (
                   <div className="pdp-nike-accompagnements">
                     <h3 className="pdp-nike-accompagnements-title">Accompagnements</h3>
@@ -581,13 +631,18 @@ const RestaurantDetail = () => {
                         return (
                           <label key={String(acc._id)} className="pdp-nike-acc-item">
                             <input
-                              type="checkbox"
+                              type={highlightedAccMode === 'unique' ? 'radio' : 'checkbox'}
+                              name={highlightedAccMode === 'unique' ? 'highlighted-accompagnement' : undefined}
                               checked={checked}
                               onChange={(e) => {
                                 const v = String(acc._id);
-                                setSelectedAccompagnementIds((prev) =>
-                                  e.target.checked ? [...prev, v] : prev.filter((x) => x !== v)
-                                );
+                                if (highlightedAccMode === 'unique') {
+                                  setSelectedAccompagnementIds(e.target.checked ? [v] : []);
+                                } else {
+                                  setSelectedAccompagnementIds((prev) =>
+                                    e.target.checked ? [...prev, v] : prev.filter((x) => x !== v)
+                                  );
+                                }
                               }}
                             />
                             <span className="pdp-nike-acc-name">
@@ -598,6 +653,9 @@ const RestaurantDetail = () => {
                         );
                       })}
                     </div>
+                    {highlightedAccMode === 'unique' ? (
+                      <p className="pdp-nike-acc-note">Choix unique : sélectionnez un seul accompagnement.</p>
+                    ) : null}
                   </div>
                 ) : null}
                 {highlightedDescriptionFull.trim() ? (
@@ -751,6 +809,10 @@ const RestaurantDetail = () => {
                       className="btn-add-cart-inline"
                       onClick={(e) => {
                         e.stopPropagation();
+                        if ((produit.accompagnements || []).some((a) => a?.actif !== false) || produit.uniteVente === 'm3') {
+                          goToProduct(produit._id);
+                          return;
+                        }
                         buyProduct(produit);
                       }}
                     >
@@ -862,6 +924,10 @@ const RestaurantDetail = () => {
                             className="product-card-add-btn"
                             onClick={(e) => {
                               e.stopPropagation();
+                              if ((produit.accompagnements || []).some((a) => a?.actif !== false) || produit.uniteVente === 'm3') {
+                                goToProduct(produit._id);
+                                return;
+                              }
                               buyProduct(produit);
                             }}
                           >

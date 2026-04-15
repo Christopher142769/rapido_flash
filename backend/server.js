@@ -111,6 +111,11 @@ app.use('/api/conversations', require('./routes/conversations'));
 app.use('/api/medias', require('./routes/medias'));
 app.use('/api/app-settings', require('./routes/app-settings'));
 
+// Healthcheck Render
+app.get('/healthz', (req, res) => {
+  res.status(200).json({ ok: true });
+});
+
 // Gestionnaire d'erreur global pour Multer
 app.use((error, req, res, next) => {
   if (error instanceof require('multer').MulterError) {

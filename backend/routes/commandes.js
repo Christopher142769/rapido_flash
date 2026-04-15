@@ -68,8 +68,23 @@ router.post('/', auth, async (req, res) => {
       for (const item of produits) {
         const produit = await Produit.findById(item.produitId);
         if (!produit) return res.status(404).json({ message: `Produit ${item.produitId} non trouvé` });
+        const quantite = Number(item.quantite);
+        if (!Number.isFinite(quantite) || quantite <= 0) {
+          return res.status(400).json({ message: 'Quantité produit invalide.' });
+        }
         const prixBase = effectiveProduitPrice(produit);
         const selected = Array.isArray(item.accompagnements) ? item.accompagnements : [];
+        const accompagnementsActifs = (produit.accompagnements || []).filter((a) => a?.actif !== false);
+        if (accompagnementsActifs.length > 0 && selected.length === 0) {
+          return res.status(400).json({
+            message: `Veuillez choisir au moins un accompagnement pour ${produit.nom}.`
+          });
+        }
+        if (String(produit.accompagnementsMode || 'multiple') === 'unique' && selected.length > 1) {
+          return res.status(400).json({
+            message: `Un seul accompagnement est autorisé pour ${produit.nom}.`
+          });
+        }
         const choix = [];
         let supplementTotal = 0;
         for (const raw of selected) {
@@ -87,10 +102,10 @@ router.post('/', auth, async (req, res) => {
           });
         }
         const prixUnitaire = prixBase + supplementTotal;
-        sousTotal += prixUnitaire * item.quantite;
+        sousTotal += prixUnitaire * quantite;
         produitsDetails.push({
           produit: item.produitId,
-          quantite: item.quantite,
+          quantite,
           prix: prixUnitaire,
           prixBase,
           supplementTotal,

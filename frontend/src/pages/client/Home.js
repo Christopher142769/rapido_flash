@@ -111,6 +111,14 @@ function categoryDisplayName(language, category) {
   return pickLocalized(language, category, 'nom');
 }
 
+function requiresProductConfiguration(produit) {
+  if (!produit) return false;
+  const hasAccompagnements = Array.isArray(produit.accompagnements)
+    && produit.accompagnements.some((a) => a?.actif !== false);
+  const isM3 = String(produit.uniteVente || 'piece') === 'm3';
+  return hasAccompagnements || isM3;
+}
+
 const Home = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -330,6 +338,10 @@ const Home = () => {
       askAuthForProduct(previewProduit.restaurantId, previewProduit.productId);
       return;
     }
+    if (requiresProductConfiguration(previewProduit)) {
+      navigate(`/restaurant/${previewProduit.restaurantId}?produit=${previewProduit.productId}`);
+      return;
+    }
 
     let newCart = JSON.parse(localStorage.getItem('cart') || '[]');
     const pid = previewProduit.productId;
@@ -375,6 +387,10 @@ const Home = () => {
     if (!produit?._id || !restaurantId) return;
     if (!user) {
       askAuthForProduct(restaurantId, produit._id);
+      return;
+    }
+    if (requiresProductConfiguration(produit)) {
+      navigate(`/restaurant/${restaurantId}?produit=${produit._id}`);
       return;
     }
     let newCart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -654,7 +670,7 @@ const Home = () => {
   };
 
   if (loading) {
-    return <PageLoader message="Chargement des structures..." />;
+    return <PageLoader />;
   }
 
   return (

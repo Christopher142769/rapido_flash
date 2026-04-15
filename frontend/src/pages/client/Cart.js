@@ -46,6 +46,16 @@ const Cart = () => {
     localStorage.setItem('cart', JSON.stringify(newCart));
   };
 
+  const updateQuantityRaw = (id, rawValue) => {
+    const parsed = Number(rawValue);
+    if (!Number.isFinite(parsed) || parsed <= 0) return;
+    const newCart = cart.map((item) =>
+      itemId(item) === id ? { ...item, quantite: parsed } : item
+    );
+    setCart(newCart);
+    localStorage.setItem('cart', JSON.stringify(newCart));
+  };
+
   const removeItem = (id) => {
     const newCart = cart.filter(item => itemId(item) !== id);
     setCart(newCart);
@@ -132,6 +142,7 @@ const Cart = () => {
                       <>{Number(item.prix).toFixed(0)} FCFA</>
                     )}
                   </p>
+                  {item.uniteVente === 'm3' && <p className="label-hint">Prix unitaire applique par m3</p>}
                   {Array.isArray(item.accompagnementsSelected) && item.accompagnementsSelected.length > 0 && (
                     <div className="cart-item-acc-list">
                       {item.accompagnementsSelected.map((acc) => (
@@ -143,9 +154,22 @@ const Cart = () => {
                   )}
                 </div>
                 <div className="cart-item-controls">
-                  <button type="button" className="quantity-btn" onClick={() => updateQuantity(lineId, item.quantite - 1)}>−</button>
-                  <span className="quantity">{item.quantite}</span>
-                  <button type="button" className="quantity-btn" onClick={() => updateQuantity(lineId, item.quantite + 1)}>+</button>
+                  {item.uniteVente === 'm3' ? (
+                    <input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      value={item.quantite}
+                      onChange={(e) => updateQuantityRaw(lineId, e.target.value)}
+                      className="quantity"
+                    />
+                  ) : (
+                    <>
+                      <button type="button" className="quantity-btn" onClick={() => updateQuantity(lineId, item.quantite - 1)}>−</button>
+                      <span className="quantity">{item.quantite}</span>
+                      <button type="button" className="quantity-btn" onClick={() => updateQuantity(lineId, item.quantite + 1)}>+</button>
+                    </>
+                  )}
                 </div>
                 <div className="cart-item-total">{(item.prix * item.quantite).toFixed(0)} FCFA</div>
                 <button type="button" className="remove-btn" onClick={() => removeItem(lineId)} aria-label="Retirer">×</button>

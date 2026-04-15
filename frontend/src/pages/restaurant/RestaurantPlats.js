@@ -41,6 +41,8 @@ const RestaurantPlats = () => {
     promoPourcentage: '',
     recommande: false,
     accompagnementsText: '',
+    accompagnementsMode: 'multiple',
+    uniteVente: 'piece',
   });
   const [imagePreview, setImagePreview] = useState(null);
   /** Image galerie produit (chemin /uploads/...) */
@@ -146,6 +148,8 @@ const RestaurantPlats = () => {
         })
         .filter((x) => x.nom);
       data.append('accompagnements', JSON.stringify(accompagnements));
+      data.append('accompagnementsMode', accompagnements.length > 0 ? formData.accompagnementsMode : 'multiple');
+      data.append('uniteVente', formData.uniteVente || 'piece');
       data.append('prix', String(formData.prix));
       if (formData.categorieProduitId) data.append('categorieProduitId', formData.categorieProduitId);
       data.append('disponible', formData.disponible);
@@ -186,6 +190,8 @@ const RestaurantPlats = () => {
         promoPourcentage: '',
         recommande: false,
         accompagnementsText: '',
+        accompagnementsMode: 'multiple',
+        uniteVente: 'piece',
       });
       resetMediaPreviews();
       await fetchData();
@@ -219,6 +225,8 @@ const RestaurantPlats = () => {
             .map((a) => `${a.nom || ''}|${a.nomEn || ''}|${Number(a.prixSupp || 0)}`)
             .join('\n')
         : '',
+      accompagnementsMode: p.accompagnementsMode === 'unique' ? 'unique' : 'multiple',
+      uniteVente: p.uniteVente === 'm3' ? 'm3' : 'piece',
     });
     const firstImg = (p.images && p.images[0]) ? (String(p.images[0]).startsWith('http') ? p.images[0] : `${BASE_URL}${p.images[0]}`) : null;
     setImagePreview(firstImg);
@@ -305,6 +313,8 @@ const RestaurantPlats = () => {
                 promoPourcentage: '',
                 recommande: false,
                 accompagnementsText: '',
+                accompagnementsMode: 'multiple',
+                uniteVente: 'piece',
               });
               resetMediaPreviews();
             }} disabled={!currentRestaurantId}>
@@ -417,8 +427,30 @@ const RestaurantPlats = () => {
                     />
                   </div>
                   <div className="form-group">
+                    <label>Mode de sélection des accompagnements</label>
+                    <select
+                      value={formData.accompagnementsMode}
+                      onChange={(e) => setFormData({ ...formData, accompagnementsMode: e.target.value })}
+                      disabled={!formData.accompagnementsText.trim()}
+                    >
+                      <option value="multiple">Choix multiple (plusieurs accompagnements)</option>
+                      <option value="unique">Choix unique (un seul accompagnement)</option>
+                    </select>
+                    <span className="label-hint">Ce mode s’applique quand des accompagnements sont renseignés.</span>
+                  </div>
+                  <div className="form-group">
                     <label>Prix (FCFA) *</label>
                     <input type="number" min="0" step="1" value={formData.prix} onChange={(e) => setFormData({ ...formData, prix: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label>Unité de vente</label>
+                    <select
+                      value={formData.uniteVente}
+                      onChange={(e) => setFormData({ ...formData, uniteVente: e.target.value })}
+                    >
+                      <option value="piece">Par pièce (quantité standard)</option>
+                      <option value="m3">Par m3 (le client saisit son volume)</option>
+                    </select>
                   </div>
                   <div className="form-group produit-promo-block">
                     <label className="produit-promo-block-title">{t('i18n', 'productPromoSection')}</label>
@@ -591,6 +623,12 @@ const RestaurantPlats = () => {
                     ) : null}
                     <div className="plat-details">
                       <span className="plat-prix-admin">{Number(p.prix).toFixed(0)} FCFA</span>
+                      {p.uniteVente === 'm3' && <span className="plat-categorie">Vente en m3</span>}
+                      {Array.isArray(p.accompagnements) && p.accompagnements.length > 0 && (
+                        <span className="plat-categorie">
+                          Accompagnements: {p.accompagnementsMode === 'unique' ? 'choix unique' : 'choix multiple'}
+                        </span>
+                      )}
                       {p.categorieProduit && <span className="plat-categorie">{p.categorieProduit.nom}</span>}
                     </div>
                     <div className="plat-actions">

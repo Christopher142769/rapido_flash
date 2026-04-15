@@ -76,7 +76,7 @@ router.get('/', async (req, res) => {
     const produits = await Produit.find({ restaurant: { $in: ids }, disponible: true })
       .sort({ createdAt: -1 })
       .select(
-        'nom nomEn nomAfficheAccueil nomAfficheAccueilEn prix images imageCarteHome restaurant promoLivraisonGratuite promoPourcentage recommande'
+        'nom nomEn nomAfficheAccueil nomAfficheAccueilEn prix images imageCarteHome restaurant promoLivraisonGratuite promoPourcentage recommande accompagnements accompagnementsMode uniteVente'
       )
       .lean();
 
@@ -100,7 +100,10 @@ router.get('/', async (req, res) => {
         image: thumb,
         promoLivraisonGratuite: !!p.promoLivraisonGratuite,
         promoPourcentage: p.promoPourcentage != null ? p.promoPourcentage : null,
-        recommande: !!p.recommande
+        recommande: !!p.recommande,
+        accompagnements: Array.isArray(p.accompagnements) ? p.accompagnements : [],
+        accompagnementsMode: p.accompagnementsMode || 'multiple',
+        uniteVente: p.uniteVente || 'piece',
       });
     }
 

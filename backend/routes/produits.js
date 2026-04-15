@@ -50,6 +50,18 @@ function parseAccompagnements(input) {
     .filter((x) => x.nom);
 }
 
+function parseAccompagnementsMode(input) {
+  if (input === undefined) return undefined;
+  const v = String(input || '').trim().toLowerCase();
+  return v === 'unique' ? 'unique' : 'multiple';
+}
+
+function parseUniteVente(input) {
+  if (input === undefined) return undefined;
+  const v = String(input || '').trim().toLowerCase();
+  return v === 'm3' ? 'm3' : 'piece';
+}
+
 function isAllowedUploadRef(p) {
   const s = String(p || '').trim();
   return ((s.startsWith('/uploads/') || (s.startsWith('http') && s.includes('cloudinary.com'))) && !s.includes('..'));
@@ -278,7 +290,7 @@ router.post('/', auth, isRestaurant, upload.fields(uploadProductFields), async (
       return res.status(403).json({ message: 'Accès refusé pour cette entreprise' });
     }
 
-    const { nom, nomEn, description, descriptionEn, prix, categorieProduitId, nomAfficheAccueil, nomAfficheAccueilEn, caracteristiques, caracteristiquesEn, accompagnements, promoLivraisonGratuite, promoPourcentage } = req.body;
+    const { nom, nomEn, description, descriptionEn, prix, categorieProduitId, nomAfficheAccueil, nomAfficheAccueilEn, caracteristiques, caracteristiquesEn, accompagnements, accompagnementsMode, uniteVente, promoLivraisonGratuite, promoPourcentage } = req.body;
     if (!nom || !nom.trim()) return res.status(400).json({ message: 'Le nom est requis' });
     if (prix === undefined || prix === null || isNaN(parseFloat(prix))) {
       return res.status(400).json({ message: 'Le prix (FCFA) est requis' });
@@ -300,6 +312,8 @@ router.post('/', auth, isRestaurant, upload.fields(uploadProductFields), async (
       caracteristiques: parseCaracteristiques(caracteristiques) ?? [],
       caracteristiquesEn: parseCaracteristiques(caracteristiquesEn) ?? [],
       accompagnements: parseAccompagnements(accompagnements) ?? [],
+      accompagnementsMode: parseAccompagnementsMode(accompagnementsMode) ?? 'multiple',
+      uniteVente: parseUniteVente(uniteVente) ?? 'piece',
     };
     if (categorieProduitId) data.categorieProduit = categorieProduitId;
     if (nomAfficheAccueil && String(nomAfficheAccueil).trim()) {
@@ -394,6 +408,12 @@ router.put('/:id', auth, isRestaurant, upload.fields(uploadProductFields), async
     }
     if (req.body.accompagnements !== undefined) {
       prod.accompagnements = parseAccompagnements(req.body.accompagnements) || [];
+    }
+    if (req.body.accompagnementsMode !== undefined) {
+      prod.accompagnementsMode = parseAccompagnementsMode(req.body.accompagnementsMode) || 'multiple';
+    }
+    if (req.body.uniteVente !== undefined) {
+      prod.uniteVente = parseUniteVente(req.body.uniteVente) || 'piece';
     }
     if (mainFile) {
       const newImg = mainFile.path;

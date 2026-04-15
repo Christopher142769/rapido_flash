@@ -54,10 +54,20 @@ const produitSchema = new mongoose.Schema({
     type: [accompagnementSchema],
     default: [],
   },
+  accompagnementsMode: {
+    type: String,
+    enum: ['multiple', 'unique'],
+    default: 'multiple',
+  },
   prix: {
     type: Number,
     required: true,
     min: 0
+  },
+  uniteVente: {
+    type: String,
+    enum: ['piece', 'm3'],
+    default: 'piece',
   },
   images: [{
     type: String
