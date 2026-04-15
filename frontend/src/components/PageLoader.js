@@ -1,7 +1,7 @@
 import React from 'react';
 import './PageLoader.css';
 
-const PageLoader = ({ message = 'Chargement...' }) => {
+const PageLoader = () => {
   return (
     <div className="page-loader">
       <div className="page-loader-content">
@@ -19,7 +19,6 @@ const PageLoader = ({ message = 'Chargement...' }) => {
             />
           </div>
         </div>
-        {message && <p className="page-loader-message">{message}</p>}
       </div>
     </div>
   );
