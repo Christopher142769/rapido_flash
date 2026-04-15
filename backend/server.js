@@ -143,46 +143,54 @@ const ensurePlatformLineCodes = require('./utils/ensurePlatformLineCodes');
 const DEFAULT_LOCAL_MONGODB = 'mongodb://127.0.0.1:27017/rapido_flash';
 const MONGODB_URI = process.env.MONGODB_URI || DEFAULT_LOCAL_MONGODB;
 const isLocalMongo = /localhost|127\.0\.0\.1/.test(MONGODB_URI);
+const MONGO_RETRY_MS = 10000;
+let mongoBootstrapped = false;
 
-mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(async () => {
-  console.log(isLocalMongo ? '✅ MongoDB local connecté' : '✅ MongoDB (Atlas / distant) connecté');
-  console.log('📊 Base de données:', mongoose.connection.name);
-  if (!process.env.MONGODB_URI) {
-    console.log('💡 Astuce : définissez MONGODB_URI dans backend/.env ou .env (racine) pour utiliser Atlas.');
-  }
-
-  // Évite E11000 duplicate key sur username:null (index unique hérité sans champ username)
-  await fixStaleUserIndexes();
-  await ensureDefaultCategoriesDomaine();
-  await ensureAppSettings();
-  await ensurePlatformLineCodes();
-
-  // Initialiser l'admin par défaut après la connexion MongoDB (plus de plats par défaut)
-  setTimeout(async () => {
-    try {
-      await initDefaultAdmin();
-      await ensurePlatformSupportStack();
-    } catch (error) {
-      console.error('❌ Erreur lors de l\'initialisation:', error);
+async function connectMongoWithRetry() {
+  try {
+    await mongoose.connect(MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log(isLocalMongo ? '✅ MongoDB local connecté' : '✅ MongoDB (Atlas / distant) connecté');
+    console.log('📊 Base de données:', mongoose.connection.name);
+    if (!process.env.MONGODB_URI) {
+      console.log('💡 Astuce : définissez MONGODB_URI dans backend/.env ou .env (racine) pour utiliser Atlas.');
     }
-  }, 2000);
-})
-.catch(err => {
-  console.error('❌ Erreur de connexion MongoDB:', err.message);
-  console.error('💡 Vérifiez votre chaîne de connexion dans le fichier .env');
-  process.exit(1);
-});
+
+    if (!mongoBootstrapped) {
+      mongoBootstrapped = true;
+      // Évite E11000 duplicate key sur username:null (index unique hérité sans champ username)
+      await fixStaleUserIndexes();
+      await ensureDefaultCategoriesDomaine();
+      await ensureAppSettings();
+      await ensurePlatformLineCodes();
+
+      // Initialiser l'admin par défaut après la connexion MongoDB (plus de plats par défaut)
+      setTimeout(async () => {
+        try {
+          await initDefaultAdmin();
+          await ensurePlatformSupportStack();
+        } catch (error) {
+          console.error('❌ Erreur lors de l\'initialisation:', error);
+        }
+      }, 2000);
+    }
+  } catch (err) {
+    console.error('❌ Erreur de connexion MongoDB:', err.message);
+    console.error(`🔁 Nouvelle tentative dans ${Math.round(MONGO_RETRY_MS / 1000)}s...`);
+    setTimeout(connectMongoWithRetry, MONGO_RETRY_MS);
+  }
+}
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Serveur démarré sur le port ${PORT}`);
   console.log(`🌐 URL: http://localhost:${PORT}`);
 });
+
+connectMongoWithRetry();
 
 // Gestion d'erreur pour le port déjà utilisé
 server.on('error', (err) => {
