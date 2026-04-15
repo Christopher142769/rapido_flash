@@ -13,13 +13,14 @@ import './Checkout.css';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
 
-const KKIAPAY_PUBLIC_KEY = process.env.REACT_APP_KKIAPAY_PUBLIC_KEY || '261f38e09ef211f0989243766f89f726';
-const KKIAPAY_SANDBOX = process.env.REACT_APP_KKIAPAY_SANDBOX !== 'false';
+const KKIAPAY_PUBLIC_KEY =
+  process.env.REACT_APP_KKIAPAY_PUBLIC_KEY || 'cf27e12e7d7320dac0b807845855b06e5f231798';
+const KKIAPAY_SANDBOX = false;
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { user, updatePosition } = useContext(AuthContext);
-  const { language, t, productDisplayName } = useContext(LanguageContext);
+  const { language, t } = useContext(LanguageContext);
   const { showSuccess, showError, showWarning } = useModal();
 
   const [checkoutStep, setCheckoutStep] = useState('payment');
@@ -421,6 +422,10 @@ const Checkout = () => {
         <TopNavbar />
         <div className="checkout-success-wrap">
           <div className="checkout-success-card">
+            <button type="button" className="checkout-success-back-corner" onClick={() => navigate('/home')}>
+              <FaChevronLeft aria-hidden />
+              Retour
+            </button>
             <div className="checkout-success-icon" aria-hidden>
               <FaCheckCircle size={56} />
             </div>
@@ -479,9 +484,6 @@ const Checkout = () => {
               ) : null}
               <button type="button" className="btn btn-primary checkout-success-secondary" onClick={() => navigate('/orders')}>
                 {t('checkout', 'viewOrders')}
-              </button>
-              <button type="button" className="btn btn-outline checkout-success-secondary" onClick={() => navigate('/home')}>
-                {t('checkout', 'backHome')}
               </button>
             </div>
           </div>
@@ -542,44 +544,9 @@ const Checkout = () => {
           </label>
         </div>
 
-        <div className="checkout-tunnel-order-preview">
-          <h3>{t('checkout', 'recapTitle')}</h3>
-          <ul>
-            {cart.map((item) => (
-              <li key={item.productId || item.platId}>
-                <span>
-                  {productDisplayName(item)} × {item.quantite}
-                </span>
-                <span>{(item.prix * item.quantite).toFixed(0)} FCFA</span>
-              </li>
-            ))}
-          </ul>
-          <div className="checkout-tunnel-totals">
-            <div>
-              <span>{t('cart', 'subTotal')}</span>
-              <span>{getSubTotal().toFixed(0)} FCFA</span>
-            </div>
-            <div>
-              <span>{t('cart', 'deliveryFee')}</span>
-              <span>
-                {cartQualifiesFreeDeliveryPromo(cart) ? (
-                  <>
-                    <span className="checkout-fee-struck">{fraisLivraison.toFixed(0)} FCFA</span>
-                    <span className="checkout-fee-free">0 FCFA</span>
-                  </>
-                ) : (
-                  `${fraisLivraison.toFixed(0)} FCFA`
-                )}
-              </span>
-            </div>
-            {cartQualifiesFreeDeliveryPromo(cart) ? (
-              <p className="checkout-promo-delivery-note">{t('cart', 'freeDeliveryPromoNote')}</p>
-            ) : null}
-            <div className="checkout-tunnel-total-row">
-              <span>{t('cart', 'total')}</span>
-              <span>{getTotal().toFixed(0)} FCFA</span>
-            </div>
-          </div>
+        <div className="checkout-tunnel-total-pill" aria-live="polite">
+          <span>{t('cart', 'total')}</span>
+          <strong>{getTotal().toFixed(0)} FCFA</strong>
         </div>
 
         <button type="button" className="checkout-tunnel-cta" onClick={() => setShowAddressModal(true)}>

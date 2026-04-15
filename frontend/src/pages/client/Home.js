@@ -5,7 +5,6 @@ import AuthContext from '../../context/AuthContext';
 import LanguageContext from '../../context/LanguageContext';
 import BottomNavbar from '../../components/BottomNavbar';
 import TopNavbar from '../../components/TopNavbar';
-import InstallButton from '../../components/InstallButton';
 import LangSwitcher from '../../components/LangSwitcher';
 import LocationEditor from '../../components/LocationEditor';
 import PageLoader from '../../components/PageLoader';
@@ -1016,7 +1015,7 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Bouton d'installation desktop : bas à droite, animation haut → bas */}
+      {/* Carte d'installation masquée temporairement
       <div className="install-fab-desktop-wrap">
         <div className="install-download-callout">
           <p className="install-download-callout__eyebrow">{t('install', 'calloutEyebrow')}</p>
@@ -1025,6 +1024,7 @@ const Home = () => {
           <InstallButton variant="download" />
         </div>
       </div>
+      */}
 
       <BottomNavbar />
 

@@ -9,7 +9,7 @@ echo ""
 echo "📝 Configuration du fichier frontend/.env..."
 cat > frontend/.env << EOF
 REACT_APP_API_URL=http://localhost:5000/api
-REACT_APP_KKIAPAY_PUBLIC_KEY=261f38e09ef211f0989243766f89f726
+REACT_APP_KKIAPAY_PUBLIC_KEY=cf27e12e7d7320dac0b807845855b06e5f231798
 REACT_APP_KKIAPAY_SANDBOX=false
 EOF
 echo "✅ Fichier frontend/.env créé"
@@ -20,8 +20,8 @@ cat > backend/.env << EOF
 MONGODB_URI=mongodb://localhost:27017/rapido_flash
 PORT=5000
 JWT_SECRET=your_jwt_secret_key_change_in_production
-KKIAPAY_PRIVATE_KEY=tpk_261f87009ef211f0989243766f89f726
-KKIAPAY_SECRET=tsk_261f87019ef211f0989243766f89f726
+KKIAPAY_PRIVATE_KEY=your_private_key_here
+KKIAPAY_SECRET=your_secret_here
 EOF
 echo "✅ Fichier backend/.env créé"
 
@@ -29,9 +29,9 @@ echo ""
 echo "✅ Configuration terminée !"
 echo ""
 echo "📋 Clés API configurées :"
-echo "   - Public Key: 261f38e09ef211f0989243766f89f726"
-echo "   - Private Key: tpk_261f87009ef211f0989243766f89f726"
-echo "   - Secret: tsk_261f87019ef211f0989243766f89f726"
+echo "   - Public Key: cf27e12e7d7320dac0b807845855b06e5f231798"
+echo "   - Private Key: (set in backend/.env only)"
+echo "   - Secret: (set in backend/.env only)"
 echo ""
 echo "⚠️  Important : Redémarrez le serveur frontend et backend pour que les changements prennent effet"
 echo "   - Frontend: npm run client (ou cd frontend && npm start)"

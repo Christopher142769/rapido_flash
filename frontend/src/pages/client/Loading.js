@@ -28,8 +28,8 @@ const Loading = () => {
         if (isAuthenticated && user) {
           navigate('/home');
         } else {
-          // Flow : loading → localisation → connexion / inscription → home (plus de page welcome)
-          navigate('/location');
+          // Flow simplifié : loading -> home directement
+          navigate('/home');
         }
       }, 3000);
 
@@ -40,14 +40,20 @@ const Loading = () => {
   return (
     <div className="loading-page">
       <div className="loading-content">
-        <div className="logo-container">
-          <img 
-            src="/images/logo.png" 
-            alt="Rapido Logo" 
-            className="logo-animated"
-          />
+        <div className="logo-loader-wrap" aria-label="Chargement">
+          <div className="logo-loader-ring" />
+          <div className="logo-loader-ring logo-loader-ring--inner" />
+          <div className="logo-loader-orbit">
+            <span className="logo-loader-dot" />
+          </div>
+          <div className="logo-container">
+            <img
+              src="/images/logo.png"
+              alt="Rapido Logo"
+              className="logo-static"
+            />
+          </div>
         </div>
-        <div className="spinner"></div>
       </div>
     </div>
   );

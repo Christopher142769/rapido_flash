@@ -41,9 +41,4 @@
   .chat-fab {
     bottom: 28px;
   }
-
-  /* Le chevron « réduire » du FAB recouvrait la zone d’envoi du widget ; sur desktop on ferme via le X du panneau. */
-  .chat-fab.chat-fab--open {
-    display: none;
-  }
 }

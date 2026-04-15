@@ -15,9 +15,7 @@ const ChatFab = () => {
   const { open, setOpen, openSupport } = useSupportWidget();
 
   if (!user || user.role !== 'client') return null;
-  if (loc.pathname.startsWith('/dashboard')) return null;
-  if (loc.pathname === '/login' || loc.pathname === '/register') return null;
-
+  if (loc.pathname !== '/home') return null;
   return (
     <button
       type="button"

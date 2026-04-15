@@ -3,12 +3,14 @@ import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-lea
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Fix pour les icônes Leaflet
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
+const DEFAULT_MARKER_ICON = L.icon({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
 });
 
 // Composant pour gérer les clics sur la carte
@@ -148,7 +150,7 @@ const LeafletMap = ({
       )}
       
       {markers.map((marker, index) => {
-        if (!marker.latitude || !marker.longitude) return null;
+        if (marker.latitude == null || marker.longitude == null) return null;
         
         const customIcon = marker.content 
           ? L.divIcon({
@@ -163,7 +165,7 @@ const LeafletMap = ({
           <Marker
             key={index}
             position={[marker.latitude, marker.longitude]}
-            icon={customIcon}
+            icon={customIcon || DEFAULT_MARKER_ICON}
           />
         );
       })}
