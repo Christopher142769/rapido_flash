@@ -183,10 +183,13 @@ async function connectMongoWithRetry() {
   }
 }
 
-const PORT = process.env.PORT || 5000;
+const rawPort = String(process.env.PORT || '').trim();
+const parsedPort = Number.parseInt(rawPort, 10);
+const PORT = Number.isInteger(parsedPort) && parsedPort > 0 ? parsedPort : 10000;
 
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Serveur démarré sur le port ${PORT}`);
+  console.log(`ℹ️ PORT env reçu: ${rawPort || '(vide)'}`);
   console.log(`🌐 URL: http://localhost:${PORT}`);
 });
 
