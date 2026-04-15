@@ -1,0 +1,9 @@
+# Rapido Flash — https://rapido.bj & https://rapido.online
+User-agent: *
+Allow: /
+
+# Espace professionnel (connexion requise)
+Disallow: /dashboard
+
+Sitemap: https://rapido.bj/sitemap.xml
+Sitemap: https://rapido.online/sitemap.xml

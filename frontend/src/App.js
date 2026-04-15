@@ -41,6 +41,7 @@ import SupportWidget from './components/SupportWidget';
 
 import './App.css';
 import MaintenanceGate from './components/MaintenanceGate';
+import SeoRouteMeta from './components/SeoRouteMeta';
 
 /** Meta Pixel PageView on client-side navigations (initial load is tracked in index.html). */
 function MetaPixelPageViewOnRoute() {
@@ -71,6 +72,7 @@ function App() {
           }}
         >
           <MetaPixelPageViewOnRoute />
+          <SeoRouteMeta />
           <MaintenanceGate>
           <SupportWidget />
           <ChatFab />

@@ -4,7 +4,28 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#8B4513" />
-    <meta name="description" content="Rapido Flash - Plateforme de livraison" />
+    <meta name="description" content="Rapido Flash — Livraison à Cotonou et au Bénin. Commandez en ligne auprès de boutiques et structures locales." />
+    <meta name="author" content="Rapido Flash" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://rapido.bj/home" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Rapido Flash" />
+    <meta property="og:locale" content="fr_BJ" />
+    <meta property="og:title" content="Rapido Flash — Livraison à Cotonou et au Bénin" />
+    <meta property="og:description" content="Commandez en ligne auprès de boutiques et structures locales : livraison rapide à Cotonou et au Bénin." />
+    <meta property="og:url" content="https://rapido.bj/home" />
+    <meta property="og:image" content="https://rapido.bj/images/logo.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Rapido Flash — Livraison à Cotonou et au Bénin" />
+    <meta name="twitter:description" content="Commandez en ligne auprès de boutiques et structures locales : livraison rapide à Cotonou et au Bénin." />
+    <meta name="twitter:image" content="https://rapido.bj/images/logo.png" />
+
+    <link rel="alternate" hreflang="fr-BJ" href="https://rapido.bj/home" />
+    <link rel="alternate" hreflang="fr" href="https://rapido.online/home" />
+    <link rel="alternate" hreflang="x-default" href="https://rapido.bj/home" />
+
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -13,7 +34,58 @@
     <link rel="icon" type="image/png" href="/images/logo.png" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <title>Rapido Flash</title>
+    <title>Rapido Flash — Livraison à Cotonou et au Bénin</title>
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "name": "Rapido Flash",
+            "url": "https://rapido.bj",
+            "sameAs": ["https://rapido.online"],
+            "logo": "https://rapido.bj/images/logo.png",
+            "description": "Plateforme de livraison à Cotonou et au Bénin.",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Cotonou",
+              "addressCountry": "BJ"
+            }
+          },
+          {
+            "@type": "WebSite",
+            "name": "Rapido Flash",
+            "url": "https://rapido.bj",
+            "inLanguage": "fr-BJ",
+            "publisher": { "@type": "Organization", "name": "Rapido Flash" },
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://rapido.bj/home?q={search_term_string}"
+              },
+              "query-input": "required name=search_term_string"
+            }
+          },
+          {
+            "@type": "WebSite",
+            "name": "Rapido Flash",
+            "url": "https://rapido.online",
+            "inLanguage": "fr-BJ",
+            "publisher": { "@type": "Organization", "name": "Rapido Flash" },
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://rapido.online/home?q={search_term_string}"
+              },
+              "query-input": "required name=search_term_string"
+            }
+          }
+        ]
+      }
+    </script>
     <!-- Meta Pixel Code -->
     <script>
       !(function (f, b, e, v, n, t, s) {
