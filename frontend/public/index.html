@@ -73,56 +73,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <title>Rapido Flash — Livraison à Cotonou et au Bénin</title>
 
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@graph": [
-          {
-            "@type": "Organization",
-            "name": "Rapido Flash",
-            "url": "https://www.rapido.bj",
-            "sameAs": ["https://www.rapido.online"],
-            "logo": "https://www.rapido.bj/images/logo.png",
-            "description": "Plateforme de livraison à Cotonou et au Bénin.",
-            "address": {
-              "@type": "PostalAddress",
-              "addressLocality": "Cotonou",
-              "addressCountry": "BJ"
-            }
-          },
-          {
-            "@type": "WebSite",
-            "name": "Rapido Flash",
-            "url": "https://www.rapido.bj",
-            "inLanguage": "fr-BJ",
-            "publisher": { "@type": "Organization", "name": "Rapido Flash" },
-            "potentialAction": {
-              "@type": "SearchAction",
-              "target": {
-                "@type": "EntryPoint",
-                "urlTemplate": "https://www.rapido.bj/home?q={search_term_string}"
-              },
-              "query-input": "required name=search_term_string"
-            }
-          },
-          {
-            "@type": "WebSite",
-            "name": "Rapido Flash",
-            "url": "https://www.rapido.online",
-            "inLanguage": "fr-BJ",
-            "publisher": { "@type": "Organization", "name": "Rapido Flash" },
-            "potentialAction": {
-              "@type": "SearchAction",
-              "target": {
-                "@type": "EntryPoint",
-                "urlTemplate": "https://www.rapido.online/home?q={search_term_string}"
-              },
-              "query-input": "required name=search_term_string"
-            }
-          }
-        ]
-      }
-    </script>
+    <!-- JSON-LD retiré pour éviter des signaux SEO contradictoires entre .bj et .online -->
     <!-- Meta Pixel Code -->
     <script>
       !(function (f, b, e, v, n, t, s) {
