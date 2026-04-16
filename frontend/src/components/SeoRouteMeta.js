@@ -9,13 +9,13 @@ function trimOrigin(u) {
 
 /** Domaines publics (SEO, hreflang). Défaut : .bj + .online */
 function getConfiguredPublicSites() {
-  const main = trimOrigin(process.env.REACT_APP_SITE_URL) || 'https://rapido.bj';
-  const alt = trimOrigin(process.env.REACT_APP_SITE_URL_ALT) || 'https://rapido.online';
+  const main = trimOrigin(process.env.REACT_APP_SITE_URL) || 'https://www.rapido.bj';
+  const alt = trimOrigin(process.env.REACT_APP_SITE_URL_ALT) || 'https://www.rapido.online';
   return [...new Set([main, alt].filter(Boolean))];
 }
 
 function getPrimarySite() {
-  return trimOrigin(process.env.REACT_APP_SITE_URL) || 'https://rapido.bj';
+  return trimOrigin(process.env.REACT_APP_SITE_URL) || 'https://www.rapido.bj';
 }
 
 function absoluteUrl(origin, pathname) {

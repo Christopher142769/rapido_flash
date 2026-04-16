@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://rapido.bj/</loc>
+    <loc>https://www.rapido.bj/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://rapido.bj/home</loc>
+    <loc>https://www.rapido.bj/home</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://rapido.bj/welcome</loc>
+    <loc>https://www.rapido.bj/welcome</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://rapido.bj/location</loc>
+    <loc>https://www.rapido.bj/location</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://rapido.bj/login</loc>
+    <loc>https://www.rapido.bj/login</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://rapido.bj/register</loc>
+    <loc>https://www.rapido.bj/register</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
