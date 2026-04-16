@@ -6,4 +6,6 @@ Allow: /
 Disallow: /dashboard
 
 Sitemap: https://rapido.bj/sitemap.xml
+Sitemap: https://rapido.bj/sitemap-bj.xml
 Sitemap: https://rapido.online/sitemap.xml
+Sitemap: https://rapido.online/sitemap-online.xml
