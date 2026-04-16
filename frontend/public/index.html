@@ -26,6 +26,43 @@
     <link rel="alternate" hreflang="fr" href="https://www.rapido.online/home" />
     <link rel="alternate" hreflang="x-default" href="https://www.rapido.bj/home" />
 
+    <script>
+      (function () {
+        var bj = 'https://www.rapido.bj';
+        var online = 'https://www.rapido.online';
+        var origin = window.location.origin;
+        var path = window.location.pathname || '/';
+        var canonicalPath = path === '/' ? '/home' : path;
+        var canonicalUrl = origin + canonicalPath;
+
+        var canonicalLink = document.querySelector('link[rel="canonical"]');
+        if (canonicalLink) canonicalLink.setAttribute('href', canonicalUrl);
+
+        var ogUrl = document.querySelector('meta[property="og:url"]');
+        if (ogUrl) ogUrl.setAttribute('content', canonicalUrl);
+
+        // Remove static hreflang links (we re-create them correctly for this origin).
+        document.querySelectorAll('link[rel="alternate"][hreflang]').forEach(function (el) { el.remove(); });
+
+        function addAlt(href, hreflang) {
+          var l = document.createElement('link');
+          l.rel = 'alternate';
+          l.hreflang = hreflang;
+          l.href = href;
+          document.head.appendChild(l);
+        }
+
+        addAlt(bj + canonicalPath, 'fr-BJ');
+        addAlt(online + canonicalPath, 'fr');
+
+        var x = document.createElement('link');
+        x.rel = 'alternate';
+        x.hreflang = 'x-default';
+        x.href = canonicalUrl;
+        document.head.appendChild(x);
+      })();
+    </script>
+
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />

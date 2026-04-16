@@ -76,11 +76,11 @@ function applyHreflangAlternates(currentOrigin, pathname) {
     document.head.appendChild(link);
   });
 
-  const primary = getPrimarySite();
   const xLink = document.createElement('link');
   xLink.setAttribute('rel', 'alternate');
   xLink.setAttribute('hreflang', 'x-default');
-  xLink.setAttribute('href', `${trimOrigin(primary)}${pathSuffix}`);
+  // x-default should point to the currently active origin.
+  xLink.setAttribute('href', `${trimOrigin(currentOrigin)}${pathSuffix}`);
   xLink.setAttribute('data-seo-xdefault', '1');
   document.head.appendChild(xLink);
 }
