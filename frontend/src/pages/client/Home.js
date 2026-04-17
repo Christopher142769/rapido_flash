@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useRef, useMemo, useCallback } from 'react';
-import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
 import LanguageContext from '../../context/LanguageContext';
@@ -21,6 +21,14 @@ import './Home.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const BASE_URL = API_URL.replace('/api', '');
+const SEO_QUICK_LINKS = [
+  { to: '/livraison-rapide-cotonou', label: 'Livraison rapide à Cotonou' },
+  { to: '/service-livraison-cotonou', label: 'Service de livraison Cotonou' },
+  { to: '/livraison-domicile-cotonou', label: 'Livraison à domicile Cotonou' },
+  { to: '/livraison-colis-cotonou', label: 'Livraison de colis Cotonou' },
+  { to: '/tarifs-livraison-cotonou', label: 'Tarifs livraison Cotonou' },
+  { to: '/livraison-benin', label: 'Service de livraison au Bénin' },
+];
 
 function distanceToMinutes(distanceKm) {
   if (distanceKm == null || typeof distanceKm !== 'number') return null;
@@ -1041,6 +1049,22 @@ const Home = () => {
         </div>
       </div>
       */}
+
+      <section className="home-seo-links" aria-label="Pages de livraison Rapido Flash">
+        <div className="home-seo-links__inner">
+          <h2 className="home-seo-links__title">Livraison Rapido Flash</h2>
+          <p className="home-seo-links__intro">
+            Découvrez nos pages dédiées à la livraison rapide à Cotonou et au Bénin.
+          </p>
+          <div className="home-seo-links__grid">
+            {SEO_QUICK_LINKS.map((item) => (
+              <Link key={item.to} to={item.to} className="home-seo-links__chip">
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <BottomNavbar />
 

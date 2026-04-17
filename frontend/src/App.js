@@ -13,6 +13,7 @@ import LocationSelect from './pages/client/LocationSelectGoogle';
 import Register from './pages/client/Register';
 import Login from './pages/client/Login';
 import Home from './pages/client/Home';
+import SeoLandingPage from './pages/client/SeoLandingPage';
 import RestaurantDetail from './pages/client/RestaurantDetail';
 import Cart from './pages/client/Cart';
 import Checkout from './pages/client/Checkout';
@@ -38,6 +39,7 @@ import ChatThread from './pages/client/ChatThread';
 import ChatsInbox from './pages/client/ChatsInbox';
 import ChatFab from './components/ChatFab';
 import SupportWidget from './components/SupportWidget';
+import GlobalSeoFooterLinks from './components/GlobalSeoFooterLinks';
 
 import './App.css';
 import MaintenanceGate from './components/MaintenanceGate';
@@ -86,6 +88,20 @@ function App() {
           
           {/* Home public : découverte sans connexion */}
           <Route path="/home" element={<Home />} />
+          <Route path="/livraison-rapide-cotonou" element={<SeoLandingPage />} />
+          <Route path="/service-livraison-cotonou" element={<SeoLandingPage />} />
+          <Route path="/livraison-domicile-cotonou" element={<SeoLandingPage />} />
+          <Route path="/livraison-express-cotonou" element={<SeoLandingPage />} />
+          <Route path="/livraison-colis-cotonou" element={<SeoLandingPage />} />
+          <Route path="/livraison-repas-cotonou" element={<SeoLandingPage />} />
+          <Route path="/livraison-courses-cotonou" element={<SeoLandingPage />} />
+          <Route path="/tarifs-livraison-cotonou" element={<SeoLandingPage />} />
+          <Route path="/livraison-benin" element={<SeoLandingPage />} />
+          <Route path="/contact-livraison-cotonou" element={<SeoLandingPage />} />
+          <Route path="/zones/livraison-akpakpa" element={<SeoLandingPage />} />
+          <Route path="/zones/livraison-fidjrosse" element={<SeoLandingPage />} />
+          <Route path="/zones/livraison-calavi" element={<SeoLandingPage />} />
+          <Route path="/zones/livraison-porto-novo" element={<SeoLandingPage />} />
           <Route path="/restaurant/:id" element={<PrivateRoute><RestaurantDetail /></PrivateRoute>} />
           <Route path="/cart" element={<PrivateRoute><Cart /></PrivateRoute>} />
           <Route path="/checkout" element={<PrivateRoute><Checkout /></PrivateRoute>} />
@@ -112,6 +128,7 @@ function App() {
           
           <Route path="/" element={<Navigate to="/home" replace />} />
         </Routes>
+          <GlobalSeoFooterLinks />
           </MaintenanceGate>
       </Router>
         </ModalProvider>
