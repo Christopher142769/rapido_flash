@@ -50,7 +50,7 @@ const FreeDeliveryBanner = ({ message, dismissLabel = 'Masquer pour aujourd’hu
   if (!visible) return null;
 
   return (
-    <div className="free-delivery-banner" role="status" aria-live="polite" ref={wrapRef}>
+    <div className="free-delivery-banner" role="status" aria-live="polite" ref={wrapRef} data-nosnippet="true">
       <div className="free-delivery-banner-inner">
         <button
           type="button"
