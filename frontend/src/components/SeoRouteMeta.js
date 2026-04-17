@@ -85,16 +85,16 @@ function applyHreflangAlternates(currentOrigin, pathname) {
   document.head.appendChild(xLink);
 }
 
-const DEFAULT_TITLE = 'Rapido Flash — Livraison à Cotonou et au Bénin';
+const DEFAULT_TITLE = 'Livraison rapide Cotonou — Rapido Flash';
 const DEFAULT_DESC =
-  'Commandez en ligne auprès de boutiques et structures locales : livraison rapide à Cotonou et au Bénin. Rapido Flash, votre plateforme de livraison.';
+  'Livraison rapide Cotonou avec Rapido Flash. Commandez en ligne auprès de boutiques et structures locales au Bénin.';
 
 const ROUTES = {
   '/': { title: DEFAULT_TITLE, description: DEFAULT_DESC },
   '/home': {
-    title: 'Accueil — Rapido Flash | Livraison Cotonou, Bénin',
+    title: 'Livraison rapide Cotonou | Rapido.bj',
     description:
-      'Découvrez restaurants, commerces et services près de vous. Livraison à domicile à Cotonou et au Bénin avec Rapido Flash.',
+      'Livraison rapide Cotonou : Rapido Flash livre repas, courses et colis à domicile au Bénin.',
   },
   '/welcome': {
     title: 'Bienvenue — Rapido Flash',
