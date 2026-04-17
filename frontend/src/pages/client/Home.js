@@ -198,7 +198,7 @@ const Home = () => {
     } catch (err) {
       console.error('Erreur chargement Home:', err);
       if (err.code === 'ECONNREFUSED' || err.message === 'Network Error' || err.code === 'ERR_NETWORK') {
-        setError('Le serveur n\'est pas accessible. Vérifiez que le backend tourne sur le port 5000.');
+        setError(null);
         setStructures([]);
         setCategoriesDomaine([]);
         setBannieres([]);
