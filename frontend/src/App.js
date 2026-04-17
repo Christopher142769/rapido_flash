@@ -39,7 +39,6 @@ import ChatThread from './pages/client/ChatThread';
 import ChatsInbox from './pages/client/ChatsInbox';
 import ChatFab from './components/ChatFab';
 import SupportWidget from './components/SupportWidget';
-import GlobalSeoFooterLinks from './components/GlobalSeoFooterLinks';
 
 import './App.css';
 import MaintenanceGate from './components/MaintenanceGate';
@@ -128,7 +127,6 @@ function App() {
           
           <Route path="/" element={<Navigate to="/home" replace />} />
         </Routes>
-          <GlobalSeoFooterLinks />
           </MaintenanceGate>
       </Router>
         </ModalProvider>
