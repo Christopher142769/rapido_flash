@@ -1,10 +1,8 @@
 /* eslint-disable no-restricted-globals */
 /**
- * Service worker minimal : PAS d’écouteur "fetch" = plus d’erreurs
- * FetchEvent / Failed to fetch / promise rejected.
- * (Les anciennes versions interceptaient fetch() et rejetaient si le réseau échouait.)
+ * Cache léger + notifications push Web (affichage hors onglet).
  */
-const CACHE_VERSION = 'rapido-flash-v3';
+const CACHE_VERSION = 'rapido-flash-v4-push';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -26,4 +24,42 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-/* Aucun self.addEventListener('fetch') — le navigateur gère tout le réseau normalement. */
+self.addEventListener('push', (event) => {
+  let payload = { title: 'Rapido', body: '', url: '/home', tag: 'rapido' };
+  try {
+    if (event.data) {
+      const parsed = event.data.json();
+      payload = { ...payload, ...parsed };
+    }
+  } catch (e) {
+    try {
+      const text = event.data.text();
+      if (text) payload.body = text;
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  const origin = self.location.origin;
+  const openPath = payload.url && String(payload.url).startsWith('/') ? payload.url : '/home';
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title || 'Rapido', {
+      body: payload.body || '',
+      icon: '/images/logo.png',
+      badge: '/images/logo.png',
+      tag: payload.tag || 'rapido',
+      data: { url: openPath, origin },
+      vibrate: [120, 60, 120],
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const data = event.notification.data || {};
+  const path = typeof data.url === 'string' && data.url.startsWith('/') ? data.url : '/home';
+  const base = (data.origin || self.location.origin || '').replace(/\/$/, '');
+  const targetUrl = base + path;
+  event.waitUntil(self.clients.openWindow(targetUrl));
+});

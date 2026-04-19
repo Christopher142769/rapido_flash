@@ -16,7 +16,8 @@ export const translations = {
     },
     notifications: {
       bannerTitle: 'Notifications Rapido',
-      bannerBody: 'Soyez alerté des nouvelles commandes et des messages (son + badge, comme une messagerie).',
+      bannerBody:
+        'Alertes commandes et messages (son + badge). Avec votre accord, des notifications système même lorsque Rapido n’est pas ouvert (navigateur compatible).',
       enable: 'Activer',
       later: 'Plus tard',
     },
@@ -525,7 +526,8 @@ export const translations = {
     },
     notifications: {
       bannerTitle: 'Rapido notifications',
-      bannerBody: 'Get alerts for new orders and messages (sound + badge).',
+      bannerBody:
+        'Alerts for orders and messages (sound + badge). If you allow, system notifications even when Rapido is closed (supported browsers).',
       enable: 'Turn on',
       later: 'Not now',
     },

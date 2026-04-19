@@ -6,6 +6,16 @@ const { auth } = require('../middleware/auth');
 
 const RECEIPT_VALIDITY_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
 const { effectiveProduitPrice } = require('../utils/productPromo');
+const { sendToUserId, sendToUserIds } = require('../services/pushNotifications');
+
+const STATUT_LABELS_CLIENT = {
+  en_attente: 'En attente',
+  confirmee: 'Confirmée',
+  en_preparation: 'En préparation',
+  en_livraison: 'En livraison',
+  livree: 'Livrée',
+  annulee: 'Annulée',
+};
 
 const router = express.Router();
 
@@ -148,6 +158,16 @@ router.post('/', auth, async (req, res) => {
     await commande.populate('restaurant', 'nom logo fraisLivraison');
     await commande.populate('plats.plat', 'nom image prix');
     await commande.populate('produits.produit', 'nom images prix');
+
+    void sendToUserIds(
+      [restaurant.proprietaire, ...(restaurant.gestionnaires || [])].map((id) => String(id)),
+      {
+        title: 'Rapido — Nouvelle commande',
+        body: `Nouvelle commande pour ${restaurant.nom}`,
+        url: '/dashboard/commandes',
+        tag: `rapido-order-${commande._id}`,
+      }
+    ).catch(() => {});
 
     res.status(201).json(commande);
   } catch (error) {
@@ -296,6 +316,15 @@ router.put('/:id/statut', auth, async (req, res) => {
         }
       }
       await commande.save();
+      void sendToUserIds(
+        [restaurant.proprietaire, ...(restaurant.gestionnaires || [])].map((id) => String(id)),
+        {
+          title: 'Rapido — Paiement',
+          body: 'Un client a confirmé le paiement d’une commande.',
+          url: '/dashboard/commandes',
+          tag: `rapido-pay-${commande._id}`,
+        }
+      ).catch(() => {});
       return res.json(commande);
     }
 
@@ -303,6 +332,13 @@ router.put('/:id/statut', auth, async (req, res) => {
     if (isRestaurantOwner || isRestaurantManager) {
       commande.statut = statut;
       await commande.save();
+      const clientId = commande.client?._id || commande.client;
+      void sendToUserId(clientId, {
+        title: 'Rapido — Votre commande',
+        body: `Statut : ${STATUT_LABELS_CLIENT[statut] || statut}`,
+        url: '/orders',
+        tag: `rapido-ord-${commande._id}-${statut}`,
+      }).catch(() => {});
       return res.json(commande);
     }
 

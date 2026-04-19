@@ -12,6 +12,7 @@ const {
   sendAssistantWelcomeIfEmpty,
   sendAssistantTransferAndEscalate,
 } = require('../utils/conversationAssistant');
+const { sendToUserId, sendToUserIds } = require('../services/pushNotifications');
 
 let cachedAssistantUserId = null;
 async function getAssistantUserId() {
@@ -425,6 +426,31 @@ router.post('/:id/messages', auth, uploadChat.single('image'), async (req, res) 
       c.unreadClient = (c.unreadClient || 0) + 1;
     }
     await c.save();
+
+    if (senderRole === 'client') {
+      const restFull = await Restaurant.findById(c.restaurant._id || c.restaurant)
+        .select('proprietaire gestionnaires nom')
+        .lean();
+      if (restFull) {
+        void sendToUserIds(
+          [restFull.proprietaire, ...(restFull.gestionnaires || [])].map((id) => String(id)),
+          {
+            title: 'Rapido — Message',
+            body: preview.slice(0, 120),
+            url: '/dashboard/messages',
+            tag: `rapido-chat-${c._id}`,
+          }
+        ).catch(() => {});
+      }
+    } else {
+      const clientUid = c.client._id || c.client;
+      void sendToUserId(clientUid, {
+        title: 'Rapido — Message',
+        body: preview.slice(0, 120),
+        url: '/chats',
+        tag: `rapido-chat-${c._id}`,
+      }).catch(() => {});
+    }
 
     const isAutoProductIntro = /^📦 Demande concernant le produit/i.test(body || '');
     const hasClientIntent = (body || '').trim().length > 0 || !!imageUrl;

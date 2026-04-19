@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState, useCallb
 import axios from 'axios';
 import AuthContext from './AuthContext';
 import { playNotificationChime } from '../utils/notificationSound';
+import { syncPushSubscriptionWithServer } from '../utils/pushSubscription';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -97,11 +98,20 @@ export function NotificationProvider({ children }) {
     return () => clearInterval(id);
   }, [user, fetchSummary]);
 
+  useEffect(() => {
+    if (!user || !['restaurant', 'gestionnaire', 'client'].includes(user.role)) return undefined;
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return undefined;
+    void syncPushSubscriptionWithServer();
+  }, [user?._id, permission]);
+
   const requestBrowserPermission = useCallback(async () => {
     if (typeof Notification === 'undefined') return 'denied';
     try {
       const p = await Notification.requestPermission();
       setPermission(p);
+      if (p === 'granted') {
+        void syncPushSubscriptionWithServer();
+      }
       return p;
     } catch (_) {
       return 'denied';
@@ -113,6 +123,7 @@ export function NotificationProvider({ children }) {
     notificationPermission: permission,
     requestBrowserPermission,
     refreshNotifications: fetchSummary,
+    syncWebPush: syncPushSubscriptionWithServer,
   };
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;
@@ -130,6 +141,7 @@ export function useNotifications() {
       requestBrowserPermission: async () =>
         typeof Notification !== 'undefined' ? Notification.permission : 'denied',
       refreshNotifications: async () => {},
+      syncWebPush: async () => {},
     };
   }
   return ctx;
