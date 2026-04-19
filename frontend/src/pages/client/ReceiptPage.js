@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
 import LanguageContext from '../../context/LanguageContext';
+import { useModal } from '../../context/ModalContext';
 import TopNavbar from '../../components/TopNavbar';
 import BottomNavbar from '../../components/BottomNavbar';
 import PageLoader from '../../components/PageLoader';
@@ -17,6 +18,7 @@ const ReceiptPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useContext(LanguageContext);
+  const { showError } = useModal();
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -48,11 +50,11 @@ const ReceiptPage = () => {
       await exportElementToPdf(el, `recu-rapido-${id}.pdf`);
     } catch (e) {
       console.error(e);
-      window.alert(t('receipt', 'pdfError'));
+      showError(t('receipt', 'pdfError'), t('common', 'error'));
     } finally {
       setPdfBusy(false);
     }
-  }, [id, t]);
+  }, [id, t, showError]);
 
   const autoDownloadFlag = Boolean(location.state?.autoDownload);
 

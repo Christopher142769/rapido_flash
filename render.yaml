@@ -21,9 +21,7 @@ services:
         sync: false
       - key: FRONTEND_URL_4
         sync: false
-      - key: KKIAPAY_PRIVATE_KEY
-        sync: false
-      - key: KKIAPAY_SECRET
+      - key: FEDAPAY_SECRET_KEY
         sync: false
 
   # Frontend Service 1
@@ -36,7 +34,7 @@ services:
         sync: false
       - key: REACT_APP_BASE_URL
         sync: false
-      - key: REACT_APP_KKIAPAY_PUBLIC_KEY
+      - key: REACT_APP_FEDAPAY_PUBLIC_KEY
         sync: false
 
   # Frontend Service 2
@@ -49,7 +47,7 @@ services:
         sync: false
       - key: REACT_APP_BASE_URL
         sync: false
-      - key: REACT_APP_KKIAPAY_PUBLIC_KEY
+      - key: REACT_APP_FEDAPAY_PUBLIC_KEY
         sync: false
 
   # Frontend Service 3
@@ -62,7 +60,7 @@ services:
         sync: false
       - key: REACT_APP_BASE_URL
         sync: false
-      - key: REACT_APP_KKIAPAY_PUBLIC_KEY
+      - key: REACT_APP_FEDAPAY_PUBLIC_KEY
         sync: false
 
   # Frontend Service 4
@@ -75,5 +73,5 @@ services:
         sync: false
       - key: REACT_APP_BASE_URL
         sync: false
-      - key: REACT_APP_KKIAPAY_PUBLIC_KEY
+      - key: REACT_APP_FEDAPAY_PUBLIC_KEY
         sync: false

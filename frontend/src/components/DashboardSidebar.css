@@ -191,6 +191,20 @@
   flex-shrink: 0;
 }
 
+.dashboard-sidebar-badge {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #e53935;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
 .dashboard-sidebar-item-label {
   flex: 1;
 }

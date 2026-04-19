@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaMapMarkerAlt } from 'react-icons/fa';
+import LanguageContext from '../../context/LanguageContext';
+import { useModal } from '../../context/ModalContext';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import './LocationSelect.css';
@@ -56,6 +58,8 @@ function MapController({ center, zoom }) {
 
 const LocationSelect = () => {
   const navigate = useNavigate();
+  const { t } = useContext(LanguageContext);
+  const { showWarning } = useModal();
   const [position, setPosition] = useState(null);
   const [loading, setLoading] = useState(false);
   const [address, setAddress] = useState('');
@@ -83,7 +87,7 @@ const LocationSelect = () => {
 
   const requestLocationPermission = () => {
     if (!navigator.geolocation) {
-      alert('La géolocalisation n\'est pas supportée par votre navigateur');
+      showWarning(t('locationEditor', 'browserNoGeolocation'), t('locationEditor', 'geolocErrorTitle'));
       return;
     }
 
@@ -122,9 +126,9 @@ const LocationSelect = () => {
         setLoading(false);
         setPermissionStatus('denied');
         if (error.code === error.PERMISSION_DENIED) {
-          alert('Permission de géolocalisation refusée. Vous pouvez sélectionner votre position sur la carte.');
+          showWarning(t('locationEditor', 'geolocationDenied'), t('locationEditor', 'geolocErrorTitle'));
         } else {
-          alert('Impossible de récupérer votre position');
+          showWarning(t('locationEditor', 'geolocError'), t('locationEditor', 'geolocErrorTitle'));
         }
       },
       {

@@ -9,16 +9,39 @@ export const ModalProvider = ({ children }) => {
     type: 'info',
     title: '',
     message: '',
-    children: null
+    children: null,
+    hideActions: false,
+    hideIcon: false,
+    primaryLabel: 'OK',
+    secondaryLabel: null,
+    onPrimary: null,
+    onSecondary: null,
   });
 
-  const showModal = ({ type = 'info', title = '', message = '', children = null }) => {
+  const showModal = ({
+    type = 'info',
+    title = '',
+    message = '',
+    children = null,
+    hideActions = false,
+    hideIcon = false,
+    primaryLabel = 'OK',
+    secondaryLabel = null,
+    onPrimary = null,
+    onSecondary = null,
+  }) => {
     setModal({
       isOpen: true,
       type,
       title,
       message,
-      children
+      children,
+      hideActions,
+      hideIcon,
+      primaryLabel,
+      secondaryLabel,
+      onPrimary,
+      onSecondary,
     });
   };
 
@@ -44,7 +67,13 @@ export const ModalProvider = ({ children }) => {
       type: 'info',
       title: '',
       message: '',
-      children: null
+      children: null,
+      hideActions: false,
+      hideIcon: false,
+      primaryLabel: 'OK',
+      secondaryLabel: null,
+      onPrimary: null,
+      onSecondary: null,
     });
   };
 
@@ -57,6 +86,12 @@ export const ModalProvider = ({ children }) => {
         type={modal.type}
         title={modal.title}
         message={modal.message}
+        hideActions={modal.hideActions}
+        hideIcon={modal.hideIcon}
+        primaryLabel={modal.primaryLabel}
+        secondaryLabel={modal.secondaryLabel}
+        onPrimary={modal.onPrimary}
+        onSecondary={modal.onSecondary}
       >
         {modal.children}
       </Modal>

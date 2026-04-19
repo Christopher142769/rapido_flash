@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
+import './fedapay-checkout-mobile.css';
 import App from './App';
 
 // Dev : désinscrire tout SW (évite conflits avec le serveur de dev)

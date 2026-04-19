@@ -11,7 +11,7 @@ import PageLoader from '../../components/PageLoader';
 import FreeDeliveryBanner from '../../components/FreeDeliveryBanner';
 import CategoryDomainIcon from '../../components/CategoryDomainIcon';
 import { FaPhoneAlt, FaWhatsapp, FaPlus, FaComments } from 'react-icons/fa';
-import { IoChevronBack, IoChevronForward } from 'react-icons/io5';
+import { IoChevronBack, IoChevronForward, IoSearchOutline } from 'react-icons/io5';
 import { generateBannerPlaceholderSVG } from '../../utils/imagePlaceholder';
 import { pickLocalized } from '../../utils/i18nContent';
 import ProductPromoBadges from '../../components/ProductPromoBadges';
@@ -724,15 +724,21 @@ const Home = () => {
       </div>
 
       <div className="search-section-mobile">
-        <div className="search-bar-mobile">
-          <span className="search-icon-mobile">🔍</span>
-          <input
-            type="text"
-            placeholder={t('home', 'searchPlaceholder')}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input-mobile"
-          />
+        <div className="restaurant-product-search-wrap">
+          <div className="restaurant-product-search-bar">
+            <span className="store-search-icon" aria-hidden>
+              <IoSearchOutline size={22} strokeWidth={2.5} />
+            </span>
+            <input
+              type="search"
+              enterKeyHint="search"
+              placeholder={t('home', 'searchPlaceholder')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="store-search-input"
+              aria-label={t('navbar', 'searchPlaceholder')}
+            />
+          </div>
         </div>
       </div>
 

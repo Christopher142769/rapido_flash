@@ -83,6 +83,18 @@
   font-size: 14px;
 }
 
+.commande-structure-name {
+  font-size: 14px;
+  color: var(--dark-brown);
+  margin: 6px 0 0;
+  font-weight: 600;
+}
+
+.commande-structure-label {
+  font-weight: 500;
+  color: var(--dark-gray);
+}
+
 .commande-statut {
   padding: 8px 16px;
   border-radius: 20px;

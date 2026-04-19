@@ -44,7 +44,7 @@ const commandeSchema = new mongoose.Schema({
     /** Numéro à appeler pour la livraison (optionnel, ex. si paiement en ligne) */
     telephoneContact: { type: String, default: '' }
   },
-  /** Reçu paiement en ligne (Kkiapay) — jeton unique pour vérification / QR */
+  /** Reçu paiement en ligne (FedaPay) — jeton unique pour vérification / QR */
   receiptToken: {
     type: String,
     sparse: true

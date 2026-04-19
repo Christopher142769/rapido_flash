@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext, useId } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import LanguageContext from '../context/LanguageContext';
+import { useNotifications } from '../context/NotificationContext';
 import InstallButton from './InstallButton';
 import './BottomNavbar.css';
 
@@ -12,7 +13,9 @@ const BottomNavbar = () => {
   const location = useLocation();
   const { user } = useContext(AuthContext);
   const { t } = useContext(LanguageContext);
+  const { unreadMessages } = useNotifications();
   const [cartCount, setCartCount] = useState(0);
+  const isClient = user?.role === 'client';
 
   useEffect(() => {
     updateCartCount();
@@ -28,6 +31,9 @@ const BottomNavbar = () => {
 
   const invoicesActive =
     location.pathname === '/factures' || location.pathname.startsWith('/facture/');
+
+  const chatsActive =
+    location.pathname === '/chats' || location.pathname.startsWith('/chat/');
 
   const dockId = useId().replace(/:/g, '');
 
@@ -78,7 +84,9 @@ const BottomNavbar = () => {
             />
           </svg>
 
-          <div className="bottom-navbar-mobile-bar__row">
+          <div
+            className={`bottom-navbar-mobile-bar__row${isClient ? ' bottom-navbar-mobile-bar__row--with-messages' : ''}`}
+          >
             <button
               type="button"
               className={`nav-item nav-item--tab ${location.pathname === '/home' ? 'active' : ''}`}
@@ -103,6 +111,30 @@ const BottomNavbar = () => {
               </svg>
               <span className="nav-label">{t('nav', 'orders')}</span>
             </button>
+
+            {isClient && (
+              <button
+                type="button"
+                className={`nav-item nav-item--tab ${chatsActive ? 'active' : ''}`}
+                onClick={() => navigate('/chats')}
+              >
+                <svg className="nav-icon-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span className="nav-label">{t('nav', 'messages')}</span>
+                {unreadMessages > 0 && (
+                  <span className="nav-badge nav-badge--tab" aria-hidden>
+                    {unreadMessages > 99 ? '99+' : unreadMessages}
+                  </span>
+                )}
+              </button>
+            )}
 
             <span className="nav-tab-spacer" aria-hidden />
 

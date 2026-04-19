@@ -13,9 +13,9 @@ import './Checkout.css';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
 
-const KKIAPAY_PUBLIC_KEY =
-  process.env.REACT_APP_KKIAPAY_PUBLIC_KEY || 'cf27e12e7d7320dac0b807845855b06e5f231798';
-const KKIAPAY_SANDBOX = false;
+// Clé publique FedaPay (live) — peut être surchargée par REACT_APP_FEDAPAY_PUBLIC_KEY au build (Render, etc.)
+const FEDAPAY_PUBLIC_KEY =
+  process.env.REACT_APP_FEDAPAY_PUBLIC_KEY || 'pk_live_jBJmnSPRPp37So-Hd5YwWrRh';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -190,17 +190,17 @@ const Checkout = () => {
     );
   };
 
-  const loadKkiapayScript = () => {
+  const loadFedaPayScript = () => {
     return new Promise((resolve) => {
-      const isReady = () => window.openKkiapayWidget || window.Kkiapay;
+      const isReady = () => typeof window.FedaPay !== 'undefined' && typeof window.FedaPay.init === 'function';
       if (isReady()) {
         resolve();
         return;
       }
-      const existingScript = document.querySelector('script[src*="kkiapay"]');
-      const url = 'https://cdn.kkiapay.me/k.js';
+      const existingScript = document.querySelector('script[src*="fedapay.com/checkout"]');
+      const url = 'https://cdn.fedapay.com/checkout.js?v=1.1.2';
 
-      const waitForReady = (maxMs = 5000) =>
+      const waitForReady = (maxMs = 8000) =>
         new Promise((res) => {
           if (isReady()) {
             res();
@@ -220,13 +220,13 @@ const Checkout = () => {
         });
 
       if (existingScript) {
-        waitForReady(3000).then(resolve);
+        waitForReady(5000).then(resolve);
         return;
       }
       const script = document.createElement('script');
       script.src = url;
-      script.async = false;
-      script.onload = () => waitForReady(5000).then(resolve);
+      script.async = true;
+      script.onload = () => waitForReady(8000).then(resolve);
       script.onerror = () => resolve();
       document.body.appendChild(script);
     });
@@ -314,9 +314,20 @@ const Checkout = () => {
         return;
       }
 
-      const total = getTotal();
-      await loadKkiapayScript();
-      const callbackUrl = `${window.location.origin}/orders?payment=success&commandeId=${commande._id}`;
+      const total = Math.round(getTotal());
+      if (!FEDAPAY_PUBLIC_KEY || !String(FEDAPAY_PUBLIC_KEY).trim()) {
+        showError(t('checkout', 'fedapayKeyMissing'), t('common', 'error'));
+        setLoading(false);
+        return;
+      }
+
+      await loadFedaPayScript();
+      const FedaPay = window.FedaPay;
+      if (!FedaPay || typeof FedaPay.init !== 'function') {
+        showError(t('checkout', 'serviceError'), t('checkout', 'paymentSuccessTitle'));
+        setLoading(false);
+        return;
+      }
 
       const onPaymentSuccess = async () => {
         try {
@@ -340,68 +351,90 @@ const Checkout = () => {
         setLoading(false);
       };
 
-      if (typeof window.openKkiapayWidget === 'function') {
-        window.openKkiapayWidget({
-          amount: String(total),
-          key: KKIAPAY_PUBLIC_KEY,
-          callback: callbackUrl,
-          position: 'center',
-          theme: '#8B4513',
-          sandbox: KKIAPAY_SANDBOX,
-        });
-        if (typeof window.addKkiapayListener === 'function') {
-          window.addKkiapayListener('success', onPaymentSuccess);
-          window.addKkiapayListener('failed', onPaymentFailure);
+      const digits = String(telephoneContact || '').replace(/\D/g, '');
+      const phoneLocal = digits.length >= 8 ? parseInt(digits.slice(-8), 10) : null;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.setAttribute('aria-hidden', 'true');
+      btn.style.cssText = 'position:fixed;left:-9999px;width:1px;height:1px;opacity:0';
+      document.body.appendChild(btn);
+
+      const cleanupBtn = () => {
+        try {
+          if (btn.parentNode) btn.parentNode.removeChild(btn);
+        } catch (_) {
+          /* ignore */
         }
-        setLoading(false);
-        return;
-      }
+      };
 
-      if (window.Kkiapay && typeof window.Kkiapay.init === 'function') {
-        window.Kkiapay.init({
-          public_key: KKIAPAY_PUBLIC_KEY,
-          key: KKIAPAY_PUBLIC_KEY,
+      const meta = { commandeId: String(commande._id) };
+      if (restaurantId) meta.restaurantId = String(restaurantId);
+
+      const fedapayOptions = {
+        public_key: FEDAPAY_PUBLIC_KEY.trim(),
+        transaction: {
           amount: total,
-          position: 'center',
-          theme: '#8B4513',
-          sandbox: KKIAPAY_SANDBOX,
-          data: { commandeId: commande._id, restaurantId, clientId: user?._id || user?.id },
-          callback: (response) => {
-            if (response && response.status === 'success') onPaymentSuccess();
-            else onPaymentFailure();
-          },
-          error: () => {
-            showError(t('checkout', 'paymentError'), t('checkout', 'paymentSuccessTitle'));
-            setLoading(false);
-          },
-        });
-        window.Kkiapay.open();
-        return;
-      }
+          description: `Rapido — commande ${commande._id}`,
+        },
+        currency: { iso: 'XOF' },
+        custom_metadata: meta,
+        submit_form_on_failed: false,
+        trigger: 'manual',
+        ...(phoneLocal
+          ? {
+              customer: {
+                phone_number: { number: phoneLocal, country: 'BJ' },
+              },
+            }
+          : {}),
+        onComplete(resp) {
+          cleanupBtn();
+          if (!resp) {
+            onPaymentFailure();
+            return;
+          }
+          if (resp.reason === FedaPay.DIALOG_DISMISSED) {
+            onPaymentFailure();
+            return;
+          }
+          const status = resp.transaction && resp.transaction.status;
+          if (status === 'approved' || status === 'transferred') {
+            onPaymentSuccess();
+          } else {
+            onPaymentFailure();
+          }
+        },
+      };
 
-      const widgetKey = 'kkiapay-widget';
-      if (typeof customElements !== 'undefined' && customElements.get(widgetKey)) {
-        const container = document.createElement('div');
-        container.id = 'kkiapay-widget-container';
-        container.style.cssText =
-          'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);';
-        const widget = document.createElement(widgetKey);
-        widget.setAttribute('amount', String(total));
-        widget.setAttribute('key', KKIAPAY_PUBLIC_KEY);
-        widget.setAttribute('callback', callbackUrl);
-        widget.setAttribute('position', 'center');
-        widget.setAttribute('sandbox', KKIAPAY_SANDBOX ? 'true' : 'false');
-        container.appendChild(widget);
-        document.body.appendChild(container);
-        container.onclick = (e) => {
-          if (e.target === container) container.remove();
-        };
+      let checkoutInstance;
+      try {
+        checkoutInstance = FedaPay.init(btn, fedapayOptions);
+      } catch (e) {
+        console.error('[FedaPay] init error', e);
+        cleanupBtn();
+        showError(t('checkout', 'serviceError'), t('checkout', 'paymentSuccessTitle'));
         setLoading(false);
         return;
       }
 
-      showError(t('checkout', 'serviceError'), t('checkout', 'paymentSuccessTitle'));
-      setLoading(false);
+      const instance = Array.isArray(checkoutInstance) ? checkoutInstance[0] : checkoutInstance;
+      if (instance && typeof instance.open === 'function') {
+        try {
+          instance.open();
+        } catch (e) {
+          console.error('[FedaPay] open error', e);
+          cleanupBtn();
+          showError(t('checkout', 'serviceError'), t('checkout', 'paymentSuccessTitle'));
+          setLoading(false);
+          return;
+        }
+      } else {
+        cleanupBtn();
+        showError(t('checkout', 'serviceError'), t('checkout', 'paymentSuccessTitle'));
+        setLoading(false);
+        return;
+      }
     } catch (error) {
       console.error(error);
       showError(t('checkout', 'orderError'), t('common', 'error'));

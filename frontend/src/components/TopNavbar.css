@@ -143,9 +143,14 @@
 .navbar-search-icon {
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   color: var(--primary-brown);
-  opacity: 0.85;
+  opacity: 0.9;
+}
+
+.navbar-search-icon svg {
+  display: block;
 }
 
 .navbar-search-input {

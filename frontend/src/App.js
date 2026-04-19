@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { AuthProvider } from './context/AuthContext';
 import { ModalProvider } from './context/ModalContext';
 import { LanguageProvider } from './context/LanguageContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { SupportWidgetProvider } from './context/SupportWidgetContext';
 import PrivateRoute from './components/PrivateRoute';
 
@@ -38,6 +39,7 @@ import PlatformChatModeration from './pages/restaurant/PlatformChatModeration';
 import ChatThread from './pages/client/ChatThread';
 import ChatsInbox from './pages/client/ChatsInbox';
 import ChatFab from './components/ChatFab';
+import NotificationPermissionBanner from './components/NotificationPermissionBanner';
 import SupportWidget from './components/SupportWidget';
 
 import './App.css';
@@ -64,6 +66,7 @@ function App() {
   return (
     <AuthProvider>
       <LanguageProvider>
+        <NotificationProvider>
         <SupportWidgetProvider>
         <ModalProvider>
           <Router
@@ -77,6 +80,7 @@ function App() {
           <MaintenanceGate>
           <SupportWidget />
           <ChatFab />
+          <NotificationPermissionBanner />
           <Routes>
           {/* Pages publiques client */}
           <Route path="/loading" element={<Loading />} />
@@ -131,6 +135,7 @@ function App() {
       </Router>
         </ModalProvider>
         </SupportWidgetProvider>
+        </NotificationProvider>
       </LanguageProvider>
     </AuthProvider>
   );

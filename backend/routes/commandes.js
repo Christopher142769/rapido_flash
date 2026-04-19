@@ -155,6 +155,35 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
+/**
+ * Toutes les commandes des entreprises dont l'utilisateur est propriétaire ou gestionnaire
+ */
+router.get('/for-my-restaurants', auth, async (req, res) => {
+  try {
+    if (!['restaurant', 'gestionnaire'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+    const owned = await Restaurant.find({
+      $or: [{ proprietaire: req.user._id }, { gestionnaires: req.user._id }],
+    })
+      .select('_id')
+      .lean();
+    const ids = owned.map((r) => r._id);
+    if (ids.length === 0) {
+      return res.json([]);
+    }
+    const commandes = await Commande.find({ restaurant: { $in: ids } })
+      .populate('restaurant', 'nom logo')
+      .populate('client', 'nom email telephone position')
+      .populate('plats.plat', 'nom image prix')
+      .populate('produits.produit', 'nom images prix')
+      .sort({ createdAt: -1 });
+    res.json(commandes);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Obtenir les commandes du client
 router.get('/my-commandes', auth, async (req, res) => {
   try {
@@ -283,30 +312,27 @@ router.put('/:id/statut', auth, async (req, res) => {
   }
 });
 
-// Obtenir toutes les commandes (dashboard)
+// Obtenir toutes les commandes (dashboard) — limité aux entreprises de l'utilisateur (ne plus exposer toute la base)
 router.get('/all', auth, async (req, res) => {
   try {
-    // Seuls les restaurants peuvent voir toutes leurs commandes
-    if (req.user.role !== 'restaurant' && req.user.role !== 'gestionnaire') {
+    if (!['restaurant', 'gestionnaire'].includes(req.user.role)) {
       return res.status(403).json({ message: 'Accès refusé' });
     }
-
-    let commandes;
-    if (req.user.restaurantId) {
-      commandes = await Commande.find({ restaurant: req.user.restaurantId })
-        .populate('client', 'nom email telephone position')
-        .populate('plats.plat', 'nom image prix')
-        .populate('produits.produit', 'nom images prix')
-        .sort({ createdAt: -1 });
-    } else {
-      commandes = await Commande.find()
-        .populate('restaurant', 'nom')
-        .populate('client', 'nom email')
-        .populate('plats.plat', 'nom')
-        .populate('produits.produit', 'nom')
-        .sort({ createdAt: -1 });
+    const owned = await Restaurant.find({
+      $or: [{ proprietaire: req.user._id }, { gestionnaires: req.user._id }],
+    })
+      .select('_id')
+      .lean();
+    const ids = owned.map((r) => r._id);
+    if (ids.length === 0) {
+      return res.json([]);
     }
-
+    const commandes = await Commande.find({ restaurant: { $in: ids } })
+      .populate('restaurant', 'nom logo')
+      .populate('client', 'nom email telephone position')
+      .populate('plats.plat', 'nom image prix')
+      .populate('produits.produit', 'nom images prix')
+      .sort({ createdAt: -1 });
     res.json(commandes);
   } catch (error) {
     res.status(500).json({ message: error.message });

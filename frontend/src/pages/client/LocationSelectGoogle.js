@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { FaMapMarkerAlt } from 'react-icons/fa';
 import LeafletMap from '../../components/LeafletMap';
 import AuthContext from '../../context/AuthContext';
+import LanguageContext from '../../context/LanguageContext';
+import { useModal } from '../../context/ModalContext';
 import axios from 'axios';
 import './LocationSelect.css';
 
@@ -13,6 +15,8 @@ const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
 const LocationSelect = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useContext(AuthContext);
+  const { t } = useContext(LanguageContext);
+  const { showWarning } = useModal();
   const [position, setPosition] = useState(null);
   const [loading, setLoading] = useState(true);
   const [address, setAddress] = useState('');
@@ -66,7 +70,7 @@ const LocationSelect = () => {
 
   const requestLocationPermission = () => {
     if (!navigator.geolocation) {
-      alert('La géolocalisation n\'est pas supportée par votre navigateur');
+      showWarning(t('locationEditor', 'browserNoGeolocation'), t('locationEditor', 'geolocErrorTitle'));
       return;
     }
 
@@ -161,7 +165,7 @@ const LocationSelect = () => {
 
   const handleConfirm = async () => {
     if (!position) {
-      alert('Veuillez sélectionner une position sur la carte');
+      showWarning(t('locationEditor', 'selectPositionRequired'), t('locationEditor', 'geolocErrorTitle'));
       return;
     }
 

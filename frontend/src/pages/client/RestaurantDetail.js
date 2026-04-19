@@ -22,15 +22,33 @@ import {
   FaTimes,
   FaBars,
 } from 'react-icons/fa';
+import { IoSearchOutline } from 'react-icons/io5';
 import { pickLocalized } from '../../utils/i18nContent';
 import ProductPromoBadges from '../../components/ProductPromoBadges';
 import ProductDescriptionRich from '../../components/ProductDescriptionRich';
 import ProductReviewsSection, { StarsDisplay } from '../../components/ProductReviewsSection';
 import { effectiveProductPrice, hasFreeDeliveryPromo, hasPricePromo } from '../../utils/productPromo';
 import { getRapidoTelHref, getRapidoWhatsAppLink, getRapidoPhoneDisplay } from '../../config/rapidoWhatsApp';
+import { useModal } from '../../context/ModalContext';
+import Modal from '../../components/Modal';
 import './RestaurantDetail.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+/** Erreurs panier : accompagnements manquants, choix unique, volume m³ */
+function getCartValidationError(produit, accompagnementIds, quantityOverride) {
+  const ids = Array.isArray(accompagnementIds) ? accompagnementIds : [];
+  const options = Array.isArray(produit?.accompagnements) ? produit.accompagnements : [];
+  const activeOptions = options.filter((o) => o?.actif !== false);
+  const selectionMode = String(produit?.accompagnementsMode || 'multiple');
+  if (activeOptions.length > 0 && ids.length === 0) return 'missing_accompagnement';
+  if (selectionMode === 'unique' && ids.length > 1) return 'unique';
+  const quantiteSaisie = quantityOverride != null ? Number(quantityOverride) : 1;
+  if (String(produit?.uniteVente || 'piece') === 'm3' && (!Number.isFinite(quantiteSaisie) || quantiteSaisie <= 0)) {
+    return 'm3';
+  }
+  return null;
+}
 
 const JOUR_LABELS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
@@ -88,6 +106,7 @@ const RestaurantDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { language, t, localized, productDisplayName } = useContext(LanguageContext);
+  const { showWarning } = useModal();
   const [searchParams, setSearchParams] = useSearchParams();
   const produitFocusId = searchParams.get('produit');
   const [locationAddress, setLocationAddress] = useState('');
@@ -108,6 +127,7 @@ const RestaurantDetail = () => {
   const [selectedAccompagnementIds, setSelectedAccompagnementIds] = useState([]);
   const [volumeM3Input, setVolumeM3Input] = useState('1');
   const [reviewStats, setReviewStats] = useState(null);
+  const [accPickModal, setAccPickModal] = useState(null);
   const handleReviewStats = useCallback((s) => {
     setReviewStats(s);
   }, []);
@@ -233,36 +253,20 @@ const RestaurantDetail = () => {
   }, [produitFocusId, loading, allProducts, setSearchParams]);
 
   const addToCart = (produit, accompagnementIds = [], quantityOverride = null) => {
+    const err = getCartValidationError(produit, accompagnementIds, quantityOverride);
+    if (err === 'missing_accompagnement') return false;
+    if (err === 'unique') {
+      showWarning(t('store', 'errAccUnique'), t('common', 'error'));
+      return false;
+    }
+    if (err === 'm3') {
+      showWarning(t('store', 'errM3Required'), t('store', 'accPickTitle'));
+      return false;
+    }
     const imageUrl = produit.imageCarteHome || (produit.images && produit.images[0]) || null;
     const options = Array.isArray(produit.accompagnements) ? produit.accompagnements : [];
-    const activeOptions = options.filter((o) => o?.actif !== false);
-    const selectionMode = String(produit.accompagnementsMode || 'multiple');
-    if (activeOptions.length > 0 && accompagnementIds.length === 0) {
-      alert(
-        String(language || '').toLowerCase().startsWith('en')
-          ? 'Please choose at least one side option before adding this product.'
-          : 'Veuillez choisir au moins un accompagnement avant d’ajouter ce produit.'
-      );
-      return false;
-    }
-    if (selectionMode === 'unique' && accompagnementIds.length > 1) {
-      alert(
-        String(language || '').toLowerCase().startsWith('en')
-          ? 'Only one side option is allowed for this product.'
-          : 'Un seul accompagnement est autorisé pour ce produit.'
-      );
-      return false;
-    }
     const quantiteSaisie = quantityOverride != null ? Number(quantityOverride) : 1;
     const quantite = Number.isFinite(quantiteSaisie) && quantiteSaisie > 0 ? quantiteSaisie : 1;
-    if (String(produit.uniteVente || 'piece') === 'm3' && (!Number.isFinite(quantiteSaisie) || quantiteSaisie <= 0)) {
-      alert(
-        String(language || '').toLowerCase().startsWith('en')
-          ? 'Please enter the number of m3 before adding this product.'
-          : 'Veuillez saisir le nombre de m3 avant d’ajouter ce produit.'
-      );
-      return false;
-    }
     const selectedOptions = options
       .filter((o) => o?.actif !== false && accompagnementIds.includes(String(o._id)))
       .map((o) => ({
@@ -317,7 +321,49 @@ const RestaurantDetail = () => {
 
   /** Ajoute au panier puis ouvre la page panier (bouton Acheter). */
   const buyProduct = (produit, accompagnementIds = [], quantityOverride = null) => {
+    const err = getCartValidationError(produit, accompagnementIds, quantityOverride);
+    if (err === 'missing_accompagnement') {
+      const samePdp = highlightedProduct && String(highlightedProduct._id) === String(produit._id);
+      setAccPickModal({
+        produit,
+        quantityOverride,
+        selectedIds: samePdp ? [...selectedAccompagnementIds] : [],
+      });
+      return;
+    }
+    if (err === 'unique') {
+      showWarning(t('store', 'errAccUnique'), t('common', 'error'));
+      return;
+    }
+    if (err === 'm3') {
+      showWarning(t('store', 'errM3Required'), t('store', 'accPickTitle'));
+      return;
+    }
     const done = addToCart(produit, accompagnementIds, quantityOverride);
+    if (done) navigate('/cart');
+  };
+
+  const handleAccPickConfirm = () => {
+    if (!accPickModal) return;
+    const { produit, selectedIds } = accPickModal;
+    const options = (produit.accompagnements || []).filter((o) => o?.actif !== false);
+    if (options.length > 0 && selectedIds.length === 0) {
+      showWarning(t('store', 'accStillRequired'), t('store', 'accPickTitle'));
+      return;
+    }
+    const vol = String(produit.uniteVente || 'piece') === 'm3' ? volumeM3Input : accPickModal.quantityOverride;
+    const err = getCartValidationError(produit, selectedIds, vol);
+    if (err === 'm3') {
+      showWarning(t('store', 'errM3Required'), t('store', 'accPickTitle'));
+      return;
+    }
+    if (err === 'unique') {
+      showWarning(t('store', 'errAccUnique'), t('common', 'error'));
+      return;
+    }
+    setSelectedAccompagnementIds(selectedIds);
+    setAccPickModal(null);
+    const done = addToCart(produit, selectedIds, vol);
     if (done) navigate('/cart');
   };
 
@@ -1001,6 +1047,82 @@ const RestaurantDetail = () => {
           </div>
         </div>
       )}
+
+      {accPickModal ? (
+        <Modal
+          isOpen
+          onClose={() => setAccPickModal(null)}
+          type="warning"
+          title={t('store', 'accPickTitle')}
+          message={t('store', 'accPickSubtitle')}
+          hideActions
+        >
+          <div className="acc-pick-modal">
+            <div className="acc-pick-modal-list">
+              {(accPickModal.produit.accompagnements || [])
+                .filter((a) => a?.actif !== false)
+                .map((acc) => {
+                  const checked = accPickModal.selectedIds.includes(String(acc._id));
+                  const mode = String(accPickModal.produit.accompagnementsMode || 'multiple');
+                  return (
+                    <label key={String(acc._id)} className="acc-pick-modal-item">
+                      <input
+                        type={mode === 'unique' ? 'radio' : 'checkbox'}
+                        name={mode === 'unique' ? 'acc-pick-unique' : undefined}
+                        checked={checked}
+                        onChange={(e) => {
+                          const v = String(acc._id);
+                          setAccPickModal((prev) => {
+                            if (!prev) return prev;
+                            const m = String(prev.produit.accompagnementsMode || 'multiple');
+                            if (m === 'unique') {
+                              return { ...prev, selectedIds: e.target.checked ? [v] : [] };
+                            }
+                            return {
+                              ...prev,
+                              selectedIds: e.target.checked
+                                ? [...prev.selectedIds, v]
+                                : prev.selectedIds.filter((x) => x !== v),
+                            };
+                          });
+                        }}
+                      />
+                      <span className="acc-pick-modal-name">
+                        {language.startsWith('en') && acc.nomEn ? acc.nomEn : acc.nom}
+                      </span>
+                      <span className="acc-pick-modal-price">+{Number(acc.prixSupp || 0).toFixed(0)} FCFA</span>
+                    </label>
+                  );
+                })}
+            </div>
+            {String(accPickModal.produit.accompagnementsMode || 'multiple') === 'unique' ? (
+              <p className="acc-pick-modal-hint">{t('store', 'accPickUniqueHint')}</p>
+            ) : null}
+            {String(accPickModal.produit.uniteVente || 'piece') === 'm3' ? (
+              <div className="acc-pick-modal-m3">
+                <label htmlFor="acc-pick-m3-input">m³</label>
+                <input
+                  id="acc-pick-m3-input"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={volumeM3Input}
+                  onChange={(e) => setVolumeM3Input(e.target.value)}
+                  className="acc-pick-modal-m3-input"
+                />
+              </div>
+            ) : null}
+            <div className="modal-actions acc-pick-modal-actions">
+              <button type="button" className="modal-btn modal-btn-secondary" onClick={() => setAccPickModal(null)}>
+                {t('store', 'accPickCancel')}
+              </button>
+              <button type="button" className="modal-btn modal-btn-primary" onClick={handleAccPickConfirm}>
+                {t('store', 'accPickConfirm')}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      ) : null}
 
       <BottomNavbar />
 

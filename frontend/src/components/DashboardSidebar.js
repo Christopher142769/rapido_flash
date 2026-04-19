@@ -2,15 +2,15 @@ import React, { useState, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import LanguageContext from '../context/LanguageContext';
+import { useNotifications } from '../context/NotificationContext';
 import './DashboardSidebar.css';
-
-const BASE_URL = process.env.REACT_APP_BASE_URL || 'http://localhost:5000';
 
 const DashboardSidebar = ({ onLogout }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useContext(AuthContext);
   const { t } = useContext(LanguageContext);
+  const { pendingOrders, unreadMessages } = useNotifications();
   const [menuOpen, setMenuOpen] = useState(false);
   const [navigating, setNavigating] = useState(false);
 
@@ -37,6 +37,12 @@ const DashboardSidebar = ({ onLogout }) => {
   const isActive = (path) => {
     if (path === '/dashboard') return location.pathname === '/dashboard';
     return location.pathname.startsWith(path);
+  };
+
+  const badgeForItem = (id) => {
+    if (id === 'commandes') return pendingOrders;
+    if (id === 'messages') return unreadMessages;
+    return 0;
   };
 
   const handleNav = (path) => {
@@ -77,17 +83,26 @@ const DashboardSidebar = ({ onLogout }) => {
             </p>
           </header>
           <nav className="dashboard-sidebar-nav">
-            {menuItems.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`dashboard-sidebar-item ${isActive(item.path) ? 'active' : ''}`}
-                onClick={() => handleNav(item.path)}
-              >
-                <span className="dashboard-sidebar-item-label">{item.label}</span>
-                {isActive(item.path) && <span className="dashboard-sidebar-item-dot" />}
-              </button>
-            ))}
+            {menuItems.map((item) => {
+              const badge = badgeForItem(item.id);
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`dashboard-sidebar-item ${isActive(item.path) ? 'active' : ''}`}
+                  onClick={() => handleNav(item.path)}
+                >
+                  <span className="dashboard-sidebar-item-label">{item.label}</span>
+                  {badge > 0 ? (
+                    <span className="dashboard-sidebar-badge" aria-label={`${badge} notification(s)`}>
+                      {badge > 99 ? '99+' : badge}
+                    </span>
+                  ) : (
+                    isActive(item.path) && <span className="dashboard-sidebar-item-dot" />
+                  )}
+                </button>
+              );
+            })}
           </nav>
           <footer className="dashboard-sidebar-footer">
             <button type="button" className="dashboard-sidebar-logout" onClick={handleLogout}>

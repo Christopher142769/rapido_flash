@@ -1,21 +1,23 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useContext } from 'react';
 import AuthContext from '../context/AuthContext';
 import LanguageContext from '../context/LanguageContext';
+import { useNotifications } from '../context/NotificationContext';
 import LangSwitcher from './LangSwitcher';
 import {
   FaHome,
   FaShoppingCart,
   FaClipboardList,
-  FaSearch,
   FaMapMarkerAlt,
   FaGlobe,
   FaMapPin,
   FaCog,
   FaSignOutAlt,
   FaFileInvoice,
+  FaComments,
 } from 'react-icons/fa';
+import { IoSearchOutline } from 'react-icons/io5';
 import './TopNavbar.css';
 
 const BASE_URL = process.env.REACT_APP_BASE_URL || 'http://localhost:5000';
@@ -33,6 +35,7 @@ const TopNavbar = ({
   const location = useLocation();
   const { logout, user } = useContext(AuthContext);
   const { language, setLanguage, t } = useContext(LanguageContext);
+  const { unreadMessages } = useNotifications();
   const [cartCount, setCartCount] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
@@ -72,12 +75,34 @@ const TopNavbar = ({
     setCartCount(count);
   };
 
-  const navItems = [
-    { path: '/home', labelKey: 'home', Icon: FaHome },
-    { path: '/cart', labelKey: 'cart', Icon: FaShoppingCart, badge: cartCount },
-    { path: '/orders', labelKey: 'orders', Icon: FaClipboardList },
-    { path: '/factures', labelKey: 'invoices', Icon: FaFileInvoice },
-  ];
+  const navItems = useMemo(() => {
+    const base = [
+      { path: '/home', labelKey: 'home', Icon: FaHome, badge: 0 },
+      { path: '/cart', labelKey: 'cart', Icon: FaShoppingCart, badge: cartCount },
+      { path: '/orders', labelKey: 'orders', Icon: FaClipboardList, badge: 0 },
+    ];
+    if (user?.role === 'client') {
+      base.push({
+        path: '/chats',
+        labelKey: 'messages',
+        Icon: FaComments,
+        badge: unreadMessages,
+        matchPrefix: '/chat',
+      });
+    }
+    base.push({ path: '/factures', labelKey: 'invoices', Icon: FaFileInvoice, badge: 0 });
+    return base;
+  }, [user?.role, cartCount, unreadMessages]);
+
+  const isNavItemActive = (item) => {
+    if (item.matchPrefix) {
+      return (
+        location.pathname === item.path ||
+        location.pathname.startsWith(`${item.matchPrefix}/`)
+      );
+    }
+    return location.pathname === item.path;
+  };
 
   return (
     <>
@@ -101,7 +126,7 @@ const TopNavbar = ({
             <LangSwitcher variant="inline" />
             <div className="navbar-search-wrap">
               <span className="navbar-search-icon" aria-hidden>
-                <FaSearch size={17} />
+                <IoSearchOutline size={20} strokeWidth={2.5} />
               </span>
               <input
                 type="text"
@@ -125,8 +150,8 @@ const TopNavbar = ({
         <div className="navbar-nav">
           {navItems.map((item) => (
             <button
-              key={item.path}
-              className={`nav-link-desktop ${location.pathname === item.path ? 'active' : ''}`}
+              key={`${item.path}-${item.labelKey}`}
+              className={`nav-link-desktop ${isNavItemActive(item) ? 'active' : ''}`}
               onClick={() => navigate(item.path)}
               aria-label={t('nav', item.labelKey)}
             >
@@ -134,7 +159,9 @@ const TopNavbar = ({
                 <item.Icon className="nav-link-icon-svg" size={20} />
               </span>
               <span className="nav-link-label">{t('nav', item.labelKey)}</span>
-              {item.badge > 0 && <span className="nav-link-badge">{item.badge}</span>}
+              {item.badge > 0 && (
+                <span className="nav-link-badge">{item.badge > 99 ? '99+' : item.badge}</span>
+              )}
             </button>
           ))}
         </div>

@@ -1,7 +1,20 @@
 import React, { useEffect } from 'react';
 import './Modal.css';
 
-const Modal = ({ isOpen, onClose, type = 'info', title, message, children }) => {
+const Modal = ({
+  isOpen,
+  onClose,
+  type = 'info',
+  title,
+  message,
+  children,
+  hideActions = false,
+  hideIcon = false,
+  primaryLabel = 'OK',
+  secondaryLabel,
+  onPrimary,
+  onSecondary,
+}) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -69,15 +82,30 @@ const Modal = ({ isOpen, onClose, type = 'info', title, message, children }) => 
             <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
-        {getIcon()}
+        {!hideIcon && getIcon()}
         {title && <h2 className="modal-title">{title}</h2>}
         {message && <p className="modal-message">{message}</p>}
         {children && <div className="modal-content">{children}</div>}
-        <div className="modal-actions">
-          <button className="modal-btn modal-btn-primary" onClick={onClose}>
-            OK
-          </button>
-        </div>
+        {!hideActions && (
+          <div className="modal-actions">
+            {secondaryLabel ? (
+              <button
+                type="button"
+                className="modal-btn modal-btn-secondary"
+                onClick={() => (onSecondary ? onSecondary() : onClose())}
+              >
+                {secondaryLabel}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="modal-btn modal-btn-primary"
+              onClick={() => (onPrimary ? onPrimary() : onClose())}
+            >
+              {primaryLabel}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

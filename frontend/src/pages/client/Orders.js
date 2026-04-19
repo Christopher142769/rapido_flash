@@ -21,7 +21,7 @@ const Orders = () => {
   const [commandes, setCommandes] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Retour après paiement KkiaPay (callback URL)
+  // Retour après redirection paiement (URL de callback éventuelle)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const paymentSuccess = params.get('payment') === 'success';

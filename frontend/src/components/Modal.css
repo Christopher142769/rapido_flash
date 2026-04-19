@@ -49,12 +49,12 @@
   }
 }
 
-/* Modal Close Button */
+/* Modal Close Button — croix blanche sur fond marron pour lisibilité */
 .modal-close {
   position: absolute;
   top: 15px;
   right: 15px;
-  background: rgba(139, 69, 19, 0.1);
+  background: linear-gradient(135deg, var(--primary-brown) 0%, var(--dark-brown) 100%);
   border: none;
   border-radius: 50%;
   width: 36px;
@@ -64,11 +64,15 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  color: var(--primary-brown);
+  color: #ffffff;
+}
+
+.modal-close svg path {
+  stroke: #ffffff;
 }
 
 .modal-close:hover {
-  background: rgba(139, 69, 19, 0.2);
+  background: var(--dark-brown);
   transform: rotate(90deg) scale(1.1);
 }
 
@@ -104,26 +108,44 @@
 
 .success-icon {
   background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-  color: white;
+  color: #ffffff;
   box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
 }
 
 .error-icon {
   background: linear-gradient(135deg, #F44336 0%, #d32f2f 100%);
-  color: white;
+  color: #ffffff;
   box-shadow: 0 8px 20px rgba(244, 67, 54, 0.3);
 }
 
 .warning-icon {
   background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
-  color: white;
+  color: #ffffff;
   box-shadow: 0 8px 20px rgba(255, 152, 0, 0.3);
 }
 
 .info-icon {
   background: linear-gradient(135deg, var(--primary-brown) 0%, var(--dark-brown) 100%);
-  color: white;
+  color: #ffffff;
   box-shadow: 0 8px 20px rgba(139, 69, 19, 0.3);
+}
+
+/* Traits SVG en blanc pur (évite l’héritage marron sur certains navigateurs) */
+.modal-icon.success-icon svg,
+.modal-icon.error-icon svg,
+.modal-icon.warning-icon svg,
+.modal-icon.info-icon svg {
+  color: #ffffff;
+}
+
+.modal-icon.success-icon svg circle,
+.modal-icon.success-icon svg path,
+.modal-icon.error-icon svg circle,
+.modal-icon.error-icon svg path,
+.modal-icon.warning-icon svg path,
+.modal-icon.info-icon svg circle,
+.modal-icon.info-icon svg path {
+  stroke: #ffffff;
 }
 
 /* Modal Title */
@@ -149,6 +171,11 @@
 /* Modal Content */
 .modal-content {
   margin: 0 0 30px;
+}
+
+.modal-content .modal-actions {
+  margin-top: 8px;
+  margin-bottom: 0;
 }
 
 /* Modal Actions */
