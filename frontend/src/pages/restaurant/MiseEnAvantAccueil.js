@@ -1,7 +1,5 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import AuthContext from '../../context/AuthContext';
-import DashboardSidebar from '../../components/DashboardSidebar';
 import PageLoader from '../../components/PageLoader';
 import MediaPickerModal from '../../components/MediaPickerModal';
 import './MiseEnAvantAccueil.css';
@@ -11,7 +9,6 @@ const BASE_URL = API_URL.replace('/api', '');
 const STORAGE_CURRENT_RESTAURANT = 'dashboardCurrentRestaurantId';
 
 const MiseEnAvantAccueil = () => {
-  const { logout } = useContext(AuthContext);
   const [restaurants, setRestaurants] = useState([]);
   const [currentRestaurantId, setCurrentRestaurantIdState] = useState('');
   const [produits, setProduits] = useState([]);
@@ -112,7 +109,6 @@ const MiseEnAvantAccueil = () => {
 
   return (
     <div className="dashboard-page vitrine-page">
-      <DashboardSidebar onLogout={logout} />
       <div className="dashboard-main">
         <div className="vitrine-content">
           <header className="vitrine-header">

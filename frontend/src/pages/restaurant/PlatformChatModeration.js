@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
 import LanguageContext from '../../context/LanguageContext';
-import DashboardSidebar from '../../components/DashboardSidebar';
 import PageLoader from '../../components/PageLoader';
 import { pickLocalized } from '../../utils/i18nContent';
 import { playUrgentAlertSound } from '../../utils/urgentAlertSound';
@@ -14,7 +13,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const PlatformChatModeration = () => {
   const navigate = useNavigate();
-  const { user, logout } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const { language, t } = useContext(LanguageContext);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -147,7 +146,6 @@ const PlatformChatModeration = () => {
 
   return (
     <div className="platform-chat-mod-page">
-      <DashboardSidebar onLogout={logout} />
       <main className="platform-chat-mod-main">
         {topIncoming ? (
           <div className="incoming-call-overlay" role="dialog" aria-modal="true" aria-labelledby="platform-incoming-call-title">

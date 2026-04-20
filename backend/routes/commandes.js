@@ -19,6 +19,20 @@ const STATUT_LABELS_CLIENT = {
 
 const router = express.Router();
 
+function utcDayStart(isoDate) {
+  const [y, m, d] = String(isoDate).split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
+}
+
+function utcDayEnd(isoDate) {
+  const [y, m, d] = String(isoDate).split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999));
+}
+
+function isoDateUtc(d) {
+  return d.toISOString().slice(0, 10);
+}
+
 // Middleware pour parser JSON et URL-encoded pour cette route uniquement
 router.use(express.json({ limit: '100mb' }));
 router.use(express.urlencoded({ extended: true, limit: '100mb' }));
@@ -199,6 +213,157 @@ router.get('/for-my-restaurants', auth, async (req, res) => {
       .populate('produits.produit', 'nom images prix')
       .sort({ createdAt: -1 });
     res.json(commandes);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
+ * Statistiques dashboard (KPI + série temporelle) pour les entreprises accessibles.
+ * Query: from=YYYY-MM-DD&to=YYYY-MM-DD (optionnel → jour courant UTC si absent).
+ */
+router.get('/dashboard-stats', auth, async (req, res) => {
+  try {
+    if (!['restaurant', 'gestionnaire'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+
+    const Conversation = require('../models/Conversation');
+
+    const owned = await Restaurant.find({
+      $or: [{ proprietaire: req.user._id }, { gestionnaires: req.user._id }],
+    })
+      .select('_id')
+      .lean();
+    const ids = owned.map((r) => r._id);
+    const enterpriseCount = ids.length;
+
+    let unreadMessages = 0;
+    if (ids.length > 0) {
+      const mAgg = await Conversation.aggregate([
+        { $match: { restaurant: { $in: ids } } },
+        { $group: { _id: null, total: { $sum: '$unreadRestaurant' } } },
+      ]);
+      unreadMessages = mAgg[0]?.total || 0;
+    }
+
+    const emptyCounts = {
+      en_attente: 0,
+      confirmee: 0,
+      en_preparation: 0,
+      en_livraison: 0,
+      livree: 0,
+      annulee: 0,
+    };
+
+    if (ids.length === 0) {
+      const today = isoDateUtc(new Date());
+      return res.json({
+        from: today,
+        to: today,
+        granularity: 'hour',
+        enterpriseCount: 0,
+        unreadMessages: 0,
+        countsByStatus: { ...emptyCounts },
+        totalCommandes: 0,
+        series: Array.from({ length: 24 }, (_, h) => ({
+          label: `${String(h).padStart(2, '0')}h`,
+          count: 0,
+        })),
+      });
+    }
+
+    const todayIso = isoDateUtc(new Date());
+    let fromStr = req.query.from;
+    let toStr = req.query.to;
+    if (!fromStr || !/^\d{4}-\d{2}-\d{2}$/.test(String(fromStr))) {
+      fromStr = todayIso;
+    }
+    if (!toStr || !/^\d{4}-\d{2}-\d{2}$/.test(String(toStr))) {
+      toStr = fromStr;
+    }
+    if (String(fromStr) > String(toStr)) {
+      const swap = fromStr;
+      fromStr = toStr;
+      toStr = swap;
+    }
+
+    const start = utcDayStart(fromStr);
+    const end = utcDayEnd(toStr);
+    const daysSpan = Math.floor((end.getTime() - start.getTime()) / 86400000) + 1;
+    if (daysSpan > 400) {
+      return res.status(400).json({ message: 'Période trop longue (max. ~400 jours).' });
+    }
+
+    const sameDay = fromStr === toStr;
+    const match = { restaurant: { $in: ids }, createdAt: { $gte: start, $lte: end } };
+
+    const [agg] = await Commande.aggregate([
+      { $match: match },
+      {
+        $facet: {
+          byStatus: [{ $group: { _id: '$statut', count: { $sum: 1 } } }],
+          byBucket: sameDay
+            ? [
+                { $group: { _id: { $dateToString: { format: '%H', date: '$createdAt' } }, count: { $sum: 1 } } },
+                { $sort: { _id: 1 } },
+              ]
+            : [
+                {
+                  $group: {
+                    _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+                    count: { $sum: 1 },
+                  },
+                },
+                { $sort: { _id: 1 } },
+              ],
+        },
+      },
+    ]);
+
+    const countsByStatus = { ...emptyCounts };
+    for (const row of agg.byStatus || []) {
+      if (row._id && Object.prototype.hasOwnProperty.call(countsByStatus, row._id)) {
+        countsByStatus[row._id] = row.count;
+      }
+    }
+
+    const totalCommandes = Object.values(countsByStatus).reduce((a, b) => a + b, 0);
+
+    let series = [];
+    if (sameDay) {
+      const mapH = {};
+      for (const b of agg.byBucket || []) {
+        const h = parseInt(b._id, 10);
+        if (!Number.isNaN(h)) mapH[h] = b.count;
+      }
+      for (let h = 0; h < 24; h += 1) {
+        series.push({ label: `${String(h).padStart(2, '0')}h`, count: mapH[h] || 0 });
+      }
+    } else {
+      const mapD = {};
+      for (const b of agg.byBucket || []) {
+        if (b._id) mapD[b._id] = b.count;
+      }
+      const cur = new Date(start);
+      const last = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate()));
+      while (cur <= last) {
+        const key = isoDateUtc(cur);
+        series.push({ label: key, count: mapD[key] || 0 });
+        cur.setUTCDate(cur.getUTCDate() + 1);
+      }
+    }
+
+    res.json({
+      from: fromStr,
+      to: toStr,
+      granularity: sameDay ? 'hour' : 'day',
+      enterpriseCount,
+      unreadMessages,
+      countsByStatus,
+      totalCommandes,
+      series,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

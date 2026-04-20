@@ -279,6 +279,10 @@
 }
 
 .plat-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
   border-top: 1px solid #E0E0E0;
   padding-top: 15px;
 }

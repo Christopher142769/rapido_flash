@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import AuthContext from '../../context/AuthContext';
 import LanguageContext from '../../context/LanguageContext';
-import DashboardSidebar from '../../components/DashboardSidebar';
 import PageLoader from '../../components/PageLoader';
 import MediaPickerModal from '../../components/MediaPickerModal';
 import { getImageUrl } from '../../utils/imagePlaceholder';
 import ProductDescriptionRich from '../../components/ProductDescriptionRich';
+import { DashboardEditIconButton, DashboardDeleteIconButton } from '../../components/ui/DashboardIconButtons';
 import './RestaurantPlats.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -16,7 +15,6 @@ const STORAGE_CURRENT_RESTAURANT = 'dashboardCurrentRestaurantId';
 
 const RestaurantPlats = () => {
   const navigate = useNavigate();
-  const { logout } = useContext(AuthContext);
   const { t } = useContext(LanguageContext);
   const [restaurants, setRestaurants] = useState([]);
   const [currentRestaurantId, setCurrentRestaurantIdState] = useState('');
@@ -268,7 +266,6 @@ const RestaurantPlats = () => {
 
   return (
     <div className="dashboard-page">
-      <DashboardSidebar onLogout={logout} />
       <div className="dashboard-main">
         <div className="plats-content">
           <div className="plats-header">
@@ -632,8 +629,8 @@ const RestaurantPlats = () => {
                       {p.categorieProduit && <span className="plat-categorie">{p.categorieProduit.nom}</span>}
                     </div>
                     <div className="plat-actions">
-                      <button className="btn btn-secondary btn-small" onClick={() => handleEdit(p)}>Modifier</button>
-                      <button className="btn btn-outline btn-small" onClick={() => handleDelete(p._id)}>Supprimer</button>
+                      <DashboardEditIconButton onClick={() => handleEdit(p)} />
+                      <DashboardDeleteIconButton onClick={() => handleDelete(p._id)} />
                     </div>
                   </div>
                 </div>

@@ -6,7 +6,7 @@
 
 .categories-content {
   flex: 1;
-  margin-left: 280px;
+  margin-left: 0;
   padding: 30px;
   max-width: 1400px;
 }
@@ -162,6 +162,7 @@
 
 .plat-actions {
   display: flex;
+  align-items: center;
   gap: 10px;
 }
 

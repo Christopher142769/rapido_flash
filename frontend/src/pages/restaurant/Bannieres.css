@@ -211,6 +211,19 @@
   color: var(--primary-white);
 }
 
+.btn-delete--icon {
+  flex: 0 0 auto;
+  min-width: 44px;
+  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-delete--icon svg {
+  font-size: 17px;
+}
+
 .empty-state {
   text-align: center;
   padding: 60px 20px;

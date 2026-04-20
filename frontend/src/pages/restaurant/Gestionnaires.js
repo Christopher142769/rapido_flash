@@ -2,7 +2,6 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
-import DashboardSidebar from '../../components/DashboardSidebar';
 import { useModal } from '../../context/ModalContext';
 import './Dashboard.css';
 import './Gestionnaires.css';
@@ -11,7 +10,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const Gestionnaires = () => {
   const navigate = useNavigate();
-  const { user, logout } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const { showSuccess, showError } = useModal();
   const [restaurants, setRestaurants] = useState([]);
   const [selectedRestaurantId, setSelectedRestaurantId] = useState('');
@@ -104,8 +103,6 @@ const Gestionnaires = () => {
   const selectedRestaurant = restaurants.find((r) => r._id === selectedRestaurantId);
 
   return (
-    <div className="dashboard-page">
-      <DashboardSidebar onLogout={logout} />
       <main className="dashboard-main">
         <div className="dashboard-content">
           <header className="dashboard-block-header">
@@ -237,7 +234,6 @@ const Gestionnaires = () => {
           )}
         </div>
       </main>
-    </div>
   );
 };
 

@@ -6,9 +6,9 @@ import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
 import LanguageContext from '../../context/LanguageContext';
 import { useModal } from '../../context/ModalContext';
-import DashboardSidebar from '../../components/DashboardSidebar';
 import PageLoader from '../../components/PageLoader';
 import MediaPickerModal from '../../components/MediaPickerModal';
+import { DashboardEditIconButton } from '../../components/ui/DashboardIconButtons';
 import './Dashboard.css';
 
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
@@ -41,7 +41,7 @@ const STORAGE_CURRENT_RESTAURANT = 'dashboardCurrentRestaurantId';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, logout } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const { t } = useContext(LanguageContext);
   const { showSuccess, showError, showWarning } = useModal();
   const isAdmin = user?.role === 'restaurant';
@@ -82,9 +82,6 @@ const Dashboard = () => {
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const searchTimeoutRef = useRef(null);
-  const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
-  const [maintenanceMessage, setMaintenanceMessage] = useState('');
-  const [maintenanceSaving, setMaintenanceSaving] = useState(false);
 
   const getCurrentRestaurantId = () => currentRestaurantId || localStorage.getItem(STORAGE_CURRENT_RESTAURANT);
   const setCurrentRestaurantId = (id) => {
@@ -101,34 +98,6 @@ const Dashboard = () => {
     fetchRestaurants();
     axios.get(`${API_URL}/categories-domaine`).then(res => setCategoriesDomaine(res.data || [])).catch(() => {});
   }, []);
-
-  useEffect(() => {
-    if (!user?.canManageMaintenance) return;
-    axios
-      .get(`${API_URL}/app-settings/public`)
-      .then((res) => {
-        setMaintenanceEnabled(!!res.data?.maintenanceEnabled);
-        setMaintenanceMessage(res.data?.maintenanceMessage || '');
-      })
-      .catch(() => {});
-  }, [user?.canManageMaintenance]);
-
-  const saveMaintenance = async () => {
-    const token = localStorage.getItem('token');
-    setMaintenanceSaving(true);
-    try {
-      await axios.put(
-        `${API_URL}/app-settings`,
-        { maintenanceEnabled, maintenanceMessage },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      showSuccess(t('maintenance', 'saved'));
-    } catch (err) {
-      showError(err.response?.data?.message || err.message || 'Erreur');
-    } finally {
-      setMaintenanceSaving(false);
-    }
-  };
 
   const fetchRestaurants = async () => {
     try {
@@ -448,44 +417,8 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="dashboard-page">
-      <DashboardSidebar onLogout={logout} />
       <div className="dashboard-main">
         <div className="dashboard-content">
-        {user?.canManageMaintenance && (
-          <div className="dashboard-maintenance-card">
-            <h2 className="dashboard-maintenance-title">{t('maintenance', 'dashboardTitle')}</h2>
-            <p className="dashboard-maintenance-hint">{t('maintenance', 'dashboardHint')}</p>
-            <label className="dashboard-maintenance-row">
-              <input
-                type="checkbox"
-                checked={maintenanceEnabled}
-                onChange={(e) => setMaintenanceEnabled(e.target.checked)}
-              />
-              <span>{t('maintenance', 'toggleLabel')}</span>
-            </label>
-            <label className="dashboard-maintenance-label" htmlFor="maintenance-message">
-              {t('maintenance', 'messageLabel')}
-            </label>
-            <textarea
-              id="maintenance-message"
-              className="dashboard-maintenance-textarea"
-              rows={4}
-              value={maintenanceMessage}
-              onChange={(e) => setMaintenanceMessage(e.target.value)}
-              placeholder={t('maintenance', 'messagePlaceholder')}
-              disabled={maintenanceSaving}
-            />
-            <button
-              type="button"
-              className="btn btn-primary dashboard-maintenance-save"
-              onClick={saveMaintenance}
-              disabled={maintenanceSaving}
-            >
-              {maintenanceSaving ? '…' : t('maintenance', 'save')}
-            </button>
-          </div>
-        )}
         <div className="dashboard-header">
           <h1>{isGestionnaire ? 'Mon entreprise' : 'Mes entreprises'}</h1>
           {!editing && isAdmin && (
@@ -528,7 +461,7 @@ const Dashboard = () => {
                     </div>
                     {isCurrent && <span className="enterprise-card-badge">✓ Entreprise active</span>}
                     <div className="enterprise-card-actions">
-                      <button type="button" className="btn btn-secondary btn-small" onClick={() => handleEditEnterprise(r)}>Modifier</button>
+                      <DashboardEditIconButton onClick={() => handleEditEnterprise(r)} />
                       {!isCurrent && !isGestionnaire && (
                         <button type="button" className="btn btn-outline btn-small" onClick={() => handleUseAsCurrent(r)}>Utiliser cette entreprise</button>
                       )}
@@ -943,7 +876,6 @@ const Dashboard = () => {
         )}
         </div>
       </div>
-    </div>
   );
 };
 

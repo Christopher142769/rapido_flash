@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import AuthContext from '../../context/AuthContext';
 import LanguageContext from '../../context/LanguageContext';
-import DashboardSidebar from '../../components/DashboardSidebar';
 import PageLoader from '../../components/PageLoader';
 import MediaPickerModal from '../../components/MediaPickerModal';
+import { DashboardEditIconButton, DashboardDeleteIconButton } from '../../components/ui/DashboardIconButtons';
 import './Categories.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -13,7 +12,6 @@ const BASE_URL = API_URL.replace('/api', '');
 
 const CategoriesDomaine = () => {
   const navigate = useNavigate();
-  const { logout } = useContext(AuthContext);
   const { t } = useContext(LanguageContext);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -92,7 +90,6 @@ const CategoriesDomaine = () => {
 
   return (
     <div className="categories-page">
-      <DashboardSidebar onLogout={logout} />
       <div className="categories-content">
         <div className="categories-header">
           <h1>Catégories domaine</h1>
@@ -112,8 +109,8 @@ const CategoriesDomaine = () => {
               )}
               <span className="category-name">{cat.nom}</span>
               <div className="plat-actions" style={{ marginLeft: 'auto' }}>
-                <button className="btn btn-secondary btn-small" onClick={() => handleEdit(cat)}>Modifier</button>
-                <button className="btn btn-outline btn-small" onClick={() => handleDelete(cat._id)}>Supprimer</button>
+                <DashboardEditIconButton onClick={() => handleEdit(cat)} />
+                <DashboardDeleteIconButton onClick={() => handleDelete(cat._id)} />
               </div>
             </div>
           ))}

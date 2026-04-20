@@ -1,0 +1,66 @@
+:root {
+  /* Fond application & shell dashboard */
+  --rf-shell-bg: #ebe6de;
+  --rf-shell-gradient: linear-gradient(165deg, #f4f0e8 0%, #ebe6de 42%, #e3ddd4 100%);
+  --rf-cream: #f7f4ef;
+  --rf-cream-card: #fffefb;
+
+  /* Surfaces cartes / modales */
+  --rf-surface: #ffffff;
+  --rf-surface-warm: #fffbf7;
+  --rf-surface-muted: #f3efe8;
+
+  /* Sidebar — ton clair premium */
+  --rf-sidebar-bg: #faf8f5;
+  --rf-sidebar-active: rgba(212, 124, 47, 0.14);
+  --rf-sidebar-hover: rgba(26, 15, 0, 0.05);
+  --rf-sidebar-border: rgba(26, 15, 0, 0.08);
+  --rf-sidebar-text: #1c1410;
+  --rf-sidebar-text-muted: rgba(28, 20, 16, 0.5);
+  --rf-sidebar-section: rgba(180, 100, 40, 0.85);
+
+  /* Accents */
+  --rf-gold: #e8b54a;
+  --rf-gold-soft: #f5d78a;
+  --rf-amber: #c76d2e;
+  --rf-amber-light: #e0914a;
+  --rf-ink: #1a1411;
+
+  --rf-text-dark: #1a1411;
+  --rf-text-muted: #7a6558;
+  --rf-text-light: #a89486;
+
+  --rf-border: rgba(120, 90, 60, 0.12);
+  --rf-border-strong: rgba(120, 90, 60, 0.22);
+
+  /* Status */
+  --rf-success: #1fa971;
+  --rf-success-bg: #e8faf3;
+  --rf-danger: #dc3838;
+  --rf-danger-bg: #fff0f0;
+  --rf-warning: #e89a1f;
+  --rf-warning-bg: #fff8eb;
+  --rf-info: #2f6fed;
+  --rf-info-bg: #eef4ff;
+
+  /* Typographie */
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-numbers: 'Bebas Neue', cursive;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 26px;
+
+  --shadow-card:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 4px 24px rgba(26, 20, 16, 0.06),
+    0 1px 3px rgba(26, 20, 16, 0.04);
+  --shadow-hover:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 12px 40px rgba(26, 20, 16, 0.1),
+    0 4px 12px rgba(26, 20, 16, 0.05);
+  --shadow-gold: 0 0 0 3px rgba(232, 181, 74, 0.28);
+  --shadow-sidebar: 4px 0 32px rgba(26, 20, 16, 0.04);
+}

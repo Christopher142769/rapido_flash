@@ -6,6 +6,7 @@ import { LanguageProvider } from './context/LanguageContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { SupportWidgetProvider } from './context/SupportWidgetContext';
 import PrivateRoute from './components/PrivateRoute';
+import DashboardLayout from './components/layout/DashboardLayout';
 
 // Pages Client
 import Loading from './pages/client/Loading';
@@ -36,6 +37,8 @@ import MiseEnAvantAccueil from './pages/restaurant/MiseEnAvantAccueil';
 import RestaurantAvis from './pages/restaurant/RestaurantAvis';
 import RestaurantMessages from './pages/restaurant/RestaurantMessages';
 import PlatformChatModeration from './pages/restaurant/PlatformChatModeration';
+import MaintenanceDashboardPage from './pages/restaurant/MaintenanceDashboardPage';
+import DashboardOverviewPage from './pages/restaurant/DashboardOverviewPage';
 import ChatThread from './pages/client/ChatThread';
 import ChatsInbox from './pages/client/ChatsInbox';
 import ChatFab from './components/ChatFab';
@@ -115,19 +118,24 @@ function App() {
           <Route path="/chats" element={<PrivateRoute><ChatsInbox /></PrivateRoute>} />
           <Route path="/chat/:restaurantId" element={<PrivateRoute><ChatThread /></PrivateRoute>} />
           
-          {/* Pages restaurant */}
-          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/dashboard/medias" element={<PrivateRoute><RestaurantMedias /></PrivateRoute>} />
-          <Route path="/dashboard/vitrine-accueil" element={<PrivateRoute><MiseEnAvantAccueil /></PrivateRoute>} />
-          <Route path="/dashboard/categories-domaine" element={<PrivateRoute><CategoriesDomaine /></PrivateRoute>} />
-          <Route path="/dashboard/plats" element={<PrivateRoute><RestaurantPlats /></PrivateRoute>} />
-          <Route path="/dashboard/categories" element={<PrivateRoute><Categories /></PrivateRoute>} />
-          <Route path="/dashboard/commandes" element={<PrivateRoute><RestaurantCommandes /></PrivateRoute>} />
-          <Route path="/dashboard/bannieres" element={<PrivateRoute><Bannieres /></PrivateRoute>} />
-          <Route path="/dashboard/gestionnaires" element={<PrivateRoute><Gestionnaires /></PrivateRoute>} />
-          <Route path="/dashboard/avis" element={<PrivateRoute><RestaurantAvis /></PrivateRoute>} />
-          <Route path="/dashboard/messages" element={<PrivateRoute><RestaurantMessages /></PrivateRoute>} />
-          <Route path="/dashboard/messages-moderation" element={<PrivateRoute><PlatformChatModeration /></PrivateRoute>} />
+          {/* Pages restaurant (layout commun : sidebar + header + transitions) */}
+          <Route path="/dashboard" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
+            <Route index element={<Dashboard />} />
+            <Route path="tableau" element={<DashboardOverviewPage />} />
+            <Route path="medias" element={<RestaurantMedias />} />
+            <Route path="vitrine-accueil" element={<MiseEnAvantAccueil />} />
+            <Route path="categories-domaine" element={<CategoriesDomaine />} />
+            <Route path="plats" element={<RestaurantPlats />} />
+            <Route path="categories" element={<Categories />} />
+            <Route path="commandes" element={<RestaurantCommandes />} />
+            <Route path="bannieres" element={<Bannieres />} />
+            <Route path="gestionnaires" element={<Gestionnaires />} />
+            <Route path="avis" element={<RestaurantAvis />} />
+            <Route path="messages" element={<RestaurantMessages />} />
+            <Route path="messages-moderation" element={<PlatformChatModeration />} />
+            <Route path="maintenance" element={<MaintenanceDashboardPage />} />
+          </Route>
+          <Route path="/entreprises" element={<Navigate to="/dashboard" replace />} />
           
           <Route path="/" element={<Navigate to="/home" replace />} />
         </Routes>

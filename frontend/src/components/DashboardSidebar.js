@@ -1,5 +1,17 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  FaStore,
+  FaImages,
+  FaLayerGroup,
+  FaTags,
+  FaBoxOpen,
+  FaClipboardList,
+  FaComments,
+  FaStar,
+  FaBullhorn,
+  FaUsers,
+} from 'react-icons/fa';
 import AuthContext from '../context/AuthContext';
 import LanguageContext from '../context/LanguageContext';
 import { useNotifications } from '../context/NotificationContext';
@@ -43,6 +55,23 @@ const DashboardSidebar = ({ onLogout }) => {
     if (id === 'commandes') return pendingOrders;
     if (id === 'messages') return unreadMessages;
     return 0;
+  };
+
+  const iconForItem = (id) => {
+    const icons = {
+      structure: FaStore,
+      medias: FaImages,
+      vitrine: FaBullhorn,
+      'categories-domaine': FaLayerGroup,
+      categories: FaTags,
+      plats: FaBoxOpen,
+      commandes: FaClipboardList,
+      messages: FaComments,
+      avis: FaStar,
+      bannieres: FaImages,
+      gestionnaires: FaUsers,
+    };
+    return icons[id] || FaStore;
   };
 
   const handleNav = (path) => {
@@ -111,6 +140,34 @@ const DashboardSidebar = ({ onLogout }) => {
           </footer>
         </div>
       </aside>
+      <nav className="dashboard-mobile-bottom-nav" aria-label="Navigation dashboard mobile">
+        <div className="dashboard-mobile-bottom-track">
+          {menuItems.map((item) => {
+            const active = isActive(item.path);
+            const badge = badgeForItem(item.id);
+            const Icon = iconForItem(item.id);
+            return (
+              <button
+                key={`mobile-${item.id}`}
+                type="button"
+                className={`dashboard-mobile-bottom-item ${active ? 'active' : ''}`}
+                onClick={() => handleNav(item.path)}
+                aria-label={item.label}
+              >
+                <span className="dashboard-mobile-bottom-icon-wrap">
+                  <Icon className="dashboard-mobile-bottom-icon" aria-hidden />
+                  {badge > 0 && (
+                    <span className="dashboard-mobile-bottom-badge" aria-hidden>
+                      {badge > 99 ? '99+' : badge}
+                    </span>
+                  )}
+                </span>
+                <span className="dashboard-mobile-bottom-label">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
       {navigating && <div className="dashboard-nav-loading" aria-hidden="true"><span className="spinner" /></div>}
     </>
   );

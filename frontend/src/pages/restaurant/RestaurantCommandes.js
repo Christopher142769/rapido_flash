@@ -1,16 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
-import AuthContext from '../../context/AuthContext';
 import LanguageContext from '../../context/LanguageContext';
 import { useModal } from '../../context/ModalContext';
-import DashboardSidebar from '../../components/DashboardSidebar';
 import PageLoader from '../../components/PageLoader';
 import './RestaurantCommandes.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const RestaurantCommandes = () => {
-  const { logout } = React.useContext(AuthContext);
   const { t } = React.useContext(LanguageContext);
   const { showSuccess, showError } = useModal();
   const [allCommandes, setAllCommandes] = useState([]);
@@ -88,9 +85,6 @@ const RestaurantCommandes = () => {
   }
 
   return (
-    <div className="dashboard-page">
-      <DashboardSidebar onLogout={logout} />
-      <div className="dashboard-main">
         <div className="commandes-page">
           <div className="commandes-content">
             <div className="commandes-header">
@@ -274,8 +268,6 @@ const RestaurantCommandes = () => {
             )}
           </div>
         </div>
-      </div>
-    </div>
   );
 };
 

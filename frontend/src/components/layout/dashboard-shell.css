@@ -1,0 +1,443 @@
+/**
+ * Design premium partagé par toutes les pages sous DashboardLayout.
+ * Préfixe .rf-dashboard-outlet pour ne pas impacter le site client.
+ */
+
+.rf-dashboard-root {
+  background: var(--rf-shell-gradient);
+  color: var(--rf-text-dark);
+}
+
+.rf-dashboard-outlet {
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+/* ——— Typo titres de page (sous le header global) ——— */
+.rf-dashboard-outlet .commandes-header h1,
+.rf-dashboard-outlet .dashboard-header h1,
+.rf-dashboard-outlet .plats-header h1,
+.rf-dashboard-outlet .bannieres-page .dashboard-header h1,
+.rf-dashboard-outlet .medias-header h1,
+.rf-dashboard-outlet .vitrine-header h1,
+.rf-dashboard-outlet .avis-dash-header h1,
+.rf-dashboard-outlet .categories-header h1,
+.rf-dashboard-outlet .platform-chat-mod-main > h1,
+.rf-dashboard-outlet .rf-dash-overview .dashboard-header h1 {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--rf-text-dark);
+}
+
+.rf-dashboard-outlet .commandes-header h1,
+.rf-dashboard-outlet .dashboard-header h1,
+.rf-dashboard-outlet .plats-header h1,
+.rf-dashboard-outlet .rf-dash-overview .dashboard-header h1 {
+  font-size: clamp(1.5rem, 2.5vw, 1.85rem);
+}
+
+/* ——— Fonds de page (transparents = dégradé shell visible) ——— */
+.rf-dashboard-outlet .dashboard-page,
+.rf-dashboard-outlet .commandes-page,
+.rf-dashboard-outlet .bannieres-page,
+.rf-dashboard-outlet .categories-page,
+.rf-dashboard-outlet .platform-chat-mod-page,
+.rf-dashboard-outlet .restaurant-messages-page,
+.rf-dashboard-outlet .rf-dash-overview.dashboard-page {
+  min-height: 100%;
+  background: transparent !important;
+}
+
+.rf-dashboard-outlet .dashboard-main {
+  background: transparent;
+}
+
+.rf-dashboard-outlet .dashboard-content {
+  max-width: 1180px;
+  padding: 24px 22px 56px;
+}
+
+/* ——— Cartes & listes (dashboard entreprises, etc.) ——— */
+.rf-dashboard-outlet .enterprises-list {
+  background: var(--rf-surface);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--radius-xl);
+  padding: 28px;
+  box-shadow: var(--shadow-card);
+}
+
+.rf-dashboard-outlet .enterprises-list-intro {
+  color: var(--rf-text-muted);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.rf-dashboard-outlet .enterprise-card {
+  background: var(--rf-surface);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s ease;
+}
+
+.rf-dashboard-outlet .enterprise-card:hover {
+  border-color: var(--rf-border-strong);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
+}
+
+.rf-dashboard-outlet .enterprise-card-active {
+  border-color: rgba(199, 109, 46, 0.45);
+  background: linear-gradient(145deg, #fffdf9 0%, #fff9f2 100%);
+  box-shadow: var(--shadow-hover);
+}
+
+.rf-dashboard-outlet .enterprise-card-name {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  color: var(--rf-text-dark);
+}
+
+.rf-dashboard-outlet .enterprise-card-categories .enterprise-card-category {
+  background: rgba(232, 181, 74, 0.2);
+  color: var(--rf-amber);
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.rf-dashboard-outlet .enterprise-card-badge {
+  color: var(--rf-success);
+  font-weight: 700;
+}
+
+.rf-dashboard-outlet .dashboard-card {
+  background: var(--rf-surface);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  padding: 26px 28px;
+}
+
+.rf-dashboard-outlet .dashboard-card h2 {
+  font-family: var(--font-display), sans-serif;
+  color: var(--rf-text-dark);
+}
+
+.rf-dashboard-outlet .dashboard-block-header h1 {
+  font-family: var(--font-display), sans-serif;
+  color: var(--rf-text-dark);
+}
+
+.rf-dashboard-outlet .dashboard-block-desc {
+  color: var(--rf-text-muted);
+}
+
+.rf-dashboard-outlet .dashboard-empty {
+  background: var(--rf-surface-muted);
+  border: 1px dashed var(--rf-border-strong);
+  border-radius: var(--radius-xl);
+  color: var(--rf-text-muted);
+}
+
+.rf-dashboard-outlet .restaurant-form {
+  background: var(--rf-surface);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+}
+
+.rf-dashboard-outlet .form-section h2 {
+  font-family: var(--font-display), sans-serif;
+  color: var(--rf-text-dark);
+}
+
+.rf-dashboard-outlet .form-group label {
+  color: var(--rf-text-dark);
+  font-weight: 600;
+}
+
+.rf-dashboard-outlet .form-group input,
+.rf-dashboard-outlet .form-group textarea,
+.rf-dashboard-outlet .form-group select {
+  border: 1px solid var(--rf-border-strong) !important;
+  border-radius: var(--radius-md) !important;
+  background: var(--rf-surface-warm);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.rf-dashboard-outlet .form-group input:focus,
+.rf-dashboard-outlet .form-group textarea:focus,
+.rf-dashboard-outlet .form-group select:focus {
+  outline: none !important;
+  border-color: var(--rf-amber) !important;
+  box-shadow: var(--shadow-gold) !important;
+}
+
+.rf-dashboard-outlet .map-container-large {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--rf-border);
+  overflow: hidden;
+}
+
+/* ——— Commandes ——— */
+.rf-dashboard-outlet .commandes-content {
+  padding: 24px 20px 48px;
+}
+
+.rf-dashboard-outlet .commande-card {
+  background: var(--rf-surface);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+}
+
+.rf-dashboard-outlet .commande-header {
+  border-bottom-color: var(--rf-border);
+}
+
+.rf-dashboard-outlet .commande-info h3 {
+  font-family: var(--font-display), sans-serif;
+  color: var(--rf-text-dark);
+}
+
+.rf-dashboard-outlet .no-commandes {
+  background: var(--rf-surface-muted);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--radius-xl);
+  color: var(--rf-text-muted);
+}
+
+.rf-dashboard-outlet .restaurant-select {
+  border: 1px solid var(--rf-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--rf-surface);
+}
+
+/* ——— Bannières ——— */
+.rf-dashboard-outlet .upload-section,
+.rf-dashboard-outlet .bannieres-list {
+  background: var(--rf-surface);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+}
+
+.rf-dashboard-outlet .upload-section h2,
+.rf-dashboard-outlet .bannieres-list h2 {
+  font-family: var(--font-display), sans-serif;
+  color: var(--rf-text-dark);
+}
+
+.rf-dashboard-outlet .banniere-card {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--rf-border);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.25s ease;
+}
+
+.rf-dashboard-outlet .banniere-card:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+/* ——— Catégories ——— */
+.rf-dashboard-outlet .categories-content {
+  background: transparent;
+  padding: 28px 22px 48px;
+}
+
+.rf-dashboard-outlet .category-card {
+  background: var(--rf-surface) !important;
+  border: 1px solid var(--rf-border) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-card);
+}
+
+.rf-dashboard-outlet .category-card:hover {
+  box-shadow: var(--shadow-hover);
+  border-color: var(--rf-border-strong) !important;
+}
+
+/* ——— Produits ——— */
+.rf-dashboard-outlet .plats-content {
+  padding: 28px 22px 48px;
+}
+
+.rf-dashboard-outlet .plat-card,
+.rf-dashboard-outlet .plat-row {
+  border-radius: var(--radius-lg);
+}
+
+.rf-dashboard-outlet .modal-content {
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--rf-border);
+  box-shadow: var(--shadow-hover);
+}
+
+/* ——— Médias ——— */
+.rf-dashboard-outlet .medias-drop-zone {
+  border-radius: var(--radius-xl);
+  border: 2px dashed var(--rf-border-strong);
+  background: rgba(199, 109, 46, 0.04);
+}
+
+.rf-dashboard-outlet .medias-drop-zone-active {
+  border-color: var(--rf-amber);
+  background: rgba(232, 181, 74, 0.12);
+}
+
+.rf-dashboard-outlet .medias-card {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--rf-border);
+  box-shadow: var(--shadow-card);
+  background: var(--rf-surface);
+}
+
+/* ——— Vitrine ——— */
+.rf-dashboard-outlet .vitrine-table-wrap {
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--rf-border);
+  box-shadow: var(--shadow-card);
+  background: var(--rf-surface);
+}
+
+/* ——— Avis ——— */
+.rf-dashboard-outlet .avis-dash-table-wrap {
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--rf-border);
+  box-shadow: var(--shadow-card);
+}
+
+.rf-dashboard-outlet .avis-dash-table th {
+  background: var(--rf-surface-muted);
+  color: var(--rf-text-dark);
+  font-family: var(--font-display), sans-serif;
+}
+
+/* ——— Messages ——— */
+.rf-dashboard-outlet .restaurant-messages-main {
+  background: transparent;
+}
+
+.rf-dashboard-outlet .restaurant-messages-list {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--rf-border);
+  background: var(--rf-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.rf-dashboard-outlet .restaurant-messages-thread {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--rf-border);
+  background: var(--rf-surface);
+  box-shadow: var(--shadow-card);
+}
+
+/* ——— Modération chat ——— */
+.rf-dashboard-outlet .platform-chat-mod-main {
+  padding: 28px 22px 48px;
+  background: transparent;
+}
+
+.rf-dashboard-outlet .platform-chat-mod-table-wrap {
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--rf-border);
+  box-shadow: var(--shadow-card);
+}
+
+/* ——— Boutons dans le dashboard ——— */
+.rf-dashboard-outlet .btn-primary {
+  background: linear-gradient(165deg, var(--rf-amber) 0%, #a85a24 100%);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  box-shadow: 0 2px 12px rgba(199, 109, 46, 0.25);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+
+.rf-dashboard-outlet .btn-primary:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 6px 20px rgba(199, 109, 46, 0.3);
+}
+
+.rf-dashboard-outlet .btn-secondary {
+  background: linear-gradient(165deg, var(--rf-gold-soft) 0%, var(--rf-gold) 100%);
+  color: var(--rf-ink);
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+}
+
+.rf-dashboard-outlet .btn-outline {
+  background: transparent;
+  border: 1px solid var(--rf-border-strong);
+  color: var(--rf-amber);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+}
+
+.rf-dashboard-outlet .btn-outline:hover {
+  background: rgba(199, 109, 46, 0.08);
+  border-color: var(--rf-amber);
+}
+
+/* ——— Cartes produits (grille admin) ——— */
+.rf-dashboard-outlet .plat-card-admin {
+  background: var(--rf-surface);
+  border: 1px solid var(--rf-border) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-card);
+  transition:
+    box-shadow 0.25s ease,
+    transform 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.rf-dashboard-outlet .plat-card-admin:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-3px);
+  border-color: var(--rf-border-strong) !important;
+}
+
+.rf-dashboard-outlet .plats-subhint {
+  color: var(--rf-text-muted);
+}
+
+.rf-dashboard-outlet .dashboard-header {
+  gap: 16px;
+}
+
+.rf-dashboard-outlet .dashboard-header .btn-primary {
+  box-shadow: 0 4px 16px rgba(199, 109, 46, 0.22);
+}
+
+/* ——— Page maintenance dédiée ——— */
+.rf-dashboard-outlet .maintenance-dashboard-page .dashboard-block-header {
+  margin-bottom: 28px;
+}
+
+/* Boutons action icône seule (Modifier / Supprimer) */
+.rf-dashboard-outlet .btn.btn-icon-only {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  min-height: 38px;
+  padding: 0 12px;
+  gap: 0;
+}
+
+.rf-dashboard-outlet .btn.btn-icon-only svg {
+  font-size: 15px;
+  flex-shrink: 0;
+}

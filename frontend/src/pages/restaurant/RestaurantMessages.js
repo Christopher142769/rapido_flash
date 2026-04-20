@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
 import LanguageContext from '../../context/LanguageContext';
-import DashboardSidebar from '../../components/DashboardSidebar';
 import PageLoader from '../../components/PageLoader';
 import { FaPaperPlane } from 'react-icons/fa';
 import { pickLocalized } from '../../utils/i18nContent';
@@ -15,7 +14,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const RestaurantMessages = () => {
   const navigate = useNavigate();
-  const { user, logout } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const { language, t } = useContext(LanguageContext);
   const [restaurants, setRestaurants] = useState([]);
   const [selectedRid, setSelectedRid] = useState(null);
@@ -202,7 +201,6 @@ const RestaurantMessages = () => {
 
   return (
     <div className="restaurant-messages-page">
-      <DashboardSidebar onLogout={logout} />
       <main className="restaurant-messages-main">
         {topIncoming ? (
           <div className="incoming-call-overlay" role="dialog" aria-modal="true" aria-labelledby="incoming-call-title">

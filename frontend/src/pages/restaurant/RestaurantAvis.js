@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import axios from 'axios';
-import AuthContext from '../../context/AuthContext';
 import LanguageContext from '../../context/LanguageContext';
-import DashboardSidebar from '../../components/DashboardSidebar';
 import PageLoader from '../../components/PageLoader';
 import { FaStar, FaRegStar } from 'react-icons/fa';
 import './RestaurantAvis.css';
@@ -22,7 +20,6 @@ function StarsRow({ note }) {
 }
 
 const RestaurantAvis = () => {
-  const { logout } = useContext(AuthContext);
   const { t } = useContext(LanguageContext);
   const [restaurants, setRestaurants] = useState([]);
   const [currentRestaurantId, setCurrentRestaurantIdState] = useState('');
@@ -103,8 +100,6 @@ const RestaurantAvis = () => {
   }
 
   return (
-    <div className="dashboard-page">
-      <DashboardSidebar onLogout={logout} />
       <div className="dashboard-main">
         <div className="avis-dash-page">
           <header className="avis-dash-header">
@@ -168,7 +163,6 @@ const RestaurantAvis = () => {
           )}
         </div>
       </div>
-    </div>
   );
 };
 

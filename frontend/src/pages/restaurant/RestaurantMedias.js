@@ -1,7 +1,5 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import AuthContext from '../../context/AuthContext';
-import DashboardSidebar from '../../components/DashboardSidebar';
 import PageLoader from '../../components/PageLoader';
 import './RestaurantMedias.css';
 
@@ -9,7 +7,6 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const BASE_URL = API_URL.replace('/api', '');
 
 const RestaurantMedias = () => {
-  const { logout } = useContext(AuthContext);
   const [medias, setMedias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -103,7 +100,6 @@ const RestaurantMedias = () => {
 
   return (
     <div className="dashboard-page medias-page">
-      <DashboardSidebar onLogout={logout} />
       <div className="dashboard-main">
         <div className="medias-content">
           <header className="medias-header">

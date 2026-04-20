@@ -1,15 +1,13 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import AuthContext from '../../context/AuthContext';
-import DashboardSidebar from '../../components/DashboardSidebar';
 import PageLoader from '../../components/PageLoader';
 import MediaPickerModal from '../../components/MediaPickerModal';
+import { DashboardDeleteIconButton } from '../../components/ui/DashboardIconButtons';
 import './Bannieres.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const Bannieres = () => {
-  const { logout } = useContext(AuthContext);
   const [bannieres, setBannieres] = useState([]);
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -149,9 +147,6 @@ const Bannieres = () => {
   }
 
   return (
-    <div className="dashboard-page">
-      <DashboardSidebar onLogout={logout} />
-      <div className="dashboard-main">
         <div className="bannieres-page">
           <div className="dashboard-content">
             <div className="dashboard-header">
@@ -300,12 +295,10 @@ const Bannieres = () => {
                       >
                         {banniere.actif ? '✓ Active' : '✗ Inactive'}
                       </button>
-                      <button
-                        className="btn-delete"
+                      <DashboardDeleteIconButton
+                        className="btn-delete btn-delete--icon"
                         onClick={() => handleDelete(banniere._id)}
-                      >
-                        Supprimer
-                      </button>
+                      />
                     </div>
                   </div>
                 </div>
@@ -314,9 +307,7 @@ const Bannieres = () => {
           )}
           </div>
         </div>
-      </div>
-    </div>
-    </div>
+        </div>
   );
 };
 
