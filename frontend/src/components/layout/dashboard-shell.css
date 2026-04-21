@@ -325,20 +325,6 @@
   background: transparent;
 }
 
-.rf-dashboard-outlet .restaurant-messages-list {
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--rf-border);
-  background: var(--rf-surface);
-  box-shadow: var(--shadow-card);
-}
-
-.rf-dashboard-outlet .restaurant-messages-thread {
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--rf-border);
-  background: var(--rf-surface);
-  box-shadow: var(--shadow-card);
-}
-
 /* ——— Modération chat ——— */
 .rf-dashboard-outlet .platform-chat-mod-main {
   padding: 28px 22px 48px;
