@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useContext, useMemo } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import LanguageContext from '../../context/LanguageContext';
+import AuthContext from '../../context/AuthContext';
 import TopNavbar from '../../components/TopNavbar';
 import BottomNavbar from '../../components/BottomNavbar';
 import PageLoader from '../../components/PageLoader';
@@ -105,7 +106,9 @@ function productCaracteristiquesList(language, produit) {
 const RestaurantDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { language, t, localized, productDisplayName } = useContext(LanguageContext);
+  const { user } = useContext(AuthContext);
   const { showWarning } = useModal();
   const [searchParams, setSearchParams] = useSearchParams();
   const produitFocusId = searchParams.get('produit');
@@ -321,6 +324,10 @@ const RestaurantDetail = () => {
 
   /** Ajoute au panier puis ouvre la page panier (bouton Acheter). */
   const buyProduct = (produit, accompagnementIds = [], quantityOverride = null) => {
+    if (!user) {
+      navigate(`/login?next=${encodeURIComponent(`${location.pathname}${location.search || ''}`)}`);
+      return;
+    }
     const err = getCartValidationError(produit, accompagnementIds, quantityOverride);
     if (err === 'missing_accompagnement') {
       const samePdp = highlightedProduct && String(highlightedProduct._id) === String(produit._id);

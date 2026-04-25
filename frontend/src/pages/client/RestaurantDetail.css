@@ -1675,15 +1675,22 @@
   .store-hero-desktop {
     display: block !important;
     margin-top: 0;
-    height: 220px;
+    height: clamp(200px, 52vw, 250px);
     width: 100%;
     min-width: 0;
+    border-radius: 0 0 16px 16px;
+  }
+  .store-hero-desktop .store-hero-banner {
+    object-position: center center;
+  }
+  .store-hero-overlay {
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.84) 0%, rgba(0, 0, 0, 0.46) 50%, transparent 100%);
   }
   .store-hero-bottom {
     flex-direction: column;
     align-items: flex-start;
-    padding: 12px 14px 16px;
-    gap: 10px;
+    padding: 10px 12px 14px;
+    gap: 8px;
   }
   .store-hero-info {
     flex: none;
@@ -1691,15 +1698,17 @@
     min-width: 0;
   }
   .store-hero-info-name {
-    font-size: 18px;
+    font-size: clamp(16px, 4.8vw, 20px);
     word-break: break-word;
+    max-width: min(100%, 30ch);
   }
   .store-hero-info-desc {
-    font-size: 12px;
+    font-size: clamp(11px, 3.25vw, 13px);
     -webkit-line-clamp: 2;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    max-width: min(100%, 38ch);
   }
   .store-hero-contact {
     align-items: flex-start;
@@ -1710,30 +1719,33 @@
   }
   .store-hero-contact-links {
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
+    max-width: 100%;
   }
   .store-hero-contact-link {
-    padding: 8px 12px;
-    font-size: 12px;
+    min-height: 36px;
+    padding: 7px 11px;
+    font-size: clamp(11px, 3vw, 12px);
+    max-width: 100%;
   }
   .store-hero-back {
-    min-width: 44px;
-    min-height: 44px;
-    top: 12px;
-    left: 12px;
+    min-width: 40px;
+    min-height: 40px;
+    top: 10px;
+    left: 10px;
   }
   .store-hero-logo-corner {
-    width: 56px;
-    height: 56px;
-    bottom: 14px;
-    left: 14px;
-    border-radius: 12px;
+    width: clamp(50px, 14vw, 58px);
+    height: clamp(50px, 14vw, 58px);
+    bottom: 12px;
+    left: 12px;
+    border-radius: 11px;
   }
   .store-hero-logo-corner-placeholder {
     font-size: 26px;
   }
   .store-hero-bottom {
-    padding: 12px 14px 14px 78px;
+    padding: 10px 12px 12px calc(clamp(50px, 14vw, 58px) + 24px);
   }
 
   .restaurant-product-search-wrap {
@@ -1768,9 +1780,9 @@
   }
 
   .restaurant-content-container {
-    margin-top: 20px;
+    margin-top: 14px;
     border-radius: 0;
-    padding: 0 max(5px, env(safe-area-inset-right)) calc(var(--bottom-nav-mobile-clearance) + 24px) max(5px, env(safe-area-inset-left));
+    padding: 0 max(5px, env(safe-area-inset-right)) calc(var(--bottom-nav-mobile-clearance) + 20px) max(5px, env(safe-area-inset-left));
     background: #ececec;
     width: 100%;
     max-width: 100vw;
@@ -2087,14 +2099,58 @@
 
 @media (max-width: 380px) {
   .store-hero-desktop {
-    height: 220px;
+    height: clamp(190px, 58vw, 220px);
   }
   .store-hero-info-name {
-    font-size: 18px;
+    font-size: 16px;
   }
   .store-hero-contact-link {
-    padding: 8px 12px;
-    font-size: 12px;
+    min-height: 34px;
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  .store-hero-bottom {
+    padding: 8px 10px 10px 72px;
+    gap: 6px;
+  }
+  .store-hero-logo-corner {
+    width: 48px;
+    height: 48px;
+    left: 10px;
+    bottom: 10px;
+  }
+  .store-hero-info-desc {
+    -webkit-line-clamp: 1;
+  }
+}
+
+@media (max-width: 430px) and (min-width: 381px) {
+  .store-hero-bottom {
+    padding-left: 74px;
+  }
+}
+
+@media (max-width: 330px) {
+  .store-hero-desktop {
+    height: 180px;
+  }
+  .store-hero-bottom {
+    padding: 8px 8px 9px 66px;
+  }
+  .store-hero-info-name {
+    font-size: 15px;
+  }
+  .store-hero-contact-links {
+    gap: 4px;
+  }
+  .store-hero-contact-link {
+    min-height: 32px;
+    font-size: 10px;
+    padding: 5px 8px;
+  }
+  .store-hero-logo-corner {
+    width: 44px;
+    height: 44px;
   }
   .restaurant-content-container {
     padding-left: max(6px, env(safe-area-inset-left));

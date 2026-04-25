@@ -108,7 +108,7 @@ function App() {
           <Route path="/zones/livraison-fidjrosse" element={<SeoLandingPage />} />
           <Route path="/zones/livraison-calavi" element={<SeoLandingPage />} />
           <Route path="/zones/livraison-porto-novo" element={<SeoLandingPage />} />
-          <Route path="/restaurant/:id" element={<PrivateRoute><RestaurantDetail /></PrivateRoute>} />
+          <Route path="/restaurant/:id" element={<RestaurantDetail />} />
           <Route path="/cart" element={<PrivateRoute><Cart /></PrivateRoute>} />
           <Route path="/checkout" element={<PrivateRoute><Checkout /></PrivateRoute>} />
           <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />

@@ -394,6 +394,10 @@ export const translations = {
       accStillRequired: 'Veuillez sélectionner au moins un accompagnement.',
       errAccUnique: 'Un seul accompagnement est autorisé pour ce produit.',
       errM3Required: 'Veuillez saisir un volume en m³ valide avant de continuer.',
+      authRequiredTitle: 'Connexion requise',
+      authRequiredBody: 'Vous pouvez consulter la fiche produit librement. Pour acheter, connectez-vous ou créez un compte.',
+      authLoginCta: 'Se connecter',
+      authRegisterCta: "S'inscrire",
     },
     reviews: {
       sectionTitle: 'Avis clients',
@@ -944,6 +948,10 @@ export const translations = {
       accStillRequired: 'Please select at least one side option.',
       errAccUnique: 'Only one side option is allowed for this product.',
       errM3Required: 'Please enter a valid volume (m³) before continuing.',
+      authRequiredTitle: 'Sign in required',
+      authRequiredBody: 'You can view this product page freely. To buy, please sign in or create an account.',
+      authLoginCta: 'Sign in',
+      authRegisterCta: 'Create account',
     },
     reviews: {
       sectionTitle: 'Customer reviews',
