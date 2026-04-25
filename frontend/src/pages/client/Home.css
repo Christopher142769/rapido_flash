@@ -565,14 +565,13 @@
   /* Carrousel bannières mobile — image remplit toute la zone (comme le hero desktop) */
   .banners-carousel-mobile {
     position: relative;
-    width: min(100%, 410px);
-    aspect-ratio: 350 / 122;
-    height: auto;
+    width: min(100%, 430px);
+    height: clamp(150px, 42vw, 210px);
     overflow: hidden;
     background: linear-gradient(135deg, var(--light-yellow) 0%, var(--primary-white) 100%);
     box-sizing: border-box;
-    margin: 0 auto;
-    border-radius: 12px;
+    margin: 0 auto 2px;
+    border-radius: 14px;
   }
 
   .banners-wrapper {
@@ -1102,8 +1101,8 @@
     }
 
     .banners-carousel-mobile {
-      min-height: 180px;
-      height: 200px;
+      height: clamp(142px, 44vw, 172px);
+      border-radius: 12px;
     }
 
     .plats-section-mobile {
@@ -1132,6 +1131,18 @@
 
     .plat-price-mobile {
       font-size: 15px;
+    }
+  }
+
+  @media (min-width: 361px) and (max-width: 430px) {
+    .banners-carousel-mobile {
+      height: clamp(156px, 43vw, 196px);
+    }
+  }
+
+  @media (min-width: 431px) and (max-width: 768px) {
+    .banners-carousel-mobile {
+      height: clamp(176px, 34vw, 230px);
     }
   }
 
