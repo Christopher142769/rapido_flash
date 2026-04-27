@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import LanguageContext from '../context/LanguageContext';
 import { useNotifications } from '../context/NotificationContext';
-import InstallButton from './InstallButton';
 import './BottomNavbar.css';
 
 const BASE_URL = process.env.REACT_APP_BASE_URL || 'http://localhost:5000';
@@ -39,12 +38,6 @@ const BottomNavbar = () => {
 
   return (
     <div className="bottom-navbar-mobile-shell">
-      {location.pathname === '/home' && (
-        <div className="bottom-navbar-install-floating">
-          <InstallButton variant="navbar" />
-        </div>
-      )}
-
       <div className="bottom-navbar-mobile-inner">
         <nav className="bottom-navbar-mobile-bar" aria-label="Navigation principale">
           <svg
