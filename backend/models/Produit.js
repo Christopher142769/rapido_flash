@@ -66,7 +66,7 @@ const produitSchema = new mongoose.Schema({
   },
   uniteVente: {
     type: String,
-    enum: ['piece', 'm3'],
+    enum: ['piece', 'm3', 'kg', 'tonne'],
     default: 'piece',
   },
   images: [{

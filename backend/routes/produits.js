@@ -59,7 +59,8 @@ function parseAccompagnementsMode(input) {
 function parseUniteVente(input) {
   if (input === undefined) return undefined;
   const v = String(input || '').trim().toLowerCase();
-  return v === 'm3' ? 'm3' : 'piece';
+  if (v === 'm3' || v === 'kg' || v === 'tonne') return v;
+  return 'piece';
 }
 
 function isAllowedUploadRef(p) {

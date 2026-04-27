@@ -12,6 +12,7 @@ import './RestaurantPlats.css';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const BASE_URL = API_URL.replace('/api', '');
 const STORAGE_CURRENT_RESTAURANT = 'dashboardCurrentRestaurantId';
+const VARIABLE_UNITS = ['m3', 'kg', 'tonne'];
 
 const RestaurantPlats = () => {
   const navigate = useNavigate();
@@ -224,7 +225,7 @@ const RestaurantPlats = () => {
             .join('\n')
         : '',
       accompagnementsMode: p.accompagnementsMode === 'unique' ? 'unique' : 'multiple',
-      uniteVente: p.uniteVente === 'm3' ? 'm3' : 'piece',
+      uniteVente: VARIABLE_UNITS.includes(String(p.uniteVente || 'piece')) ? p.uniteVente : 'piece',
     });
     const firstImg = (p.images && p.images[0]) ? (String(p.images[0]).startsWith('http') ? p.images[0] : `${BASE_URL}${p.images[0]}`) : null;
     setImagePreview(firstImg);
@@ -447,6 +448,8 @@ const RestaurantPlats = () => {
                     >
                       <option value="piece">Par pièce (quantité standard)</option>
                       <option value="m3">Par m3 (le client saisit son volume)</option>
+                      <option value="kg">Par kg (le client saisit son poids)</option>
+                      <option value="tonne">Par tonne (le client saisit son poids)</option>
                     </select>
                   </div>
                   <div className="form-group produit-promo-block">
@@ -621,6 +624,8 @@ const RestaurantPlats = () => {
                     <div className="plat-details">
                       <span className="plat-prix-admin">{Number(p.prix).toFixed(0)} FCFA</span>
                       {p.uniteVente === 'm3' && <span className="plat-categorie">Vente en m3</span>}
+                      {p.uniteVente === 'kg' && <span className="plat-categorie">Vente en kg</span>}
+                      {p.uniteVente === 'tonne' && <span className="plat-categorie">Vente en tonne</span>}
                       {Array.isArray(p.accompagnements) && p.accompagnements.length > 0 && (
                         <span className="plat-categorie">
                           Accompagnements: {p.accompagnementsMode === 'unique' ? 'choix unique' : 'choix multiple'}
