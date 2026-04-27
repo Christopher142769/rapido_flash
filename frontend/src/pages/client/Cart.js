@@ -25,6 +25,7 @@ const Cart = () => {
   const { t, productDisplayName } = useContext(LanguageContext);
   const [cart, setCart] = useState([]);
   const [fraisLivraison, setFraisLivraison] = useState(0);
+  const [quantityDrafts, setQuantityDrafts] = useState({});
 
   useEffect(() => {
     const savedCart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -56,13 +57,30 @@ const Cart = () => {
   };
 
   const updateQuantityRaw = (id, rawValue) => {
-    const parsed = Number(rawValue);
-    if (!Number.isFinite(parsed) || parsed <= 0) return;
+    setQuantityDrafts((prev) => ({ ...prev, [id]: rawValue }));
+  };
+
+  const commitQuantityRaw = (id) => {
+    const draft = String(quantityDrafts[id] ?? '').trim().replace(',', '.');
+    const parsed = Number(draft);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      setQuantityDrafts((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      return;
+    }
     const newCart = cart.map((item) =>
       itemId(item) === id ? { ...item, quantite: parsed } : item
     );
     setCart(newCart);
     localStorage.setItem('cart', JSON.stringify(newCart));
+    setQuantityDrafts((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
   };
 
   const removeItem = (id) => {
@@ -172,8 +190,15 @@ const Cart = () => {
                       type="number"
                       min="0.01"
                       step="0.01"
-                      value={item.quantite}
+                      value={quantityDrafts[lineId] ?? String(item.quantite)}
                       onChange={(e) => updateQuantityRaw(lineId, e.target.value)}
+                      onBlur={() => commitQuantityRaw(lineId)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          commitQuantityRaw(lineId);
+                        }
+                      }}
                       className="quantity"
                     />
                   ) : (

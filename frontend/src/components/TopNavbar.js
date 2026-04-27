@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useContext } from 'react';
+import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import LanguageContext from '../context/LanguageContext';
 import { useNotifications } from '../context/NotificationContext';
@@ -21,6 +22,7 @@ import { IoSearchOutline } from 'react-icons/io5';
 import './TopNavbar.css';
 
 const BASE_URL = process.env.REACT_APP_BASE_URL || 'http://localhost:5000';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const TopNavbar = ({
   locationAddress,
@@ -37,6 +39,10 @@ const TopNavbar = ({
   const { language, setLanguage, t } = useContext(LanguageContext);
   const { unreadMessages } = useNotifications();
   const [cartCount, setCartCount] = useState(0);
+  const [activeOrdersCount, setActiveOrdersCount] = useState(0);
+  const [seenCartCount, setSeenCartCount] = useState(() => Number(localStorage.getItem('seenCartCount') || 0));
+  const [seenOrdersCount, setSeenOrdersCount] = useState(() => Number(localStorage.getItem('seenOrdersCount') || 0));
+  const [seenMessagesCount, setSeenMessagesCount] = useState(() => Number(localStorage.getItem('seenMessagesCount') || 0));
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
   const langWrapRef = useRef(null);
@@ -75,24 +81,66 @@ const TopNavbar = ({
     setCartCount(count);
   };
 
+  useEffect(() => {
+    if (location.pathname === '/cart') {
+      localStorage.setItem('seenCartCount', String(cartCount));
+      setSeenCartCount(cartCount);
+    }
+    if (location.pathname === '/orders') {
+      localStorage.setItem('seenOrdersCount', String(activeOrdersCount));
+      setSeenOrdersCount(activeOrdersCount);
+    }
+    if (location.pathname === '/chats' || location.pathname.startsWith('/chat/')) {
+      localStorage.setItem('seenMessagesCount', String(unreadMessages));
+      setSeenMessagesCount(unreadMessages);
+    }
+  }, [location.pathname, cartCount, activeOrdersCount, unreadMessages]);
+
+  const cartBadge = Math.max(0, cartCount - seenCartCount);
+  const ordersBadge = Math.max(0, activeOrdersCount - seenOrdersCount);
+  const messagesBadge = Math.max(0, unreadMessages - seenMessagesCount);
+
+  useEffect(() => {
+    if (user?.role !== 'client') return undefined;
+    let mounted = true;
+
+    const fetchActiveOrders = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/commandes/my-commandes`);
+        const list = Array.isArray(res.data) ? res.data : [];
+        const count = list.filter((c) => !['livree', 'annulee'].includes(String(c?.statut || ''))).length;
+        if (mounted) setActiveOrdersCount(count);
+      } catch (_) {
+        if (mounted) setActiveOrdersCount(0);
+      }
+    };
+
+    fetchActiveOrders();
+    const interval = setInterval(fetchActiveOrders, 15000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [user?.role, location.pathname]);
+
   const navItems = useMemo(() => {
     const base = [
       { path: '/home', labelKey: 'home', Icon: FaHome, badge: 0 },
-      { path: '/cart', labelKey: 'cart', Icon: FaShoppingCart, badge: cartCount },
-      { path: '/orders', labelKey: 'orders', Icon: FaClipboardList, badge: 0 },
+      { path: '/cart', labelKey: 'cart', Icon: FaShoppingCart, badge: cartBadge },
+      { path: '/orders', labelKey: 'orders', Icon: FaClipboardList, badge: user?.role === 'client' ? ordersBadge : 0 },
     ];
     if (user?.role === 'client') {
       base.push({
         path: '/chats',
         labelKey: 'messages',
         Icon: FaComments,
-        badge: unreadMessages,
+        badge: messagesBadge,
         matchPrefix: '/chat',
       });
     }
     base.push({ path: '/factures', labelKey: 'invoices', Icon: FaFileInvoice, badge: 0 });
     return base;
-  }, [user?.role, cartCount, unreadMessages]);
+  }, [user?.role, cartBadge, messagesBadge, ordersBadge]);
 
   const isNavItemActive = (item) => {
     if (item.matchPrefix) {

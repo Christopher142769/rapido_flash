@@ -8,6 +8,7 @@ import BottomNavbar from '../../components/BottomNavbar';
 import TopNavbar from '../../components/TopNavbar';
 import PageLoader from '../../components/PageLoader';
 import { openOrderTrackingWhatsApp } from '../../utils/orderTrackingWhatsApp';
+import { useModal } from '../../context/ModalContext';
 import './Orders.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -18,8 +19,11 @@ const Orders = () => {
   const location = useLocation();
   const { user } = useContext(AuthContext);
   const { language, t } = useContext(LanguageContext);
+  const { showSuccess, showError } = useModal();
   const [commandes, setCommandes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [cancellingOrderId, setCancellingOrderId] = useState(null);
+  const [cancelModalOrder, setCancelModalOrder] = useState(null);
 
   // Retour après redirection paiement (URL de callback éventuelle)
   useEffect(() => {
@@ -86,6 +90,27 @@ const Orders = () => {
       openOrderTrackingWhatsApp(commande, { language, t, user });
     },
     [language, t, user]
+  );
+
+  const canCancelOrder = useCallback((commande) => ['en_attente', 'confirmee'].includes(String(commande?.statut || '')), []);
+
+  const handleCancelOrder = useCallback(
+    async (commande) => {
+      if (!canCancelOrder(commande) || cancellingOrderId) return;
+      setCancellingOrderId(commande._id);
+      try {
+        const res = await axios.put(`${API_URL}/commandes/${commande._id}/statut`, { statut: 'annulee' });
+        const updated = res.data;
+        setCommandes((prev) => prev.map((c) => (c._id === updated._id ? { ...c, ...updated } : c)));
+        showSuccess(t('orders', 'cancelSuccess'), t('orders', 'pageTitle'));
+        setCancelModalOrder(null);
+      } catch (error) {
+        showError(error?.response?.data?.message || t('orders', 'cancelError'), t('orders', 'pageTitle'));
+      } finally {
+        setCancellingOrderId(null);
+      }
+    },
+    [canCancelOrder, cancellingOrderId, showError, showSuccess, t]
   );
 
   if (loading) {
@@ -212,6 +237,15 @@ const Orders = () => {
                       {t('orders', 'viewReceipt')}
                     </button>
                   )}
+                  {canCancelOrder(commande) && (
+                    <button
+                      type="button"
+                      className="order-cancel-btn"
+                      onClick={() => setCancelModalOrder(commande)}
+                    >
+                      {t('common', 'cancel')}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -219,6 +253,28 @@ const Orders = () => {
         )}
         </div>
       </div>
+      {cancelModalOrder ? (
+        <div className="order-cancel-modal-overlay" role="presentation" onClick={() => setCancelModalOrder(null)}>
+          <div className="order-cancel-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="order-cancel-modal-icon" aria-hidden>!</div>
+            <h3>{t('orders', 'cancelModalTitle')}</h3>
+            <p>{t('orders', 'cancelConfirm')}</p>
+            <div className="order-cancel-modal-actions">
+              <button type="button" className="btn btn-outline order-cancel-modal-secondary" onClick={() => setCancelModalOrder(null)}>
+                {t('orders', 'cancelKeep')}
+              </button>
+              <button
+                type="button"
+                className="btn order-cancel-modal-danger"
+                onClick={() => handleCancelOrder(cancelModalOrder)}
+                disabled={cancellingOrderId === cancelModalOrder._id}
+              >
+                {cancellingOrderId === cancelModalOrder._id ? t('checkout', 'processing') : t('orders', 'cancelOrder')}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <BottomNavbar />
     </div>
   );

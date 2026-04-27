@@ -513,7 +513,7 @@ router.put('/:id/statut', auth, async (req, res) => {
     const isRestaurantOwner = restaurant.proprietaire.toString() === req.user._id.toString();
     const isRestaurantManager = restaurant.gestionnaires && restaurant.gestionnaires.includes(req.user._id);
 
-    // Le client peut seulement confirmer le paiement (statut: 'confirmee')
+    // Le client peut confirmer le paiement (statut: 'confirmee')
     if (isClient && statut === 'confirmee') {
       commande.statut = statut;
       if (commande.modePaiement === 'momo_avant') {
@@ -531,6 +531,28 @@ router.put('/:id/statut', auth, async (req, res) => {
           body: 'Un client a confirmé le paiement d’une commande.',
           url: '/dashboard/commandes',
           tag: `rapido-pay-${commande._id}`,
+        }
+      ).catch(() => {});
+      return res.json(commande);
+    }
+
+    // Le client peut annuler sa commande tant qu'elle n'est pas en préparation / en livraison / livrée
+    if (isClient && statut === 'annulee') {
+      const cancellableStatuses = ['en_attente', 'confirmee'];
+      if (!cancellableStatuses.includes(String(commande.statut))) {
+        return res.status(400).json({
+          message: 'Cette commande ne peut plus être annulée.',
+        });
+      }
+      commande.statut = 'annulee';
+      await commande.save();
+      void sendToUserIds(
+        [restaurant.proprietaire, ...(restaurant.gestionnaires || [])].map((id) => String(id)),
+        {
+          title: 'Rapido — Commande annulée',
+          body: 'Un client a annulé sa commande.',
+          url: '/dashboard/commandes',
+          tag: `rapido-cancel-${commande._id}`,
         }
       ).catch(() => {});
       return res.json(commande);

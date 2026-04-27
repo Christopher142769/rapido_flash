@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useContext, useId } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import LanguageContext from '../context/LanguageContext';
 import { useNotifications } from '../context/NotificationContext';
 import './BottomNavbar.css';
 
 const BASE_URL = process.env.REACT_APP_BASE_URL || 'http://localhost:5000';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const BottomNavbar = () => {
   const navigate = useNavigate();
@@ -14,6 +16,10 @@ const BottomNavbar = () => {
   const { t } = useContext(LanguageContext);
   const { unreadMessages } = useNotifications();
   const [cartCount, setCartCount] = useState(0);
+  const [activeOrdersCount, setActiveOrdersCount] = useState(0);
+  const [seenCartCount, setSeenCartCount] = useState(() => Number(localStorage.getItem('seenCartCount') || 0));
+  const [seenOrdersCount, setSeenOrdersCount] = useState(() => Number(localStorage.getItem('seenOrdersCount') || 0));
+  const [seenMessagesCount, setSeenMessagesCount] = useState(() => Number(localStorage.getItem('seenMessagesCount') || 0));
   const isClient = user?.role === 'client';
 
   useEffect(() => {
@@ -27,6 +33,48 @@ const BottomNavbar = () => {
     const count = cart.reduce((sum, item) => sum + item.quantite, 0);
     setCartCount(count);
   };
+
+  useEffect(() => {
+    if (location.pathname === '/cart') {
+      localStorage.setItem('seenCartCount', String(cartCount));
+      setSeenCartCount(cartCount);
+    }
+    if (location.pathname === '/orders') {
+      localStorage.setItem('seenOrdersCount', String(activeOrdersCount));
+      setSeenOrdersCount(activeOrdersCount);
+    }
+    if (location.pathname === '/chats' || location.pathname.startsWith('/chat/')) {
+      localStorage.setItem('seenMessagesCount', String(unreadMessages));
+      setSeenMessagesCount(unreadMessages);
+    }
+  }, [location.pathname, cartCount, activeOrdersCount, unreadMessages]);
+
+  const cartBadge = Math.max(0, cartCount - seenCartCount);
+  const ordersBadge = Math.max(0, activeOrdersCount - seenOrdersCount);
+  const messagesBadge = Math.max(0, unreadMessages - seenMessagesCount);
+
+  useEffect(() => {
+    if (!isClient) return undefined;
+    let mounted = true;
+
+    const fetchActiveOrders = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/commandes/my-commandes`);
+        const list = Array.isArray(res.data) ? res.data : [];
+        const activeCount = list.filter((c) => !['livree', 'annulee'].includes(String(c?.statut || ''))).length;
+        if (mounted) setActiveOrdersCount(activeCount);
+      } catch (_) {
+        if (mounted) setActiveOrdersCount(0);
+      }
+    };
+
+    fetchActiveOrders();
+    const interval = setInterval(fetchActiveOrders, 15000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [isClient, location.pathname]);
 
   const invoicesActive =
     location.pathname === '/factures' || location.pathname.startsWith('/facture/');
@@ -103,6 +151,11 @@ const BottomNavbar = () => {
                 <path d="M12 18V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               <span className="nav-label">{t('nav', 'orders')}</span>
+              {isClient && ordersBadge > 0 && (
+                <span className="nav-badge nav-badge--tab nav-badge--orders" aria-hidden>
+                  {ordersBadge > 99 ? '99+' : ordersBadge}
+                </span>
+              )}
             </button>
 
             {isClient && (
@@ -121,9 +174,9 @@ const BottomNavbar = () => {
                   />
                 </svg>
                 <span className="nav-label">{t('nav', 'messages')}</span>
-                {unreadMessages > 0 && (
+                {messagesBadge > 0 && (
                   <span className="nav-badge nav-badge--tab" aria-hidden>
-                    {unreadMessages > 99 ? '99+' : unreadMessages}
+                    {messagesBadge > 99 ? '99+' : messagesBadge}
                   </span>
                 )}
               </button>
@@ -182,7 +235,7 @@ const BottomNavbar = () => {
               <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V17C17 18.1 17.9 19 19 19C20.1 19 21 18.1 21 17V13M9 19.5C9.8 19.5 10.5 20.2 10.5 21C10.5 21.8 9.8 22.5 9 22.5C8.2 22.5 7.5 21.8 7.5 21C7.5 20.2 8.2 19.5 9 19.5ZM20 19.5C20.8 19.5 21.5 20.2 21.5 21C21.5 21.8 20.8 22.5 20 22.5C19.2 22.5 18.5 21.8 18.5 21C18.5 20.2 19.2 19.5 20 19.5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </span>
-          {cartCount > 0 && <span className="nav-badge nav-badge--fab">{cartCount > 99 ? '99+' : cartCount}</span>}
+          {cartBadge > 0 && <span className="nav-badge nav-badge--fab">{cartBadge > 99 ? '99+' : cartBadge}</span>}
         </button>
       </div>
     </div>

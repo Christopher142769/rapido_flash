@@ -29,7 +29,6 @@ import ProductPromoBadges from '../../components/ProductPromoBadges';
 import ProductDescriptionRich from '../../components/ProductDescriptionRich';
 import ProductReviewsSection, { StarsDisplay } from '../../components/ProductReviewsSection';
 import { effectiveProductPrice, hasFreeDeliveryPromo, hasPricePromo } from '../../utils/productPromo';
-import { getRapidoTelHref, getRapidoWhatsAppLink, getRapidoPhoneDisplay } from '../../config/rapidoWhatsApp';
 import { useModal } from '../../context/ModalContext';
 import Modal from '../../components/Modal';
 import './RestaurantDetail.css';
@@ -93,6 +92,22 @@ function productOpenImageSrc(produit, baseUrl) {
 function formatJoursVente(arr) {
   if (!arr || !arr.length) return null;
   return [...arr].sort((a, b) => a - b).map((d) => JOUR_LABELS[d]).join(' · ');
+}
+
+function normalizeBjPhoneDigits(raw) {
+  let digits = String(raw || '').replace(/\D/g, '');
+  if (digits.length === 8) digits = `229${digits}`;
+  if (digits.length === 10 && digits.startsWith('0')) digits = `229${digits}`;
+  return digits;
+}
+
+function formatPhoneDisplay(raw) {
+  const digits = normalizeBjPhoneDigits(raw);
+  if (!digits) return '';
+  if (digits.length === 11 && digits.startsWith('229')) {
+    return `+${digits.slice(0, 3)} ${digits.slice(3, 5)} ${digits.slice(5, 7)} ${digits.slice(7, 9)} ${digits.slice(9)}`;
+  }
+  return `+${digits}`;
 }
 
 /** URLs galerie produit (bannière détail, carte accueil, puis images) — ordre type fiche produit */
@@ -453,9 +468,13 @@ const RestaurantDetail = () => {
       ? (String(restaurant.banniere).startsWith('http') ? restaurant.banniere : `${BASE_URL}${restaurant.banniere}`)
       : generateBannerPlaceholderSVG(0);
 
-  const rapidoTelHref = getRapidoTelHref();
-  const rapidoWaHref = getRapidoWhatsAppLink();
-  const rapidoPhoneLabel = getRapidoPhoneDisplay();
+  const contactPhoneRaw = String(restaurant?.telephone || '').trim();
+  const whatsappPhoneRaw = String(restaurant?.whatsapp || contactPhoneRaw).trim();
+  const contactPhoneDigits = normalizeBjPhoneDigits(contactPhoneRaw);
+  const whatsappDigits = normalizeBjPhoneDigits(whatsappPhoneRaw);
+  const rapidoTelHref = contactPhoneDigits ? `tel:+${contactPhoneDigits}` : '#';
+  const rapidoWaHref = whatsappDigits ? `https://wa.me/${whatsappDigits}` : '#';
+  const rapidoPhoneLabel = formatPhoneDisplay(contactPhoneRaw);
 
   const cartForRestaurant = cart.filter((item) => String(item.restaurantId) === String(id));
   const cartCountRestaurant = cartForRestaurant.reduce((sum, item) => sum + item.quantite, 0);
@@ -568,16 +587,20 @@ const RestaurantDetail = () => {
           </div>
           <div className="store-hero-contact">
             <span className="store-hero-contact-title">{t('store', 'contact')}</span>
-            {rapidoTelHref !== '#' && (
+            {(rapidoTelHref !== '#' || rapidoWaHref !== '#') && (
               <div className="store-hero-contact-links">
-                <a href={rapidoTelHref} className="store-hero-contact-link" title={t('store', 'callTitle')} onClick={(e) => e.stopPropagation()}>
-                  <FaPhoneAlt size={18} aria-hidden />
-                  <span>{rapidoPhoneLabel}</span>
-                </a>
-                <a href={rapidoWaHref} target="_blank" rel="noopener noreferrer" className="store-hero-contact-link store-hero-contact-wa" title={t('store', 'whatsappTitle')} onClick={(e) => e.stopPropagation()}>
-                  <FaWhatsapp size={20} aria-hidden />
-                  <span>WhatsApp</span>
-                </a>
+                {rapidoTelHref !== '#' && rapidoPhoneLabel ? (
+                  <a href={rapidoTelHref} className="store-hero-contact-link" title={t('store', 'callTitle')} onClick={(e) => e.stopPropagation()}>
+                    <FaPhoneAlt size={18} aria-hidden />
+                    <span>{rapidoPhoneLabel}</span>
+                  </a>
+                ) : null}
+                {rapidoWaHref !== '#' ? (
+                  <a href={rapidoWaHref} target="_blank" rel="noopener noreferrer" className="store-hero-contact-link store-hero-contact-wa" title={t('store', 'whatsappTitle')} onClick={(e) => e.stopPropagation()}>
+                    <FaWhatsapp size={20} aria-hidden />
+                    <span>WhatsApp</span>
+                  </a>
+                ) : null}
               </div>
             )}
           </div>
