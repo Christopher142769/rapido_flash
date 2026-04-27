@@ -272,12 +272,15 @@ const Checkout = () => {
   };
 
   const goToSuccess = useCallback((commande) => {
+    const modeFromOrder = String(commande?.modePaiement || paymentMode || 'momo_avant').toLowerCase();
+    const safeMode = ALLOWED_PAYMENT_MODES.includes(modeFromOrder) ? modeFromOrder : 'momo_avant';
+    navigate(`/ordered/${safeMode}`, { replace: true });
     setCompletedOrder(commande);
     setShowAddressModal(false);
     setCheckoutStep('success');
     localStorage.removeItem('cart');
     setCart([]);
-  }, []);
+  }, [navigate, paymentMode]);
 
   const handlePlaceOrder = async () => {
     if (!coordsOk) {
@@ -518,9 +521,6 @@ const Checkout = () => {
   };
 
   const handleContinueToDelivery = () => {
-    if (!paymentModeParam) {
-      navigate(`/ordered/${paymentMode}`, { replace: true });
-    }
     setShowAddressModal(true);
   };
 
