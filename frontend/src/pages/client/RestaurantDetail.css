@@ -1756,8 +1756,8 @@
   .restaurant-product-search-bar {
     max-width: none;
     margin: 0 0 10px;
-    padding: 14px 18px;
-    min-height: 52px;
+    padding: 10px 15px;
+    min-height: 44px;
     border-color: rgba(139, 69, 19, 0.22);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   }
@@ -1770,7 +1770,7 @@
   .store-search-input {
     min-width: 0;
     flex: 1;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 500;
     color: #333;
   }

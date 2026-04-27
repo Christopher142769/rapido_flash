@@ -194,6 +194,7 @@ function metaForPath(pathname) {
   if (
     pathname.startsWith('/cart') ||
     pathname.startsWith('/checkout') ||
+    pathname.startsWith('/ordered') ||
     pathname.startsWith('/orders') ||
     pathname.startsWith('/factures') ||
     pathname.startsWith('/facture/') ||

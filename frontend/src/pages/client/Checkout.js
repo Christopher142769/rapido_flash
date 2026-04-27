@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useRef, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { FaChevronLeft, FaMapMarkerAlt, FaCheckCircle, FaWhatsapp } from 'react-icons/fa';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
@@ -12,6 +12,7 @@ import './Checkout.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
+const ALLOWED_PAYMENT_MODES = ['especes', 'momo_avant', 'momo_apres'];
 
 // Clé publique FedaPay (live) — peut être surchargée par REACT_APP_FEDAPAY_PUBLIC_KEY au build (Render, etc.)
 const FEDAPAY_PUBLIC_KEY =
@@ -19,6 +20,8 @@ const FEDAPAY_PUBLIC_KEY =
 
 const Checkout = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { paymentMode: paymentModeParam } = useParams();
   const { user, updatePosition } = useContext(AuthContext);
   const { language, t } = useContext(LanguageContext);
   const { showSuccess, showError, showWarning } = useModal();
@@ -484,6 +487,32 @@ const Checkout = () => {
   }, [completedOrder, language, t, user]);
 
   const modalCanSubmit = coordsOk && addressOk && phoneOk && instructionOk;
+  const normalizedPaymentMode = ALLOWED_PAYMENT_MODES.includes(String(paymentModeParam || '').toLowerCase())
+    ? String(paymentModeParam).toLowerCase()
+    : 'momo_avant';
+
+  useEffect(() => {
+    if (!paymentModeParam || normalizedPaymentMode !== paymentModeParam) {
+      navigate(`/ordered/${normalizedPaymentMode}`, { replace: true });
+      return;
+    }
+    setPaymentMode(normalizedPaymentMode);
+  }, [paymentModeParam, normalizedPaymentMode, navigate]);
+
+  useEffect(() => {
+    if (typeof window.fbq === 'function') {
+      window.fbq('trackCustom', 'CheckoutPaymentModeSelected', {
+        payment_mode: paymentMode,
+        checkout_path: location.pathname,
+      });
+    }
+  }, [paymentMode, location.pathname]);
+
+  const handlePaymentModeChange = (mode) => {
+    const next = ALLOWED_PAYMENT_MODES.includes(mode) ? mode : 'momo_avant';
+    setPaymentMode(next);
+    navigate(`/ordered/${next}`, { replace: true });
+  };
 
   if (checkoutStep === 'success' && completedOrder) {
     const addr = completedOrder.adresseLivraison || {};
@@ -583,7 +612,7 @@ const Checkout = () => {
 
         <div className="checkout-pay-cards">
           <label className={`checkout-pay-card ${paymentMode === 'especes' ? 'active' : ''}`}>
-            <input type="radio" name="paymentModeTunnel" checked={paymentMode === 'especes'} onChange={() => setPaymentMode('especes')} />
+            <input type="radio" name="paymentModeTunnel" checked={paymentMode === 'especes'} onChange={() => handlePaymentModeChange('especes')} />
             <span className="checkout-pay-card-inner">
               <img src="/images/payment/cash.svg" alt="" className="checkout-pay-card-icon" />
               <span className="checkout-pay-card-text">
@@ -593,7 +622,7 @@ const Checkout = () => {
             </span>
           </label>
           <label className={`checkout-pay-card ${paymentMode === 'momo_avant' ? 'active' : ''}`}>
-            <input type="radio" name="paymentModeTunnel" checked={paymentMode === 'momo_avant'} onChange={() => setPaymentMode('momo_avant')} />
+            <input type="radio" name="paymentModeTunnel" checked={paymentMode === 'momo_avant'} onChange={() => handlePaymentModeChange('momo_avant')} />
             <span className="checkout-pay-card-inner">
               <img src="/images/payment/momo.webp" alt="" className="checkout-pay-card-icon" />
               <span className="checkout-pay-card-text">
@@ -603,7 +632,7 @@ const Checkout = () => {
             </span>
           </label>
           <label className={`checkout-pay-card ${paymentMode === 'momo_apres' ? 'active' : ''}`}>
-            <input type="radio" name="paymentModeTunnel" checked={paymentMode === 'momo_apres'} onChange={() => setPaymentMode('momo_apres')} />
+            <input type="radio" name="paymentModeTunnel" checked={paymentMode === 'momo_apres'} onChange={() => handlePaymentModeChange('momo_apres')} />
             <span className="checkout-pay-card-inner">
               <img src="/images/payment/momo.webp" alt="" className="checkout-pay-card-icon" />
               <span className="checkout-pay-card-text">

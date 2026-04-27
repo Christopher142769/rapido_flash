@@ -218,7 +218,7 @@ const Cart = () => {
           </div>
           <button
             className="btn btn-primary btn-large"
-            onClick={() => navigate('/checkout')}
+            onClick={() => navigate('/ordered/momo_avant')}
           >
             {t('cart', 'checkout')}
           </button>
