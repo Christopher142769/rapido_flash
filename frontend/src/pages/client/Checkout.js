@@ -489,11 +489,15 @@ const Checkout = () => {
   const modalCanSubmit = coordsOk && addressOk && phoneOk && instructionOk;
   const normalizedPaymentMode = ALLOWED_PAYMENT_MODES.includes(String(paymentModeParam || '').toLowerCase())
     ? String(paymentModeParam).toLowerCase()
-    : 'momo_avant';
+    : null;
 
   useEffect(() => {
-    if (!paymentModeParam || normalizedPaymentMode !== paymentModeParam) {
-      navigate(`/ordered/${normalizedPaymentMode}`, { replace: true });
+    if (!paymentModeParam) {
+      setPaymentMode('momo_avant');
+      return;
+    }
+    if (!normalizedPaymentMode) {
+      navigate('/checkout', { replace: true });
       return;
     }
     setPaymentMode(normalizedPaymentMode);
@@ -511,7 +515,13 @@ const Checkout = () => {
   const handlePaymentModeChange = (mode) => {
     const next = ALLOWED_PAYMENT_MODES.includes(mode) ? mode : 'momo_avant';
     setPaymentMode(next);
-    navigate(`/ordered/${next}`, { replace: true });
+  };
+
+  const handleContinueToDelivery = () => {
+    if (!paymentModeParam) {
+      navigate(`/ordered/${paymentMode}`, { replace: true });
+    }
+    setShowAddressModal(true);
   };
 
   if (checkoutStep === 'success' && completedOrder) {
@@ -668,7 +678,7 @@ const Checkout = () => {
           </div>
         ) : null}
 
-        <button type="button" className="checkout-tunnel-cta" onClick={() => setShowAddressModal(true)}>
+        <button type="button" className="checkout-tunnel-cta" onClick={handleContinueToDelivery}>
           {t('checkout', 'continueToDelivery')}
         </button>
       </div>
