@@ -115,8 +115,9 @@ function requiresProductConfiguration(produit) {
   if (!produit) return false;
   const hasAccompagnements = Array.isArray(produit.accompagnements)
     && produit.accompagnements.some((a) => a?.actif !== false);
-  const isM3 = String(produit.uniteVente || 'piece') === 'm3';
-  return hasAccompagnements || isM3;
+  const unit = String(produit.uniteVente || 'piece');
+  const requiresVariableQty = unit === 'm3' || unit === 'kg' || unit === 'tonne';
+  return hasAccompagnements || requiresVariableQty;
 }
 
 const Home = () => {

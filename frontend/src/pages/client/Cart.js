@@ -10,6 +10,15 @@ import './Cart.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const BASE_URL = API_URL.replace('/api', '');
+const VARIABLE_UNITS = ['m3', 'kg', 'tonne'];
+
+function unitShortLabel(unit, t) {
+  const u = String(unit || 'piece');
+  if (u === 'm3') return t('store', 'unitLabelM3');
+  if (u === 'kg') return t('store', 'unitLabelKg');
+  if (u === 'tonne') return t('store', 'unitLabelTonne');
+  return t('store', 'unitLabelPiece');
+}
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -142,7 +151,11 @@ const Cart = () => {
                       <>{Number(item.prix).toFixed(0)} FCFA</>
                     )}
                   </p>
-                  {item.uniteVente === 'm3' && <p className="label-hint">Prix unitaire applique par m3</p>}
+                  {VARIABLE_UNITS.includes(String(item.uniteVente || 'piece')) && (
+                    <p className="label-hint">
+                      {String(t('store', 'unitPriceAppliedBy')).replace('{{unit}}', unitShortLabel(item.uniteVente, t))}
+                    </p>
+                  )}
                   {Array.isArray(item.accompagnementsSelected) && item.accompagnementsSelected.length > 0 && (
                     <div className="cart-item-acc-list">
                       {item.accompagnementsSelected.map((acc) => (
@@ -154,7 +167,7 @@ const Cart = () => {
                   )}
                 </div>
                 <div className="cart-item-controls">
-                  {item.uniteVente === 'm3' ? (
+                  {VARIABLE_UNITS.includes(String(item.uniteVente || 'piece')) ? (
                     <input
                       type="number"
                       min="0.01"

@@ -35,6 +35,7 @@ import Modal from '../../components/Modal';
 import './RestaurantDetail.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const VARIABLE_UNITS = ['m3', 'kg', 'tonne'];
 
 /** Erreurs panier : accompagnements manquants, choix unique, volume m³ */
 function getCartValidationError(produit, accompagnementIds, quantityOverride) {
@@ -45,10 +46,26 @@ function getCartValidationError(produit, accompagnementIds, quantityOverride) {
   if (activeOptions.length > 0 && ids.length === 0) return 'missing_accompagnement';
   if (selectionMode === 'unique' && ids.length > 1) return 'unique';
   const quantiteSaisie = quantityOverride != null ? Number(quantityOverride) : 1;
-  if (String(produit?.uniteVente || 'piece') === 'm3' && (!Number.isFinite(quantiteSaisie) || quantiteSaisie <= 0)) {
-    return 'm3';
+  if (VARIABLE_UNITS.includes(String(produit?.uniteVente || 'piece')) && (!Number.isFinite(quantiteSaisie) || quantiteSaisie <= 0)) {
+    return 'variable_qty';
   }
   return null;
+}
+
+function unitLabel(unit, t) {
+  const u = String(unit || 'piece');
+  if (u === 'm3') return t('store', 'unitInputLabelM3');
+  if (u === 'kg') return t('store', 'unitInputLabelKg');
+  if (u === 'tonne') return t('store', 'unitInputLabelTonne');
+  return t('store', 'unitLabelPiece');
+}
+
+function unitPlaceholder(unit, t) {
+  const u = String(unit || 'piece');
+  if (u === 'm3') return t('store', 'unitInputPlaceholderM3');
+  if (u === 'kg') return t('store', 'unitInputPlaceholderKg');
+  if (u === 'tonne') return t('store', 'unitInputPlaceholderTonne');
+  return '';
 }
 
 const JOUR_LABELS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
@@ -262,8 +279,8 @@ const RestaurantDetail = () => {
       showWarning(t('store', 'errAccUnique'), t('common', 'error'));
       return false;
     }
-    if (err === 'm3') {
-      showWarning(t('store', 'errM3Required'), t('store', 'accPickTitle'));
+    if (err === 'variable_qty') {
+      showWarning(t('store', 'errVariableQtyRequired'), t('store', 'accPickTitle'));
       return false;
     }
     const imageUrl = produit.imageCarteHome || (produit.images && produit.images[0]) || null;
@@ -314,7 +331,7 @@ const RestaurantDetail = () => {
         image: imageUrl,
         quantite,
         restaurantId: id,
-        uniteVente: produit.uniteVente === 'm3' ? 'm3' : 'piece',
+        uniteVente: VARIABLE_UNITS.includes(String(produit.uniteVente || 'piece')) ? produit.uniteVente : 'piece',
       }];
     }
     setCart(newCart);
@@ -342,8 +359,8 @@ const RestaurantDetail = () => {
       showWarning(t('store', 'errAccUnique'), t('common', 'error'));
       return;
     }
-    if (err === 'm3') {
-      showWarning(t('store', 'errM3Required'), t('store', 'accPickTitle'));
+    if (err === 'variable_qty') {
+      showWarning(t('store', 'errVariableQtyRequired'), t('store', 'accPickTitle'));
       return;
     }
     const done = addToCart(produit, accompagnementIds, quantityOverride);
@@ -358,10 +375,10 @@ const RestaurantDetail = () => {
       showWarning(t('store', 'accStillRequired'), t('store', 'accPickTitle'));
       return;
     }
-    const vol = String(produit.uniteVente || 'piece') === 'm3' ? volumeM3Input : accPickModal.quantityOverride;
+    const vol = VARIABLE_UNITS.includes(String(produit.uniteVente || 'piece')) ? volumeM3Input : accPickModal.quantityOverride;
     const err = getCartValidationError(produit, selectedIds, vol);
-    if (err === 'm3') {
-      showWarning(t('store', 'errM3Required'), t('store', 'accPickTitle'));
+    if (err === 'variable_qty') {
+      showWarning(t('store', 'errVariableQtyRequired'), t('store', 'accPickTitle'));
       return;
     }
     if (err === 'unique') {
@@ -454,7 +471,8 @@ const RestaurantDetail = () => {
     ? (highlightedProduct.accompagnements || []).filter((a) => a?.actif !== false && a?.nom)
     : [];
   const highlightedAccMode = String(highlightedProduct?.accompagnementsMode || 'multiple');
-  const isM3Product = String(highlightedProduct?.uniteVente || 'piece') === 'm3';
+  const highlightedUnit = String(highlightedProduct?.uniteVente || 'piece');
+  const isVariableUnitProduct = VARIABLE_UNITS.includes(highlightedUnit);
   const otherProducts = hasFocusedProduct
     ? products.filter((p) => String(p._id) !== String(highlightedProduct._id))
     : products;
@@ -655,14 +673,14 @@ const RestaurantDetail = () => {
                 <button
                   type="button"
                   className="pdp-nike-cta"
-                  onClick={() => buyProduct(highlightedProduct, selectedAccompagnementIds, isM3Product ? volumeM3Input : null)}
+                  onClick={() => buyProduct(highlightedProduct, selectedAccompagnementIds, isVariableUnitProduct ? volumeM3Input : null)}
                 >
                   {t('store', 'buy')}
                 </button>
-                {isM3Product ? (
+                {isVariableUnitProduct ? (
                   <div className="pdp-nike-accompagnements">
                     <h3 className="pdp-nike-accompagnements-title">
-                      {String(language || '').toLowerCase().startsWith('en') ? 'Volume (m3)' : 'Volume (m3)'}
+                      {unitLabel(highlightedUnit, t)}
                     </h3>
                     <input
                       type="number"
@@ -671,7 +689,7 @@ const RestaurantDetail = () => {
                       value={volumeM3Input}
                       onChange={(e) => setVolumeM3Input(e.target.value)}
                       className="pdp-nike-m3-input"
-                      placeholder={String(language || '').toLowerCase().startsWith('en') ? 'Enter m3 volume' : 'Entrez le volume en m3'}
+                      placeholder={unitPlaceholder(highlightedUnit, t)}
                     />
                   </div>
                 ) : null}
@@ -862,7 +880,7 @@ const RestaurantDetail = () => {
                       className="btn-add-cart-inline"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if ((produit.accompagnements || []).some((a) => a?.actif !== false) || produit.uniteVente === 'm3') {
+                        if ((produit.accompagnements || []).some((a) => a?.actif !== false) || VARIABLE_UNITS.includes(String(produit.uniteVente || 'piece'))) {
                           goToProduct(produit._id);
                           return;
                         }
@@ -977,7 +995,7 @@ const RestaurantDetail = () => {
                             className="product-card-add-btn"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if ((produit.accompagnements || []).some((a) => a?.actif !== false) || produit.uniteVente === 'm3') {
+                              if ((produit.accompagnements || []).some((a) => a?.actif !== false) || VARIABLE_UNITS.includes(String(produit.uniteVente || 'piece'))) {
                                 goToProduct(produit._id);
                                 return;
                               }
@@ -1105,9 +1123,9 @@ const RestaurantDetail = () => {
             {String(accPickModal.produit.accompagnementsMode || 'multiple') === 'unique' ? (
               <p className="acc-pick-modal-hint">{t('store', 'accPickUniqueHint')}</p>
             ) : null}
-            {String(accPickModal.produit.uniteVente || 'piece') === 'm3' ? (
+            {VARIABLE_UNITS.includes(String(accPickModal.produit.uniteVente || 'piece')) ? (
               <div className="acc-pick-modal-m3">
-                <label htmlFor="acc-pick-m3-input">m³</label>
+                <label htmlFor="acc-pick-m3-input">{unitLabel(accPickModal.produit.uniteVente, t)}</label>
                 <input
                   id="acc-pick-m3-input"
                   type="number"
