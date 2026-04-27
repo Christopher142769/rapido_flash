@@ -19,6 +19,8 @@ function titleForPath(pathname, user, t) {
     ['/dashboard/plats', 'Produits'],
     ['/dashboard/commandes', 'Commandes'],
     ['/dashboard/messages', 'Messages'],
+    ['/dashboard/offres-promo', 'Offres promo'],
+    ['/dashboard/utilisateurs-promo', 'Utilisateurs promo'],
     ['/dashboard/avis', t('reviews', 'sidebarReviews')],
     ['/dashboard/bannieres', 'Bannières'],
     ['/dashboard/gestionnaires', 'Gestionnaires'],

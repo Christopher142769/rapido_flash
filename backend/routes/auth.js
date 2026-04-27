@@ -6,6 +6,8 @@ const LoginCode = require('../models/LoginCode');
 const { auth } = require('../middleware/auth');
 const { sendLoginCode } = require('../utils/mailer');
 const { canManageMaintenance } = require('../utils/maintenanceAccess');
+const { assignEligiblePromoCodesToUser } = require('../utils/promoAutoAssign');
+const { sendToUserId } = require('../services/pushNotifications');
 
 const router = express.Router();
 
@@ -49,6 +51,15 @@ router.post('/register', [
     });
 
     await user.save();
+    const assigned = await assignEligiblePromoCodesToUser(user);
+    if (assigned.length > 0) {
+      void sendToUserId(String(user._id), {
+        title: 'Rapido — Nouveau code promo',
+        body: `Vous avez ${assigned.length} nouveau(x) code(s) promo disponible(s).`,
+        url: '/home',
+        tag: `rapido-promo-${user._id}`,
+      }).catch(() => {});
+    }
 
     res.status(201).json({
       token: generateToken(user._id),

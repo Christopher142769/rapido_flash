@@ -65,6 +65,25 @@ const commandeSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  promoOffer: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'PromoOffer',
+    default: null,
+  },
+  promoCode: {
+    type: String,
+    default: '',
+    trim: true,
+    uppercase: true,
+  },
+  promoDiscountAmount: {
+    type: Number,
+    default: 0,
+  },
+  promoDiscountPercent: {
+    type: Number,
+    default: 0,
+  },
   statut: {
     type: String,
     enum: ['en_attente', 'confirmee', 'en_preparation', 'en_livraison', 'livree', 'annulee'],

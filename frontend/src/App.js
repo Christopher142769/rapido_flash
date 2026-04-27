@@ -39,6 +39,8 @@ import RestaurantMessages from './pages/restaurant/RestaurantMessages';
 import PlatformChatModeration from './pages/restaurant/PlatformChatModeration';
 import MaintenanceDashboardPage from './pages/restaurant/MaintenanceDashboardPage';
 import DashboardOverviewPage from './pages/restaurant/DashboardOverviewPage';
+import PromoOffersDashboard from './pages/restaurant/PromoOffersDashboard';
+import PromoUsersDashboard from './pages/restaurant/PromoUsersDashboard';
 import ChatThread from './pages/client/ChatThread';
 import ChatsInbox from './pages/client/ChatsInbox';
 import ChatFab from './components/ChatFab';
@@ -132,6 +134,8 @@ function App() {
             <Route path="gestionnaires" element={<Gestionnaires />} />
             <Route path="avis" element={<RestaurantAvis />} />
             <Route path="messages" element={<RestaurantMessages />} />
+            <Route path="offres-promo" element={<PromoOffersDashboard />} />
+            <Route path="utilisateurs-promo" element={<PromoUsersDashboard />} />
             <Route path="messages-moderation" element={<PlatformChatModeration />} />
             <Route path="maintenance" element={<MaintenanceDashboardPage />} />
           </Route>

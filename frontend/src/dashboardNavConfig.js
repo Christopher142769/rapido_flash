@@ -12,6 +12,8 @@ import {
   FaUsers,
   FaTools,
   FaChartLine,
+  FaPercent,
+  FaUserFriends,
 } from 'react-icons/fa';
 
 export const DASHBOARD_HOME_SECTION = 'dashboard_home';
@@ -48,6 +50,8 @@ export function buildDashboardNavItems({ isAdmin, t, canManageMaintenance = fals
   const gestion = [
     { id: 'commandes', label: 'Commandes', path: '/dashboard/commandes', section: GESTION_NAV_SECTION, Icon: FaClipboardList },
     { id: 'messages', label: 'Messages', path: '/dashboard/messages', section: GESTION_NAV_SECTION, Icon: FaComments },
+    { id: 'offres-promo', label: 'Offres promo', path: '/dashboard/offres-promo', section: GESTION_NAV_SECTION, Icon: FaPercent },
+    { id: 'utilisateurs-promo', label: 'Utilisateurs', path: '/dashboard/utilisateurs-promo', section: GESTION_NAV_SECTION, Icon: FaUserFriends },
     { id: 'avis', label: t('reviews', 'sidebarReviews'), path: '/dashboard/avis', section: GESTION_NAV_SECTION, Icon: FaStar },
     { id: 'bannieres', label: 'Bannières', path: '/dashboard/bannieres', section: GESTION_NAV_SECTION, Icon: FaFlag },
   ];

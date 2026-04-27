@@ -7,6 +7,8 @@ const { auth } = require('../middleware/auth');
 const RECEIPT_VALIDITY_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
 const { effectiveProduitPrice } = require('../utils/productPromo');
 const { sendToUserId, sendToUserIds } = require('../services/pushNotifications');
+const PromoCode = require('../models/PromoCode');
+const { validatePromoCodeForOrder } = require('../utils/promoEngine');
 
 const STATUT_LABELS_CLIENT = {
   en_attente: 'En attente',
@@ -40,7 +42,7 @@ router.use(express.urlencoded({ extended: true, limit: '100mb' }));
 // Créer une commande (plats ou produits)
 router.post('/', auth, async (req, res) => {
   try {
-    const { restaurantId, plats, produits, adresseLivraison, modePaiement } = req.body;
+    const { restaurantId, plats, produits, adresseLivraison, modePaiement, promoCode } = req.body;
 
     let adressePayload = adresseLivraison || {};
     if (adresseLivraison && typeof adresseLivraison === 'object') {
@@ -145,7 +147,34 @@ router.post('/', auth, async (req, res) => {
 
     const fraisLivraisonBase = restaurant.fraisLivraison || 0;
     const fraisLivraison = commandeQualifieLivraisonGratuite ? 0 : fraisLivraisonBase;
-    const total = sousTotal + fraisLivraison;
+    let promoDiscountAmount = 0;
+    let promoDiscountPercent = 0;
+    let promoOfferId = null;
+    let promoCodeApplied = '';
+    let promoUseTrackedCode = false;
+
+    if (String(promoCode || '').trim()) {
+      const promoResult = await validatePromoCodeForOrder({
+        code: promoCode,
+        userId: req.user._id,
+        restaurantId,
+        produits: produitsDetails.map((p) => ({
+          produitId: p.produit,
+          quantite: p.quantite,
+          prix: p.prix,
+        })),
+      });
+      if (!promoResult.ok) {
+        return res.status(400).json({ message: promoResult.message || 'Code promo invalide.' });
+      }
+      promoDiscountAmount = promoResult.discountAmount;
+      promoDiscountPercent = promoResult.discountPercent;
+      promoOfferId = promoResult.offer._id;
+      promoCodeApplied = promoResult.appliedCode;
+      promoUseTrackedCode = !!promoResult.useTrackedByPromoCode;
+    }
+
+    const total = Math.max(0, sousTotal + fraisLivraison - promoDiscountAmount);
 
     const modesValides = ['especes', 'momo_avant', 'momo_apres'];
     const mode = modesValides.includes(modePaiement) ? modePaiement : 'momo_avant';
@@ -163,12 +192,26 @@ router.post('/', auth, async (req, res) => {
       sousTotal,
       fraisLivraison,
       total,
+      promoOffer: promoOfferId,
+      promoCode: promoCodeApplied,
+      promoDiscountAmount,
+      promoDiscountPercent,
       statut: statutInitial,
       modePaiement: mode,
       paiementEnLigneEffectue
     });
 
     await commande.save();
+
+    if (promoCodeApplied && promoUseTrackedCode) {
+      await PromoCode.updateOne(
+        { code: promoCodeApplied, restaurant: restaurantId, status: 'active' },
+        {
+          $inc: { useCount: 1 },
+          $set: { usedByOrder: commande._id, usedByUser: req.user._id, usedAt: new Date() },
+        }
+      );
+    }
     await commande.populate('restaurant', 'nom logo fraisLivraison');
     await commande.populate('plats.plat', 'nom image prix');
     await commande.populate('produits.produit', 'nom images prix');

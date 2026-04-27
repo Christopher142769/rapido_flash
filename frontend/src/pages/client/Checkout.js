@@ -32,6 +32,9 @@ const Checkout = () => {
   const [restaurantId, setRestaurantId] = useState(null);
   const [fraisLivraison, setFraisLivraison] = useState(0);
   const [paymentMode, setPaymentMode] = useState('momo_avant');
+  const [promoCode, setPromoCode] = useState('');
+  const [promoInfo, setPromoInfo] = useState(null);
+  const [promoLoading, setPromoLoading] = useState(false);
 
   const [mapPosition, setMapPosition] = useState(null);
   const [address, setAddress] = useState('');
@@ -122,7 +125,40 @@ const Checkout = () => {
     return fraisLivraison;
   };
 
-  const getTotal = () => getSubTotal() + getFraisLivraisonEffectif();
+  const getPromoDiscount = () => Number(promoInfo?.discountAmount || 0);
+  const getTotal = () => Math.max(0, getSubTotal() + getFraisLivraisonEffectif() - getPromoDiscount());
+
+  const applyPromoCode = async () => {
+    const code = String(promoCode || '').trim();
+    if (!code || !restaurantId) return;
+    setPromoLoading(true);
+    try {
+      const produits = cart
+        .filter((item) => item.productId != null)
+        .map((item) => ({
+          produitId: item.productId,
+          quantite: item.quantite,
+          prix: item.prix,
+        }));
+      const res = await axios.post(
+        `${API_URL}/promos/validate`,
+        { code, restaurantId, produits },
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      );
+      setPromoInfo({
+        code: res.data.promoCode,
+        discountAmount: Number(res.data.discountAmount || 0),
+        discountPercent: Number(res.data.discountPercent || 0),
+        title: res.data?.offer?.title || '',
+      });
+      showSuccess('Code promo appliqué', 'Promo');
+    } catch (error) {
+      setPromoInfo(null);
+      showWarning(error?.response?.data?.message || 'Code promo invalide', 'Promo');
+    } finally {
+      setPromoLoading(false);
+    }
+  };
 
   const handleAddressSearch = (query) => {
     setSearchQuery(query);
@@ -294,6 +330,7 @@ const Checkout = () => {
         restaurantId,
         plats: plats.length ? plats : undefined,
         produits: produits.length ? produits : undefined,
+        promoCode: promoInfo?.code || undefined,
         adresseLivraison: {
           latitude: mapPosition[0],
           longitude: mapPosition[1],
@@ -581,6 +618,26 @@ const Checkout = () => {
           <span>{t('cart', 'total')}</span>
           <strong>{getTotal().toFixed(0)} FCFA</strong>
         </div>
+
+        <div className="checkout-tunnel-total-pill" aria-live="polite">
+          <input
+            type="text"
+            placeholder="Code promo"
+            value={promoCode}
+            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+            className="checkout-input"
+            style={{ maxWidth: 220 }}
+          />
+          <button type="button" className="btn btn-outline" onClick={applyPromoCode} disabled={promoLoading || !promoCode.trim()}>
+            {promoLoading ? 'Validation...' : 'Appliquer'}
+          </button>
+        </div>
+        {promoInfo ? (
+          <div className="checkout-tunnel-total-pill" aria-live="polite">
+            <span>Promo {promoInfo.code} ({promoInfo.discountPercent}%)</span>
+            <strong>-{Number(promoInfo.discountAmount).toFixed(0)} FCFA</strong>
+          </div>
+        ) : null}
 
         <button type="button" className="checkout-tunnel-cta" onClick={() => setShowAddressModal(true)}>
           {t('checkout', 'continueToDelivery')}

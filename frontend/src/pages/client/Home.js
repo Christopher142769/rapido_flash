@@ -10,7 +10,7 @@ import LocationEditor from '../../components/LocationEditor';
 import PageLoader from '../../components/PageLoader';
 import FreeDeliveryBanner from '../../components/FreeDeliveryBanner';
 import CategoryDomainIcon from '../../components/CategoryDomainIcon';
-import { FaPhoneAlt, FaWhatsapp, FaPlus, FaComments } from 'react-icons/fa';
+import { FaPhoneAlt, FaWhatsapp, FaPlus, FaComments, FaGift } from 'react-icons/fa';
 import { IoChevronBack, IoChevronForward, IoSearchOutline } from 'react-icons/io5';
 import { generateBannerPlaceholderSVG } from '../../utils/imagePlaceholder';
 import { pickLocalized } from '../../utils/i18nContent';
@@ -142,6 +142,12 @@ const Home = () => {
   const [error, setError] = useState(null);
   const [productSearchResults, setProductSearchResults] = useState([]);
   const [productSearchLoading, setProductSearchLoading] = useState(false);
+  const [myPromoCodes, setMyPromoCodes] = useState([]);
+  const [promoCopiedId, setPromoCopiedId] = useState('');
+  const [showPromoModal, setShowPromoModal] = useState(false);
+  const [promoModalCode, setPromoModalCode] = useState(null);
+  const [showPromoOffersPanel, setShowPromoOffersPanel] = useState(false);
+  const [promoHasFreshNotice, setPromoHasFreshNotice] = useState(false);
   const categoriesScrollRef = useRef(null);
 
   const askAuthForProduct = useCallback(
@@ -175,6 +181,88 @@ const Home = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const authUserId = user?.id || user?._id || null;
+
+  useEffect(() => {
+    const loadMyPromos = async () => {
+      if (!authUserId) {
+        setMyPromoCodes([]);
+        return;
+      }
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setMyPromoCodes([]);
+          return;
+        }
+        const res = await axios.get(`${API_URL}/promos/my-codes`, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 10000,
+        });
+        setMyPromoCodes(Array.isArray(res.data) ? res.data : []);
+      } catch (_) {
+        setMyPromoCodes([]);
+      }
+    };
+    loadMyPromos();
+  }, [authUserId]);
+
+  useEffect(() => {
+    if (!authUserId || !Array.isArray(myPromoCodes) || myPromoCodes.length === 0) return;
+    const storageKey = `rapido_seen_promos_${authUserId}`;
+    let seen = [];
+    try {
+      seen = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      if (!Array.isArray(seen)) seen = [];
+    } catch (_) {
+      seen = [];
+    }
+
+    const unseen = myPromoCodes.filter((p) => !seen.includes(String(p.id)));
+    if (unseen.length === 0) return;
+    setPromoHasFreshNotice(true);
+
+    const updatedSeen = [...new Set([...seen, ...unseen.map((p) => String(p.id))])];
+    localStorage.setItem(storageKey, JSON.stringify(updatedSeen));
+
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      unseen.slice(0, 3).forEach((promo) => {
+        try {
+          new Notification('Rapido — Nouveau code promo', {
+            body: `${promo.code} (${Number(promo.offer?.discountPercent || 0)}%): ${promo.offer?.title || 'Offre promo'}`,
+            tag: `promo-${promo.id}`,
+          });
+        } catch (_) {}
+      });
+    }
+  }, [myPromoCodes, authUserId]);
+
+  useEffect(() => {
+    if (!authUserId || !Array.isArray(myPromoCodes) || myPromoCodes.length === 0) {
+      setShowPromoModal(false);
+      setPromoModalCode(null);
+      return;
+    }
+    const key = `rapido_home_promo_modal_seen_${authUserId}`;
+    const today = new Date().toISOString().slice(0, 10);
+    const seenToday = localStorage.getItem(key) === today;
+    if (!seenToday) {
+      setPromoModalCode(myPromoCodes[0]);
+      setShowPromoModal(true);
+      localStorage.setItem(key, today);
+    }
+  }, [myPromoCodes, authUserId]);
+
+  const copyPromoCode = async (id, code) => {
+    try {
+      await navigator.clipboard.writeText(String(code || ''));
+      setPromoCopiedId(String(id));
+      window.setTimeout(() => setPromoCopiedId(''), 1800);
+    } catch (_) {}
+  };
+
+  const firstPromo = myPromoCodes[0] || null;
 
   const fetchData = async () => {
     try {
@@ -742,6 +830,28 @@ const Home = () => {
         </div>
       </div>
 
+      {firstPromo ? (
+        <button
+          type="button"
+          className="home-promo-banner"
+          onClick={() => setShowPromoOffersPanel(true)}
+          aria-label="Voir les offres promo"
+        >
+          <span className="home-promo-banner__badge">OFFRE</span>
+          <span className="home-promo-banner__icon" aria-hidden>
+            <FaGift />
+          </span>
+          <span className="home-promo-banner__text">
+            <strong>{firstPromo.offer?.title || 'Offre promo'}</strong>
+            <small>
+              Code {firstPromo.code} - {Number(firstPromo.offer?.discountPercent || 0)}% de reduction
+            </small>
+          </span>
+          {promoHasFreshNotice ? <span className="home-promo-banner__new">NOUVELLE OFFRE</span> : null}
+          <span className="home-promo-banner__cta">Voir toutes les offres</span>
+        </button>
+      ) : null}
+
       {renderProductSearchSection('home-product-search--mobile')}
 
       {bannieresForMobile.length > 0 ? (
@@ -890,6 +1000,130 @@ const Home = () => {
         )}
       </div>
 
+      {showPromoModal && promoModalCode ? (
+        <div className="home-promo-modal-overlay" role="presentation" onClick={() => setShowPromoModal(false)}>
+          <div
+            className="home-promo-modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Offre promotionnelle"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button type="button" className="home-promo-modal-close" onClick={() => setShowPromoModal(false)} aria-label="Fermer">
+              ×
+            </button>
+            <div className="home-promo-modal-visual" aria-hidden>
+              <div className="home-promo-modal-logos">
+                <img src="/images/logo.png" alt="" className="home-promo-modal-logo" />
+                {promoModalCode.offer?.restaurantLogo ? (
+                  <img
+                    src={String(promoModalCode.offer.restaurantLogo).startsWith('http')
+                      ? promoModalCode.offer.restaurantLogo
+                      : `${BASE_URL}${promoModalCode.offer.restaurantLogo}`}
+                    alt=""
+                    className="home-promo-modal-logo"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                ) : null}
+              </div>
+              <span className="home-promo-modal-visual-badge">
+                {promoModalCode.offer?.scopeType === 'platform'
+                  ? 'OFFRE PLATEFORME'
+                  : `OFFRE ${String(promoModalCode.offer?.restaurantName || '').toUpperCase()}`}
+              </span>
+              <strong>-{Number(promoModalCode.offer?.discountPercent || 0)}%</strong>
+              <small>sur vos produits</small>
+            </div>
+            <div className="home-promo-modal-content">
+              <p className="home-promo-modal-eyebrow">Offre spéciale</p>
+              <h3 className="home-promo-modal-title">{promoModalCode.offer?.title || 'Code promo disponible'}</h3>
+              <p className="home-promo-modal-discount">{Number(promoModalCode.offer?.discountPercent || 0)}% de réduction</p>
+              <p className="home-promo-modal-products">
+                {(promoModalCode.offer?.products || []).length > 0
+                  ? promoModalCode.offer.products.map((p) => p.nom).slice(0, 5).join(', ')
+                  : 'Valable sur tous les produits'}
+              </p>
+              <div className="home-promo-modal-code-row">
+                <strong>{promoModalCode.code}</strong>
+                <button
+                  type="button"
+                  onClick={() => copyPromoCode(promoModalCode.id, promoModalCode.code)}
+                  className="home-promo-modal-copy"
+                >
+                  {promoCopiedId === String(promoModalCode.id) ? 'Copié' : 'Copier'}
+                </button>
+              </div>
+              <button type="button" className="home-promo-modal-cta" onClick={() => setShowPromoModal(false)}>
+                Utiliser cette offre
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showPromoOffersPanel ? (
+        <div className="home-promo-drawer-overlay" role="presentation" onClick={() => setShowPromoOffersPanel(false)}>
+          <div
+            className="home-promo-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Toutes les offres promo"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="home-promo-drawer-head">
+              <h3>Toutes vos offres promo</h3>
+              <button type="button" onClick={() => setShowPromoOffersPanel(false)} aria-label="Fermer">×</button>
+            </div>
+            <div className="home-promo-drawer-list">
+              {myPromoCodes.map((promo) => {
+                const expiresLabel = promo.expiresAt ? new Date(promo.expiresAt).toLocaleString() : 'Sans expiration';
+                const productsLabel =
+                  (promo.offer?.products || []).length > 0
+                    ? promo.offer.products.map((p) => p.nom).slice(0, 6).join(', ')
+                    : 'Tous les produits';
+                return (
+                  <article key={`panel-${promo.id}`} className="home-promo-drawer-item">
+                    <div className="home-promo-drawer-item-visual">
+                      <div className="home-promo-drawer-item-logos">
+                        <img src="/images/logo.png" alt="" className="home-promo-drawer-item-logo" />
+                        {promo.offer?.restaurantLogo ? (
+                          <img
+                            src={String(promo.offer.restaurantLogo).startsWith('http')
+                              ? promo.offer.restaurantLogo
+                              : `${BASE_URL}${promo.offer.restaurantLogo}`}
+                            alt=""
+                            className="home-promo-drawer-item-logo"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          />
+                        ) : null}
+                      </div>
+                      <strong>-{Number(promo.offer?.discountPercent || 0)}%</strong>
+                      <small>sur vos produits</small>
+                    </div>
+                    <div className="home-promo-drawer-item-content">
+                      <p className="home-promo-drawer-title">{promo.offer?.title || 'Offre promo'}</p>
+                      <p className="home-promo-drawer-discount">
+                        {promo.offer?.scopeType === 'platform'
+                          ? 'Offre valable sur la plateforme'
+                          : `Offre ${promo.offer?.restaurantName || 'entreprise'}`}
+                      </p>
+                      <p className="home-promo-drawer-products">{productsLabel}</p>
+                      <div className="home-promo-drawer-code">
+                        <strong>{promo.code}</strong>
+                        <button type="button" onClick={() => copyPromoCode(promo.id, promo.code)}>
+                          {promoCopiedId === String(promo.id) ? 'Copié' : 'Copier'}
+                        </button>
+                      </div>
+                      <small>Valide: {expiresLabel}</small>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {/* Desktop: Bannières défilantes - images en valeur, sans overlay */}
       <div className="hero-desktop">
         <div className="hero-bg-desktop">
@@ -918,6 +1152,28 @@ const Home = () => {
 
       <div className="plats-section-desktop">
         <div className="container-desktop">
+          {firstPromo ? (
+            <button
+              type="button"
+              className="home-promo-banner home-promo-banner--desktop"
+              onClick={() => setShowPromoOffersPanel(true)}
+              aria-label="Voir les offres promo"
+            >
+              <span className="home-promo-banner__badge">OFFRE</span>
+              <span className="home-promo-banner__icon" aria-hidden>
+                <FaGift />
+              </span>
+              <span className="home-promo-banner__text">
+                <strong>{firstPromo.offer?.title || 'Offre promo'}</strong>
+                <small>
+                  Code {firstPromo.code} - {Number(firstPromo.offer?.discountPercent || 0)}% de reduction
+                </small>
+              </span>
+              {promoHasFreshNotice ? <span className="home-promo-banner__new">NOUVELLE OFFRE</span> : null}
+              <span className="home-promo-banner__cta">Voir toutes les offres</span>
+            </button>
+          ) : null}
+
           {renderProductSearchSection('home-product-search--desktop')}
           {categoriesDomaine.length > 0 && (
             <section id="section-categories" className="home-categories-section-desktop">
