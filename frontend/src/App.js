@@ -50,6 +50,7 @@ import SupportWidget from './components/SupportWidget';
 import './App.css';
 import MaintenanceGate from './components/MaintenanceGate';
 import SeoRouteMeta from './components/SeoRouteMeta';
+import { DASHBOARD_BASE_PATH } from './config/dashboardPath';
 
 /** Meta Pixel PageView on client-side navigations (initial load is tracked in index.html). */
 function MetaPixelPageViewOnRoute() {
@@ -65,6 +66,13 @@ function MetaPixelPageViewOnRoute() {
     }
   }, [location.pathname, location.search]);
   return null;
+}
+
+function DashboardLegacyRedirect() {
+  const location = useLocation();
+  const suffix = location.pathname.startsWith('/dashboard') ? location.pathname.slice('/dashboard'.length) : '';
+  const target = `${DASHBOARD_BASE_PATH}${suffix || ''}${location.search || ''}`;
+  return <Navigate to={target} replace />;
 }
 
 function App() {
@@ -122,7 +130,7 @@ function App() {
           <Route path="/chat/:restaurantId" element={<PrivateRoute><ChatThread /></PrivateRoute>} />
           
           {/* Pages restaurant (layout commun : sidebar + header + transitions) */}
-          <Route path="/dashboard" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
+          <Route path={DASHBOARD_BASE_PATH} element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
             <Route index element={<Dashboard />} />
             <Route path="tableau" element={<DashboardOverviewPage />} />
             <Route path="medias" element={<RestaurantMedias />} />
@@ -140,7 +148,8 @@ function App() {
             <Route path="messages-moderation" element={<PlatformChatModeration />} />
             <Route path="maintenance" element={<MaintenanceDashboardPage />} />
           </Route>
-          <Route path="/entreprises" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard/*" element={<DashboardLegacyRedirect />} />
+          <Route path="/entreprises" element={<Navigate to={DASHBOARD_BASE_PATH} replace />} />
           
           <Route path="/" element={<Navigate to="/home" replace />} />
         </Routes>

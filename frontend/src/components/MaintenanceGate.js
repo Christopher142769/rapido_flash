@@ -3,10 +3,11 @@ import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 import MaintenancePage from '../pages/MaintenancePage';
 import PageLoader from './PageLoader';
+import { DASHBOARD_BASE_PATH } from '../config/dashboardPath';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-const ALLOWED_PREFIXES = ['/dashboard'];
+const ALLOWED_PREFIXES = ['/dashboard', DASHBOARD_BASE_PATH];
 const ALLOWED_EXACT = ['/login', '/register', '/loading', '/welcome', '/location'];
 
 function pathIsAllowed(pathname) {

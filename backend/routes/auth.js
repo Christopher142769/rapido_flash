@@ -4,7 +4,7 @@ const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const LoginCode = require('../models/LoginCode');
 const { auth } = require('../middleware/auth');
-const { sendLoginCode } = require('../utils/mailer');
+const { sendLoginCode, sendDashboardLoginCode } = require('../utils/mailer');
 const { canManageMaintenance } = require('../utils/maintenanceAccess');
 const { assignEligiblePromoCodesToUser } = require('../utils/promoAutoAssign');
 const { sendToUserId } = require('../services/pushNotifications');
@@ -21,6 +21,14 @@ const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'secret_key', {
     expiresIn: '30d'
   });
+};
+
+const generateLoginChallengeToken = (user) => {
+  return jwt.sign(
+    { id: String(user._id), email: String(user.email || '').toLowerCase(), type: 'login_2fa' },
+    process.env.JWT_SECRET || 'secret_key',
+    { expiresIn: '10m' }
+  );
 };
 
 // Inscription
@@ -103,7 +111,69 @@ router.post('/login', [
       return res.status(403).json({ message: 'Compte suspendu' });
     }
 
-    res.json({
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    const emailNorm = String(user.email || '').toLowerCase().trim();
+    await LoginCode.deleteMany({ email: emailNorm, purpose: 'login_2fa' });
+    await LoginCode.create({
+      email: emailNorm,
+      user: user._id,
+      code,
+      purpose: 'login_2fa',
+      expiresAt,
+    });
+    const emailResult = await sendDashboardLoginCode(user.email, code);
+    if (!emailResult.sent) {
+      return res.status(500).json({ message: "Impossible d'envoyer le code de validation. Réessayez plus tard." });
+    }
+    return res.json({
+      requiresTwoFactor: true,
+      challengeToken: generateLoginChallengeToken(user),
+      user: {
+        id: user._id,
+        nom: user.nom,
+        email: user.email,
+        role: user.role,
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.post('/verify-dashboard-2fa', [
+  body('challengeToken').notEmpty(),
+  body('code').isLength({ min: 6, max: 6 })
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ message: 'Code invalide' });
+    }
+    const { challengeToken, code } = req.body;
+    let decoded;
+    try {
+      decoded = jwt.verify(challengeToken, process.env.JWT_SECRET || 'secret_key');
+    } catch (_) {
+      return res.status(401).json({ message: 'Session 2FA expirée. Reconnectez-vous.' });
+    }
+    if (!decoded?.id || decoded?.type !== 'login_2fa') {
+      return res.status(401).json({ message: 'Session 2FA invalide.' });
+    }
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    const emailNorm = String(user.email || '').toLowerCase().trim();
+    const record = await LoginCode.findOne({
+      email: emailNorm,
+      user: user._id,
+      code: String(code || '').trim(),
+      purpose: 'login_2fa',
+    }).sort({ createdAt: -1 });
+    if (!record || record.expiresAt < new Date()) {
+      return res.status(400).json({ message: 'Code invalide ou expiré' });
+    }
+    await LoginCode.deleteMany({ email: emailNorm, purpose: 'login_2fa' });
+    return res.json({
       token: generateToken(user._id),
       user: {
         id: user._id,
@@ -116,7 +186,7 @@ router.post('/login', [
       }
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message || 'Erreur serveur' });
   }
 });
 
@@ -136,8 +206,8 @@ router.post('/send-login-code', [
     }
     const code = String(Math.floor(100000 + Math.random() * 900000));
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-    await LoginCode.deleteMany({ email: email.toLowerCase().trim() });
-    await LoginCode.create({ email: email.toLowerCase().trim(), code, expiresAt });
+    await LoginCode.deleteMany({ email: email.toLowerCase().trim(), purpose: 'password_reset' });
+    await LoginCode.create({ email: email.toLowerCase().trim(), code, expiresAt, purpose: 'password_reset' });
     const result = await sendLoginCode(email, code);
     if (!result.sent) {
       return res.status(500).json({ message: 'Impossible d\'envoyer l\'email. Réessayez plus tard.' });
@@ -161,7 +231,7 @@ router.post('/verify-login-code', [
     }
     const { email, code, newPassword } = req.body;
     const emailNorm = email.toLowerCase().trim();
-    const record = await LoginCode.findOne({ email: emailNorm, code }).sort({ createdAt: -1 });
+    const record = await LoginCode.findOne({ email: emailNorm, code, purpose: 'password_reset' }).sort({ createdAt: -1 });
     if (!record || record.expiresAt < new Date()) {
       return res.status(400).json({ message: 'Code invalide ou expiré' });
     }
@@ -171,7 +241,7 @@ router.post('/verify-login-code', [
     }
     user.password = newPassword;
     await user.save();
-    await LoginCode.deleteMany({ email: emailNorm });
+    await LoginCode.deleteMany({ email: emailNorm, purpose: 'password_reset' });
     const token = generateToken(user._id);
     res.json({
       token,

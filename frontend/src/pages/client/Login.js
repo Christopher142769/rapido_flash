@@ -2,6 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
+import { toDashboardPath } from '../../config/dashboardPath';
 import './Auth.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -17,6 +18,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [dashboard2FA, setDashboard2FA] = useState({ challengeToken: '', code: '', email: '' });
 
   // Mode "connexion par code" (type Yelo)
   const [codeMode, setCodeMode] = useState(false);
@@ -32,7 +34,7 @@ const Login = () => {
   useEffect(() => {
     if (isAuthenticated && user) {
       if (user.role === 'restaurant' || user.role === 'gestionnaire') {
-        navigate('/dashboard');
+        navigate(toDashboardPath());
       } else {
         navigate(afterAuthPath);
       }
@@ -50,7 +52,39 @@ const Login = () => {
     setLoading(true);
     const result = await login(formData.email, formData.password);
     setLoading(false);
-    if (!result.success) setError(result.message);
+    if (!result.success) {
+      setError(result.message);
+      return;
+    }
+    if (result.requiresTwoFactor) {
+      setDashboard2FA({
+        challengeToken: result.challengeToken,
+        code: '',
+        email: result.user?.email || formData.email,
+      });
+    }
+  };
+
+  const handleVerifyDashboard2FA = async (e) => {
+    e.preventDefault();
+    setError('');
+    const code = String(dashboard2FA.code || '').replace(/\D/g, '').slice(0, 6);
+    if (code.length !== 6) {
+      setError('Veuillez entrer un code à 6 chiffres');
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API_URL}/auth/verify-dashboard-2fa`, {
+        challengeToken: dashboard2FA.challengeToken,
+        code,
+      });
+      loginWithToken(res.data.token, res.data.user);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Code invalide ou expiré');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSendCode = async (e) => {
@@ -127,7 +161,7 @@ const Login = () => {
           <p>Connectez-vous pour continuer</p>
         </div>
 
-        {!codeMode ? (
+        {!codeMode && !dashboard2FA.challengeToken ? (
           <>
             <form onSubmit={handleSubmit} className="auth-form">
               {error && <div className="error-message">{error}</div>}
@@ -182,6 +216,39 @@ const Login = () => {
               <p>Vous n'avez pas de compte ? <Link to={safeNext ? `/register?next=${encodeURIComponent(safeNext)}` : '/register'}>S'inscrire</Link></p>
             </div>
           </>
+        ) : dashboard2FA.challengeToken ? (
+          <form onSubmit={handleVerifyDashboard2FA} className="auth-form">
+            {error && <div className="error-message">{error}</div>}
+            <div className="success-message">Un code de vérification a été envoyé par email.</div>
+            <div className="form-group">
+              <label>Email</label>
+              <input type="email" value={dashboard2FA.email} readOnly className="input-readonly" />
+            </div>
+            <div className="form-group">
+              <label>Code de sécurité (6 chiffres)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="123456"
+                value={dashboard2FA.code}
+                onChange={(e) => setDashboard2FA((prev) => ({ ...prev, code: e.target.value.replace(/\D/g, '').slice(0, 6) }))}
+              />
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? 'Vérification...' : 'Confirmer et se connecter'}
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary-auth"
+              onClick={() => {
+                setDashboard2FA({ challengeToken: '', code: '', email: '' });
+                setError('');
+              }}
+            >
+              Revenir à la connexion
+            </button>
+          </form>
         ) : (
           <>
             {codeStep === 1 ? (
