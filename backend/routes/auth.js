@@ -34,6 +34,11 @@ const generateLoginChallengeToken = (user) => {
   );
 };
 
+const requiresTwoFactorLogin = (user) => {
+  const role = String(user?.role || '');
+  return role === 'restaurant' || role === 'gestionnaire';
+};
+
 const beginTwoFactorLogin = async (user) => {
   const code = String(Math.floor(100000 + Math.random() * 900000));
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
@@ -145,6 +150,20 @@ router.post('/login', [
       return res.status(403).json({ message: 'Compte suspendu' });
     }
 
+    if (!requiresTwoFactorLogin(user)) {
+      return res.json({
+        token: generateToken(user._id),
+        user: {
+          id: user._id,
+          nom: user.nom,
+          email: user.email,
+          role: user.role,
+          restaurantId: user.restaurantId,
+          banned: !!user.banned,
+          canManageMaintenance: canManageMaintenance(user),
+        }
+      });
+    }
     const login2FA = await beginTwoFactorLogin(user);
     if (!login2FA.ok) {
       return res.status(500).json({ message: login2FA.message });
@@ -208,6 +227,20 @@ router.post('/google', [
       return res.status(403).json({ message: 'Compte suspendu' });
     }
 
+    if (!requiresTwoFactorLogin(user)) {
+      return res.json({
+        token: generateToken(user._id),
+        user: {
+          id: user._id,
+          nom: user.nom,
+          email: user.email,
+          role: user.role,
+          restaurantId: user.restaurantId,
+          banned: !!user.banned,
+          canManageMaintenance: canManageMaintenance(user),
+        }
+      });
+    }
     const login2FA = await beginTwoFactorLogin(user);
     if (!login2FA.ok) {
       return res.status(500).json({ message: login2FA.message });
