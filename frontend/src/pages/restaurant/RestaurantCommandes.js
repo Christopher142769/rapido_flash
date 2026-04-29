@@ -200,15 +200,51 @@ const RestaurantCommandes = () => {
                     )}
 
                     <div className="commande-livraison">
-                      <h4>Adresse de livraison:</h4>
+                      <h4>{t('commandesPage', 'deliveryAddressTitle')}</h4>
                       {commande.adresseLivraison?.adresse ? (
                         <p>{commande.adresseLivraison.adresse}</p>
-                      ) : (
+                      ) : commande.adresseLivraison?.latitude != null &&
+                        commande.adresseLivraison?.longitude != null ? (
                         <p>
-                          Lat: {commande.adresseLivraison?.latitude?.toFixed(6)}, Lng:{' '}
-                          {commande.adresseLivraison?.longitude?.toFixed(6)}
+                          Lat: {commande.adresseLivraison.latitude.toFixed(6)}, Lng:{' '}
+                          {commande.adresseLivraison.longitude.toFixed(6)}
                         </p>
+                      ) : (
+                        <p>{t('commandesPage', 'notProvided')}</p>
                       )}
+                      <div className="commande-livraison-extra">
+                        <div className="commande-livraison-row">
+                          <span className="commande-livraison-label">
+                            {t('commandesPage', 'deliveryPhoneTitle')}
+                          </span>
+                          {(() => {
+                            const raw = commande.adresseLivraison?.telephoneContact;
+                            const phone = typeof raw === 'string' ? raw.trim() : '';
+                            if (!phone) {
+                              return <span>{t('commandesPage', 'notProvided')}</span>;
+                            }
+                            const telDigits = phone.replace(/[^\d+]/g, '');
+                            const href = telDigits ? `tel:${telDigits}` : null;
+                            return href ? (
+                              <a href={href} className="commande-livraison-phone-link">
+                                {phone}
+                              </a>
+                            ) : (
+                              <span>{phone}</span>
+                            );
+                          })()}
+                        </div>
+                        <div className="commande-livraison-row commande-livraison-instructions">
+                          <span className="commande-livraison-label">
+                            {t('commandesPage', 'driverInstructionsTitle')}
+                          </span>
+                          <span className="commande-livraison-instructions-text">
+                            {commande.adresseLivraison?.instruction?.trim()
+                              ? commande.adresseLivraison.instruction.trim()
+                              : t('commandesPage', 'notProvided')}
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="commande-total">

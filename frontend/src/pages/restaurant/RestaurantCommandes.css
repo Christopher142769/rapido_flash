@@ -109,6 +109,48 @@
   margin-bottom: 20px;
 }
 
+.commande-livraison-extra {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e8e8e8;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.commande-livraison-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 15px;
+  color: var(--dark-brown);
+  line-height: 1.45;
+}
+
+.commande-livraison-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary-brown);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.commande-livraison-instructions-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.commande-livraison-phone-link {
+  color: var(--primary-brown);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.commande-livraison-phone-link:hover {
+  opacity: 0.85;
+}
+
 .commande-client h4,
 .commande-plats h4,
 .commande-livraison h4 {
