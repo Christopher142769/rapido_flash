@@ -1,8 +1,9 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useCallback } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
 import { toDashboardPath } from '../../config/dashboardPath';
+import GoogleSignInButton from '../../components/auth/GoogleSignInButton';
 import './Auth.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -10,7 +11,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { login, loginWithToken, user, isAuthenticated } = useContext(AuthContext);
+  const { login, loginWithToken, loginWithGoogle, user, isAuthenticated } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -46,12 +47,7 @@ const Login = () => {
     setError('');
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    const result = await login(formData.email, formData.password);
-    setLoading(false);
+  const applyAuthResult = useCallback((result, fallbackEmail = '') => {
     if (!result.success) {
       setError(result.message);
       return;
@@ -60,10 +56,28 @@ const Login = () => {
       setDashboard2FA({
         challengeToken: result.challengeToken,
         code: '',
-        email: result.user?.email || formData.email,
+        email: result.user?.email || fallbackEmail || '',
       });
     }
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    const result = await login(formData.email, formData.password);
+    setLoading(false);
+    applyAuthResult(result, formData.email);
   };
+
+  const handleGoogleCredential = useCallback(async (credential) => {
+    if (!credential) return;
+    setError('');
+    setLoading(true);
+    const result = await loginWithGoogle(credential);
+    setLoading(false);
+    applyAuthResult(result);
+  }, [loginWithGoogle, applyAuthResult]);
 
   const handleVerifyDashboard2FA = async (e) => {
     e.preventDefault();
@@ -165,6 +179,8 @@ const Login = () => {
           <>
             <form onSubmit={handleSubmit} className="auth-form">
               {error && <div className="error-message">{error}</div>}
+              <GoogleSignInButton onCredential={handleGoogleCredential} disabled={loading} />
+              <div className="auth-divider">ou</div>
 
               <div className="form-group">
                 <label>Email</label>

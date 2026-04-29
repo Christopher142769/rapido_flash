@@ -1,6 +1,8 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
+const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
 const LoginCode = require('../models/LoginCode');
 const { auth } = require('../middleware/auth');
@@ -10,6 +12,7 @@ const { assignEligiblePromoCodesToUser } = require('../utils/promoAutoAssign');
 const { sendToUserId } = require('../services/pushNotifications');
 
 const router = express.Router();
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || '');
 
 // Middleware pour parser JSON et URL-encoded pour cette route uniquement
 // (car elle n'utilise pas Multer)
@@ -29,6 +32,37 @@ const generateLoginChallengeToken = (user) => {
     process.env.JWT_SECRET || 'secret_key',
     { expiresIn: '10m' }
   );
+};
+
+const beginTwoFactorLogin = async (user) => {
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  const emailNorm = String(user.email || '').toLowerCase().trim();
+  await LoginCode.deleteMany({ email: emailNorm, purpose: 'login_2fa' });
+  await LoginCode.create({
+    email: emailNorm,
+    user: user._id,
+    code,
+    purpose: 'login_2fa',
+    expiresAt,
+  });
+  const emailResult = await sendDashboardLoginCode(user.email, code);
+  if (!emailResult.sent) {
+    return { ok: false, message: "Impossible d'envoyer le code de validation. Réessayez plus tard." };
+  }
+  return {
+    ok: true,
+    payload: {
+      requiresTwoFactor: true,
+      challengeToken: generateLoginChallengeToken(user),
+      user: {
+        id: user._id,
+        nom: user.nom,
+        email: user.email,
+        role: user.role,
+      }
+    }
+  };
 };
 
 // Inscription
@@ -111,33 +145,76 @@ router.post('/login', [
       return res.status(403).json({ message: 'Compte suspendu' });
     }
 
-    const code = String(Math.floor(100000 + Math.random() * 900000));
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-    const emailNorm = String(user.email || '').toLowerCase().trim();
-    await LoginCode.deleteMany({ email: emailNorm, purpose: 'login_2fa' });
-    await LoginCode.create({
-      email: emailNorm,
-      user: user._id,
-      code,
-      purpose: 'login_2fa',
-      expiresAt,
-    });
-    const emailResult = await sendDashboardLoginCode(user.email, code);
-    if (!emailResult.sent) {
-      return res.status(500).json({ message: "Impossible d'envoyer le code de validation. Réessayez plus tard." });
+    const login2FA = await beginTwoFactorLogin(user);
+    if (!login2FA.ok) {
+      return res.status(500).json({ message: login2FA.message });
     }
-    return res.json({
-      requiresTwoFactor: true,
-      challengeToken: generateLoginChallengeToken(user),
-      user: {
-        id: user._id,
-        nom: user.nom,
-        email: user.email,
-        role: user.role,
-      }
-    });
+    return res.json(login2FA.payload);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+router.post('/google', [
+  body('credential').notEmpty()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ message: 'Jeton Google invalide' });
+    }
+    if (!process.env.GOOGLE_CLIENT_ID) {
+      return res.status(500).json({ message: 'Google OAuth non configuré (GOOGLE_CLIENT_ID manquant).' });
+    }
+    const { credential } = req.body;
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const email = String(payload?.email || '').toLowerCase().trim();
+    const name = String(payload?.name || '').trim();
+    const picture = String(payload?.picture || '').trim();
+    if (!email) {
+      return res.status(400).json({ message: 'Email Google introuvable.' });
+    }
+
+    let user = await User.findOne({ email });
+    if (!user) {
+      const generatedPassword = crypto.randomBytes(16).toString('hex');
+      user = new User({
+        nom: name || email.split('@')[0],
+        email,
+        password: generatedPassword,
+        role: 'client',
+        photo: picture || '',
+      });
+      await user.save();
+      const assigned = await assignEligiblePromoCodesToUser(user);
+      if (assigned.length > 0) {
+        void sendToUserId(String(user._id), {
+          title: 'Rapido — Nouveau code promo',
+          body: `Vous avez ${assigned.length} nouveau(x) code(s) promo disponible(s).`,
+          url: '/home',
+          tag: `rapido-promo-${user._id}`,
+        }).catch(() => {});
+      }
+    } else if (picture && !user.photo) {
+      user.photo = picture;
+      await user.save();
+    }
+
+    if (user.banned) {
+      return res.status(403).json({ message: 'Compte suspendu' });
+    }
+
+    const login2FA = await beginTwoFactorLogin(user);
+    if (!login2FA.ok) {
+      return res.status(500).json({ message: login2FA.message });
+    }
+    return res.json(login2FA.payload);
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'Erreur Google Auth' });
   }
 });
 

@@ -60,6 +60,13 @@ function parseInline(text, keyBase) {
   return out;
 }
 
+function splitFirstSentence(s) {
+  const value = String(s || '');
+  const match = value.match(/^([^.!?]+[.!?]?)([\s\S]*)$/);
+  if (!match) return { first: value, rest: '' };
+  return { first: match[1] || '', rest: match[2] || '' };
+}
+
 /**
  * Affiche une description produit : paragraphes (double saut de ligne),
  * sauts simples → retour à la ligne, **gras** / __gras__, [texte](https://...).
@@ -79,7 +86,14 @@ const ProductDescriptionRich = ({ text, className = '' }) => {
             {lines.map((line, li) => (
               <React.Fragment key={li}>
                 {li > 0 ? <br /> : null}
-                {parseInline(line, `b${bi}-l${li}`)}
+                {li === 0 ? (
+                  <>
+                    <strong>{parseInline(splitFirstSentence(line).first, `b${bi}-l${li}-first`)}</strong>
+                    {parseInline(splitFirstSentence(line).rest, `b${bi}-l${li}-rest`)}
+                  </>
+                ) : (
+                  parseInline(line, `b${bi}-l${li}`)
+                )}
               </React.Fragment>
             ))}
           </p>

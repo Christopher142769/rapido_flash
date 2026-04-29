@@ -753,7 +753,7 @@ const RestaurantDetail = () => {
                   </div>
                 ) : null}
                 {highlightedDescriptionFull.trim() ? (
-                  <details className="pdp-nike-details pdp-nike-description-details">
+                  <details className="pdp-nike-details pdp-nike-description-details" open>
                     <summary className="pdp-nike-details-summary">{t('store', 'productDescriptionHeading')}</summary>
                     <div className="pdp-nike-details-body">
                       <ProductDescriptionRich text={highlightedDescriptionFull} className="pdp-nike-description-body" />

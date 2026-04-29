@@ -81,6 +81,28 @@ export const AuthProvider = ({ children }) => {
     axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
   };
 
+  const loginWithGoogle = async (credential) => {
+    try {
+      const res = await axios.post(`${API_URL}/auth/google`, { credential });
+      if (res.data?.requiresTwoFactor) {
+        return {
+          success: true,
+          requiresTwoFactor: true,
+          challengeToken: res.data.challengeToken,
+          user: res.data.user,
+        };
+      }
+      const { token: newToken, user: newUser } = res.data;
+      localStorage.setItem('token', newToken);
+      setToken(newToken);
+      setUser(newUser);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || 'Erreur connexion Google' };
+    }
+  };
+
   const register = async (userData) => {
     try {
       const res = await axios.post(`${API_URL}/auth/register`, userData);
@@ -119,6 +141,7 @@ export const AuthProvider = ({ children }) => {
       loading,
       login,
       loginWithToken,
+      loginWithGoogle,
       register,
       logout,
       updatePosition,

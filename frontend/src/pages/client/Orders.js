@@ -14,6 +14,13 @@ import './Orders.css';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const BASE_URL = API_URL.replace('/api', '');
 
+const isReceiptEligible = (commande) => {
+  const mode = String(commande?.modePaiement || '');
+  if (mode === 'momo_avant') return !!commande?.paiementEnLigneEffectue;
+  if (mode === 'especes' || mode === 'momo_apres') return String(commande?.statut || '') === 'livree';
+  return false;
+};
+
 const Orders = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -228,7 +235,7 @@ const Orders = () => {
                     </span>
                     <FaChevronRight className="order-follow-cta-chevron" aria-hidden />
                   </button>
-                  {commande.paiementEnLigneEffectue && commande.modePaiement === 'momo_avant' && (
+                  {isReceiptEligible(commande) && (
                     <button
                       type="button"
                       className="btn btn-secondary order-receipt-btn"

@@ -10,6 +10,13 @@ import './Factures.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
+const isReceiptEligible = (commande) => {
+  const mode = String(commande?.modePaiement || '');
+  if (mode === 'momo_avant') return !!commande?.paiementEnLigneEffectue;
+  if (mode === 'especes' || mode === 'momo_apres') return String(commande?.statut || '') === 'livree';
+  return false;
+};
+
 const Factures = () => {
   const { t } = useContext(LanguageContext);
   const navigate = useNavigate();
@@ -23,9 +30,7 @@ const Factures = () => {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       })
       .then((res) => {
-        const list = (res.data || []).filter(
-          (c) => c.paiementEnLigneEffectue && c.modePaiement === 'momo_avant'
-        );
+        const list = (res.data || []).filter((c) => isReceiptEligible(c));
         setCommandes(list);
       })
       .catch(() => setCommandes([]))

@@ -94,6 +94,16 @@ const ReceiptPage = () => {
 
   const { commande, expired, qrPayload, clientNom } = data;
   const r = commande.restaurant;
+  const paymentLabelMap = {
+    especes: t('orders', 'paymentCash'),
+    momo_avant: t('orders', 'paymentMomoBefore'),
+    momo_apres: t('orders', 'paymentMomoAfter'),
+  };
+  const paymentLabel = paymentLabelMap[String(commande.modePaiement || '')] || String(commande.modePaiement || '');
+  const paidLine =
+    commande.modePaiement === 'momo_avant'
+      ? t('receipt', 'paidOnline')
+      : `Paiement : ${paymentLabel}`;
   const dateStr = new Date(commande.createdAt).toLocaleString('fr-FR', {
     dateStyle: 'long',
     timeStyle: 'short',
@@ -153,7 +163,7 @@ const ReceiptPage = () => {
           <dd className="receipt-amount">{Number(commande.total).toFixed(0)} FCFA</dd>
         </dl>
 
-        <p className="receipt-paid-line">{t('receipt', 'paidOnline')}</p>
+        <p className="receipt-paid-line">{paidLine}</p>
 
         {qrPayload && !expired && (
           <div className="receipt-qr-block">

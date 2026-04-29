@@ -21,6 +21,17 @@ const STATUT_LABELS_CLIENT = {
 
 const router = express.Router();
 
+function isReceiptEligible(commande) {
+  const mode = String(commande?.modePaiement || '');
+  if (mode === 'momo_avant') {
+    return !!commande?.paiementEnLigneEffectue;
+  }
+  if (mode === 'especes' || mode === 'momo_apres') {
+    return String(commande?.statut || '') === 'livree';
+  }
+  return false;
+}
+
 function utcDayStart(isoDate) {
   const [y, m, d] = String(isoDate).split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
@@ -427,7 +438,7 @@ router.get('/my-commandes', auth, async (req, res) => {
   }
 });
 
-/** Données reçu / facture (paiement en ligne uniquement) */
+/** Données reçu / facture */
 router.get('/:id/receipt', auth, async (req, res) => {
   try {
     const commande = await Commande.findById(req.params.id)
@@ -443,8 +454,8 @@ router.get('/:id/receipt', auth, async (req, res) => {
     if (clientId.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Accès refusé' });
     }
-    if (!commande.paiementEnLigneEffectue || commande.modePaiement !== 'momo_avant') {
-      return res.status(400).json({ message: 'Aucun reçu numérique pour cette commande' });
+    if (!isReceiptEligible(commande)) {
+      return res.status(400).json({ message: 'La facture n’est pas encore disponible pour cette commande' });
     }
 
     if (!commande.receiptToken) {
@@ -563,12 +574,22 @@ router.put('/:id/statut', auth, async (req, res) => {
       commande.statut = statut;
       await commande.save();
       const clientId = commande.client?._id || commande.client;
-      void sendToUserId(clientId, {
-        title: 'Rapido — Votre commande',
-        body: `Statut : ${STATUT_LABELS_CLIENT[statut] || statut}`,
-        url: '/orders',
-        tag: `rapido-ord-${commande._id}-${statut}`,
-      }).catch(() => {});
+      const receiptReady =
+        statut === 'livree' &&
+        ['especes', 'momo_apres'].includes(String(commande.modePaiement || ''));
+      void sendToUserId(clientId, receiptReady
+        ? {
+            title: 'Rapido — Facture prête',
+            body: 'Votre facture est disponible. Vous pouvez la consulter maintenant.',
+            url: '/factures',
+            tag: `rapido-receipt-${commande._id}`,
+          }
+        : {
+            title: 'Rapido — Votre commande',
+            body: `Statut : ${STATUT_LABELS_CLIENT[statut] || statut}`,
+            url: '/orders',
+            tag: `rapido-ord-${commande._id}-${statut}`,
+          }).catch(() => {});
       return res.json(commande);
     }
 
