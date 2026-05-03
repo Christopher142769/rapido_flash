@@ -1,7 +1,8 @@
 const express = require('express');
 const PushSubscription = require('../models/PushSubscription');
+const MobilePushToken = require('../models/MobilePushToken');
 const { auth } = require('../middleware/auth');
-const { isPushConfigured } = require('../services/pushNotifications');
+const { isPushConfigured, isExponentToken } = require('../services/pushNotifications');
 
 const router = express.Router();
 
@@ -44,6 +45,37 @@ router.post('/unsubscribe', auth, async (req, res) => {
     const { endpoint } = req.body;
     if (endpoint) {
       await PushSubscription.deleteOne({ endpoint, user: req.user._id });
+    }
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+/** Enregistrer le jeton Expo Push (app mobile React Native). */
+router.post('/mobile/register', auth, async (req, res) => {
+  try {
+    const { token, platform } = req.body;
+    if (!token || !isExponentToken(token)) {
+      return res.status(400).json({ message: 'Token Expo invalide' });
+    }
+    const plat = platform === 'ios' ? 'ios' : platform === 'android' ? 'android' : 'unknown';
+    await MobilePushToken.findOneAndUpdate(
+      { token },
+      { user: req.user._id, token, platform: plat },
+      { upsert: true, new: true }
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.post('/mobile/unregister', auth, async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (token) {
+      await MobilePushToken.deleteOne({ token, user: req.user._id });
     }
     res.json({ ok: true });
   } catch (e) {

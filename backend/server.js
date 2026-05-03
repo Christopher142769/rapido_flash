@@ -39,7 +39,19 @@ const getAllowedOrigins = () => {
     origins.push('http://localhost:3002');
     origins.push('http://localhost:3003');
   }
-  
+
+  // App mobile Capacitor / Cordova (WebView) : l’origine HTTP n’est pas celle du site web.
+  // androidScheme "https" → souvent https://localhost ; anciennes stacks → capacitor:// / ionic://
+  const capacitorShellOrigins = [
+    'https://localhost',
+    'http://localhost',
+    'capacitor://localhost',
+    'ionic://localhost',
+  ];
+  for (const o of capacitorShellOrigins) {
+    if (!origins.includes(o)) origins.push(o);
+  }
+
   // Si aucune URL n'est définie, autoriser toutes les origines (développement uniquement)
   return origins.length > 0 ? origins : '*';
 };
