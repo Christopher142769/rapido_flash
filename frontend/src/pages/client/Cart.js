@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import AuthContext from '../../context/AuthContext';
 import LanguageContext from '../../context/LanguageContext';
 import BottomNavbar from '../../components/BottomNavbar';
 import TopNavbar from '../../components/TopNavbar';
@@ -22,6 +23,7 @@ function unitShortLabel(unit, t) {
 
 const Cart = () => {
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
   const { t, productDisplayName } = useContext(LanguageContext);
   const [cart, setCart] = useState([]);
   const [fraisLivraison, setFraisLivraison] = useState(0);
@@ -243,7 +245,13 @@ const Cart = () => {
           </div>
           <button
             className="btn btn-primary btn-large"
-            onClick={() => navigate('/checkout')}
+            onClick={() => {
+              if (!user) {
+                navigate(`/login?next=${encodeURIComponent('/checkout')}`);
+                return;
+              }
+              navigate('/checkout');
+            }}
           >
             {t('cart', 'checkout')}
           </button>

@@ -1,10 +1,16 @@
+const fs = require('fs');
+const path = require('path');
 const webpush = require('web-push');
+const admin = require('firebase-admin');
 const PushSubscription = require('../models/PushSubscription');
 const MobilePushToken = require('../models/MobilePushToken');
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
 let vapidReady = false;
+
+/** null = pas encore initialisé, false = échec, sinon instance messaging */
+let fcmMessaging = null;
 
 function ensureVapid() {
   if (vapidReady) return true;
@@ -25,8 +31,49 @@ function isExponentToken(token) {
   return typeof token === 'string' && token.startsWith('ExponentPushToken[');
 }
 
+/** Jeton device FCM (pas Expo). Validation souple pour éviter le stockage de bruit. */
+function isLikelyFcmDeviceToken(token) {
+  if (typeof token !== 'string' || token.length < 80) return false;
+  if (isExponentToken(token)) return false;
+  return /^[\w\-:.]+$/.test(token);
+}
+
+function getFcmMessaging() {
+  if (fcmMessaging === false) return null;
+  if (fcmMessaging) return fcmMessaging;
+  try {
+    const jsonRaw = process.env.FCM_SERVICE_ACCOUNT_JSON;
+    const jsonPath = process.env.FCM_SERVICE_ACCOUNT_PATH;
+    let credential;
+    if (jsonRaw) {
+      credential = admin.credential.cert(JSON.parse(jsonRaw));
+    } else if (jsonPath) {
+      const abs = path.isAbsolute(jsonPath)
+        ? jsonPath
+        : path.join(process.cwd(), jsonPath);
+      const svc = JSON.parse(fs.readFileSync(abs, 'utf8'));
+      credential = admin.credential.cert(svc);
+    } else {
+      fcmMessaging = false;
+      return null;
+    }
+    if (!admin.apps.length) {
+      admin.initializeApp({ credential });
+    }
+    fcmMessaging = admin.messaging();
+    return fcmMessaging;
+  } catch (err) {
+    console.error('[push] FCM init error', err?.message || err);
+    fcmMessaging = false;
+    return null;
+  }
+}
+
+function isFcmConfigured() {
+  return getFcmMessaging() != null;
+}
+
 /**
- * Envoie via l’API Expo Push (Android/iOS standalone ou Expo Go).
  * @param {Array<{ to: string, title: string, body: string, data?: object, android?: object }>} messages
  */
 async function sendExpoBatch(messages) {
@@ -54,7 +101,10 @@ async function sendExpoBatch(messages) {
  */
 async function sendExpoPushToUserId(userId, payload) {
   const uid = String(userId);
-  const docs = await MobilePushToken.find({ user: uid });
+  const docs = await MobilePushToken.find({
+    user: uid,
+    $or: [{ provider: 'expo' }, { provider: { $exists: false } }],
+  });
   if (!docs.length) return;
 
   const title = payload.title || 'Rapido';
@@ -112,6 +162,57 @@ async function sendExpoPushToUserId(userId, payload) {
  * @param {string} userId
  * @param {{ title: string, body: string, url?: string, tag?: string }} payload
  */
+async function sendFcmPushToUserId(userId, payload) {
+  const messaging = getFcmMessaging();
+  if (!messaging) return;
+
+  const uid = String(userId);
+  const docs = await MobilePushToken.find({ user: uid, provider: 'fcm' });
+  if (!docs.length) return;
+
+  const title = payload.title || 'Rapido';
+  const body = payload.body || '';
+  const url = payload.url || '/home';
+  const tag = payload.tag || 'rapido';
+
+  const chunkSize = 500;
+  for (let i = 0; i < docs.length; i += chunkSize) {
+    const slice = docs.slice(i, i + chunkSize);
+    const tokens = slice.map((d) => d.token);
+    try {
+      const resp = await messaging.sendEachForMulticast({
+        tokens,
+        notification: { title, body },
+        data: { url, tag },
+        android: {
+          priority: 'high',
+          notification: {
+            channelId: 'rapido_alerts',
+            sound: 'default',
+          },
+        },
+      });
+      for (let j = 0; j < resp.responses.length; j++) {
+        const r = resp.responses[j];
+        if (r.success) continue;
+        const code = r.error?.code;
+        if (
+          code === 'messaging/registration-token-not-registered' ||
+          code === 'messaging/invalid-registration-token'
+        ) {
+          await MobilePushToken.deleteOne({ _id: slice[j]._id });
+        }
+      }
+    } catch (err) {
+      console.error('[push] FCM multicast error', err?.message || err);
+    }
+  }
+}
+
+/**
+ * @param {string} userId
+ * @param {{ title: string, body: string, url?: string, tag?: string }} payload
+ */
 async function sendToUserId(userId, payload) {
   const uid = String(userId);
 
@@ -140,6 +241,7 @@ async function sendToUserId(userId, payload) {
   }
 
   await sendExpoPushToUserId(uid, payload);
+  await sendFcmPushToUserId(uid, payload);
 }
 
 async function sendToUserIds(userIds, payload) {
@@ -154,7 +256,9 @@ async function sendToUserIds(userIds, payload) {
 
 module.exports = {
   isPushConfigured,
+  isFcmConfigured,
   isExponentToken,
+  isLikelyFcmDeviceToken,
   sendToUserId,
   sendToUserIds,
 };

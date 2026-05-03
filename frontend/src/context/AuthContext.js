@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { unregisterCapacitorFcmFromServerBeforeLogout } from '../utils/capacitorFcm';
 
 const AuthContext = createContext();
 
@@ -83,7 +84,7 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithGoogle = async (credential) => {
     try {
-      const res = await axios.post(`${API_URL}/auth/google`, { credential });
+      const res = await axios.post(`${API_URL}/auth/google`, { credential }, { timeout: 25000 });
       if (res.data?.requiresTwoFactor) {
         return {
           success: true,
@@ -99,7 +100,15 @@ export const AuthProvider = ({ children }) => {
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
       return { success: true };
     } catch (error) {
-      return { success: false, message: error.response?.data?.message || 'Erreur connexion Google' };
+      const serverMsg = error.response?.data?.message;
+      if (!error.response) {
+        const net =
+          error.code === 'ECONNABORTED' || error.message === 'Network Error'
+            ? 'Réseau indisponible ou serveur trop long à répondre. Vérifie la connexion et que l’API (REACT_APP_API_URL) est joignable depuis l’app.'
+            : error.message || 'Impossible de joindre le serveur.';
+        return { success: false, message: net };
+      }
+      return { success: false, message: serverMsg || 'Erreur connexion Google' };
     }
   };
 
@@ -118,6 +127,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    void unregisterCapacitorFcmFromServerBeforeLogout();
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);

@@ -3,6 +3,12 @@ import axios from 'axios';
 import AuthContext from './AuthContext';
 import { playNotificationChime } from '../utils/notificationSound';
 import { syncPushSubscriptionWithServer } from '../utils/pushSubscription';
+import {
+  isCapacitorAndroid,
+  requestAndroidNativeNotificationPermissions,
+  showRapidoAndroidTrayNotification,
+} from '../utils/capacitorNativeNotifications';
+import { registerCapacitorFcmAndSync, syncStoredFcmTokenWithServer } from '../utils/capacitorFcm';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -53,7 +59,42 @@ export function NotificationProvider({ children }) {
         const msgUp = next.unreadMessages > prev.unreadMessages;
         if (ordersUp || msgUp) {
           playNotificationChime();
-          if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          if (isCapacitorAndroid()) {
+            void (async () => {
+              if (ordersUp && user.role !== 'client') {
+                const ok = await showRapidoAndroidTrayNotification({
+                  title: 'Rapido — Nouvelle commande',
+                  body: 'Une nouvelle commande est en attente de traitement.',
+                });
+                if (ok) return;
+              } else if (msgUp) {
+                const ok = await showRapidoAndroidTrayNotification({
+                  title: 'Rapido — Message',
+                  body: 'Vous avez un nouveau message.',
+                });
+                if (ok) return;
+              }
+              if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                try {
+                  if (ordersUp && user.role !== 'client') {
+                    new Notification('Rapido — Nouvelle commande', {
+                      body: 'Une nouvelle commande est en attente de traitement.',
+                      icon: '/images/logo.png',
+                      tag: 'rapido-order',
+                    });
+                  } else if (msgUp) {
+                    new Notification('Rapido — Message', {
+                      body: 'Vous avez un nouveau message.',
+                      icon: '/images/logo.png',
+                      tag: 'rapido-msg',
+                    });
+                  }
+                } catch (_) {
+                  /* ignore */
+                }
+              }
+            })();
+          } else if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
             try {
               if (ordersUp && user.role !== 'client') {
                 new Notification('Rapido — Nouvelle commande', {
@@ -92,6 +133,12 @@ export function NotificationProvider({ children }) {
   }, [user?._id]);
 
   useEffect(() => {
+    if (!user?._id) return undefined;
+    void syncStoredFcmTokenWithServer();
+    return undefined;
+  }, [user?._id]);
+
+  useEffect(() => {
     if (!user || !['restaurant', 'gestionnaire', 'client'].includes(user.role)) return undefined;
     fetchSummary();
     const id = setInterval(fetchSummary, POLL_MS);
@@ -102,15 +149,24 @@ export function NotificationProvider({ children }) {
     if (!user || !['restaurant', 'gestionnaire', 'client'].includes(user.role)) return undefined;
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return undefined;
     void syncPushSubscriptionWithServer();
+    void registerCapacitorFcmAndSync();
   }, [user?._id, permission]);
 
   const requestBrowserPermission = useCallback(async () => {
+    if (isCapacitorAndroid()) {
+      try {
+        await requestAndroidNativeNotificationPermissions();
+      } catch (_) {
+        /* continue vers la demande WebView */
+      }
+    }
     if (typeof Notification === 'undefined') return 'denied';
     try {
       const p = await Notification.requestPermission();
       setPermission(p);
       if (p === 'granted') {
         void syncPushSubscriptionWithServer();
+        void registerCapacitorFcmAndSync();
       }
       return p;
     } catch (_) {

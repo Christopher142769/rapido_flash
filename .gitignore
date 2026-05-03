@@ -8,3 +8,5 @@ uploads/
 exports/
 .mongodb/
 frontend/build/
+frontend/.env.production
+mobile/.env

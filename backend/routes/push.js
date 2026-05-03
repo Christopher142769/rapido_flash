@@ -2,7 +2,11 @@ const express = require('express');
 const PushSubscription = require('../models/PushSubscription');
 const MobilePushToken = require('../models/MobilePushToken');
 const { auth } = require('../middleware/auth');
-const { isPushConfigured, isExponentToken } = require('../services/pushNotifications');
+const {
+  isPushConfigured,
+  isExponentToken,
+  isLikelyFcmDeviceToken,
+} = require('../services/pushNotifications');
 
 const router = express.Router();
 
@@ -62,7 +66,7 @@ router.post('/mobile/register', auth, async (req, res) => {
     const plat = platform === 'ios' ? 'ios' : platform === 'android' ? 'android' : 'unknown';
     await MobilePushToken.findOneAndUpdate(
       { token },
-      { user: req.user._id, token, platform: plat },
+      { user: req.user._id, token, platform: plat, provider: 'expo' },
       { upsert: true, new: true }
     );
     res.json({ ok: true });
@@ -72,6 +76,37 @@ router.post('/mobile/register', auth, async (req, res) => {
 });
 
 router.post('/mobile/unregister', auth, async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (token) {
+      await MobilePushToken.deleteOne({ token, user: req.user._id });
+    }
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+/** Jeton FCM (app Capacitor Android / iOS avec Firebase). */
+router.post('/fcm/register', auth, async (req, res) => {
+  try {
+    const { token, platform } = req.body;
+    if (!token || !isLikelyFcmDeviceToken(token)) {
+      return res.status(400).json({ message: 'Jeton FCM invalide' });
+    }
+    const plat = platform === 'ios' ? 'ios' : platform === 'android' ? 'android' : 'unknown';
+    await MobilePushToken.findOneAndUpdate(
+      { token },
+      { user: req.user._id, token, platform: plat, provider: 'fcm' },
+      { upsert: true, new: true }
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.post('/fcm/unregister', auth, async (req, res) => {
   try {
     const { token } = req.body;
     if (token) {

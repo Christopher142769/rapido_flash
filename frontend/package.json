@@ -2,7 +2,12 @@
   "name": "rapido-flash-frontend",
   "version": "0.1.0",
   "private": true,
+  "homepage": ".",
   "dependencies": {
+    "@capacitor/android": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
+    "@capacitor/local-notifications": "^8.0.2",
+    "@capacitor/push-notifications": "^8.0.3",
     "autoprefixer": "^10.5.0",
     "axios": "^1.5.0",
     "framer-motion": "^11.18.2",
@@ -26,9 +31,16 @@
     "start": "react-scripts start",
     "build": "node scripts/prebuildIndexDomain.js && react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "cap:copy": "npx cap copy android",
+    "cap:sync": "npx cap sync android",
+    "cap:open": "npx cap open android",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:studio": "npm run build && npx cap sync android && npx cap open android",
+    "android:brand": "./scripts/android-brand-assets.sh"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.3.1",
     "react-scripts": "5.0.1"
   },
   "eslintConfig": {

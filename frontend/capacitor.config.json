@@ -1,0 +1,20 @@
+{
+  "appId": "bj.rapido.mobile",
+  "appName": "Rapido",
+  "webDir": "build",
+  "android": {
+    "allowMixedContent": true
+  },
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_rapido",
+      "iconColor": "#5C4033"
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  }
+}

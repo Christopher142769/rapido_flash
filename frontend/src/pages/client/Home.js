@@ -151,14 +151,6 @@ const Home = () => {
   const [promoHasFreshNotice, setPromoHasFreshNotice] = useState(false);
   const categoriesScrollRef = useRef(null);
 
-  const askAuthForProduct = useCallback(
-    (restaurantId, productId) => {
-      const nextPath = `/restaurant/${restaurantId}${productId ? `?produit=${productId}` : ''}`;
-      navigate(`/login?next=${encodeURIComponent(nextPath)}`);
-    },
-    [navigate]
-  );
-
   useEffect(() => {
     const updateLocationAddress = () => {
       const userLocation = JSON.parse(localStorage.getItem('userLocation') || '{}');
@@ -423,10 +415,6 @@ const Home = () => {
 
   const addProductFromHome = (previewProduit) => {
     if (!previewProduit?.productId || !previewProduit?.restaurantId) return;
-    if (!user) {
-      askAuthForProduct(previewProduit.restaurantId, previewProduit.productId);
-      return;
-    }
     if (requiresProductConfiguration(previewProduit)) {
       navigate(`/restaurant/${previewProduit.restaurantId}?produit=${previewProduit.productId}`);
       return;
@@ -474,10 +462,6 @@ const Home = () => {
 
   const addProductFromSearch = (produit, restaurantId) => {
     if (!produit?._id || !restaurantId) return;
-    if (!user) {
-      askAuthForProduct(restaurantId, produit._id);
-      return;
-    }
     if (requiresProductConfiguration(produit)) {
       navigate(`/restaurant/${restaurantId}?produit=${produit._id}`);
       return;
@@ -614,7 +598,7 @@ const Home = () => {
         </article>
       );
     },
-    [navigate, productDisplayName, t, localized, addProductFromHome, user, askAuthForProduct]
+    [navigate, productDisplayName, t, localized, addProductFromHome]
   );
 
   const renderCategoryRails = (variant) =>

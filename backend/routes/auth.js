@@ -12,7 +12,13 @@ const { assignEligiblePromoCodesToUser } = require('../utils/promoAutoAssign');
 const { sendToUserId } = require('../services/pushNotifications');
 
 const router = express.Router();
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || '');
+const googleClient = new OAuth2Client();
+
+/** Audiences JWT Google acceptées (web + éventuel client dédié app Capacitor). */
+function googleIdTokenAudiences() {
+  const ids = [process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_ID_CAPACITOR].filter(Boolean);
+  return [...new Set(ids)];
+}
 
 // Middleware pour parser JSON et URL-encoded pour cette route uniquement
 // (car elle n'utilise pas Multer)
@@ -182,13 +188,14 @@ router.post('/google', [
     if (!errors.isEmpty()) {
       return res.status(400).json({ message: 'Jeton Google invalide' });
     }
-    if (!process.env.GOOGLE_CLIENT_ID) {
+    const audiences = googleIdTokenAudiences();
+    if (!audiences.length) {
       return res.status(500).json({ message: 'Google OAuth non configuré (GOOGLE_CLIENT_ID manquant).' });
     }
     const { credential } = req.body;
     const ticket = await googleClient.verifyIdToken({
       idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: audiences.length === 1 ? audiences[0] : audiences,
     });
     const payload = ticket.getPayload();
     const email = String(payload?.email || '').toLowerCase().trim();
@@ -247,7 +254,14 @@ router.post('/google', [
     }
     return res.json(login2FA.payload);
   } catch (error) {
-    return res.status(500).json({ message: error.message || 'Erreur Google Auth' });
+    const raw = String(error?.message || '');
+    let message = raw || 'Erreur Google Auth';
+    if (/Wrong recipient|audience|Audience/i.test(raw)) {
+      message =
+        'Le jeton Google ne correspond pas à GOOGLE_CLIENT_ID sur le serveur : vérifie que la même valeur que REACT_APP_GOOGLE_CLIENT_ID est définie sur Render (sans espace en trop).';
+    }
+    console.error('[auth/google]', raw);
+    return res.status(500).json({ message });
   }
 });
 

@@ -118,7 +118,7 @@ const Register = () => {
         {!dashboard2FA.challengeToken ? (
         <form onSubmit={handleSubmit} className="auth-form">
           {error && <div className="error-message">{error}</div>}
-          <GoogleSignInButton onCredential={handleGoogleCredential} disabled={loading} />
+          <GoogleSignInButton onCredential={handleGoogleCredential} />
           <div className="auth-divider">ou</div>
 
           <div className="form-group">

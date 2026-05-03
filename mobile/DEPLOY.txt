@@ -1,0 +1,36 @@
+Rapido — app mobile (Expo / React Native)
+=========================================
+
+1) Variables d’environnement (fichier mobile/.env recommandé)
+   EXPO_PUBLIC_API_URL=https://VOTRE-API/api
+   EXPO_PUBLIC_EAS_PROJECT_ID=<uuid du projet sur expo.dev après "eas login" puis "eas init">
+
+   Play Store (Android) : ajoutez google-services.json (Firebase) puis soit
+   - GOOGLE_SERVICES_JSON=./google-services.json au moment du build EAS, soit
+   - placez le fichier et référencez-le dans app.config.js (déjà prévu via GOOGLE_SERVICES_JSON).
+
+2) API depuis un téléphone sur le même Wi‑Fi
+   Utilisez l’IP LAN de la machine qui tourne le backend (pas "localhost").
+
+3) Émulateur Android → backend sur la machine hôte
+   EXPO_PUBLIC_API_URL=http://10.0.2.2:5000/api
+
+4) Build installable
+   cd mobile
+   npm install
+   npx eas-cli login
+   npx eas init
+   # renseignez EXPO_PUBLIC_EAS_PROJECT_ID puis :
+   npx eas build -p android --profile preview    # .apk test interne
+   npx eas build -p android --profile production # .aab Play Store
+
+5) iOS (.app / IPA)
+   npx eas build -p ios --profile production
+   (compte développeur Apple + certificats gérés par EAS.)
+
+Les notifications utilisent Expo Push + canal Android "orders-high" (importance max),
+aligné avec le backend (backend/services/pushNotifications.js).
+
+Android / NDK : React Native 0.81 exige NDK 26+ (Clang C++20). Le projet utilise la version
+fixée dans android/app/build.gradle (actuellement celle installée localement, ex. 27.1.12297006).
+Ne pas utiliser NDK 23 avec cette version de React Native.
