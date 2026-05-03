@@ -1,10 +1,15 @@
 Icône / logo application Android (Capacitor)
 ===========================================
 
-Dépose ici ton visuel source haute définition (nom libre), par exemple :
-  source-logo.png   (recommandé : 1024×1024 px, contenu important dans le centre ~66 % pour l’icône adaptive)
+Fichier attendu par le script du repo (prioritaire) :
+  source-logo.png   (512×512 ou 1024×1024 ; PNG ou WebP source-logo.webp)
 
-Après passage par Android Studio « Image Asset », les fichiers générés dans le projet s’appellent en pratique :
+Commande qui régénère les mipmaps + splash à partir de ce fichier (marges « zone sûre » pour éviter le rognage) :
+  cd frontend && npm run android:brand
+
+Ce script est aussi exécuté automatiquement avant `npm run android:sync` et `npm run android:studio`.
+
+Si tu préfères Android Studio « Image Asset », les fichiers générés dans le projet s’appellent en pratique :
   ic_launcher.png
   ic_launcher_round.png
   ic_launcher_foreground.png / ic_launcher_background.png (selon gabarit)

@@ -2,6 +2,9 @@ node_modules/
 frontend/node_modules/
 .env
 backend/.env
+# Clé compte de service Firebase (ne jamais versionner)
+*-firebase-adminsdk-*.json
+rapido-*-firebase-adminsdk-*.json
 uploads/
 .DS_Store
 *.log

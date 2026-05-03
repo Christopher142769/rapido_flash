@@ -590,6 +590,21 @@ router.put('/:id/statut', auth, async (req, res) => {
             url: '/orders',
             tag: `rapido-ord-${commande._id}-${statut}`,
           }).catch(() => {});
+
+      /* Autres propriétaires / gestionnaires (pas celui qui valide sur le web) : alerte multi-appareils */
+      const actorId = String(req.user._id);
+      const staffIds = [restaurant.proprietaire, ...(restaurant.gestionnaires || [])]
+        .map((id) => String(id))
+        .filter((id) => id && id !== actorId);
+      if (staffIds.length) {
+        const label = STATUT_LABELS_CLIENT[statut] || statut;
+        void sendToUserIds(staffIds, {
+          title: 'Rapido — Commande',
+          body: `Mise à jour : ${label}`,
+          url: '/dashboard/commandes',
+          tag: `rapido-staff-ord-${commande._id}-${statut}`,
+        }).catch(() => {});
+      }
       return res.json(commande);
     }
 
