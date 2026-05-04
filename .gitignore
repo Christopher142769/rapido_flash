@@ -2,9 +2,10 @@ node_modules/
 frontend/node_modules/
 .env
 backend/.env
-# Clé compte de service Firebase (ne jamais versionner)
+# Firebase — ne jamais committer les JSON compte de service (racine ou secrets/firebase)
 *-firebase-adminsdk-*.json
 rapido-*-firebase-adminsdk-*.json
+secrets/firebase/service-account.json
 uploads/
 .DS_Store
 *.log
