@@ -6,6 +6,7 @@ backend/.env
 *-firebase-adminsdk-*.json
 rapido-*-firebase-adminsdk-*.json
 secrets/firebase/service-account.json
+secrets/essai2.json
 uploads/
 .DS_Store
 *.log
