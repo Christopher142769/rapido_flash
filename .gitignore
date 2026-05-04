@@ -11,5 +11,7 @@ uploads/
 exports/
 .mongodb/
 frontend/build/
+frontend/releases/
+frontend/android/keystore.properties
 frontend/.env.production
 mobile/.env
