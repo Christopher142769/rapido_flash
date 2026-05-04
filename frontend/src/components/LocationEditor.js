@@ -4,13 +4,13 @@ import LeafletMap from './LeafletMap';
 import axios from 'axios';
 import LanguageContext from '../context/LanguageContext';
 import { useModal } from '../context/ModalContext';
+import { getBestCurrentPosition } from '../utils/nativeGeolocation';
 import './LocationEditor.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 // Utilisation de Nominatim (OpenStreetMap) - Gratuit et open source
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
 const MIN_INSTRUCTION_LEN = 3;
-const GEO_OPTIONS = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
 
 const LocationEditor = ({ onClose, onSave }) => {
   const { t } = useContext(LanguageContext);
@@ -51,28 +51,17 @@ const LocationEditor = ({ onClose, onSave }) => {
       setLoading(false);
     } else {
       // Utiliser la géolocalisation
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const newPos = {
-              longitude: pos.coords.longitude,
-              latitude: pos.coords.latitude
-            };
-            setPosition(newPos);
-            setViewState({
-              ...newPos,
-              zoom: 15
-            });
-            setLoading(false);
-          },
-          () => {
-            setLoading(false);
-          },
-          GEO_OPTIONS
-        );
-      } else {
-        setLoading(false);
-      }
+      getBestCurrentPosition()
+        .then(({ latitude, longitude }) => {
+          const newPos = { longitude, latitude };
+          setPosition(newPos);
+          setViewState({
+            ...newPos,
+            zoom: 15
+          });
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
     }
   }, []);
 
@@ -159,33 +148,29 @@ const LocationEditor = ({ onClose, onSave }) => {
   };
 
   const handleUseCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const newPos = {
-            longitude: pos.coords.longitude,
-            latitude: pos.coords.latitude
-          };
-          setPosition(newPos);
-          setViewState({
-            ...newPos,
-            zoom: 15
-          });
-        },
-        (error) => {
-          if (error?.code === 1) {
-            showError(t('locationEditor', 'geolocationDenied'), t('locationEditor', 'geolocErrorTitle'));
-            return;
-          }
-          if (error?.code === 3) {
-            showError('Délai dépassé. Vérifiez GPS / Internet puis réessayez.', t('locationEditor', 'geolocErrorTitle'));
-            return;
-          }
-          showError(t('locationEditor', 'geolocError'), t('locationEditor', 'geolocErrorTitle'));
-        },
-        GEO_OPTIONS
-      );
-    }
+    getBestCurrentPosition()
+      .then(({ latitude, longitude }) => {
+        const newPos = {
+          longitude,
+          latitude
+        };
+        setPosition(newPos);
+        setViewState({
+          ...newPos,
+          zoom: 15
+        });
+      })
+      .catch((error) => {
+        if (error?.code === 1) {
+          showError(t('locationEditor', 'geolocationDenied'), t('locationEditor', 'geolocErrorTitle'));
+          return;
+        }
+        if (error?.code === 3) {
+          showError('Délai dépassé. Vérifiez GPS / Internet puis réessayez.', t('locationEditor', 'geolocErrorTitle'));
+          return;
+        }
+        showError(t('locationEditor', 'geolocError'), t('locationEditor', 'geolocErrorTitle'));
+      });
   };
 
   const handleSave = async () => {

@@ -147,9 +147,14 @@ export function NotificationProvider({ children }) {
 
   useEffect(() => {
     if (!user || !['restaurant', 'gestionnaire', 'client'].includes(user.role)) return undefined;
-    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return undefined;
-    void syncPushSubscriptionWithServer();
-    void registerCapacitorFcmAndSync();
+    if (isCapacitorAndroid()) {
+      void requestAndroidNativeNotificationPermissions()
+        .then(() => registerCapacitorFcmAndSync())
+        .catch(() => {});
+    }
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      void syncPushSubscriptionWithServer();
+    }
   }, [user?._id, permission]);
 
   const requestBrowserPermission = useCallback(async () => {
@@ -160,7 +165,14 @@ export function NotificationProvider({ children }) {
         /* continue vers la demande WebView */
       }
     }
-    if (typeof Notification === 'undefined') return 'denied';
+    if (typeof Notification === 'undefined') {
+      if (isCapacitorAndroid()) {
+        setPermission('granted');
+        void registerCapacitorFcmAndSync();
+        return 'granted';
+      }
+      return 'denied';
+    }
     try {
       const p = await Notification.requestPermission();
       setPermission(p);

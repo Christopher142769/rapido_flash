@@ -6,12 +6,12 @@ import AuthContext from '../../context/AuthContext';
 import LanguageContext from '../../context/LanguageContext';
 import { useModal } from '../../context/ModalContext';
 import axios from 'axios';
+import { getBestCurrentPosition } from '../../utils/nativeGeolocation';
 import './LocationSelect.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 // Utilisation de Nominatim (OpenStreetMap) - Gratuit et open source
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
-const GEO_OPTIONS = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
 
 const LocationSelect = () => {
   const navigate = useNavigate();
@@ -70,41 +70,31 @@ const LocationSelect = () => {
   }, [position]);
 
   const requestLocationPermission = () => {
-    if (!navigator.geolocation) {
-      showWarning(t('locationEditor', 'browserNoGeolocation'), t('locationEditor', 'geolocErrorTitle'));
-      return;
-    }
-
     setLoading(true);
-    
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const newPosition = { longitude: lng, latitude: lat };
-        
+    getBestCurrentPosition()
+      .then(({ latitude, longitude }) => {
+        const newPosition = { longitude, latitude };
         setViewState({
-          longitude: lng,
-          latitude: lat,
+          longitude,
+          latitude,
           zoom: 15
         });
         setPosition(newPosition);
-        setLoading(false);
-      },
-      (error) => {
-        setLoading(false);
-        if (error.code === 1) {
+      })
+      .catch((error) => {
+        const code = Number(error?.code || 0);
+        if (code === 1) {
           setPermissionStatus('denied');
           showWarning(t('locationEditor', 'geolocationDenied'), t('locationEditor', 'geolocErrorTitle'));
           return;
         }
-        if (error.code === 3) {
+        if (code === 3) {
           showWarning('Délai dépassé. Vérifiez GPS / Internet puis réessayez.', t('locationEditor', 'geolocErrorTitle'));
           return;
         }
         showWarning(t('locationEditor', 'geolocError'), t('locationEditor', 'geolocErrorTitle'));
-      }
-    , GEO_OPTIONS);
+      })
+      .finally(() => setLoading(false));
   };
 
   const handleMapClick = (e) => {
