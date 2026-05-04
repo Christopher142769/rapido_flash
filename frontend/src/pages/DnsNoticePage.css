@@ -1,0 +1,252 @@
+.dns-notice-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(145deg, #0f3d3a 0%, #1a5c52 35%, #c9782e 95%);
+}
+
+.dns-notice-page-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.dns-notice-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(48px);
+  opacity: 0.45;
+  animation: dns-notice-float 14s ease-in-out infinite;
+}
+
+.dns-notice-orb-a {
+  width: min(55vw, 420px);
+  height: min(55vw, 420px);
+  background: rgba(255, 220, 160, 0.55);
+  top: -12%;
+  left: -8%;
+  animation-delay: 0s;
+}
+
+.dns-notice-orb-b {
+  width: min(45vw, 340px);
+  height: min(45vw, 340px);
+  background: rgba(120, 255, 210, 0.35);
+  bottom: -10%;
+  right: -5%;
+  animation-delay: -4s;
+}
+
+.dns-notice-orb-c {
+  width: min(38vw, 280px);
+  height: min(38vw, 280px);
+  background: rgba(255, 180, 100, 0.4);
+  top: 40%;
+  left: 35%;
+  animation-delay: -7s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dns-notice-orb {
+    animation: none;
+    opacity: 0.35;
+  }
+}
+
+@keyframes dns-notice-float {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(4%, 3%) scale(1.05);
+  }
+  66% {
+    transform: translate(-3%, 2%) scale(0.98);
+  }
+}
+
+.dns-notice-card {
+  position: relative;
+  z-index: 1;
+  max-width: 540px;
+  width: 100%;
+  padding: 42px 36px 36px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 28px 90px rgba(0, 0, 0, 0.38),
+    0 0 0 1px rgba(255, 255, 255, 0.55) inset;
+  text-align: center;
+}
+
+.dns-notice-logo-wrap {
+  width: 92px;
+  height: 92px;
+  margin: 0 auto 22px;
+  border-radius: 24px;
+  background: linear-gradient(145deg, #e8fff8, #fff4e0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 32px rgba(15, 61, 58, 0.18);
+}
+
+.dns-notice-logo {
+  width: 66px;
+  height: 66px;
+  object-fit: contain;
+}
+
+.dns-notice-title {
+  margin: 0 0 10px;
+  font-size: clamp(1.45rem, 4vw, 1.9rem);
+  font-weight: 800;
+  color: #14332f;
+  letter-spacing: -0.02em;
+}
+
+.dns-notice-subtitle {
+  margin: 0 0 22px;
+  font-size: 15px;
+  color: #2d6b62;
+  font-weight: 600;
+}
+
+.dns-notice-message {
+  text-align: left;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #f6fffc 0%, #fff9f0 100%);
+  border: 1px solid rgba(26, 92, 82, 0.14);
+  margin-bottom: 26px;
+}
+
+.dns-notice-message p {
+  margin: 0 0 10px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: #3a3428;
+}
+
+.dns-notice-message p:last-child {
+  margin-bottom: 0;
+}
+
+.dns-notice-cta-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.dns-notice-cta {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 16px 22px;
+  border-radius: 16px;
+  text-decoration: none;
+  color: #1a0f00;
+  font-weight: 800;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f0b429 0%, #e89420 45%, #d97a18 100%);
+  box-shadow:
+    0 12px 36px rgba(201, 120, 46, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.35) inset;
+}
+
+.dns-notice-cta-glow {
+  position: absolute;
+  inset: -40%;
+  background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.45), transparent 45%);
+  pointer-events: none;
+  animation: dns-notice-shimmer 3.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dns-notice-cta-glow {
+    animation: none;
+    opacity: 0.5;
+  }
+}
+
+@keyframes dns-notice-shimmer {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translate(0, 0);
+  }
+  50% {
+    opacity: 0.65;
+    transform: translate(8%, 6%);
+  }
+}
+
+.dns-notice-cta-label {
+  position: relative;
+  z-index: 1;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+}
+
+.dns-notice-cta-host {
+  position: relative;
+  z-index: 1;
+  font-size: 0.82rem;
+  font-weight: 700;
+  opacity: 0.92;
+}
+
+.dns-notice-copy {
+  align-self: center;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a5c52;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.dns-notice-copy:hover {
+  opacity: 0.88;
+}
+
+.dns-notice-hint {
+  margin: 0 0 20px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #6b6358;
+}
+
+.dns-notice-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.dns-notice-link-pro {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a5c52;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dns-notice-link-pro:hover {
+  opacity: 0.9;
+}

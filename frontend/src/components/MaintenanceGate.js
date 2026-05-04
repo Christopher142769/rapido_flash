@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 import MaintenancePage from '../pages/MaintenancePage';
+import DnsNoticePage from '../pages/DnsNoticePage';
 import PageLoader from './PageLoader';
 import { DASHBOARD_BASE_PATH } from '../config/dashboardPath';
 
@@ -20,6 +21,9 @@ const MaintenanceGate = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
   const [maintenanceMessage, setMaintenanceMessage] = useState('');
+  const [dnsNoticeEnabled, setDnsNoticeEnabled] = useState(false);
+  const [dnsNoticeUrl, setDnsNoticeUrl] = useState('');
+  const [dnsNoticeMessage, setDnsNoticeMessage] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -29,11 +33,17 @@ const MaintenanceGate = ({ children }) => {
         if (cancelled) return;
         setMaintenanceEnabled(!!res.data?.maintenanceEnabled);
         setMaintenanceMessage(res.data?.maintenanceMessage || '');
+        setDnsNoticeEnabled(!!res.data?.dnsNoticeEnabled);
+        setDnsNoticeUrl(res.data?.dnsNoticeUrl || '');
+        setDnsNoticeMessage(res.data?.dnsNoticeMessage || '');
       })
       .catch(() => {
         if (cancelled) return;
         setMaintenanceEnabled(false);
         setMaintenanceMessage('');
+        setDnsNoticeEnabled(false);
+        setDnsNoticeUrl('');
+        setDnsNoticeMessage('');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -48,12 +58,22 @@ const MaintenanceGate = ({ children }) => {
     return !pathIsAllowed(location.pathname);
   }, [maintenanceEnabled, location.pathname]);
 
+  const showDnsNotice = useMemo(() => {
+    if (maintenanceEnabled) return false;
+    if (!dnsNoticeEnabled || !dnsNoticeUrl) return false;
+    return !pathIsAllowed(location.pathname);
+  }, [maintenanceEnabled, dnsNoticeEnabled, dnsNoticeUrl, location.pathname]);
+
   if (loading) {
     return <PageLoader message="" />;
   }
 
   if (showMaintenance) {
     return <MaintenancePage message={maintenanceMessage} />;
+  }
+
+  if (showDnsNotice) {
+    return <DnsNoticePage message={dnsNoticeMessage} targetUrl={dnsNoticeUrl} />;
   }
 
   return children;
