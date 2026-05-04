@@ -128,7 +128,12 @@ app.use('/api/promos', require('./routes/promos'));
 
 // Healthcheck Render
 app.get('/healthz', (req, res) => {
-  res.status(200).json({ ok: true });
+  const { isFcmConfigured, isPushConfigured } = require('./services/pushNotifications');
+  res.status(200).json({
+    ok: true,
+    fcm: isFcmConfigured(),
+    webPush: isPushConfigured(),
+  });
 });
 
 // Gestionnaire d'erreur global pour Multer

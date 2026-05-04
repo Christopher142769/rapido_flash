@@ -11,6 +11,7 @@ let vapidReady = false;
 
 /** null = pas encore initialisé, false = échec, sinon instance messaging */
 let fcmMessaging = null;
+let fcmMissingLogged = false;
 
 function ensureVapid() {
   if (vapidReady) return true;
@@ -164,7 +165,17 @@ async function sendExpoPushToUserId(userId, payload) {
  */
 async function sendFcmPushToUserId(userId, payload) {
   const messaging = getFcmMessaging();
-  if (!messaging) return;
+  if (!messaging) {
+    if (!fcmMissingLogged) {
+      fcmMissingLogged = true;
+      console.warn(
+        '[push] FCM indisponible : vérifiez FCM_SERVICE_ACCOUNT_JSON ou un fichier valide pour FCM_SERVICE_ACCOUNT_PATH (cwd=' +
+          process.cwd() +
+          '). Les pushes natifs Android/iOS ne partiront pas.'
+      );
+    }
+    return;
+  }
 
   const uid = String(userId);
   const docs = await MobilePushToken.find({ user: uid, provider: 'fcm' });
