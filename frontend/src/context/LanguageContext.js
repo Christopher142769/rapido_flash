@@ -183,8 +183,10 @@ export const translations = {
       copied: 'Lien copié !',
       dashboardTitle: 'Accès alternatif (DNS / domaine)',
       dashboardHint:
-        'À activer si rapido.bj ou rapido.online est injoignable : les visiteurs voient une page d’accueil chaleureuse avec un lien vers l’autre domaine. Si la maintenance du site est activée, elle passe avant.',
+        'À activer si rapido.bj ou rapido.online est injoignable : choisissez le domaine concerné, puis les visiteurs de ce domaine verront une page d’accueil chaleureuse avec un lien vers l’autre adresse. Si la maintenance du site est activée, elle passe avant.',
       toggleLabel: 'Afficher la page d’accès alternatif',
+      sourceDomainLabel: 'Domaine sur lequel afficher cette page',
+      sourceDomainOptionPrefix: 'Afficher sur',
       urlLabel: 'Lien HTTPS (rapido.bj ou rapido.online)',
       urlPlaceholder: 'https://www.rapido.online',
       messageLabel: 'Message personnalisé (optionnel)',
@@ -192,6 +194,9 @@ export const translations = {
       save: 'Enregistrer',
       saved: 'Paramètres enregistrés',
       urlInvalid: 'URL invalide : utilisez uniquement https:// sur rapido.bj ou rapido.online (avec ou sans www).',
+      sourceDomainInvalid: 'Choisissez le domaine source : rapido.bj ou rapido.online.',
+      targetMustBeOtherDomain:
+        'Le lien alternatif doit pointer vers l’autre domaine (pas le même domaine source).',
       activeBanner:
         'Page d’accès alternatif active — les visiteurs sont invités à utiliser le lien indiqué',
     },
@@ -783,8 +788,10 @@ export const translations = {
       copied: 'Link copied!',
       dashboardTitle: 'Alternate access (DNS / domain)',
       dashboardHint:
-        'Turn this on if rapido.bj or rapido.online is unreachable: visitors see a friendly page with a link to the other domain. Site maintenance mode takes priority if both are on.',
+        'Turn this on if rapido.bj or rapido.online is unreachable: choose which domain should show this page, then visitors on that domain will see a friendly page with a link to the other address. Site maintenance mode takes priority if both are on.',
       toggleLabel: 'Show the alternate access page',
+      sourceDomainLabel: 'Domain where this page should appear',
+      sourceDomainOptionPrefix: 'Show on',
       urlLabel: 'HTTPS link (rapido.bj or rapido.online)',
       urlPlaceholder: 'https://www.rapido.online',
       messageLabel: 'Custom message (optional)',
@@ -792,6 +799,9 @@ export const translations = {
       save: 'Save',
       saved: 'Settings saved',
       urlInvalid: 'Invalid URL: use https:// only on rapido.bj or rapido.online (with or without www).',
+      sourceDomainInvalid: 'Select a source domain: rapido.bj or rapido.online.',
+      targetMustBeOtherDomain:
+        'The alternate link must point to the other domain (not the same source domain).',
       activeBanner: 'Alternate access page is on — visitors are guided to the link you set',
     },
     receipt: {

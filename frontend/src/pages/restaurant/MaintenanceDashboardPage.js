@@ -9,7 +9,12 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { FaExclamationTriangle, FaGlobe } from 'react-icons/fa';
 import AnimatedToggle from '../../components/ui/AnimatedToggle';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { isAllowedDnsNoticeUrl } from '../../utils/dnsNoticeUrl';
+import {
+  DNS_SOURCE_DOMAIN_OPTIONS,
+  getNormalizedDomainFromUrl,
+  isAllowedDnsNoticeUrl,
+  normalizeDnsSourceDomain,
+} from '../../utils/dnsNoticeUrl';
 import './Dashboard.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -27,6 +32,7 @@ const MaintenanceDashboardPage = () => {
   const [maintenanceSaveSuccess, setMaintenanceSaveSuccess] = useState(false);
 
   const [dnsNoticeEnabled, setDnsNoticeEnabled] = useState(false);
+  const [dnsNoticeSourceDomain, setDnsNoticeSourceDomain] = useState('rapido.bj');
   const [dnsNoticeUrl, setDnsNoticeUrl] = useState('');
   const [dnsNoticeMessage, setDnsNoticeMessage] = useState('');
   const [dnsSaving, setDnsSaving] = useState(false);
@@ -43,6 +49,7 @@ const MaintenanceDashboardPage = () => {
         setMaintenanceEnabled(!!res.data?.maintenanceEnabled);
         setMaintenanceMessage(res.data?.maintenanceMessage || '');
         setDnsNoticeEnabled(!!res.data?.dnsNoticeEnabled);
+        setDnsNoticeSourceDomain(normalizeDnsSourceDomain(res.data?.dnsNoticeSourceDomain) || 'rapido.bj');
         setDnsNoticeUrl(res.data?.dnsNoticeUrl || '');
         setDnsNoticeMessage(res.data?.dnsNoticeMessage || '');
       })
@@ -54,6 +61,7 @@ const MaintenanceDashboardPage = () => {
     maintenanceEnabled,
     maintenanceMessage,
     dnsNoticeEnabled,
+    dnsNoticeSourceDomain,
     dnsNoticeUrl,
     dnsNoticeMessage,
   });
@@ -62,6 +70,18 @@ const MaintenanceDashboardPage = () => {
     if (dnsNoticeEnabled && !isAllowedDnsNoticeUrl(dnsNoticeUrl)) {
       showError(t('dnsNotice', 'urlInvalid'));
       return false;
+    }
+    if (dnsNoticeEnabled && !normalizeDnsSourceDomain(dnsNoticeSourceDomain)) {
+      showError(t('dnsNotice', 'sourceDomainInvalid'));
+      return false;
+    }
+    if (dnsNoticeEnabled) {
+      const source = normalizeDnsSourceDomain(dnsNoticeSourceDomain);
+      const target = getNormalizedDomainFromUrl(dnsNoticeUrl);
+      if (source && target && source === target) {
+        showError(t('dnsNotice', 'targetMustBeOtherDomain'));
+        return false;
+      }
     }
     return true;
   };
@@ -330,6 +350,39 @@ const MaintenanceDashboardPage = () => {
                 {t('dnsNotice', 'toggleLabel')}
               </span>
             </div>
+            <label
+              className="mb-2 block text-xs font-bold uppercase tracking-wide"
+              style={{ color: 'var(--rf-amber)' }}
+              htmlFor="dns-notice-source-domain"
+            >
+              {t('dnsNotice', 'sourceDomainLabel')}
+            </label>
+            <select
+              id="dns-notice-source-domain"
+              value={dnsNoticeSourceDomain}
+              onChange={(e) => setDnsNoticeSourceDomain(normalizeDnsSourceDomain(e.target.value) || 'rapido.bj')}
+              disabled={anySaving}
+              className="mb-5 w-full max-w-2xl rounded-[var(--radius-md)] border px-4 py-3 text-sm outline-none transition-[border-color,box-shadow]"
+              style={{
+                background: 'var(--rf-cream)',
+                borderColor: 'var(--rf-border-strong)',
+                fontFamily: 'var(--font-body)',
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = 'var(--rf-amber)';
+                e.target.style.boxShadow = 'var(--shadow-gold)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'var(--rf-border-strong)';
+                e.target.style.boxShadow = 'none';
+              }}
+            >
+              {DNS_SOURCE_DOMAIN_OPTIONS.map((domain) => (
+                <option key={domain} value={domain}>
+                  {t('dnsNotice', 'sourceDomainOptionPrefix')} {domain}
+                </option>
+              ))}
+            </select>
             <label
               className="mb-2 block text-xs font-bold uppercase tracking-wide"
               style={{ color: 'var(--rf-amber)' }}

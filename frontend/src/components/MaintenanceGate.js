@@ -5,6 +5,7 @@ import MaintenancePage from '../pages/MaintenancePage';
 import DnsNoticePage from '../pages/DnsNoticePage';
 import PageLoader from './PageLoader';
 import { DASHBOARD_BASE_PATH } from '../config/dashboardPath';
+import { hostnameMatchesDnsSourceDomain } from '../utils/dnsNoticeUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -22,6 +23,7 @@ const MaintenanceGate = ({ children }) => {
   const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
   const [maintenanceMessage, setMaintenanceMessage] = useState('');
   const [dnsNoticeEnabled, setDnsNoticeEnabled] = useState(false);
+  const [dnsNoticeSourceDomain, setDnsNoticeSourceDomain] = useState('');
   const [dnsNoticeUrl, setDnsNoticeUrl] = useState('');
   const [dnsNoticeMessage, setDnsNoticeMessage] = useState('');
 
@@ -34,6 +36,7 @@ const MaintenanceGate = ({ children }) => {
         setMaintenanceEnabled(!!res.data?.maintenanceEnabled);
         setMaintenanceMessage(res.data?.maintenanceMessage || '');
         setDnsNoticeEnabled(!!res.data?.dnsNoticeEnabled);
+        setDnsNoticeSourceDomain(res.data?.dnsNoticeSourceDomain || '');
         setDnsNoticeUrl(res.data?.dnsNoticeUrl || '');
         setDnsNoticeMessage(res.data?.dnsNoticeMessage || '');
       })
@@ -42,6 +45,7 @@ const MaintenanceGate = ({ children }) => {
         setMaintenanceEnabled(false);
         setMaintenanceMessage('');
         setDnsNoticeEnabled(false);
+        setDnsNoticeSourceDomain('');
         setDnsNoticeUrl('');
         setDnsNoticeMessage('');
       })
@@ -61,8 +65,10 @@ const MaintenanceGate = ({ children }) => {
   const showDnsNotice = useMemo(() => {
     if (maintenanceEnabled) return false;
     if (!dnsNoticeEnabled || !dnsNoticeUrl) return false;
+    const currentHost = typeof window !== 'undefined' ? window.location.hostname : '';
+    if (!hostnameMatchesDnsSourceDomain(currentHost, dnsNoticeSourceDomain)) return false;
     return !pathIsAllowed(location.pathname);
-  }, [maintenanceEnabled, dnsNoticeEnabled, dnsNoticeUrl, location.pathname]);
+  }, [maintenanceEnabled, dnsNoticeEnabled, dnsNoticeSourceDomain, dnsNoticeUrl, location.pathname]);
 
   if (loading) {
     return <PageLoader message="" />;
