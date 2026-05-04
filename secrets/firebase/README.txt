@@ -16,3 +16,5 @@ Dossier réservé au JSON « compte de service » Firebase (FCM côté serveur).
 4) Vérification après déploiement : GET https://<ton-backend>/healthz  doit afficher "fcm": true.
 
 Ne commite jamais service-account.json : c’est une clé privée.
+GitHub bloque en général le push si ce fichier est versionné (secret scanning / push protection).
+Sur Render : FCM_SERVICE_ACCOUNT_JSON ou « Secret file », pas le dépôt Git.
