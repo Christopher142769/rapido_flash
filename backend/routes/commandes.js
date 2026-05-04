@@ -591,11 +591,10 @@ router.put('/:id/statut', auth, async (req, res) => {
             tag: `rapido-ord-${commande._id}-${statut}`,
           }).catch(() => {});
 
-      /* Autres propriétaires / gestionnaires (pas celui qui valide sur le web) : alerte multi-appareils */
-      const actorId = String(req.user._id);
+      /* Propriétaires / gestionnaires (y compris celui qui valide sur le web) : alerte multi-appareils */
       const staffIds = [restaurant.proprietaire, ...(restaurant.gestionnaires || [])]
         .map((id) => String(id))
-        .filter((id) => id && id !== actorId);
+        .filter((id) => id);
       if (staffIds.length) {
         const label = STATUT_LABELS_CLIENT[statut] || statut;
         void sendToUserIds(staffIds, {

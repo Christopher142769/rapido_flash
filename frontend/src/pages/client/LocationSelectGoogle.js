@@ -11,6 +11,7 @@ import './LocationSelect.css';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 // Utilisation de Nominatim (OpenStreetMap) - Gratuit et open source
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
+const GEO_OPTIONS = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
 
 const LocationSelect = () => {
   const navigate = useNavigate();
@@ -94,9 +95,16 @@ const LocationSelect = () => {
         setLoading(false);
         if (error.code === 1) {
           setPermissionStatus('denied');
+          showWarning(t('locationEditor', 'geolocationDenied'), t('locationEditor', 'geolocErrorTitle'));
+          return;
         }
+        if (error.code === 3) {
+          showWarning('Délai dépassé. Vérifiez GPS / Internet puis réessayez.', t('locationEditor', 'geolocErrorTitle'));
+          return;
+        }
+        showWarning(t('locationEditor', 'geolocError'), t('locationEditor', 'geolocErrorTitle'));
       }
-    );
+    , GEO_OPTIONS);
   };
 
   const handleMapClick = (e) => {

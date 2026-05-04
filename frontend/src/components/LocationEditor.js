@@ -10,6 +10,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 // Utilisation de Nominatim (OpenStreetMap) - Gratuit et open source
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
 const MIN_INSTRUCTION_LEN = 3;
+const GEO_OPTIONS = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
 
 const LocationEditor = ({ onClose, onSave }) => {
   const { t } = useContext(LanguageContext);
@@ -66,7 +67,8 @@ const LocationEditor = ({ onClose, onSave }) => {
           },
           () => {
             setLoading(false);
-          }
+          },
+          GEO_OPTIONS
         );
       } else {
         setLoading(false);
@@ -171,8 +173,17 @@ const LocationEditor = ({ onClose, onSave }) => {
           });
         },
         (error) => {
+          if (error?.code === 1) {
+            showError(t('locationEditor', 'geolocationDenied'), t('locationEditor', 'geolocErrorTitle'));
+            return;
+          }
+          if (error?.code === 3) {
+            showError('Délai dépassé. Vérifiez GPS / Internet puis réessayez.', t('locationEditor', 'geolocErrorTitle'));
+            return;
+          }
           showError(t('locationEditor', 'geolocError'), t('locationEditor', 'geolocErrorTitle'));
-        }
+        },
+        GEO_OPTIONS
       );
     }
   };
