@@ -43,7 +43,8 @@
     "cap:open": "npx cap open android",
     "android:sync": "npm run build && npm run android:brand && npx cap sync android",
     "android:studio": "npm run build && npm run android:brand && npx cap sync android && npx cap open android",
-    "android:brand": "./scripts/android-brand-assets.sh"
+    "android:brand": "./scripts/android-brand-assets.sh",
+    "android:sha1": "./scripts/android-signing-fingerprints.sh"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.3.1",
