@@ -50,11 +50,54 @@ function loadGsiScript() {
 
 const GOOGLE_SCOPES = ['openid', 'email', 'profile'];
 
+function extractNativeGoogleErrorText(err) {
+  if (!err) return '';
+  const bits = [
+    err.message,
+    err.errorMessage,
+    err.localizedDescription,
+    err.code != null && err.code !== '' ? `code:${err.code}` : '',
+    typeof err === 'string' ? err : '',
+  ].filter(Boolean);
+  return bits.join(' | ');
+}
+
+/** Interprète les erreurs du plugin Android (ex. ApiException 10 = mauvaise SHA-1 / client OAuth). */
+function explainNativeGoogleFailure(errText) {
+  const t = String(errText || '');
+  if (!t) {
+    return {
+      hint: 'Connexion Google refusée sans détail. Vérifie la connexion, puis réessaie.',
+    };
+  }
+  if (/canceled|cancelled|12501/i.test(t)) {
+    return { skip: true };
+  }
+  if (/\b10\b|DEVELOPER_ERROR|developer[_ ]error|12500/i.test(t)) {
+    return {
+      hint:
+        'Configuration Google Android : ajoute l’empreinte SHA-1 du certificat qui signe **cette** APK (ou celle « App signing » dans Play Console si l’app est sur le Play Store) dans Firebase / Google Cloud, pour le package bj.rapido.mobile. L’ID client OAuth utilisé doit être celui de type **Application Web** (le même que GOOGLE_CLIENT_ID sur Render).',
+    };
+  }
+  if (/7\b|NETWORK_ERROR|network/i.test(t)) {
+    return { hint: 'Réseau indisponible ou bloqué. Réessaie avec une connexion stable.' };
+  }
+  if (/8\b|INTERNAL_ERROR|internal/i.test(t)) {
+    return { hint: 'Erreur interne Google. Réessaie dans quelques instants.' };
+  }
+  return {
+    hint: 'La connexion Google n’a pas abouti. Vérifie l’ID client Web dans le build et la configuration côté Google Cloud.',
+    detail: t.length > 220 ? `${t.slice(0, 220)}…` : t,
+  };
+}
+
 /**
  * Google Sign-In : sur navigateur = GIS (gsi). Sur app Capacitor Android/iOS = SDK natif (@southdevs/capacitor-google-auth).
  */
 const GoogleSignInButton = ({ onCredential, disabled = false }) => {
   const [scriptError, setScriptError] = useState(false);
+  const [nativeErrorHint, setNativeErrorHint] = useState('');
+  const [nativeErrorDetail, setNativeErrorDetail] = useState('');
   const [signInBusy, setSignInBusy] = useState(false);
   const clientId = resolveGoogleClientId();
   const isNative = (() => {
@@ -98,6 +141,8 @@ const GoogleSignInButton = ({ onCredential, disabled = false }) => {
       }
       setSignInBusy(true);
       setScriptError(false);
+      setNativeErrorHint('');
+      setNativeErrorDetail('');
       try {
         const { GoogleAuth } = await import('@southdevs/capacitor-google-auth');
         await GoogleAuth.initialize({
@@ -115,15 +160,22 @@ const GoogleSignInButton = ({ onCredential, disabled = false }) => {
         if (idToken && typeof onCredentialRef.current === 'function') {
           onCredentialRef.current(idToken);
         } else {
-          setScriptError(true);
+          const detail = extractNativeGoogleErrorText({ message: 'Jeton ID absent après connexion' });
+          const explained = explainNativeGoogleFailure(detail);
+          if (!explained.skip) {
+            setNativeErrorHint(explained.hint);
+            setNativeErrorDetail(explained.detail || detail);
+            setScriptError(true);
+          }
         }
       } catch (err) {
-        const msg = String(err?.message || err || '');
+        const raw = extractNativeGoogleErrorText(err);
         setSignInBusy(false);
-        if (/canceled|cancelled|12501/i.test(msg)) {
-          return;
-        }
-        console.warn('[GoogleSignInButton] native Google sign-in', msg);
+        const explained = explainNativeGoogleFailure(raw);
+        if (explained.skip) return;
+        console.warn('[GoogleSignInButton] native Google sign-in', raw);
+        setNativeErrorHint(explained.hint);
+        setNativeErrorDetail(explained.detail || raw);
         setScriptError(true);
       }
       return;
@@ -173,8 +225,9 @@ const GoogleSignInButton = ({ onCredential, disabled = false }) => {
     const el = document.getElementById(SCRIPT_ID);
     if (el) el.remove();
     setScriptError(false);
+    setNativeErrorHint('');
+    setNativeErrorDetail('');
     if (isNative) {
-      setScriptError(false);
       return;
     }
     loadGsiScript()
@@ -221,10 +274,13 @@ const GoogleSignInButton = ({ onCredential, disabled = false }) => {
       {scriptError ? (
         <div className="google-auth-meta">
           <span className="google-auth-loading">
-            {isNative
-              ? 'Connexion Google impossible. Vérifie que l’ID client Web est dans le build (.env), que GOOGLE_CLIENT_ID sur Render correspond, et que l’empreinte SHA-1 de signature est enregistrée dans la console Google pour l’app Android.'
-              : 'Connexion Google indisponible.'}
+            {isNative ? nativeErrorHint || 'Connexion Google impossible.' : 'Connexion Google indisponible.'}
           </span>
+          {isNative && nativeErrorDetail ? (
+            <span className="google-auth-loading" style={{ display: 'block', fontSize: '0.82rem', opacity: 0.85, marginTop: 6 }}>
+              {nativeErrorDetail}
+            </span>
+          ) : null}
           <button type="button" className="google-auth-retry" onClick={handleRetryLoad}>
             Réessayer
           </button>
