@@ -87,6 +87,27 @@ router.post('/mobile/unregister', auth, async (req, res) => {
   }
 });
 
+/** Diagnostic mobile (permission / étapes) — visible dans les logs Render sans adb. */
+router.post('/fcm/debug', auth, async (req, res) => {
+  try {
+    const b = req.body && typeof req.body === 'object' ? req.body : {};
+    console.info(
+      '[push] FCM client',
+      JSON.stringify({
+        userId: String(req.user._id),
+        step: b.step || null,
+        native: b.native,
+        platform: b.platform,
+        receive: b.receive,
+        message: b.message ? String(b.message).slice(0, 200) : undefined,
+      })
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
 /** Jeton FCM (app Capacitor Android / iOS avec Firebase). */
 router.post('/fcm/register', auth, async (req, res) => {
   try {

@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   registerCapacitorFcmAndSync,
+  syncStoredFcmTokenWithServer,
   unregisterCapacitorFcmFromServerBeforeLogout,
 } from '../utils/capacitorFcm';
 
@@ -11,6 +12,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 function triggerFcmRegistrationSoon() {
   setTimeout(() => {
+    void syncStoredFcmTokenWithServer();
     void registerCapacitorFcmAndSync();
   }, 500);
 }

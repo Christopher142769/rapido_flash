@@ -3,7 +3,12 @@ import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import { isCapacitorAndroid } from './capacitorNativeNotifications';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+function getApiBase() {
+  const raw = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+  return String(raw).trim().replace(/\/$/, '');
+}
+
+const API_BASE = getApiBase();
 
 let listenersAttached = false;
 /** Dernier jeton reçu du SDK (pour désinscription à la déconnexion). */
@@ -14,6 +19,19 @@ function isNativeMobile() {
     return Capacitor.isNativePlatform() && (Capacitor.getPlatform() === 'android' || Capacitor.getPlatform() === 'ios');
   } catch {
     return false;
+  }
+}
+
+async function fcmClientDebug(payload) {
+  try {
+    const jwt = localStorage.getItem('token');
+    if (!jwt || !isNativeMobile()) return;
+    await axios.post(`${API_BASE}/push/fcm/debug`, payload, {
+      headers: { Authorization: `Bearer ${jwt}` },
+      timeout: 8000,
+    });
+  } catch {
+    /* best effort — ne pas bloquer l’enregistrement FCM */
   }
 }
 
@@ -30,6 +48,11 @@ export function ensureCapacitorFcmListeners() {
     lastFcmToken = value || null;
     console.info('[FCM] registration token received', value ? `...${String(value).slice(-10)}` : 'empty');
     const jwt = localStorage.getItem('token');
+    void fcmClientDebug({
+      step: 'registration_token',
+      tokenLen: value ? String(value).length : 0,
+      hasJwt: !!jwt,
+    });
     if (!jwt || !value) {
       console.warn('[FCM] token not synced: missing jwt or token');
       return;
@@ -42,13 +65,21 @@ export function ensureCapacitorFcmListeners() {
         { headers: { Authorization: `Bearer ${jwt}` }, timeout: 15000 }
       );
       console.info('[FCM] token synced to backend');
-    } catch (_) {
-      console.warn('[FCM] token sync failed (will retry later)');
+      void fcmClientDebug({ step: 'register_http_ok' });
+    } catch (err) {
+      console.warn('[FCM] token sync failed', err?.response?.status, err?.message || err);
+      void fcmClientDebug({
+        step: 'register_http_error',
+        status: err?.response?.status,
+        message: err?.response?.data?.message || err?.message,
+      });
     }
   });
 
   PushNotifications.addListener('registrationError', (err) => {
-    console.warn('[FCM] registrationError', err?.error || err);
+    const msg = err?.error || err;
+    console.warn('[FCM] registrationError', msg);
+    void fcmClientDebug({ step: 'registration_error', message: String(msg).slice(0, 200) });
   });
 }
 
@@ -68,39 +99,63 @@ export async function syncStoredFcmTokenWithServer() {
       { headers: { Authorization: `Bearer ${jwt}` }, timeout: 15000 }
     );
     console.info('[FCM] stored token synced to backend');
-  } catch (_) {
-    console.warn('[FCM] stored token sync failed');
+  } catch (err) {
+    console.warn('[FCM] stored token sync failed', err?.response?.status, err?.message || err);
+  }
+}
+
+function scheduleFcmSyncRetries() {
+  const delays = [1000, 3000, 8000];
+  for (const ms of delays) {
+    setTimeout(() => {
+      void syncStoredFcmTokenWithServer();
+    }, ms);
   }
 }
 
 /** Appelé après permission « receive » accordée (souvent avec les notifs locales). */
 export async function registerCapacitorFcmAndSync() {
-  if (!isNativeMobile()) return;
+  let platform = 'web';
+  try {
+    platform = Capacitor.getPlatform();
+  } catch {
+    /* ignore */
+  }
+  const native = isNativeMobile();
+  void fcmClientDebug({ step: 'register_start', native, platform });
+
+  if (!native) return;
   ensureCapacitorFcmListeners();
   try {
     let perm = await PushNotifications.checkPermissions();
     console.info('[FCM] permission state', perm?.receive || 'unknown');
+    void fcmClientDebug({ step: 'perm_checked', receive: perm?.receive });
     if (perm.receive !== 'granted') {
       console.info('[FCM] requesting push permission from native SDK');
       try {
         perm = await PushNotifications.requestPermissions();
       } catch (e) {
         console.warn('[FCM] requestPermissions failed', e?.message || e);
+        void fcmClientDebug({ step: 'request_perm_exception', message: String(e?.message || e).slice(0, 200) });
       }
       console.info('[FCM] permission state after request', perm?.receive || 'unknown');
+      void fcmClientDebug({ step: 'perm_after_request', receive: perm?.receive });
       if (perm.receive !== 'granted') {
         console.warn('[FCM] register skipped: permission not granted');
+        void fcmClientDebug({ step: 'register_skipped_not_granted', receive: perm?.receive });
         return;
       }
     }
     await PushNotifications.register();
     console.info('[FCM] register requested to native SDK');
-    // Some devices deliver registration callback slightly later.
+    void fcmClientDebug({ step: 'native_register_called' });
     setTimeout(() => {
       void syncStoredFcmTokenWithServer();
     }, 2000);
+    scheduleFcmSyncRetries();
   } catch (e) {
     console.warn('[FCM] register', e?.message || e);
+    void fcmClientDebug({ step: 'register_exception', message: String(e?.message || e).slice(0, 200) });
   }
 }
 

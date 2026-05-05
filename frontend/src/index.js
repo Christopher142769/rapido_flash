@@ -10,7 +10,8 @@ import {
 import { ensureCapacitorFcmListeners } from './utils/capacitorFcm';
 
 initCapacitorAndroidNotifications();
-ensureCapacitorFcmListeners();
+// Laisse le pont natif Capacitor s’initialiser avant d’attacher les écouteurs FCM.
+setTimeout(() => ensureCapacitorFcmListeners(), 0);
 scheduleAndroidNotificationPermissionPrompt();
 
 // Dev : désinscrire tout SW (évite conflits avec le serveur de dev)
