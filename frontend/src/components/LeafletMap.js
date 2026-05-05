@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { getBestCurrentPosition } from '../utils/nativeGeolocation';
 
 const DEFAULT_MARKER_ICON = L.icon({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
@@ -80,27 +81,23 @@ function GeolocateControl({ onGeolocate, title = 'Utiliser ma position' }) {
       div.innerHTML =
         `<button type="button" style="background: white; border: 2px solid rgba(0,0,0,0.2); border-radius: 4px; padding: 6px 8px; cursor: pointer; display:flex;align-items:center;justify-content:center;" title="${safeTitle}" aria-label="${safeTitle}">${GEOLOCATE_PIN_SVG}</button>`;
       
-      L.DomEvent.on(div, 'click', (e) => {
+      L.DomEvent.on(div, 'click', async (e) => {
         L.DomEvent.stopPropagation(e);
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              const lat = pos.coords.latitude;
-              const lng = pos.coords.longitude;
-              map.setView([lat, lng], 15);
-              if (onGeolocate) {
-                onGeolocate({
-                  coords: {
-                    longitude: lng,
-                    latitude: lat
-                  }
-                });
+        try {
+          const { latitude, longitude } = await getBestCurrentPosition();
+          const lat = latitude;
+          const lng = longitude;
+          map.setView([lat, lng], 15);
+          if (onGeolocate) {
+            onGeolocate({
+              coords: {
+                longitude: lng,
+                latitude: lat
               }
-            },
-            (error) => {
-              console.error('Erreur géolocalisation:', error);
-            }
-          );
+            });
+          }
+        } catch (error) {
+          console.error('Erreur géolocalisation:', error);
         }
       });
 

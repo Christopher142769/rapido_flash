@@ -8,6 +8,7 @@ import { useModal } from '../../context/ModalContext';
 import TopNavbar from '../../components/TopNavbar';
 import { cartQualifiesFreeDeliveryPromo } from '../../utils/cartPromo';
 import { openOrderTrackingWhatsApp } from '../../utils/orderTrackingWhatsApp';
+import { getBestCurrentPosition } from '../../utils/nativeGeolocation';
 import './Checkout.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -207,11 +208,10 @@ const Checkout = () => {
   };
 
   const getCurrentLocation = () => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
+    getBestCurrentPosition()
+      .then(({ latitude, longitude }) => {
+        const lat = latitude;
+        const lng = longitude;
         setMapPosition([lat, lng]);
         fetch(`${NOMINATIM_URL}/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
           headers: { 'User-Agent': 'RapidoFlash/1.0' },
@@ -224,9 +224,14 @@ const Checkout = () => {
             }
           })
           .catch(() => {});
-      },
-      () => showError(t('locationEditor', 'geolocError'), t('locationEditor', 'geolocErrorTitle'))
-    );
+      })
+      .catch((error) => {
+        if (Number(error?.code || 0) === 1) {
+          showError('Permission localisation refusée. Autorise-la dans les réglages du téléphone.', t('locationEditor', 'geolocErrorTitle'));
+          return;
+        }
+        showError(t('locationEditor', 'geolocError'), t('locationEditor', 'geolocErrorTitle'));
+      });
   };
 
   const loadFedaPayScript = () => {

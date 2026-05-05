@@ -5,6 +5,7 @@ import LanguageContext from '../../context/LanguageContext';
 import { useModal } from '../../context/ModalContext';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { getBestCurrentPosition } from '../../utils/nativeGeolocation';
 import './LocationSelect.css';
 
 // Fix pour les icônes Leaflet
@@ -86,31 +87,19 @@ const LocationSelect = () => {
   }, []);
 
   const requestLocationPermission = () => {
-    if (!navigator.geolocation) {
-      showWarning(t('locationEditor', 'browserNoGeolocation'), t('locationEditor', 'geolocErrorTitle'));
-      return;
-    }
-
     setLoading(true);
-    
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        
-        // Animation du pointeur
+    getBestCurrentPosition()
+      .then(({ latitude, longitude }) => {
+        const lat = latitude;
+        const lng = longitude;
         setIsAnimating(true);
         setMapCenter([lat, lng]);
         setMapZoom(15);
-        
-        // Délai pour l'animation
         setTimeout(() => {
           setPosition([lat, lng]);
           setIsAnimating(false);
           setLoading(false);
           setPermissionStatus('granted');
-          
-          // Récupérer l'adresse
           fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
             .then(res => res.json())
             .then(data => {
@@ -120,23 +109,17 @@ const LocationSelect = () => {
               }
             })
             .catch(() => {});
-        }, 1500);
-      },
-      (error) => {
+        }, 1200);
+      })
+      .catch((error) => {
         setLoading(false);
-        setPermissionStatus('denied');
-        if (error.code === error.PERMISSION_DENIED) {
+        if (Number(error?.code || 0) === 1) {
+          setPermissionStatus('denied');
           showWarning(t('locationEditor', 'geolocationDenied'), t('locationEditor', 'geolocErrorTitle'));
-        } else {
-          showWarning(t('locationEditor', 'geolocError'), t('locationEditor', 'geolocErrorTitle'));
+          return;
         }
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      }
-    );
+        showWarning(t('locationEditor', 'geolocError'), t('locationEditor', 'geolocErrorTitle'));
+      });
   };
 
   const handlePermissionAccept = () => {
@@ -216,7 +199,7 @@ const LocationSelect = () => {
             <button
               className="btn btn-secondary location-btn"
               onClick={requestLocationPermission}
-              disabled={loading || permissionStatus === 'denied'}
+              disabled={loading}
             >
               {loading ? (
                 <>

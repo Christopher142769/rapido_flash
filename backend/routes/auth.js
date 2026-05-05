@@ -193,6 +193,11 @@ router.post('/google', [
       return res.status(500).json({ message: 'Google OAuth non configuré (GOOGLE_CLIENT_ID manquant).' });
     }
     const { credential } = req.body;
+    console.info('[auth/google] attempt', JSON.stringify({
+      hasCredential: !!credential,
+      audiencesCount: audiences.length,
+      ua: req.headers['user-agent'] || '',
+    }));
     const ticket = await googleClient.verifyIdToken({
       idToken: credential,
       audience: audiences.length === 1 ? audiences[0] : audiences,
@@ -260,7 +265,7 @@ router.post('/google', [
       message =
         'Le jeton Google ne correspond pas à GOOGLE_CLIENT_ID sur le serveur : vérifie que la même valeur que REACT_APP_GOOGLE_CLIENT_ID est définie sur Render (sans espace en trop).';
     }
-    console.error('[auth/google]', raw);
+    console.error('[auth/google] error', raw);
     return res.status(500).json({ message });
   }
 });

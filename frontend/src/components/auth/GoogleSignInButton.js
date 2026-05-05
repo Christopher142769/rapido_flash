@@ -3,6 +3,13 @@ import { Capacitor } from '@capacitor/core';
 
 const SCRIPT_ID = 'google-identity-services';
 
+/** ID client OAuth de type « Application Web » (même valeur que GOOGLE_CLIENT_ID côté serveur pour le jeton ID). */
+function resolveWebClientIdForNative() {
+  const a = (process.env.REACT_APP_GOOGLE_CLIENT_ID_CAPACITOR || '').trim();
+  const b = (process.env.REACT_APP_GOOGLE_CLIENT_ID || '').trim();
+  return a || b;
+}
+
 function resolveGoogleClientId() {
   try {
     if (Capacitor.isNativePlatform() && process.env.REACT_APP_GOOGLE_CLIENT_ID_CAPACITOR) {
@@ -41,14 +48,22 @@ function loadGsiScript() {
   });
 }
 
+const GOOGLE_SCOPES = ['openid', 'email', 'profile'];
+
 /**
- * Google Sign-In (GIS). Sur WebView Android, renderButton peut rester bloqué :
- * on utilise un bouton custom + prompt() après clic, FedCM désactivé.
+ * Google Sign-In : sur navigateur = GIS (gsi). Sur app Capacitor Android/iOS = SDK natif (@southdevs/capacitor-google-auth).
  */
 const GoogleSignInButton = ({ onCredential, disabled = false }) => {
   const [scriptError, setScriptError] = useState(false);
   const [signInBusy, setSignInBusy] = useState(false);
   const clientId = resolveGoogleClientId();
+  const isNative = (() => {
+    try {
+      return Capacitor.isNativePlatform();
+    } catch {
+      return false;
+    }
+  })();
   const onCredentialRef = useRef(onCredential);
 
   useEffect(() => {
@@ -56,7 +71,7 @@ const GoogleSignInButton = ({ onCredential, disabled = false }) => {
   }, [onCredential]);
 
   useEffect(() => {
-    if (!clientId) return undefined;
+    if (!clientId || isNative) return undefined;
     let cancelled = false;
     loadGsiScript()
       .then(() => {
@@ -70,10 +85,51 @@ const GoogleSignInButton = ({ onCredential, disabled = false }) => {
     return () => {
       cancelled = true;
     };
-  }, [clientId]);
+  }, [clientId, isNative]);
 
   const handleGoogleClick = useCallback(async () => {
-    if (!clientId || disabled) return;
+    if (disabled) return;
+
+    if (isNative) {
+      const webClientId = resolveWebClientIdForNative();
+      if (!webClientId) {
+        setScriptError(true);
+        return;
+      }
+      setSignInBusy(true);
+      setScriptError(false);
+      try {
+        const { GoogleAuth } = await import('@southdevs/capacitor-google-auth');
+        await GoogleAuth.initialize({
+          clientId: webClientId,
+          scopes: GOOGLE_SCOPES,
+          grantOfflineAccess: false,
+        });
+        const user = await GoogleAuth.signIn({
+          clientId: webClientId,
+          scopes: GOOGLE_SCOPES,
+          grantOfflineAccess: false,
+        });
+        const idToken = user?.authentication?.idToken;
+        setSignInBusy(false);
+        if (idToken && typeof onCredentialRef.current === 'function') {
+          onCredentialRef.current(idToken);
+        } else {
+          setScriptError(true);
+        }
+      } catch (err) {
+        const msg = String(err?.message || err || '');
+        setSignInBusy(false);
+        if (/canceled|cancelled|12501/i.test(msg)) {
+          return;
+        }
+        console.warn('[GoogleSignInButton] native Google sign-in', msg);
+        setScriptError(true);
+      }
+      return;
+    }
+
+    if (!clientId) return;
     setSignInBusy(true);
     setScriptError(false);
     try {
@@ -92,33 +148,45 @@ const GoogleSignInButton = ({ onCredential, disabled = false }) => {
           setSignInBusy(false);
           if (response?.credential && typeof onCredentialRef.current === 'function') {
             onCredentialRef.current(response.credential);
+          } else {
+            setScriptError(true);
           }
         },
         use_fedcm_for_prompt: false,
+        auto_select: false,
       });
+      const failSafe = setTimeout(() => {
+        setSignInBusy(false);
+      }, 10000);
       window.google.accounts.id.prompt(() => {
+        clearTimeout(failSafe);
         setSignInBusy(false);
       });
-    } catch (_) {
+    } catch (err) {
+      console.warn('[GoogleSignInButton] Google sign-in init failed', err?.message || err);
       setSignInBusy(false);
       setScriptError(true);
     }
-  }, [clientId, disabled]);
+  }, [clientId, disabled, isNative]);
 
   const handleRetryLoad = useCallback(() => {
     const el = document.getElementById(SCRIPT_ID);
     if (el) el.remove();
     setScriptError(false);
+    if (isNative) {
+      setScriptError(false);
+      return;
+    }
     loadGsiScript()
       .then(() => {})
       .catch(() => setScriptError(true));
-  }, []);
+  }, [isNative]);
 
   const showSpinner = signInBusy;
 
   return (
     <div className={`google-auth-wrap ${disabled ? 'google-auth-wrap--disabled' : ''}`}>
-      {!clientId ? (
+      {!clientId && !isNative ? (
         <button type="button" className="google-auth-fallback" disabled>
           Continuer avec Google
         </button>
@@ -142,12 +210,21 @@ const GoogleSignInButton = ({ onCredential, disabled = false }) => {
           {showSpinner ? <span className="google-auth-custom-btn__spinner" aria-hidden /> : null}
         </button>
       )}
-      {!clientId ? (
+      {!clientId && !isNative ? (
         <div className="google-auth-loading">Activez REACT_APP_GOOGLE_CLIENT_ID (ou REACT_APP_GOOGLE_CLIENT_ID_CAPACITOR en app native).</div>
+      ) : null}
+      {isNative && !resolveWebClientIdForNative() ? (
+        <div className="google-auth-loading">
+          Définissez REACT_APP_GOOGLE_CLIENT_ID (client Web OAuth, même valeur que GOOGLE_CLIENT_ID sur le serveur) puis reconstruisez l’app.
+        </div>
       ) : null}
       {scriptError ? (
         <div className="google-auth-meta">
-          <span className="google-auth-loading">Connexion Google indisponible.</span>
+          <span className="google-auth-loading">
+            {isNative
+              ? 'Connexion Google impossible. Vérifie que l’ID client Web est dans le build (.env), que GOOGLE_CLIENT_ID sur Render correspond, et que l’empreinte SHA-1 de signature est enregistrée dans la console Google pour l’app Android.'
+              : 'Connexion Google indisponible.'}
+          </span>
           <button type="button" className="google-auth-retry" onClick={handleRetryLoad}>
             Réessayer
           </button>
