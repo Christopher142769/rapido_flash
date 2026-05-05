@@ -78,14 +78,27 @@ export async function registerCapacitorFcmAndSync() {
   if (!isNativeMobile()) return;
   ensureCapacitorFcmListeners();
   try {
-    const perm = await PushNotifications.checkPermissions();
+    let perm = await PushNotifications.checkPermissions();
     console.info('[FCM] permission state', perm?.receive || 'unknown');
     if (perm.receive !== 'granted') {
-      console.warn('[FCM] register skipped: permission not granted');
-      return;
+      console.info('[FCM] requesting push permission from native SDK');
+      try {
+        perm = await PushNotifications.requestPermissions();
+      } catch (e) {
+        console.warn('[FCM] requestPermissions failed', e?.message || e);
+      }
+      console.info('[FCM] permission state after request', perm?.receive || 'unknown');
+      if (perm.receive !== 'granted') {
+        console.warn('[FCM] register skipped: permission not granted');
+        return;
+      }
     }
     await PushNotifications.register();
     console.info('[FCM] register requested to native SDK');
+    // Some devices deliver registration callback slightly later.
+    setTimeout(() => {
+      void syncStoredFcmTokenWithServer();
+    }, 2000);
   } catch (e) {
     console.warn('[FCM] register', e?.message || e);
   }
