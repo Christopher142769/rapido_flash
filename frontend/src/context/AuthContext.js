@@ -1,10 +1,19 @@
 import React, { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
-import { unregisterCapacitorFcmFromServerBeforeLogout } from '../utils/capacitorFcm';
+import {
+  registerCapacitorFcmAndSync,
+  unregisterCapacitorFcmFromServerBeforeLogout,
+} from '../utils/capacitorFcm';
 
 const AuthContext = createContext();
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+function triggerFcmRegistrationSoon() {
+  setTimeout(() => {
+    void registerCapacitorFcmAndSync();
+  }, 500);
+}
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -69,6 +78,7 @@ export const AuthProvider = ({ children }) => {
       setToken(newToken);
       setUser(newUser);
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+      triggerFcmRegistrationSoon();
       return { success: true };
     } catch (error) {
       return { success: false, message: error.response?.data?.message || 'Erreur de connexion' };
@@ -80,6 +90,7 @@ export const AuthProvider = ({ children }) => {
     setToken(newToken);
     setUser(newUser);
     axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+    triggerFcmRegistrationSoon();
   };
 
   const loginWithGoogle = async (credential) => {
@@ -98,6 +109,7 @@ export const AuthProvider = ({ children }) => {
       setToken(newToken);
       setUser(newUser);
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+      triggerFcmRegistrationSoon();
       return { success: true };
     } catch (error) {
       const serverMsg = error.response?.data?.message;
@@ -120,6 +132,7 @@ export const AuthProvider = ({ children }) => {
       setToken(newToken);
       setUser(newUser);
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+      triggerFcmRegistrationSoon();
       return { success: true };
     } catch (error) {
       return { success: false, message: error.response?.data?.message || 'Erreur d\'inscription' };
