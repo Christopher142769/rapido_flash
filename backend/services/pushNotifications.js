@@ -14,6 +14,7 @@ let fcmMessaging = null;
 let fcmEnvMissingLogged = false;
 let fcmMissingLogged = false;
 let lastFcmInitErrorLog = 0;
+let lastFcmNoTokenLogByUser = new Map();
 
 function ensureVapid() {
   if (vapidReady) return true;
@@ -216,7 +217,15 @@ async function sendFcmPushToUserId(userId, payload) {
 
   const uid = String(userId);
   const docs = await MobilePushToken.find({ user: uid, provider: 'fcm' });
-  if (!docs.length) return;
+  if (!docs.length) {
+    const now = Date.now();
+    const prev = lastFcmNoTokenLogByUser.get(uid) || 0;
+    if (now - prev > 60000) {
+      lastFcmNoTokenLogByUser.set(uid, now);
+      console.warn('[push] FCM: aucun token device pour user', uid);
+    }
+    return;
+  }
 
   const title = payload.title || 'Rapido';
   const body = payload.body || '';

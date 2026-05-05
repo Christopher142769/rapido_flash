@@ -100,8 +100,17 @@ router.post('/fcm/register', auth, async (req, res) => {
       { user: req.user._id, token, platform: plat, provider: 'fcm' },
       { upsert: true, new: true }
     );
+    console.info(
+      '[push] FCM token enregistré',
+      JSON.stringify({
+        userId: String(req.user._id),
+        platform: plat,
+        tokenTail: String(token).slice(-10),
+      })
+    );
     res.json({ ok: true });
   } catch (e) {
+    console.error('[push] FCM register error', e?.message || e);
     res.status(500).json({ message: e.message });
   }
 });

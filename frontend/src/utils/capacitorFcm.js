@@ -24,11 +24,16 @@ function isNativeMobile() {
 export function ensureCapacitorFcmListeners() {
   if (!isNativeMobile() || listenersAttached) return;
   listenersAttached = true;
+  console.info('[FCM] listeners attached');
 
   PushNotifications.addListener('registration', async ({ value }) => {
     lastFcmToken = value || null;
+    console.info('[FCM] registration token received', value ? `...${String(value).slice(-10)}` : 'empty');
     const jwt = localStorage.getItem('token');
-    if (!jwt || !value) return;
+    if (!jwt || !value) {
+      console.warn('[FCM] token not synced: missing jwt or token');
+      return;
+    }
     try {
       const platform = Capacitor.getPlatform() === 'ios' ? 'ios' : 'android';
       await axios.post(
@@ -36,8 +41,9 @@ export function ensureCapacitorFcmListeners() {
         { token: value, platform },
         { headers: { Authorization: `Bearer ${jwt}` }, timeout: 15000 }
       );
+      console.info('[FCM] token synced to backend');
     } catch (_) {
-      /* réseau / 400 : réessayer au prochain register */
+      console.warn('[FCM] token sync failed (will retry later)');
     }
   });
 
@@ -50,7 +56,10 @@ export function ensureCapacitorFcmListeners() {
 export async function syncStoredFcmTokenWithServer() {
   const jwt = localStorage.getItem('token');
   const tok = lastFcmToken;
-  if (!jwt || !tok || !isNativeMobile()) return;
+  if (!jwt || !tok || !isNativeMobile()) {
+    console.info('[FCM] sync skipped: missing jwt/token or not native');
+    return;
+  }
   try {
     const platform = Capacitor.getPlatform() === 'ios' ? 'ios' : 'android';
     await axios.post(
@@ -58,8 +67,9 @@ export async function syncStoredFcmTokenWithServer() {
       { token: tok, platform },
       { headers: { Authorization: `Bearer ${jwt}` }, timeout: 15000 }
     );
+    console.info('[FCM] stored token synced to backend');
   } catch (_) {
-    /* réseau */
+    console.warn('[FCM] stored token sync failed');
   }
 }
 
@@ -69,8 +79,13 @@ export async function registerCapacitorFcmAndSync() {
   ensureCapacitorFcmListeners();
   try {
     const perm = await PushNotifications.checkPermissions();
-    if (perm.receive !== 'granted') return;
+    console.info('[FCM] permission state', perm?.receive || 'unknown');
+    if (perm.receive !== 'granted') {
+      console.warn('[FCM] register skipped: permission not granted');
+      return;
+    }
     await PushNotifications.register();
+    console.info('[FCM] register requested to native SDK');
   } catch (e) {
     console.warn('[FCM] register', e?.message || e);
   }
