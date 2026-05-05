@@ -9,9 +9,11 @@ const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
 let vapidReady = false;
 
-/** null = pas encore initialisé, false = échec, sinon instance messaging */
+/** null = pas encore initialisé, sinon instance messaging (les échecs ne sont pas mis en cache : nouvel essai à chaque appel). */
 let fcmMessaging = null;
+let fcmEnvMissingLogged = false;
 let fcmMissingLogged = false;
+let lastFcmInitErrorLog = 0;
 
 function ensureVapid() {
   if (vapidReady) return true;
@@ -39,14 +41,41 @@ function isLikelyFcmDeviceToken(token) {
   return /^[\w\-:.]+$/.test(token);
 }
 
+function normalizeServiceAccountJsonString(raw) {
+  if (typeof raw !== 'string') return '';
+  let s = raw.trim();
+  if (s.charCodeAt(0) === 0xfeff) s = s.slice(1).trim();
+  if (s.startsWith("'") && s.endsWith("'")) {
+    s = s.slice(1, -1).trim();
+  }
+  return s;
+}
+
+/** Pour healthcheck : présence des env (sans init Firebase). */
+function getFcmEnvPresence() {
+  const j = process.env.FCM_SERVICE_ACCOUNT_JSON;
+  const b = process.env.FCM_SERVICE_ACCOUNT_JSON_B64;
+  const p = process.env.FCM_SERVICE_ACCOUNT_PATH;
+  return {
+    json: typeof j === 'string' && j.trim().length > 0,
+    jsonB64: typeof b === 'string' && b.trim().length > 0,
+    path: typeof p === 'string' && p.trim().length > 0,
+  };
+}
+
 function getFcmMessaging() {
-  if (fcmMessaging === false) return null;
   if (fcmMessaging) return fcmMessaging;
   try {
-    const jsonRaw = process.env.FCM_SERVICE_ACCOUNT_JSON;
-    const jsonPath = process.env.FCM_SERVICE_ACCOUNT_PATH;
+    const jsonB64 = normalizeServiceAccountJsonString(process.env.FCM_SERVICE_ACCOUNT_JSON_B64 || '');
+    const jsonRaw = normalizeServiceAccountJsonString(process.env.FCM_SERVICE_ACCOUNT_JSON || '');
+    const jsonPath = typeof process.env.FCM_SERVICE_ACCOUNT_PATH === 'string'
+      ? process.env.FCM_SERVICE_ACCOUNT_PATH.trim()
+      : '';
     let credential;
-    if (jsonRaw) {
+    if (jsonB64) {
+      const decoded = Buffer.from(jsonB64, 'base64').toString('utf8');
+      credential = admin.credential.cert(JSON.parse(decoded));
+    } else if (jsonRaw) {
       credential = admin.credential.cert(JSON.parse(jsonRaw));
     } else if (jsonPath) {
       const abs = path.isAbsolute(jsonPath)
@@ -55,7 +84,12 @@ function getFcmMessaging() {
       const svc = JSON.parse(fs.readFileSync(abs, 'utf8'));
       credential = admin.credential.cert(svc);
     } else {
-      fcmMessaging = false;
+      if (!fcmEnvMissingLogged) {
+        fcmEnvMissingLogged = true;
+        console.warn(
+          '[push] FCM : aucune variable FCM_SERVICE_ACCOUNT_JSON, FCM_SERVICE_ACCOUNT_JSON_B64 ni FCM_SERVICE_ACCOUNT_PATH.'
+        );
+      }
       return null;
     }
     if (!admin.apps.length) {
@@ -64,8 +98,11 @@ function getFcmMessaging() {
     fcmMessaging = admin.messaging();
     return fcmMessaging;
   } catch (err) {
-    console.error('[push] FCM init error', err?.message || err);
-    fcmMessaging = false;
+    const now = Date.now();
+    if (now - lastFcmInitErrorLog > 30000) {
+      lastFcmInitErrorLog = now;
+      console.error('[push] FCM init error', err?.message || err);
+    }
     return null;
   }
 }
@@ -268,6 +305,7 @@ async function sendToUserIds(userIds, payload) {
 module.exports = {
   isPushConfigured,
   isFcmConfigured,
+  getFcmEnvPresence,
   isExponentToken,
   isLikelyFcmDeviceToken,
   sendToUserId,

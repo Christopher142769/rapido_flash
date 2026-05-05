@@ -128,10 +128,15 @@ app.use('/api/promos', require('./routes/promos'));
 
 // Healthcheck Render
 app.get('/healthz', (req, res) => {
-  const { isFcmConfigured, isPushConfigured } = require('./services/pushNotifications');
+  const {
+    isFcmConfigured,
+    isPushConfigured,
+    getFcmEnvPresence,
+  } = require('./services/pushNotifications');
   res.status(200).json({
     ok: true,
     fcm: isFcmConfigured(),
+    fcmEnv: getFcmEnvPresence(),
     webPush: isPushConfigured(),
   });
 });

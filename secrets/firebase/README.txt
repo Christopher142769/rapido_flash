@@ -1,5 +1,11 @@
 Dossier réservé au JSON « compte de service » Firebase (FCM côté serveur).
 
+--- Ne pas confondre avec google-services.json ---
+Le fichier Android `google-services.json` (champs project_info, client, api_key, etc.) sert
+uniquement à l’app dans `frontend/android/`. Il ne contient pas de clé privée Admin.
+Le backend Render attend le JSON du COMPTE DE SERVICE (voir ci‑dessous), téléchargé depuis
+Firebase Console → Paramètres du projet → Comptes de service → Générer une nouvelle clé privée.
+
 --- Pourquoi Render ne « voit » pas ce fichier ---
 Ce fichier est dans .gitignore : il reste sur ta machine, il n’est PAS dans le dépôt GitHub.
 Le clone sur Render ne contient donc pas service-account.json. C’est voulu (sécurité).
