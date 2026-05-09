@@ -56,6 +56,9 @@ rapido-play-upload.jks
 # Google Services (e.g. APIs or Firebase)
 google-services.json
 
+# Jeton unique Play Console (validation du nom de package Android) — ne pas versionner
+app/src/main/assets/adi-registration.properties
+
 # Freeline
 freeline.py
 freeline/
