@@ -49,14 +49,17 @@ function loadGsiScript() {
 }
 
 const GOOGLE_SCOPES = ['openid', 'email', 'profile'];
+/** Le plugin Android lit `scopes` via getString() : un tableau JS est ignoré → il faut une chaîne délimitée par des virgules. */
+const GOOGLE_SCOPES_NATIVE_ARG = GOOGLE_SCOPES.join(',');
 
 function extractNativeGoogleErrorText(err) {
   if (!err) return '';
+  const code = err.code ?? err.statusCode;
   const bits = [
     err.message,
     err.errorMessage,
     err.localizedDescription,
-    err.code != null && err.code !== '' ? `code:${err.code}` : '',
+    code != null && code !== '' ? `code:${code}` : '',
     typeof err === 'string' ? err : '',
   ].filter(Boolean);
   return bits.join(' | ');
@@ -73,7 +76,7 @@ function explainNativeGoogleFailure(errText) {
   if (/canceled|cancelled|12501/i.test(t)) {
     return { skip: true };
   }
-  if (/\b10\b|DEVELOPER_ERROR|developer[_ ]error|12500/i.test(t)) {
+  if (/\b10\b|DEVELOPER_ERROR|developer[_ ]error|code:10\b|12500/i.test(t)) {
     return {
       hint:
         'Configuration Google Android : ajoute l’empreinte SHA-1 du certificat qui signe **cette** APK (ou celle « App signing » dans Play Console si l’app est sur le Play Store) dans Firebase / Google Cloud, pour le package bj.rapido.mobile. L’ID client OAuth utilisé doit être celui de type **Application Web** (le même que GOOGLE_CLIENT_ID sur Render).',
@@ -145,16 +148,18 @@ const GoogleSignInButton = ({ onCredential, disabled = false }) => {
       setNativeErrorDetail('');
       try {
         const { GoogleAuth } = await import('@southdevs/capacitor-google-auth');
-        await GoogleAuth.initialize({
-          clientId: webClientId,
-          scopes: GOOGLE_SCOPES,
-          grantOfflineAccess: false,
-        });
-        const user = await GoogleAuth.signIn({
-          clientId: webClientId,
-          scopes: GOOGLE_SCOPES,
-          grantOfflineAccess: false,
-        });
+        const isAndroid = Capacitor.getPlatform() === 'android';
+        // Android (Java) : scopes via getString() → chaîne "a,b,c". iOS : tableau + serverClientId (client Web) pour l’ID token backend.
+        const nativeInit = isAndroid
+          ? { clientId: webClientId, scopes: GOOGLE_SCOPES_NATIVE_ARG, grantOfflineAccess: false }
+          : {
+              clientId: webClientId,
+              scopes: GOOGLE_SCOPES,
+              grantOfflineAccess: false,
+              serverClientId: webClientId,
+            };
+        await GoogleAuth.initialize(nativeInit);
+        const user = await GoogleAuth.signIn(nativeInit);
         const idToken = user?.authentication?.idToken;
         setSignInBusy(false);
         if (idToken && typeof onCredentialRef.current === 'function') {
