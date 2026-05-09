@@ -5,9 +5,17 @@ const SCRIPT_ID = 'google-identity-services';
 
 /** ID client OAuth de type « Application Web » (même valeur que GOOGLE_CLIENT_ID côté serveur pour le jeton ID). */
 function resolveWebClientIdForNative() {
-  const a = (process.env.REACT_APP_GOOGLE_CLIENT_ID_CAPACITOR || '').trim();
-  const b = (process.env.REACT_APP_GOOGLE_CLIENT_ID || '').trim();
-  return a || b;
+  const web = (process.env.REACT_APP_GOOGLE_CLIENT_ID || '').trim();
+  const cap = (process.env.REACT_APP_GOOGLE_CLIENT_ID_CAPACITOR || '').trim();
+  // Sur Android, GoogleSignInOptions.requestIdToken() exige le client **Web** ; si CAPACITOR = ID client Android → code 10 / jeton invalide.
+  try {
+    if (Capacitor.getPlatform() === 'android') {
+      return web || cap;
+    }
+  } catch (_) {
+    /* */
+  }
+  return cap || web;
 }
 
 function resolveGoogleClientId() {
@@ -62,6 +70,14 @@ function extractNativeGoogleErrorText(err) {
     code != null && code !== '' ? `code:${code}` : '',
     typeof err === 'string' ? err : '',
   ].filter(Boolean);
+  if (!bits.length && typeof err === 'object') {
+    try {
+      const s = JSON.stringify(err);
+      if (s && s !== '{}') bits.push(s);
+    } catch (_) {
+      /* */
+    }
+  }
   return bits.join(' | ');
 }
 
@@ -273,7 +289,7 @@ const GoogleSignInButton = ({ onCredential, disabled = false }) => {
       ) : null}
       {isNative && !resolveWebClientIdForNative() ? (
         <div className="google-auth-loading">
-          Définissez REACT_APP_GOOGLE_CLIENT_ID (client Web OAuth, même valeur que GOOGLE_CLIENT_ID sur le serveur) puis reconstruisez l’app.
+          Sur Android, définissez REACT_APP_GOOGLE_CLIENT_ID avec le client OAuth **Application Web** (pas l’ID client Android). Même valeur que GOOGLE_CLIENT_ID sur Render, puis reconstruisez l’app.
         </div>
       ) : null}
       {scriptError ? (
