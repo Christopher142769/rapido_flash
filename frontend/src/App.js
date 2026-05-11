@@ -23,6 +23,7 @@ import Orders from './pages/client/Orders';
 import Factures from './pages/client/Factures';
 import ReceiptPage from './pages/client/ReceiptPage';
 import Settings from './pages/client/Settings';
+import AccountDeletion from './pages/AccountDeletion';
 
 // Pages Restaurant
 import Dashboard from './pages/restaurant/Dashboard';
@@ -38,6 +39,7 @@ import RestaurantAvis from './pages/restaurant/RestaurantAvis';
 import RestaurantMessages from './pages/restaurant/RestaurantMessages';
 import PlatformChatModeration from './pages/restaurant/PlatformChatModeration';
 import MaintenanceDashboardPage from './pages/restaurant/MaintenanceDashboardPage';
+import AccountRequestsDashboard from './pages/restaurant/AccountRequestsDashboard';
 import DashboardOverviewPage from './pages/restaurant/DashboardOverviewPage';
 import PromoOffersDashboard from './pages/restaurant/PromoOffersDashboard';
 import PromoUsersDashboard from './pages/restaurant/PromoUsersDashboard';
@@ -101,6 +103,8 @@ function App() {
           <Route path="/location" element={<LocationSelect />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/account-deletion" element={<AccountDeletion />} />
+          <Route path="/suppression-compte" element={<AccountDeletion />} />
           
           {/* Home public : découverte sans connexion */}
           <Route path="/home" element={<Home />} />
@@ -147,6 +151,7 @@ function App() {
             <Route path="utilisateurs-promo" element={<PromoUsersDashboard />} />
             <Route path="messages-moderation" element={<PlatformChatModeration />} />
             <Route path="maintenance" element={<MaintenanceDashboardPage />} />
+            <Route path="demandes-compte" element={<AccountRequestsDashboard />} />
           </Route>
           <Route path="/dashboard/*" element={<DashboardLegacyRedirect />} />
           <Route path="/entreprises" element={<Navigate to={DASHBOARD_BASE_PATH} replace />} />

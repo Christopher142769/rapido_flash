@@ -14,6 +14,7 @@ import {
   FaChartLine,
   FaPercent,
   FaUserFriends,
+  FaInbox,
 } from 'react-icons/fa';
 
 export const DASHBOARD_HOME_SECTION = 'dashboard_home';
@@ -74,6 +75,13 @@ export function buildDashboardNavItems({ isAdmin, t, canManageMaintenance = fals
       path: '/dashboard/maintenance',
       section: PLATFORM_NAV_SECTION,
       Icon: FaTools,
+    });
+    plateforme.push({
+      id: 'demandes-compte',
+      label: 'Demandes utilisateurs',
+      path: '/dashboard/demandes-compte',
+      section: PLATFORM_NAV_SECTION,
+      Icon: FaInbox,
     });
   }
 

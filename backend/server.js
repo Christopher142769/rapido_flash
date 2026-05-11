@@ -125,6 +125,7 @@ app.use('/api/push', require('./routes/push'));
 app.use('/api/medias', require('./routes/medias'));
 app.use('/api/app-settings', require('./routes/app-settings'));
 app.use('/api/promos', require('./routes/promos'));
+app.use('/api/account-requests', require('./routes/accountRequests'));
 
 // Healthcheck Render
 app.get('/healthz', (req, res) => {

@@ -10,7 +10,7 @@ import { hostnameMatchesDnsSourceDomain } from '../utils/dnsNoticeUrl';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const ALLOWED_PREFIXES = ['/dashboard', DASHBOARD_BASE_PATH];
-const ALLOWED_EXACT = ['/login', '/register', '/loading', '/welcome', '/location'];
+const ALLOWED_EXACT = ['/login', '/register', '/loading', '/welcome', '/location', '/account-deletion', '/suppression-compte'];
 
 function pathIsAllowed(pathname) {
   if (ALLOWED_EXACT.includes(pathname)) return true;

@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AuthContext from '../../context/AuthContext';
 import LanguageContext from '../../context/LanguageContext';
@@ -250,6 +250,20 @@ const Settings = () => {
           <button className="btn btn-danger full-width" onClick={logout}>
             {t('settings', 'logout')}
           </button>
+        </div>
+
+        {/* Suppression de compte / contact */}
+        <div className="settings-section">
+          <h2 className="section-title">Compte et contact</h2>
+          <p style={{ color: '#666', fontSize: 13, marginTop: 0, marginBottom: 12 }}>
+            Demandez la suppression de votre compte ou écrivez au service Rapido.
+            Notre équipe traite votre demande manuellement sous 7 jours et vous
+            répond par email. Certaines données (factures, journaux) peuvent être
+            conservées de manière anonymisée pour des raisons légales.
+          </p>
+          <Link to="/account-deletion" className="btn btn-outline full-width" style={{ color: '#c0392b', borderColor: '#c0392b' }}>
+            Supprimer mon compte / contacter Rapido
+          </Link>
         </div>
       </div>
       <BottomNavbar />
