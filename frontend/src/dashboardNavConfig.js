@@ -15,6 +15,7 @@ import {
   FaPercent,
   FaUserFriends,
   FaInbox,
+  FaShoppingBag,
 } from 'react-icons/fa';
 
 export const DASHBOARD_HOME_SECTION = 'dashboard_home';
@@ -46,6 +47,7 @@ export function buildDashboardNavItems({ isAdmin, t, canManageMaintenance = fals
     },
     { id: 'categories', label: 'Catégories produits', path: '/dashboard/categories', section: ADMIN_NAV_SECTION, Icon: FaTags },
     { id: 'plats', label: 'Produits', path: '/dashboard/plats', section: ADMIN_NAV_SECTION, Icon: FaBoxOpen },
+    { id: 'shop', label: 'Shop express', path: '/dashboard/shop', section: ADMIN_NAV_SECTION, Icon: FaShoppingBag },
   ];
 
   const gestion = [

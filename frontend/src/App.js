@@ -43,6 +43,8 @@ import AccountRequestsDashboard from './pages/restaurant/AccountRequestsDashboar
 import DashboardOverviewPage from './pages/restaurant/DashboardOverviewPage';
 import PromoOffersDashboard from './pages/restaurant/PromoOffersDashboard';
 import PromoUsersDashboard from './pages/restaurant/PromoUsersDashboard';
+import ShopDashboard from './pages/restaurant/ShopDashboard';
+import ShopProductLanding from './pages/shop/ShopProductLanding';
 import ChatThread from './pages/client/ChatThread';
 import ChatsInbox from './pages/client/ChatsInbox';
 import ChatFab from './components/ChatFab';
@@ -123,6 +125,7 @@ function App() {
           <Route path="/zones/livraison-calavi" element={<SeoLandingPage />} />
           <Route path="/zones/livraison-porto-novo" element={<SeoLandingPage />} />
           <Route path="/restaurant/:id" element={<RestaurantDetail />} />
+          <Route path="/shop/:slug" element={<ShopProductLanding />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<PrivateRoute><Checkout /></PrivateRoute>} />
           <Route path="/ordered/:paymentMode" element={<PrivateRoute><Checkout /></PrivateRoute>} />
@@ -141,6 +144,7 @@ function App() {
             <Route path="vitrine-accueil" element={<MiseEnAvantAccueil />} />
             <Route path="categories-domaine" element={<CategoriesDomaine />} />
             <Route path="plats" element={<RestaurantPlats />} />
+            <Route path="shop" element={<ShopDashboard />} />
             <Route path="categories" element={<Categories />} />
             <Route path="commandes" element={<RestaurantCommandes />} />
             <Route path="bannieres" element={<Bannieres />} />

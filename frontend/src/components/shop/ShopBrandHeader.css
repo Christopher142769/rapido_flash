@@ -1,0 +1,46 @@
+.shop-brand-header {
+  background: #fff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.04);
+}
+
+.shop-brand-header-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.shop-brand-header-logo {
+  height: 36px;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+}
+
+.shop-brand-header-shop {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--shop-accent, #c76d2e);
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(199, 109, 46, 0.12), rgba(199, 109, 46, 0.06));
+  border: 1px solid rgba(199, 109, 46, 0.25);
+}
+
+.shop-brand-header--dashboard .shop-brand-header-inner {
+  justify-content: flex-start;
+  max-width: 1100px;
+}
+
+.shop-brand-header--dashboard .shop-brand-header-logo {
+  height: 32px;
+}
