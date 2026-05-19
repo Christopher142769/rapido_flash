@@ -1,10 +1,25 @@
 const mongoose = require('mongoose');
 
+const faqItemSchema = new mongoose.Schema(
+  {
+    question: { type: String, trim: true, default: '' },
+    answer: { type: String, default: '' },
+  },
+  { _id: true }
+);
+
 const copySectionSchema = new mongoose.Schema(
   {
+    type: {
+      type: String,
+      enum: ['text', 'title', 'image', 'video', 'faq'],
+      default: 'text',
+    },
     title: { type: String, trim: true, default: '' },
     body: { type: String, default: '' },
     icon: { type: String, trim: true, default: '' },
+    mediaUrl: { type: String, trim: true, default: '' },
+    faqItems: { type: [faqItemSchema], default: [] },
   },
   { _id: true }
 );

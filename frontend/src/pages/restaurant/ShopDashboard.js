@@ -5,7 +5,9 @@ import MediaPickerModal from '../../components/MediaPickerModal';
 import { getImageUrl } from '../../utils/imagePlaceholder';
 import { getShopPromoState, formatPriceXof } from '../../utils/shopPromo';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
-import { FaCopy, FaEdit, FaRocket, FaStop, FaTrash, FaExternalLinkAlt } from 'react-icons/fa';
+import ShopCopyBlockEditor from '../../components/shop/ShopCopyBlockEditor';
+import { emptyCopyBlock, normalizeCopyBlockForForm } from '../../utils/shopProductMedia';
+import { FaCopy, FaEdit, FaRocket, FaStop, FaTrash, FaExternalLinkAlt, FaStar } from 'react-icons/fa';
 import './ShopDashboard.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -19,7 +21,7 @@ const emptyForm = () => ({
   published: false,
   mainImage: '',
   images: [],
-  copySections: [{ title: '', body: '', icon: '' }],
+  copySections: [emptyCopyBlock('text')],
   promo: {
     active: false,
     discountPercent: 10,
@@ -40,6 +42,15 @@ function toDatetimeLocal(iso) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function mergeGallery(mainImage, images) {
+  const urls = [];
+  if (mainImage) urls.push(mainImage);
+  for (const u of images || []) {
+    if (u && !urls.includes(u)) urls.push(u);
+  }
+  return urls;
+}
+
 export default function ShopDashboard() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +59,7 @@ export default function ShopDashboard() {
   const [form, setForm] = useState(emptyForm());
   const [showForm, setShowForm] = useState(false);
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
+  const [mediaPickerTarget, setMediaPickerTarget] = useState(null);
 
   const token = localStorage.getItem('token');
   const authHeaders = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
@@ -89,8 +101,8 @@ export default function ShopDashboard() {
       images: Array.isArray(p.images) ? p.images : [],
       copySections:
         p.copySections?.length > 0
-          ? p.copySections.map((s) => ({ title: s.title || '', body: s.body || '', icon: s.icon || '' }))
-          : [{ title: '', body: '', icon: '' }],
+          ? p.copySections.map((s) => normalizeCopyBlockForForm(s))
+          : [emptyCopyBlock('text')],
       promo: {
         active: !!p.promo?.active,
         discountPercent: p.promo?.discountPercent ?? 10,
@@ -105,23 +117,56 @@ export default function ShopDashboard() {
     setShowForm(true);
   };
 
+  const galleryUrls = useMemo(
+    () => mergeGallery(form.mainImage, form.images),
+    [form.mainImage, form.images]
+  );
+
   const onMediaChosen = (path) => {
-    setForm((f) => ({ ...f, mainImage: path }));
+    if (mediaPickerTarget?.kind === 'gallery') {
+      setForm((f) => {
+        const images = f.images.includes(path) ? f.images : [...f.images, path];
+        const mainImage = f.mainImage || path;
+        return { ...f, images, mainImage };
+      });
+    } else if (mediaPickerTarget?.kind === 'block') {
+      const idx = mediaPickerTarget.index;
+      setForm((f) => {
+        const copySections = [...f.copySections];
+        copySections[idx] = { ...copySections[idx], mediaUrl: path };
+        return { ...f, copySections };
+      });
+    } else {
+      setForm((f) => ({ ...f, mainImage: path }));
+    }
     setMediaPickerOpen(false);
+    setMediaPickerTarget(null);
   };
 
-  const updateSection = (index, field, value) => {
+  const addGalleryImage = () => {
+    setMediaPickerTarget({ kind: 'gallery' });
+    setMediaPickerOpen(true);
+  };
+
+  const setPrimaryImage = (url) => {
     setForm((f) => {
-      const copySections = [...f.copySections];
-      copySections[index] = { ...copySections[index], [field]: value };
-      return { ...f, copySections };
+      const all = mergeGallery(f.mainImage, f.images);
+      const reordered = [url, ...all.filter((u) => u !== url)];
+      return { mainImage: reordered[0] || '', images: reordered.slice(1) };
+    });
+  };
+
+  const removeGalleryImage = (url) => {
+    setForm((f) => {
+      const remaining = mergeGallery(f.mainImage, f.images).filter((u) => u !== url);
+      return { mainImage: remaining[0] || '', images: remaining.slice(1) };
     });
   };
 
   const addSection = () => {
     setForm((f) => ({
       ...f,
-      copySections: [...f.copySections, { title: '', body: '', icon: '' }],
+      copySections: [...f.copySections, emptyCopyBlock('text')],
     }));
   };
 
@@ -130,6 +175,16 @@ export default function ShopDashboard() {
       ...f,
       copySections: f.copySections.filter((_, i) => i !== index),
     }));
+  };
+
+  const moveSection = (index, dir) => {
+    setForm((f) => {
+      const next = [...f.copySections];
+      const j = index + dir;
+      if (j < 0 || j >= next.length) return f;
+      [next[index], next[j]] = [next[j], next[index]];
+      return { ...f, copySections: next };
+    });
   };
 
   const saveProduct = async (e) => {
@@ -142,8 +197,8 @@ export default function ShopDashboard() {
         shortDescription: form.shortDescription,
         basePrice: Number(form.basePrice),
         published: form.published,
-        mainImage: form.mainImage,
-        images: JSON.stringify(form.images),
+        mainImage: form.mainImage || galleryUrls[0] || null,
+        images: JSON.stringify(galleryUrls),
         copySections: JSON.stringify(form.copySections),
         promo: JSON.stringify({
           active: form.promo.active,
@@ -296,16 +351,32 @@ export default function ShopDashboard() {
             />
           </div>
 
-          <div style={{ marginTop: 12 }}>
-            <label>Image principale</label>
-            <div className="shop-dash-actions">
-              <button type="button" className="shop-dash-btn secondary" onClick={() => setMediaPickerOpen(true)}>
-                Galerie
-              </button>
-              {form.mainImage ? (
-                <img src={getImageUrl(form.mainImage, BASE_URL)} alt="" style={{ height: 56, borderRadius: 8 }} />
-              ) : null}
-            </div>
+          <div className="shop-dash-form-section">
+            <h4 className="shop-dash-section-title">Galerie photos</h4>
+            <p className="shop-dash-hint">Plusieurs vues du produit (style Nike). L’image « Principale » s’affiche en premier sur la page.</p>
+            <button type="button" className="shop-dash-btn secondary" onClick={addGalleryImage}>
+              + Ajouter une photo
+            </button>
+            {galleryUrls.length ? (
+              <div className="shop-dash-gallery-grid">
+                {galleryUrls.map((url) => (
+                  <div key={url} className="shop-dash-gallery-item">
+                    <img src={getImageUrl(url, BASE_URL)} alt="" />
+                    {form.mainImage === url ? <span className="shop-dash-gallery-primary">Principale</span> : null}
+                    <div className="shop-dash-gallery-actions">
+                      {form.mainImage !== url ? (
+                        <button type="button" title="Définir comme principale" onClick={() => setPrimaryImage(url)}>
+                          <FaStar />
+                        </button>
+                      ) : null}
+                      <button type="button" title="Retirer" onClick={() => removeGalleryImage(url)}>
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
 
           <div className="shop-dash-promo-box shop-dash-form-section">
@@ -363,38 +434,23 @@ export default function ShopDashboard() {
             </div>
           </div>
 
-          <div style={{ marginTop: 16 }}>
-            <h4>Blocs copywriting</h4>
-            {form.copySections.map((sec, i) => (
-              <div key={i} className="shop-dash-section-block" style={{ marginBottom: 8 }}>
-                <input
-                  className="shop-dash-input"
-                  placeholder="Emoji"
-                  value={sec.icon}
-                  onChange={(e) => updateSection(i, 'icon', e.target.value)}
-                />
-                <input
-                  className="shop-dash-input"
-                  placeholder="Titre"
-                  value={sec.title}
-                  onChange={(e) => updateSection(i, 'title', e.target.value)}
-                />
-                <textarea
-                  className="shop-dash-textarea"
-                  placeholder="Texte marketing"
-                  value={sec.body}
-                  onChange={(e) => updateSection(i, 'body', e.target.value)}
-                />
-                {form.copySections.length > 1 ? (
-                  <button type="button" className="shop-dash-btn secondary" onClick={() => removeSection(i)}>
-                    Retirer
-                  </button>
-                ) : null}
-              </div>
-            ))}
-            <button type="button" className="shop-dash-btn secondary" onClick={addSection}>
-              + Bloc
-            </button>
+          <div className="shop-dash-form-section">
+            <h4 className="shop-dash-section-title">Contenu de la page (copywriting)</h4>
+            <p className="shop-dash-hint">
+              Textes, titres, images, vidéos et FAQ — affichés sous la fiche produit. Le compteur promo reste dans la
+              campagne ci-dessus.
+            </p>
+            <ShopCopyBlockEditor
+              sections={form.copySections}
+              onChange={(copySections) => setForm((f) => ({ ...f, copySections }))}
+              onPickMedia={(index) => {
+                setMediaPickerTarget({ kind: 'block', index });
+                setMediaPickerOpen(true);
+              }}
+              onRemove={removeSection}
+              onAdd={addSection}
+              onMove={moveSection}
+            />
           </div>
 
           <div className="shop-dash-grid" style={{ marginTop: 16 }}>

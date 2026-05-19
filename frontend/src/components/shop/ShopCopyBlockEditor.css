@@ -1,0 +1,140 @@
+.shop-block-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shop-block-editor-card {
+  border: 1px solid var(--rf-border-strong);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  background: var(--rf-surface-warm);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shop-block-editor-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.shop-block-editor-select {
+  flex: 1;
+  min-width: 140px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--rf-border-strong);
+  font-weight: 600;
+  color: var(--rf-text-dark);
+  background: var(--rf-surface);
+}
+
+.shop-block-editor-moves {
+  display: flex;
+  gap: 4px;
+}
+
+.shop-block-editor-mini {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--rf-border-strong);
+  background: var(--rf-surface);
+  color: var(--rf-text-dark);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.shop-block-editor-mini:hover:not(:disabled) {
+  border-color: var(--rf-amber);
+  color: var(--rf-amber);
+}
+
+.shop-block-editor-mini:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.shop-block-editor-mini--danger {
+  color: var(--rf-danger);
+  border-color: rgba(220, 56, 56, 0.35);
+}
+
+.shop-block-editor-input,
+.shop-block-editor-textarea {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--rf-border-strong);
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 14px;
+  background: var(--rf-surface);
+  color: var(--rf-text-dark);
+}
+
+.shop-block-editor-input:focus,
+.shop-block-editor-textarea:focus {
+  outline: none;
+  border-color: var(--rf-amber);
+  box-shadow: 0 0 0 3px rgba(199, 109, 46, 0.15);
+}
+
+.shop-block-editor-textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.shop-block-editor-textarea--sm {
+  min-height: 56px;
+}
+
+.shop-block-editor-pick {
+  align-self: flex-start;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed rgba(199, 109, 46, 0.45);
+  background: var(--rf-surface);
+  color: var(--rf-amber);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.shop-block-editor-pick:hover {
+  background: var(--rf-sidebar-active);
+}
+
+.shop-block-editor-faq {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.shop-block-editor-faq-row {
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  background: var(--rf-surface);
+  border: 1px solid var(--rf-border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.shop-block-editor-add {
+  align-self: flex-start;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(199, 109, 46, 0.4);
+  background: var(--rf-surface);
+  color: var(--rf-amber);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.shop-block-editor-add:hover {
+  background: var(--rf-sidebar-active);
+}

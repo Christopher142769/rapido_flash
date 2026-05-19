@@ -4,6 +4,7 @@ const { auth, isRestaurant } = require('../middleware/auth');
 const upload = require('../middleware/uploadShopProduct');
 const { uniqueSlug } = require('../utils/slugify');
 const { serializeShopProduct } = require('../utils/shopPromo');
+const { normalizeCopySections, normalizeGalleryImages } = require('../utils/normalizeShopCopySections');
 
 const router = express.Router();
 
@@ -93,15 +94,16 @@ router.post('/', auth, isRestaurant, upload.fields(upload.uploadShopFields), asy
       images[0] ||
       null;
 
-    const copySections = parseJsonField(req.body.copySections, []);
+    const copySections = normalizeCopySections(parseJsonField(req.body.copySections, []));
+    const gallery = normalizeGalleryImages(images, mainImage);
 
     const product = new ShopProduct({
       name,
       slug,
       shortDescription: req.body.shortDescription || '',
       copySections,
-      images,
-      mainImage,
+      images: gallery.images,
+      mainImage: gallery.mainImage,
       basePrice,
       currency: req.body.currency || 'XOF',
       published: req.body.published === 'true' || req.body.published === true,
@@ -131,7 +133,7 @@ router.put('/:id', auth, isRestaurant, upload.fields(upload.uploadShopFields), a
     }
     if (req.body.shortDescription != null) product.shortDescription = req.body.shortDescription;
     if (req.body.copySections != null) {
-      product.copySections = parseJsonField(req.body.copySections, product.copySections);
+      product.copySections = normalizeCopySections(parseJsonField(req.body.copySections, []));
     }
     if (req.body.basePrice != null) {
       const basePrice = Number(req.body.basePrice);
@@ -151,18 +153,20 @@ router.put('/:id', auth, isRestaurant, upload.fields(upload.uploadShopFields), a
     if (req.body.sortOrder != null) product.sortOrder = Number(req.body.sortOrder);
 
     const uploaded = collectUploadedImages(req);
+    let nextImages = product.images || [];
     if (req.body.images != null) {
       const fromBody = parseJsonField(req.body.images, product.images);
-      product.images = [...fromBody, ...uploaded].filter(Boolean);
+      nextImages = [...fromBody, ...uploaded].filter(Boolean);
     } else if (uploaded.length) {
-      product.images = [...(product.images || []), ...uploaded];
+      nextImages = [...nextImages, ...uploaded];
     }
 
-    if (req.files?.mainImage?.[0]?.path) {
-      product.mainImage = req.files.mainImage[0].path;
-    } else if (req.body.mainImage) {
-      product.mainImage = req.body.mainImage;
-    }
+    let nextMain =
+      req.files?.mainImage?.[0]?.path ||
+      (req.body.mainImage != null ? req.body.mainImage : product.mainImage);
+    const gallery = normalizeGalleryImages(nextImages, nextMain);
+    product.images = gallery.images;
+    product.mainImage = gallery.mainImage;
 
     await product.save();
     res.json(serializeShopProduct(product));
