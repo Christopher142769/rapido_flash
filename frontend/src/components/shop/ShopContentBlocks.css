@@ -66,7 +66,7 @@
   overflow: hidden;
   border-radius: var(--radius-md);
   border: 1px solid var(--rf-border);
-  background: linear-gradient(160deg, #faf7f2 0%, #f0ebe3 100%);
+  background: #fff;
 }
 
 .shop-pdp-block-img {
@@ -75,7 +75,7 @@
   object-fit: contain;
   object-position: center;
   display: block;
-  background: #f8f6f2;
+  background: #fff;
 }
 
 .shop-pdp-block--image {
