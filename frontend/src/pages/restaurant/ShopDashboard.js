@@ -7,7 +7,17 @@ import { getShopPromoState, formatPriceXof } from '../../utils/shopPromo';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
 import ShopCopyBlockEditor from '../../components/shop/ShopCopyBlockEditor';
 import { emptyCopyBlock, normalizeCopyBlockForForm } from '../../utils/shopProductMedia';
-import { FaCopy, FaEdit, FaRocket, FaStop, FaTrash, FaExternalLinkAlt, FaStar } from 'react-icons/fa';
+import {
+  FaCopy,
+  FaEdit,
+  FaRocket,
+  FaStop,
+  FaTrash,
+  FaExternalLinkAlt,
+  FaStar,
+  FaShoppingBag,
+  FaEye,
+} from 'react-icons/fa';
 import './ShopDashboard.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -280,28 +290,71 @@ export default function ShopDashboard() {
     navigator.clipboard?.writeText(url).then(() => alert(`Lien copié :\n${url}`));
   };
 
+  const stats = useMemo(() => {
+    let published = 0;
+    let promoLive = 0;
+    for (const p of products) {
+      if (p.published) published += 1;
+      if (getShopPromoState(p).isPromoLive) promoLive += 1;
+    }
+    return { total: products.length, published, promoLive };
+  }, [products]);
+
   if (loading) return <PageLoader />;
 
   return (
     <div className="shop-dash">
       <ShopBrandHeader variant="dashboard" />
 
-      <div className="shop-dash-hero">
-        <div className="shop-dash-hero-text">
+      <section className="shop-dash-hero">
+        <div className="shop-dash-hero-main">
+          <span className="shop-dash-hero-badge">
+            <FaShoppingBag aria-hidden /> Rapido Shop express
+          </span>
           <h1>Ventes express</h1>
           <p>
-            Créez des pages produit pour vos campagnes pub. Chaque article publié est accessible sur{' '}
+            Pages produit dédiées à vos campagnes publicitaires. Chaque article publié est accessible sur{' '}
             <code className="shop-dash-code">/shop/nom-du-produit</code>.
           </p>
+          <div className="shop-dash-stats">
+            <div className="shop-dash-stat">
+              <strong>{stats.total}</strong>
+              <span>Produits</span>
+            </div>
+            <div className="shop-dash-stat">
+              <strong>{stats.published}</strong>
+              <span>Publiés</span>
+            </div>
+            <div className="shop-dash-stat shop-dash-stat--accent">
+              <strong>{stats.promoLive}</strong>
+              <span>Promos actives</span>
+            </div>
+          </div>
         </div>
-        <button type="button" className="shop-dash-btn shop-dash-btn--primary" onClick={openCreate}>
+        <button type="button" className="shop-dash-btn shop-dash-btn--primary shop-dash-btn--hero" onClick={openCreate}>
           + Nouveau produit
         </button>
-      </div>
+      </section>
 
       {showForm ? (
         <form className="shop-dash-card shop-dash-form" onSubmit={saveProduct}>
-          <h3 className="shop-dash-form-title">{editingId ? 'Modifier le produit' : 'Nouveau produit'}</h3>
+          <header className="shop-dash-form-header">
+            <div>
+              <h3 className="shop-dash-form-title">{editingId ? 'Modifier le produit' : 'Nouveau produit'}</h3>
+              <p className="shop-dash-form-sub">Configurez la page publique, la galerie et le copywriting.</p>
+            </div>
+            <button type="button" className="shop-dash-btn secondary" onClick={resetForm}>
+              Fermer
+            </button>
+          </header>
+          <section className="shop-dash-form-block">
+            <div className="shop-dash-form-block-head">
+              <span className="shop-dash-form-step">1</span>
+              <div>
+                <h4>Informations produit</h4>
+                <p>Nom, prix et visibilité.</p>
+              </div>
+            </div>
           <div className="shop-dash-grid">
             <div>
               <label>Nom du produit *</label>
@@ -341,8 +394,17 @@ export default function ShopDashboard() {
               Publié (visible sur /shop/…)
             </label>
           </div>
+          </section>
 
-          <div style={{ marginTop: 12 }}>
+          <section className="shop-dash-form-block">
+            <div className="shop-dash-form-block-head">
+              <span className="shop-dash-form-step">2</span>
+              <div>
+                <h4>Galerie & accroche</h4>
+                <p>Visuels carrés 1080×1080 — image principale en premier.</p>
+              </div>
+            </div>
+          <div className="shop-dash-field">
             <label>Accroche courte</label>
             <textarea
               className="shop-dash-textarea"
@@ -353,7 +415,7 @@ export default function ShopDashboard() {
 
           <div className="shop-dash-form-section">
             <h4 className="shop-dash-section-title">Galerie photos</h4>
-            <p className="shop-dash-hint">Plusieurs vues du produit (style Nike). L’image « Principale » s’affiche en premier sur la page.</p>
+            <p className="shop-dash-hint">Ajoutez plusieurs vues du produit. L’image « Principale » s’affiche en premier sur la page publique.</p>
             <button type="button" className="shop-dash-btn secondary" onClick={addGalleryImage}>
               + Ajouter une photo
             </button>
@@ -378,9 +440,17 @@ export default function ShopDashboard() {
               </div>
             ) : null}
           </div>
+          </section>
 
-          <div className="shop-dash-promo-box shop-dash-form-section">
-            <h4 className="shop-dash-section-title">Campagne promo express</h4>
+          <section className="shop-dash-form-block shop-dash-form-block--promo">
+            <div className="shop-dash-form-block-head">
+              <span className="shop-dash-form-step">3</span>
+              <div>
+                <h4>Campagne promo express</h4>
+                <p>Réduction, livraison gratuite et compteur.</p>
+              </div>
+            </div>
+          <div className="shop-dash-promo-box">
             <div className="shop-dash-grid">
               <label className="shop-dash-check">
                 <input
@@ -433,12 +503,19 @@ export default function ShopDashboard() {
               </div>
             </div>
           </div>
+          </section>
 
-          <div className="shop-dash-form-section">
-            <h4 className="shop-dash-section-title">Contenu de la page (copywriting)</h4>
+          <section className="shop-dash-form-block">
+            <div className="shop-dash-form-block-head">
+              <span className="shop-dash-form-step">4</span>
+              <div>
+                <h4>Contenu de la page</h4>
+                <p>Textes, images, vidéos et FAQ sous la fiche produit.</p>
+              </div>
+            </div>
+          <div className="shop-dash-form-section shop-dash-form-section--flat">
             <p className="shop-dash-hint">
-              Textes, titres, images, vidéos et FAQ — affichés sous la fiche produit. Le compteur promo reste dans la
-              campagne ci-dessus.
+              Composez la page comme une landing : titres, visuels et questions fréquentes.
             </p>
             <ShopCopyBlockEditor
               sections={form.copySections}
@@ -452,8 +529,17 @@ export default function ShopDashboard() {
               onMove={moveSection}
             />
           </div>
+          </section>
 
-          <div className="shop-dash-grid" style={{ marginTop: 16 }}>
+          <section className="shop-dash-form-block">
+            <div className="shop-dash-form-block-head">
+              <span className="shop-dash-form-step">5</span>
+              <div>
+                <h4>Contact & commande</h4>
+                <p>WhatsApp pour recevoir les commandes clients.</p>
+              </div>
+            </div>
+          <div className="shop-dash-grid">
             <div>
               <label>WhatsApp (229…)</label>
               <input
@@ -479,8 +565,9 @@ export default function ShopDashboard() {
               />
             </div>
           </div>
+          </section>
 
-          <div className="shop-dash-actions" style={{ marginTop: 16 }}>
+          <div className="shop-dash-form-footer">
             <button type="submit" className="shop-dash-btn shop-dash-btn--primary" disabled={saving}>
               {saving ? 'Enregistrement…' : 'Enregistrer'}
             </button>
@@ -511,6 +598,9 @@ export default function ShopDashboard() {
                 </div>
                 <div className="shop-dash-product-card-body">
                   <h4>{p.name}</h4>
+                  <p className="shop-dash-product-card-slug">
+                    <FaEye aria-hidden /> /shop/{p.slug}
+                  </p>
                   <p className="shop-dash-product-card-price">
                     {promo.isPromoLive ? (
                       <>
@@ -559,7 +649,16 @@ export default function ShopDashboard() {
             );
           })}
           {products.length === 0 ? (
-            <p className="shop-dash-empty">Aucun produit. Créez votre première page campagne.</p>
+            <div className="shop-dash-empty">
+              <div className="shop-dash-empty-icon" aria-hidden>
+                <FaShoppingBag />
+              </div>
+              <h4>Aucune page produit</h4>
+              <p>Créez votre première fiche pour vos campagnes Facebook, TikTok ou WhatsApp.</p>
+              <button type="button" className="shop-dash-btn shop-dash-btn--primary" onClick={openCreate}>
+                + Créer un produit
+              </button>
+            </div>
           ) : null}
         </div>
       </div>

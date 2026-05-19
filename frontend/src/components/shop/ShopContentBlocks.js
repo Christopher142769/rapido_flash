@@ -81,12 +81,14 @@ export default function ShopContentBlocks({ sections, baseUrl }) {
           return (
             <section key={section._id || i} className="shop-pdp-block shop-pdp-block--image">
               {section.title ? <h2 className="shop-pdp-block-heading">{section.title}</h2> : null}
-              <img
-                src={getImageUrl(section.mediaUrl, baseUrl)}
-                alt={section.title || ''}
-                className="shop-pdp-block-img"
-                loading="lazy"
-              />
+              <div className="shop-pdp-block-img-wrap">
+                <img
+                  src={getImageUrl(section.mediaUrl, baseUrl)}
+                  alt={section.title || ''}
+                  className="shop-pdp-block-img"
+                  loading="lazy"
+                />
+              </div>
               {section.body ? <p className="shop-pdp-block-caption">{section.body}</p> : null}
             </section>
           );

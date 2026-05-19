@@ -1,0 +1,126 @@
+import React, { useEffect, useMemo } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
+import {
+  buildWhatsAppOrderUrl,
+  formatCustomerAddress,
+  formatCustomerFullName,
+  loadShopOrder,
+  SHOP_DELIVERY_NOTE,
+} from '../../utils/shopOrder';
+import { formatPriceXof } from '../../utils/shopPromo';
+import './ShopOrderConfirmation.css';
+
+export default function ShopOrderConfirmation() {
+  const { slug } = useParams();
+  const navigate = useNavigate();
+  const order = useMemo(() => loadShopOrder(slug), [slug]);
+
+  useEffect(() => {
+    if (!order) {
+      navigate(`/shop/${slug}`, { replace: true });
+      return;
+    }
+    document.title = `Commande confirmée | Rapido Shop`;
+  }, [order, slug, navigate]);
+
+  if (!order) return null;
+
+  const waUrl = buildWhatsAppOrderUrl(order);
+  const fullName = formatCustomerFullName(order.customer);
+  const fullAddress = formatCustomerAddress(order.customer);
+
+  return (
+    <div className="shop-confirm">
+      <ShopBrandHeader />
+
+      <div className="shop-confirm-inner">
+        <div className="shop-confirm-badge">✓</div>
+        <h1 className="shop-confirm-title">Récapitulatif de votre commande</h1>
+        <p className="shop-confirm-lead">
+          Vérifiez vos informations puis contactez Rapido sur WhatsApp pour finaliser et suivre votre commande.
+        </p>
+
+        <aside className="shop-confirm-note" role="note">
+          {SHOP_DELIVERY_NOTE}
+        </aside>
+
+        <section className="shop-confirm-card">
+          <h2>Commande</h2>
+          <dl className="shop-confirm-dl">
+            <div>
+              <dt>Produit</dt>
+              <dd>{order.productName}</dd>
+            </div>
+            <div>
+              <dt>Quantité</dt>
+              <dd>{order.quantity}</dd>
+            </div>
+            <div>
+              <dt>Prix unitaire</dt>
+              <dd>{formatPriceXof(order.unitPrice)}</dd>
+            </div>
+            <div className="shop-confirm-total">
+              <dt>Total</dt>
+              <dd>{formatPriceXof(order.totalPrice)}</dd>
+            </div>
+            {order.freeDelivery ? (
+              <div>
+                <dt>Livraison</dt>
+                <dd className="shop-confirm-highlight">Gratuite (offre en cours)</dd>
+              </div>
+            ) : null}
+          </dl>
+        </section>
+
+        <section className="shop-confirm-card">
+          <h2>Vos coordonnées</h2>
+          <dl className="shop-confirm-dl">
+            <div>
+              <dt>Nom complet</dt>
+              <dd>{fullName}</dd>
+            </div>
+            <div>
+              <dt>Téléphone</dt>
+              <dd>
+                <a href={`tel:${order.customer.phone.replace(/\s/g, '')}`}>{order.customer.phone}</a>
+              </dd>
+            </div>
+            <div>
+              <dt>Adresse</dt>
+              <dd>{order.customer.address}</dd>
+            </div>
+            <div>
+              <dt>Description</dt>
+              <dd>{order.customer.addressDescription}</dd>
+            </div>
+            {fullAddress !== order.customer.address ? (
+              <div>
+                <dt>Adresse complète</dt>
+                <dd>{fullAddress}</dd>
+              </div>
+            ) : null}
+          </dl>
+        </section>
+
+        <div className="shop-confirm-actions">
+          {waUrl ? (
+            <a
+              className="shop-confirm-cta shop-confirm-cta--wa"
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Suivre ma commande sur WhatsApp
+            </a>
+          ) : (
+            <p className="shop-confirm-warn">WhatsApp indisponible pour ce produit. Contactez Rapido par téléphone.</p>
+          )}
+          <Link className="shop-confirm-link" to={`/shop/${slug}`}>
+            ← Retour à la fiche produit
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}

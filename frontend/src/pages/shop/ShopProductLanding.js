@@ -1,17 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import PageLoader from '../../components/PageLoader';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
 import ShopProductGallery from '../../components/shop/ShopProductGallery';
 import ShopContentBlocks from '../../components/shop/ShopContentBlocks';
+import ShopOrderModal from '../../components/shop/ShopOrderModal';
 import { getProductGallery } from '../../utils/shopProductMedia';
 import {
-  getShopPromoState,
-  formatPriceXof,
-  formatCountdown,
-  buildWhatsAppOrderUrl,
-} from '../../utils/shopPromo';
+  buildShopOrderPayload,
+  saveShopOrder,
+  SHOP_DELIVERY_NOTE,
+} from '../../utils/shopOrder';
+import { getShopPromoState, formatPriceXof, formatCountdown } from '../../utils/shopPromo';
+import { FaClock, FaTruck, FaWallet, FaWhatsapp } from 'react-icons/fa';
 import './ShopProductLanding.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -59,7 +61,14 @@ function Countdown({ endsAt }) {
   );
 }
 
-function ProductBuyBox({ product, promoState, quantity, setQuantity, waUrl }) {
+function ProductBuyBox({
+  product,
+  promoState,
+  quantity,
+  setQuantity,
+  canOrder,
+  onOrderClick,
+}) {
   const displayPrice = promoState?.isPromoLive ? promoState.promoPrice : product.basePrice;
 
   return (
@@ -67,6 +76,11 @@ function ProductBuyBox({ product, promoState, quantity, setQuantity, waUrl }) {
       <p className="shop-pdp-buybox-brand">Rapido Shop</p>
       <h1 className="shop-pdp-buybox-title">{product.name}</h1>
       {product.shortDescription ? <p className="shop-pdp-buybox-sub">{product.shortDescription}</p> : null}
+
+      <aside className="shop-pdp-delivery-note" role="note">
+        <FaClock className="shop-pdp-delivery-note-icon" aria-hidden />
+        <span>{SHOP_DELIVERY_NOTE}</span>
+      </aside>
 
       <div className="shop-pdp-buybox-price">
         <span className="shop-pdp-buybox-price-current">{formatPriceXof(displayPrice)}</span>
@@ -97,10 +111,10 @@ function ProductBuyBox({ product, promoState, quantity, setQuantity, waUrl }) {
         </div>
       </div>
 
-      {waUrl ? (
-        <a className="shop-pdp-cta shop-pdp-cta--primary" href={waUrl} target="_blank" rel="noopener noreferrer">
+      {canOrder ? (
+        <button type="button" className="shop-pdp-cta shop-pdp-cta--primary" onClick={onOrderClick}>
           {product.ctaLabel || 'Commander'}
-        </a>
+        </button>
       ) : (
         <button type="button" className="shop-pdp-cta shop-pdp-cta--primary" disabled>
           Commande bientôt disponible
@@ -108,9 +122,18 @@ function ProductBuyBox({ product, promoState, quantity, setQuantity, waUrl }) {
       )}
 
       <ul className="shop-pdp-buybox-perks">
-        <li>Paiement à la livraison</li>
-        <li>Livraison Rapido au Bénin</li>
-        <li>Service client WhatsApp</li>
+        <li>
+          <FaWallet aria-hidden />
+          <span>Paiement à la livraison</span>
+        </li>
+        <li>
+          <FaTruck aria-hidden />
+          <span>Livraison Rapido au Bénin</span>
+        </li>
+        <li>
+          <FaWhatsapp aria-hidden />
+          <span>Commande via WhatsApp</span>
+        </li>
       </ul>
     </div>
   );
@@ -118,10 +141,12 @@ function ProductBuyBox({ product, promoState, quantity, setQuantity, waUrl }) {
 
 export default function ShopProductLanding() {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [orderModalOpen, setOrderModalOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -157,9 +182,25 @@ export default function ShopProductLanding() {
 
   const promoState = useMemo(() => (product ? getShopPromoState(product) : null), [product]);
   const gallery = useMemo(() => (product ? getProductGallery(product) : []), [product]);
-  const waUrl = product && promoState ? buildWhatsAppOrderUrl(product, promoState, quantity) : null;
+  const canOrder = !!(product?.whatsappNumber && promoState);
   const showCountdown = promoState?.isPromoLive && product?.promo?.endsAt;
   const displayPrice = promoState?.isPromoLive ? promoState.promoPrice : product?.basePrice;
+  const totalLabel = formatPriceXof((displayPrice || 0) * quantity);
+
+  const openOrderModal = () => {
+    if (!canOrder) return;
+    setOrderModalOpen(true);
+  };
+
+  const handleOrderSubmit = (customer) => {
+    const order = buildShopOrderPayload(product, promoState, quantity, customer);
+    if (!saveShopOrder(order)) {
+      alert('Impossible d’enregistrer la commande. Réessayez.');
+      return;
+    }
+    setOrderModalOpen(false);
+    navigate(`/shop/${slug}/commande`);
+  };
 
   if (loading) return <PageLoader />;
   if (error || !product) {
@@ -185,6 +226,18 @@ export default function ShopProductLanding() {
         </div>
       ) : null}
 
+      <div className="shop-pdp-trust-strip">
+        <span>
+          <FaTruck aria-hidden /> Livraison Rapido
+        </span>
+        <span>
+          <FaWallet aria-hidden /> Paiement à la livraison
+        </span>
+        <span>
+          <FaWhatsapp aria-hidden /> Support WhatsApp
+        </span>
+      </div>
+
       <div className="shop-pdp-hero">
         <div className="shop-pdp-hero-gallery">
           <ShopProductGallery
@@ -200,25 +253,42 @@ export default function ShopProductLanding() {
             promoState={promoState}
             quantity={quantity}
             setQuantity={setQuantity}
-            waUrl={waUrl}
+            canOrder={canOrder}
+            onOrderClick={openOrderModal}
           />
         </div>
       </div>
 
       <div className="shop-pdp-container">
+        {product.copySections?.length ? (
+          <header className="shop-pdp-story-head">
+            <p className="shop-pdp-story-eyebrow">Rapido Shop</p>
+            <h2 className="shop-pdp-story-title">En savoir plus</h2>
+            <p className="shop-pdp-story-lead">Découvrez tous les détails de ce produit avant de commander.</p>
+          </header>
+        ) : null}
         <ShopContentBlocks sections={product.copySections} baseUrl={BASE_URL} />
       </div>
 
       <div className="shop-pdp-sticky">
         <div className="shop-pdp-sticky-inner">
-          <span className="shop-pdp-sticky-price">{formatPriceXof((displayPrice || 0) * quantity)}</span>
-          {waUrl ? (
-            <a className="shop-pdp-cta shop-pdp-cta--compact" href={waUrl} target="_blank" rel="noopener noreferrer">
+          <span className="shop-pdp-sticky-price">{totalLabel}</span>
+          {canOrder ? (
+            <button type="button" className="shop-pdp-cta shop-pdp-cta--compact" onClick={openOrderModal}>
               {product.ctaLabel || 'Commander'}
-            </a>
+            </button>
           ) : null}
         </div>
       </div>
+
+      <ShopOrderModal
+        open={orderModalOpen}
+        onClose={() => setOrderModalOpen(false)}
+        onSubmit={handleOrderSubmit}
+        productName={product.name}
+        quantity={quantity}
+        totalLabel={totalLabel}
+      />
     </div>
   );
 }

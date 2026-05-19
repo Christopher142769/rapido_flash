@@ -45,6 +45,7 @@ import PromoOffersDashboard from './pages/restaurant/PromoOffersDashboard';
 import PromoUsersDashboard from './pages/restaurant/PromoUsersDashboard';
 import ShopDashboard from './pages/restaurant/ShopDashboard';
 import ShopProductLanding from './pages/shop/ShopProductLanding';
+import ShopOrderConfirmation from './pages/shop/ShopOrderConfirmation';
 import ChatThread from './pages/client/ChatThread';
 import ChatsInbox from './pages/client/ChatsInbox';
 import ChatFab from './components/ChatFab';
@@ -125,6 +126,7 @@ function App() {
           <Route path="/zones/livraison-calavi" element={<SeoLandingPage />} />
           <Route path="/zones/livraison-porto-novo" element={<SeoLandingPage />} />
           <Route path="/restaurant/:id" element={<RestaurantDetail />} />
+          <Route path="/shop/:slug/commande" element={<ShopOrderConfirmation />} />
           <Route path="/shop/:slug" element={<ShopProductLanding />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<PrivateRoute><Checkout /></PrivateRoute>} />
