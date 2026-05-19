@@ -27,7 +27,7 @@ services:
   # Frontend Service 1
   - type: static
     name: rapido-flash-frontend-1
-    buildCommand: cd frontend && npm install && npm run build
+    buildCommand: cd frontend && npm install && PUBLIC_URL=/ npm run build
     staticPublishPath: frontend/build
     envVars:
       - key: REACT_APP_API_URL
@@ -40,7 +40,7 @@ services:
   # Frontend Service 2
   - type: static
     name: rapido-flash-frontend-2
-    buildCommand: cd frontend && npm install && npm run build
+    buildCommand: cd frontend && npm install && PUBLIC_URL=/ npm run build
     staticPublishPath: frontend/build
     envVars:
       - key: REACT_APP_API_URL
@@ -53,7 +53,7 @@ services:
   # Frontend Service 3
   - type: static
     name: rapido-flash-frontend-3
-    buildCommand: cd frontend && npm install && npm run build
+    buildCommand: cd frontend && npm install && PUBLIC_URL=/ npm run build
     staticPublishPath: frontend/build
     envVars:
       - key: REACT_APP_API_URL
@@ -66,7 +66,7 @@ services:
   # Frontend Service 4
   - type: static
     name: rapido-flash-frontend-4
-    buildCommand: cd frontend && npm install && npm run build
+    buildCommand: cd frontend && npm install && PUBLIC_URL=/ npm run build
     staticPublishPath: frontend/build
     envVars:
       - key: REACT_APP_API_URL
