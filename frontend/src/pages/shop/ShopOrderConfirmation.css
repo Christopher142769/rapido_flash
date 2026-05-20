@@ -1,72 +1,64 @@
 .shop-confirm {
   min-height: 100vh;
-  background: var(--rf-shell-gradient);
+  background: #fff;
   color: var(--rf-text-dark);
-  font-family: var(--font-body), sans-serif;
-  padding-bottom: 40px;
 }
 
 .shop-confirm-inner {
   max-width: 560px;
   margin: 0 auto;
-  padding: 24px 16px 48px;
+  padding: 32px 16px 56px;
 }
 
 .shop-confirm-badge {
-  width: 56px;
-  height: 56px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   background: var(--rf-success-bg);
   color: var(--rf-success);
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 16px;
-  border: 2px solid rgba(31, 169, 113, 0.35);
 }
 
 .shop-confirm-title {
   margin: 0 0 10px;
-  font-family: var(--font-display), sans-serif;
-  font-size: 1.5rem;
+  font-size: 1.45rem;
   font-weight: 800;
-  line-height: 1.2;
 }
 
 .shop-confirm-lead {
-  margin: 0 0 16px;
+  margin: 0 0 20px;
   color: var(--rf-text-muted);
   line-height: 1.55;
   font-size: 0.95rem;
 }
 
 .shop-confirm-note {
-  margin: 0 0 24px;
-  padding: 14px 16px;
-  border-radius: var(--radius-md);
-  background: var(--rf-warning-bg);
-  border: 1px solid rgba(232, 154, 31, 0.35);
-  color: var(--rf-text-dark);
-  font-size: 0.88rem;
+  margin: 0 0 28px;
+  padding: 14px 0;
+  border-top: 1px solid var(--rf-border);
+  border-bottom: 1px solid var(--rf-border);
+  font-size: 0.85rem;
   line-height: 1.5;
   font-weight: 600;
 }
 
-.shop-confirm-card {
-  background: var(--rf-surface);
-  border: 1px solid var(--rf-border);
-  border-radius: var(--radius-lg);
-  padding: 18px 16px;
-  margin-bottom: 16px;
-  box-shadow: var(--shadow-card);
+.shop-confirm-section {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--rf-border);
 }
 
-.shop-confirm-card h2 {
+.shop-confirm-section:last-of-type {
+  border-bottom: none;
+}
+
+.shop-confirm-section h2 {
   margin: 0 0 14px;
-  font-family: var(--font-display), sans-serif;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -82,9 +74,8 @@
 
 .shop-confirm-dl > div {
   display: grid;
-  grid-template-columns: minmax(100px, 38%) 1fr;
+  grid-template-columns: minmax(100px, 36%) 1fr;
   gap: 8px;
-  align-items: start;
 }
 
 .shop-confirm-dl dt {
@@ -93,81 +84,64 @@
   font-weight: 700;
   color: var(--rf-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 .shop-confirm-dl dd {
   margin: 0;
   font-size: 0.95rem;
   font-weight: 600;
-  color: var(--rf-text-dark);
-  line-height: 1.45;
-}
-
-.shop-confirm-dl a {
-  color: var(--rf-amber);
-  text-decoration: none;
-}
-
-.shop-confirm-dl a:hover {
-  text-decoration: underline;
 }
 
 .shop-confirm-total dd {
-  font-size: 1.15rem;
   color: var(--rf-amber);
-  font-family: var(--font-display), sans-serif;
+  font-size: 1.2rem;
 }
 
 .shop-confirm-highlight {
   color: var(--rf-success) !important;
 }
 
+.shop-confirm-dl a {
+  color: var(--rf-amber);
+}
+
 .shop-confirm-actions {
+  margin-top: 28px;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  margin-top: 8px;
 }
 
 .shop-confirm-cta {
   display: block;
   text-align: center;
   text-decoration: none;
-  border-radius: var(--radius-xl);
+  border-radius: 999px;
   padding: 16px 20px;
-  font-weight: 800;
-  font-family: var(--font-display), sans-serif;
-  font-size: 0.95rem;
+  font-weight: 700;
 }
 
 .shop-confirm-cta--wa {
-  background: linear-gradient(165deg, #25d366 0%, #128c7e 100%);
+  background: linear-gradient(165deg, var(--rf-amber) 0%, #a85a24 100%);
   color: #fff;
-  box-shadow: 0 4px 16px rgba(37, 211, 102, 0.35);
+  box-shadow: 0 6px 20px rgba(199, 109, 46, 0.38);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .shop-confirm-cta--wa:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 26px rgba(199, 109, 46, 0.45);
 }
 
 .shop-confirm-link {
   text-align: center;
-  font-size: 0.9rem;
   font-weight: 600;
   color: var(--rf-amber);
   text-decoration: none;
 }
 
-.shop-confirm-link:hover {
-  text-decoration: underline;
-}
-
 .shop-confirm-warn {
   margin: 0;
-  padding: 12px;
-  border-radius: var(--radius-sm);
-  background: var(--rf-danger-bg);
   color: var(--rf-danger);
   font-size: 0.9rem;
   font-weight: 600;

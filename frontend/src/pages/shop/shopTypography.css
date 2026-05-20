@@ -1,0 +1,74 @@
+/* Typographie Montserrat — toute la page shop */
+.shop-pdp,
+.shop-confirm {
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.shop-pdp *,
+.shop-confirm * {
+  font-family: inherit;
+}
+
+/* Prix — extra gras */
+.shop-pdp-buybox-price-current,
+.shop-pdp-buybox-price-old,
+.shop-pdp-sticky-price,
+.shop-confirm-total dd,
+.shop-countdown-digit {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.shop-pdp-buybox-price-current,
+.shop-pdp-sticky-price,
+.shop-confirm-total dd {
+  font-weight: 900;
+}
+
+.shop-countdown--urgent .shop-countdown-digit,
+.shop-countdown--urgent .shop-countdown-sep {
+  font-weight: 900;
+  color: #dc2626;
+}
+
+/* Titres & CTA */
+.shop-pdp h1,
+.shop-pdp h2,
+.shop-pdp h3,
+.shop-pdp .shop-pdp-buybox-title,
+.shop-pdp .shop-pdp-story-title,
+.shop-confirm h1,
+.shop-confirm h2 {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.shop-pdp .shop-pdp-cta,
+.shop-confirm .shop-confirm-cta,
+.shop-pdp-buybox-brand,
+.shop-pdp-countdown-title {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.shop-pdp label,
+.shop-order-form-field label,
+.shop-confirm-dl dt {
+  font-weight: 600;
+}
+
+.shop-pdp input,
+.shop-pdp textarea,
+.shop-pdp button,
+.shop-confirm button,
+.shop-confirm a {
+  font-weight: 600;
+}
+
+.shop-pdp .shop-pdp-cta,
+.shop-confirm .shop-confirm-cta {
+  font-weight: 700;
+}

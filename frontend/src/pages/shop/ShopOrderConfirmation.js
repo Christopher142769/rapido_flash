@@ -9,6 +9,8 @@ import {
   SHOP_DELIVERY_NOTE,
 } from '../../utils/shopOrder';
 import { formatPriceXof } from '../../utils/shopPromo';
+import { getPriceUnitSuffix } from '../../utils/shopQuantityUnit';
+import './shopTypography.css';
 import './ShopOrderConfirmation.css';
 
 export default function ShopOrderConfirmation() {
@@ -45,7 +47,7 @@ export default function ShopOrderConfirmation() {
           {SHOP_DELIVERY_NOTE}
         </aside>
 
-        <section className="shop-confirm-card">
+        <section className="shop-confirm-section">
           <h2>Commande</h2>
           <dl className="shop-confirm-dl">
             <div>
@@ -54,11 +56,14 @@ export default function ShopOrderConfirmation() {
             </div>
             <div>
               <dt>Quantité</dt>
-              <dd>{order.quantity}</dd>
+              <dd>{order.quantityLabel || order.quantity}</dd>
             </div>
             <div>
               <dt>Prix unitaire</dt>
-              <dd>{formatPriceXof(order.unitPrice)}</dd>
+              <dd>
+                {formatPriceXof(order.unitPrice)}
+                {getPriceUnitSuffix(order.quantityUnit)}
+              </dd>
             </div>
             <div className="shop-confirm-total">
               <dt>Total</dt>
@@ -73,7 +78,7 @@ export default function ShopOrderConfirmation() {
           </dl>
         </section>
 
-        <section className="shop-confirm-card">
+        <section className="shop-confirm-section">
           <h2>Vos coordonnées</h2>
           <dl className="shop-confirm-dl">
             <div>
@@ -111,7 +116,7 @@ export default function ShopOrderConfirmation() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              Suivre ma commande sur WhatsApp
+              Suivre ma commande
             </a>
           ) : (
             <p className="shop-confirm-warn">WhatsApp indisponible pour ce produit. Contactez Rapido par téléphone.</p>

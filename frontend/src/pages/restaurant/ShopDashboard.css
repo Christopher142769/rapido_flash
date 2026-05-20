@@ -561,6 +561,11 @@
   line-height: 1.45;
 }
 
+.shop-dash-hint--inline {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+}
+
 .shop-dash-gallery-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));

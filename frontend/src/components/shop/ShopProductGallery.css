@@ -20,7 +20,6 @@
 .shop-pdp-gallery-main {
   position: relative;
   background: #fff;
-  border-radius: var(--radius-md);
   overflow: hidden;
   aspect-ratio: 1 / 1;
 }

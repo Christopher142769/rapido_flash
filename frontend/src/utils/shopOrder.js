@@ -1,4 +1,9 @@
 import { formatPriceXof } from './shopPromo';
+import {
+  formatQuantityWithUnit,
+  getPriceUnitSuffix,
+  normalizeShopQuantityUnit,
+} from './shopQuantityUnit';
 
 export const SHOP_ORDER_STORAGE_KEY = 'rapido_shop_order_pending';
 
@@ -18,10 +23,13 @@ export function emptyCustomerForm() {
 export function buildShopOrderPayload(product, promoState, quantity, customer) {
   const unitPrice = promoState?.isPromoLive ? promoState.promoPrice : product.basePrice;
   const total = unitPrice * quantity;
+  const quantityUnit = normalizeShopQuantityUnit(product.quantityUnit);
   return {
     slug: product.slug,
     productName: product.name,
     quantity,
+    quantityUnit,
+    quantityLabel: formatQuantityWithUnit(quantity, quantityUnit),
     unitPrice,
     totalPrice: total,
     basePrice: product.basePrice,
@@ -86,8 +94,8 @@ export function buildWhatsAppOrderMessage(order) {
     'Bonjour Rapido, je souhaite passer commande (Shop express) :',
     '',
     `*Produit :* ${order.productName}`,
-    `*Quantité :* ${order.quantity}`,
-    `*Prix unitaire :* ${formatPriceXof(order.unitPrice)}`,
+    `*Quantité :* ${order.quantityLabel || order.quantity}`,
+    `*Prix unitaire :* ${formatPriceXof(order.unitPrice)}${getPriceUnitSuffix(order.quantityUnit)}`,
     `*Total :* ${formatPriceXof(order.totalPrice)}`,
   ];
   if (order.isPromoLive && order.discountPercent) {

@@ -8,6 +8,11 @@ import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
 import ShopCopyBlockEditor from '../../components/shop/ShopCopyBlockEditor';
 import { emptyCopyBlock, normalizeCopyBlockForForm } from '../../utils/shopProductMedia';
 import {
+  DEFAULT_SHOP_QUANTITY_UNIT,
+  SHOP_QUANTITY_UNITS,
+  normalizeShopQuantityUnit,
+} from '../../utils/shopQuantityUnit';
+import {
   FaCopy,
   FaEdit,
   FaRocket,
@@ -28,6 +33,7 @@ const emptyForm = () => ({
   slug: '',
   shortDescription: '',
   basePrice: '',
+  quantityUnit: DEFAULT_SHOP_QUANTITY_UNIT,
   published: false,
   mainImage: '',
   images: [],
@@ -106,6 +112,7 @@ export default function ShopDashboard() {
       slug: p.slug || '',
       shortDescription: p.shortDescription || '',
       basePrice: String(p.basePrice ?? ''),
+      quantityUnit: normalizeShopQuantityUnit(p.quantityUnit),
       published: !!p.published,
       mainImage: p.mainImage || '',
       images: Array.isArray(p.images) ? p.images : [],
@@ -206,6 +213,7 @@ export default function ShopDashboard() {
         slug: form.slug.trim() || undefined,
         shortDescription: form.shortDescription,
         basePrice: Number(form.basePrice),
+        quantityUnit: form.quantityUnit,
         published: form.published,
         mainImage: form.mainImage || galleryUrls[0] || null,
         images: JSON.stringify(galleryUrls),
@@ -384,6 +392,23 @@ export default function ShopDashboard() {
                 onChange={(e) => setForm((f) => ({ ...f, basePrice: e.target.value }))}
                 required
               />
+            </div>
+            <div>
+              <label>Type de quantité *</label>
+              <select
+                className="shop-dash-input shop-dash-select"
+                value={form.quantityUnit}
+                onChange={(e) => setForm((f) => ({ ...f, quantityUnit: e.target.value }))}
+              >
+                {SHOP_QUANTITY_UNITS.map((u) => (
+                  <option key={u.value} value={u.value}>
+                    {u.label}
+                  </option>
+                ))}
+              </select>
+              <p className="shop-dash-hint shop-dash-hint--inline">
+                Affiché sur la page shop lors du choix de quantité (ex. kg, litre, pièce).
+              </p>
             </div>
             <label className="shop-dash-check">
               <input

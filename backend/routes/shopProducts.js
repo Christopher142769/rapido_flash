@@ -5,6 +5,7 @@ const upload = require('../middleware/uploadShopProduct');
 const { uniqueSlug } = require('../utils/slugify');
 const { serializeShopProduct } = require('../utils/shopPromo');
 const { normalizeCopySections, normalizeGalleryImages } = require('../utils/normalizeShopCopySections');
+const { normalizeShopQuantityUnit } = require('../utils/shopQuantityUnit');
 
 const router = express.Router();
 
@@ -105,6 +106,7 @@ router.post('/', auth, isRestaurant, upload.fields(upload.uploadShopFields), asy
       images: gallery.images,
       mainImage: gallery.mainImage,
       basePrice,
+      quantityUnit: normalizeShopQuantityUnit(req.body.quantityUnit),
       currency: req.body.currency || 'XOF',
       published: req.body.published === 'true' || req.body.published === true,
       promo: buildPromoFromBody(req.body),
@@ -141,6 +143,9 @@ router.put('/:id', auth, isRestaurant, upload.fields(upload.uploadShopFields), a
         return res.status(400).json({ message: 'Prix invalide' });
       }
       product.basePrice = basePrice;
+    }
+    if (req.body.quantityUnit != null) {
+      product.quantityUnit = normalizeShopQuantityUnit(req.body.quantityUnit);
     }
     if (req.body.currency) product.currency = req.body.currency;
     if (req.body.published != null) {

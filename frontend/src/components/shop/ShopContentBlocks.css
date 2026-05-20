@@ -2,22 +2,11 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  background: var(--rf-surface);
-  border: 1px solid var(--rf-border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-card);
-  overflow: hidden;
 }
 
 .shop-pdp-block {
-  padding: 32px 20px;
+  padding: 28px 0;
   border-bottom: 1px solid var(--rf-border);
-}
-
-@media (min-width: 960px) {
-  .shop-pdp-block {
-    padding: 40px 32px;
-  }
 }
 
 .shop-pdp-block:last-child {
@@ -26,46 +15,39 @@
 
 .shop-pdp-block-eyebrow {
   display: block;
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   margin-bottom: 8px;
 }
 
 .shop-pdp-block-heading {
-  font-family: var(--font-display), sans-serif;
-  font-size: 1.2rem;
+  font-size: 1.05rem;
   font-weight: 800;
-  letter-spacing: -0.01em;
-  margin: 0 0 16px;
+  margin: 0 0 12px;
   color: var(--rf-amber);
 }
 
 .shop-pdp-block-title {
-  font-family: var(--font-display), sans-serif;
-  font-size: clamp(1.5rem, 4vw, 2.15rem);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
   font-weight: 800;
-  letter-spacing: -0.02em;
   line-height: 1.15;
   margin: 0;
-  color: var(--rf-text-dark);
 }
 
 .shop-pdp-block-body,
 .shop-pdp-block-caption {
-  font-size: 1.02rem;
+  font-size: 1rem;
   line-height: 1.7;
   color: var(--rf-text-muted);
-  margin: 0;
+  margin: 12px 0 0;
   white-space: pre-wrap;
 }
 
 .shop-pdp-block-img-wrap {
   width: 100%;
   aspect-ratio: 1 / 1;
-  max-width: 720px;
-  margin: 0 auto;
+  max-width: 640px;
+  margin: 12px auto 0;
   overflow: hidden;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--rf-border);
   background: #fff;
 }
 
@@ -78,27 +60,14 @@
   background: #fff;
 }
 
-.shop-pdp-block--image {
-  padding-left: 16px;
-  padding-right: 16px;
-  background: var(--rf-surface-warm);
-}
-
-@media (min-width: 960px) {
-  .shop-pdp-block--image {
-    padding-left: 32px;
-    padding-right: 32px;
-  }
-}
-
 .shop-pdp-video-wrap {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: var(--rf-ink);
-  border-radius: var(--radius-md);
+  background: #111;
+  border-radius: 8px;
   overflow: hidden;
-  border: 1px solid var(--rf-border-strong);
+  margin-top: 12px;
 }
 
 .shop-pdp-video-wrap iframe,
@@ -110,21 +79,12 @@
 }
 
 .shop-pdp-faq-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+  margin-top: 12px;
   border-top: 1px solid var(--rf-border);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
 }
 
 .shop-pdp-faq-item {
   border-bottom: 1px solid var(--rf-border);
-  background: var(--rf-surface-warm);
-}
-
-.shop-pdp-faq-item.is-open {
-  background: var(--rf-sidebar-active);
 }
 
 .shop-pdp-faq-q {
@@ -133,13 +93,12 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px 14px;
+  padding: 14px 0;
   border: none;
   background: none;
   text-align: left;
-  font-size: 0.98rem;
+  font-size: 0.95rem;
   font-weight: 700;
-  font-family: var(--font-body), sans-serif;
   cursor: pointer;
   color: var(--rf-text-dark);
 }
@@ -149,15 +108,13 @@
 }
 
 .shop-pdp-faq-icon {
-  font-size: 1.25rem;
-  font-weight: 400;
-  flex-shrink: 0;
   color: var(--rf-amber);
+  flex-shrink: 0;
 }
 
 .shop-pdp-faq-a {
-  padding: 0 14px 16px;
-  font-size: 0.95rem;
+  padding: 0 0 14px;
+  font-size: 0.92rem;
   line-height: 1.65;
   color: var(--rf-text-muted);
   white-space: pre-wrap;
