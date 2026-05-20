@@ -43,42 +43,12 @@
   box-shadow:
     0 8px 28px rgba(199, 109, 46, 0.1),
     0 2px 8px rgba(26, 20, 16, 0.04);
-  animation: shopCountdownUnitPulse 2.8s ease-in-out infinite;
-}
-
-.shop-countdown-unit:nth-child(4n + 1) {
-  animation-delay: 0s;
-}
-
-.shop-countdown-unit:nth-child(4n + 3) {
-  animation-delay: 0.35s;
-}
-
-.shop-countdown-unit:nth-child(4n + 5) {
-  animation-delay: 0.7s;
-}
-
-@keyframes shopCountdownUnitPulse {
-  0%,
-  100% {
-    transform: translateY(0);
-    box-shadow:
-      0 8px 28px rgba(199, 109, 46, 0.1),
-      0 2px 8px rgba(26, 20, 16, 0.04);
-  }
-  50% {
-    transform: translateY(-3px);
-    box-shadow:
-      0 14px 36px rgba(199, 109, 46, 0.18),
-      0 4px 12px rgba(26, 20, 16, 0.06);
-  }
 }
 
 .shop-countdown-digit-slot {
   display: block;
   height: 2.4rem;
   overflow: hidden;
-  perspective: 320px;
 }
 
 .shop-countdown-digit {
@@ -89,23 +59,6 @@
   color: var(--rf-amber);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
-  animation: shopCountdownFlip 0.55s cubic-bezier(0.22, 1, 0.36, 1);
-  transform-origin: center bottom;
-}
-
-@keyframes shopCountdownFlip {
-  0% {
-    transform: rotateX(-75deg) scale(0.85);
-    opacity: 0;
-  }
-  55% {
-    transform: rotateX(6deg) scale(1.02);
-    opacity: 1;
-  }
-  100% {
-    transform: rotateX(0) scale(1);
-    opacity: 1;
-  }
 }
 
 .shop-countdown-label {
@@ -122,19 +75,7 @@
   color: var(--rf-amber);
   line-height: 1;
   padding-bottom: 28px;
-  opacity: 0.55;
-  animation: shopCountdownSepBlink 1s step-end infinite;
-}
-
-@keyframes shopCountdownSepBlink {
-  0%,
-  45% {
-    opacity: 0.85;
-  }
-  50%,
-  100% {
-    opacity: 0.25;
-  }
+  opacity: 0.7;
 }
 
 .shop-countdown-ended {
@@ -164,24 +105,4 @@
 .shop-countdown--urgent .shop-countdown-track-fill {
   background: linear-gradient(90deg, #dc2626, #ef4444);
   box-shadow: 0 0 12px rgba(220, 38, 38, 0.45);
-}
-
-@keyframes shopCountdownUnitPulseUrgent {
-  0%,
-  100% {
-    transform: translateY(0);
-    box-shadow:
-      0 8px 28px rgba(220, 38, 38, 0.1),
-      0 2px 8px rgba(26, 20, 16, 0.04);
-  }
-  50% {
-    transform: translateY(-3px);
-    box-shadow:
-      0 14px 36px rgba(220, 38, 38, 0.18),
-      0 4px 12px rgba(26, 20, 16, 0.06);
-  }
-}
-
-.shop-countdown--urgent .shop-countdown-unit {
-  animation-name: shopCountdownUnitPulseUrgent;
 }

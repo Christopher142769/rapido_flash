@@ -6,9 +6,7 @@ function CountdownDigit({ value, pad = true }) {
   const text = pad ? String(value).padStart(2, '0') : String(value);
   return (
     <span className="shop-countdown-digit-slot" aria-hidden>
-      <strong key={text} className="shop-countdown-digit">
-        {text}
-      </strong>
+      <strong className="shop-countdown-digit">{text}</strong>
     </span>
   );
 }
