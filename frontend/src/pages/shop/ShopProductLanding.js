@@ -78,12 +78,15 @@ export default function ShopProductLanding() {
   const gallery = useMemo(() => (product ? getProductGallery(product) : []), [product]);
   const canOrder = !!(product?.whatsappNumber && promoState);
   const showCountdown = promoState?.isPromoLive && product?.promo?.endsAt;
-  const displayPrice = promoState?.isPromoLive ? promoState.promoPrice : product?.basePrice;
+  const unitPrice = promoState?.isPromoLive ? promoState.promoPrice : product?.basePrice;
+  const unitBasePrice = product?.basePrice ?? 0;
   const quantityUnit = normalizeShopQuantityUnit(product?.quantityUnit);
   const quantityLabel = getQuantityPickerLabel(quantityUnit);
   const quantityDisplay = formatQuantityWithUnit(quantity, quantityUnit);
   const priceUnitSuffix = getPriceUnitSuffix(quantityUnit);
-  const totalLabel = formatPriceXof((displayPrice || 0) * quantity);
+  const totalPrice = (unitPrice || 0) * quantity;
+  const totalBasePrice = unitBasePrice * quantity;
+  const totalLabel = formatPriceXof(totalPrice);
 
   const navSections = useMemo(() => {
     const items = [
@@ -202,13 +205,20 @@ export default function ShopProductLanding() {
 
             <div className="shop-pdp-buybox-price">
               <span className="shop-pdp-buybox-price-current">
-                {formatPriceXof(displayPrice)}
-                {priceUnitSuffix ? <span className="shop-pdp-price-unit">{priceUnitSuffix}</span> : null}
+                {totalLabel}
+                {quantity === 1 && priceUnitSuffix ? (
+                  <span className="shop-pdp-price-unit">{priceUnitSuffix}</span>
+                ) : null}
               </span>
               {promoState?.isPromoLive ? (
-                <span className="shop-pdp-buybox-price-old">
-                  {formatPriceXof(product.basePrice)}
-                  {priceUnitSuffix ? <span className="shop-pdp-price-unit">{priceUnitSuffix}</span> : null}
+                <span className="shop-pdp-buybox-price-old">{formatPriceXof(totalBasePrice)}</span>
+              ) : null}
+              {quantity > 1 ? (
+                <span className="shop-pdp-buybox-price-unit-line">
+                  {formatPriceXof(unitPrice)}
+                  {priceUnitSuffix}
+                  {' × '}
+                  {quantityDisplay}
                 </span>
               ) : null}
             </div>

@@ -1,4 +1,5 @@
 import { formatPriceXof } from './shopPromo';
+import { isValidShopCity } from './shopDelivery';
 import {
   formatQuantityWithUnit,
   getPriceUnitSuffix,
@@ -15,7 +16,7 @@ export function emptyCustomerForm() {
     firstName: '',
     lastName: '',
     phone: '',
-    address: '',
+    city: '',
     addressDescription: '',
   };
 }
@@ -42,7 +43,7 @@ export function buildShopOrderPayload(product, promoState, quantity, customer) {
       firstName: String(customer.firstName || '').trim(),
       lastName: String(customer.lastName || '').trim(),
       phone: String(customer.phone || '').trim(),
-      address: String(customer.address || '').trim(),
+      city: String(customer.city || '').trim(),
       addressDescription: String(customer.addressDescription || '').trim(),
     },
     createdAt: new Date().toISOString(),
@@ -83,7 +84,8 @@ export function formatCustomerFullName(customer) {
 }
 
 export function formatCustomerAddress(customer) {
-  const parts = [customer?.address, customer?.addressDescription].filter(Boolean);
+  const city = customer?.city || customer?.address;
+  const parts = [city, customer?.addressDescription].filter(Boolean);
   return parts.join(' — ');
 }
 
@@ -106,8 +108,8 @@ export function buildWhatsAppOrderMessage(order) {
     '',
     '*Mes coordonnées :*',
     `Nom : ${name}`,
-    `Téléphone : ${order.customer.phone}`,
-    `Adresse : ${addressLine}`,
+    `Téléphone (WhatsApp) : ${order.customer.phone}`,
+    `Ville / livraison : ${addressLine}`,
   );
   lines.push('', 'Merci de confirmer ma commande et le délai de livraison.');
   return lines.join('\n');
@@ -126,9 +128,6 @@ export function validateCustomerForm(customer) {
   if (!customer.lastName?.trim()) errors.lastName = 'Le nom est requis';
   const phone = String(customer.phone || '').replace(/\s/g, '');
   if (!phone || phone.length < 8) errors.phone = 'Un numéro joignable est requis';
-  if (!customer.address?.trim()) errors.address = "L'adresse est requise";
-  if (!customer.addressDescription?.trim()) {
-    errors.addressDescription = 'Décrivez votre adresse (repères, étage, couleur du portail…)';
-  }
+  if (!isValidShopCity(customer.city)) errors.city = 'Choisissez Cotonou ou Calavi';
   return errors;
 }

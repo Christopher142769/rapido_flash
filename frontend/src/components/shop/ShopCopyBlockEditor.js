@@ -1,5 +1,6 @@
 import React from 'react';
 import { SHOP_BLOCK_TYPES } from '../../utils/shopProductMedia';
+import ShopRichTextEditor from './ShopRichTextEditor';
 import './ShopCopyBlockEditor.css';
 
 export default function ShopCopyBlockEditor({
@@ -57,7 +58,7 @@ export default function ShopCopyBlockEditor({
             </div>
           </div>
 
-          {sec.type === 'title' || sec.type === 'text' || sec.type === 'faq' ? (
+          {sec.type === 'title' || sec.type === 'text' || sec.type === 'faq' || sec.type === 'image' ? (
             <input
               className="shop-block-editor-input"
               placeholder="Titre du bloc"
@@ -74,11 +75,10 @@ export default function ShopCopyBlockEditor({
                 value={sec.icon}
                 onChange={(e) => update(i, { icon: e.target.value })}
               />
-              <textarea
-                className="shop-block-editor-textarea"
-                placeholder="Texte"
+              <ShopRichTextEditor
                 value={sec.body}
-                onChange={(e) => update(i, { body: e.target.value })}
+                onChange={(html) => update(i, { body: html })}
+                placeholder="Texte — sélectionnez puis gras, italique ou souligné"
               />
             </>
           ) : null}
@@ -94,6 +94,14 @@ export default function ShopCopyBlockEditor({
 
           {(sec.type === 'image' || sec.type === 'video') && (
             <>
+              {sec.type === 'image' ? (
+                <input
+                  className="shop-block-editor-input"
+                  placeholder="Emoji / accroche (optionnel)"
+                  value={sec.icon}
+                  onChange={(e) => update(i, { icon: e.target.value })}
+                />
+              ) : null}
               <input
                 className="shop-block-editor-input"
                 placeholder={sec.type === 'video' ? 'URL YouTube, Vimeo ou .mp4' : 'URL image (ou galerie)'}
@@ -106,7 +114,7 @@ export default function ShopCopyBlockEditor({
               {sec.type === 'image' ? (
                 <textarea
                   className="shop-block-editor-textarea shop-block-editor-textarea--sm"
-                  placeholder="Légende (optionnel)"
+                  placeholder="Texte sous l'image (optionnel)"
                   value={sec.body}
                   onChange={(e) => update(i, { body: e.target.value })}
                 />

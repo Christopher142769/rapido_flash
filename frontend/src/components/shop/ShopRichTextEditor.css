@@ -1,0 +1,61 @@
+.shop-rich-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shop-rich-editor-toolbar {
+  display: flex;
+  gap: 6px;
+}
+
+.shop-rich-editor-toolbar button {
+  min-width: 36px;
+  height: 34px;
+  border: 1px solid var(--rf-border);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--rf-text-dark);
+}
+
+.shop-rich-editor-toolbar button:hover {
+  border-color: var(--rf-amber);
+  background: rgba(199, 109, 46, 0.08);
+}
+
+.shop-rich-editor-area {
+  min-height: 120px;
+  padding: 12px 14px;
+  border: 1px solid var(--rf-border-strong);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  outline: none;
+}
+
+.shop-rich-editor-area:focus {
+  border-color: var(--rf-amber);
+  box-shadow: 0 0 0 2px rgba(199, 109, 46, 0.15);
+}
+
+.shop-rich-editor-area:empty::before {
+  content: attr(data-placeholder);
+  color: var(--rf-text-light);
+  pointer-events: none;
+}
+
+.shop-rich-editor-area strong,
+.shop-rich-editor-area b {
+  font-weight: 800;
+}
+
+.shop-rich-editor-area em,
+.shop-rich-editor-area i {
+  font-style: italic;
+}
+
+.shop-rich-editor-area u {
+  text-decoration: underline;
+}

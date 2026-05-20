@@ -84,7 +84,7 @@ export default function ShopOrderModal({ open, onClose, onSubmit, productName, q
           </div>
 
           <div className="shop-order-modal-field">
-            <label htmlFor="shop-phone">Numéro de téléphone joignable *</label>
+            <label htmlFor="shop-phone">Numéro de téléphone joignable (WhatsApp) *</label>
             <input
               id="shop-phone"
               type="tel"
@@ -99,20 +99,22 @@ export default function ShopOrderModal({ open, onClose, onSubmit, productName, q
           </div>
 
           <div className="shop-order-modal-field">
-            <label htmlFor="shop-address">Adresse de livraison *</label>
-            <input
-              id="shop-address"
-              className={errors.address ? 'has-error' : ''}
-              value={customer.address}
-              onChange={(e) => setField('address', e.target.value)}
-              placeholder="Quartier, rue, maison…"
-              autoComplete="street-address"
-            />
-            {errors.address ? <span className="shop-order-modal-error">{errors.address}</span> : null}
+            <label htmlFor="shop-city">Ville *</label>
+            <select
+              id="shop-city"
+              className={errors.city ? 'has-error' : ''}
+              value={customer.city || ''}
+              onChange={(e) => setField('city', e.target.value)}
+            >
+              <option value="">Choisir une ville</option>
+              <option value="Cotonou">Cotonou</option>
+              <option value="Calavi">Calavi</option>
+            </select>
+            {errors.city ? <span className="shop-order-modal-error">{errors.city}</span> : null}
           </div>
 
           <div className="shop-order-modal-field">
-            <label htmlFor="shop-addressDesc">Description de l&apos;adresse *</label>
+            <label htmlFor="shop-addressDesc">Description de l&apos;adresse (optionnel)</label>
             <textarea
               id="shop-addressDesc"
               rows={3}

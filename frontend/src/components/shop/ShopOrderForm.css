@@ -43,7 +43,8 @@
 }
 
 .shop-order-form-field input,
-.shop-order-form-field textarea {
+.shop-order-form-field textarea,
+.shop-order-form-field select {
   width: 100%;
   border: 1px solid var(--rf-border-strong, rgba(120, 90, 60, 0.22));
   border-radius: 8px;
@@ -55,19 +56,30 @@
 }
 
 .shop-order-form-field input:focus,
-.shop-order-form-field textarea:focus {
+.shop-order-form-field textarea:focus,
+.shop-order-form-field select:focus {
   outline: none;
   border-color: var(--rf-amber);
 }
 
 .shop-order-form-field input.has-error,
-.shop-order-form-field textarea.has-error {
+.shop-order-form-field textarea.has-error,
+.shop-order-form-field select.has-error {
   border-color: var(--rf-danger);
 }
 
 .shop-order-form-field textarea {
   resize: vertical;
   min-height: 88px;
+}
+
+.shop-order-form-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23666' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+  cursor: pointer;
 }
 
 .shop-order-form-error {

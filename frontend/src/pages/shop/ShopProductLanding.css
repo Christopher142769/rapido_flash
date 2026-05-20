@@ -203,6 +203,19 @@
   margin-left: 2px;
 }
 
+.shop-pdp-buybox-price {
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+
+.shop-pdp-buybox-price-unit-line {
+  flex: 0 0 100%;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--rf-text-muted);
+  margin-top: 4px;
+}
+
 .shop-pdp-qty-value {
   min-width: 48px;
   text-align: center;

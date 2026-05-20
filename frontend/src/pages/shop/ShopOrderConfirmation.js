@@ -86,22 +86,24 @@ export default function ShopOrderConfirmation() {
               <dd>{fullName}</dd>
             </div>
             <div>
-              <dt>Téléphone</dt>
+              <dt>Téléphone (WhatsApp)</dt>
               <dd>
                 <a href={`tel:${order.customer.phone.replace(/\s/g, '')}`}>{order.customer.phone}</a>
               </dd>
             </div>
             <div>
-              <dt>Adresse</dt>
-              <dd>{order.customer.address}</dd>
+              <dt>Ville</dt>
+              <dd>{order.customer.city || order.customer.address}</dd>
             </div>
-            <div>
-              <dt>Description</dt>
-              <dd>{order.customer.addressDescription}</dd>
-            </div>
-            {fullAddress !== order.customer.address ? (
+            {order.customer.addressDescription ? (
               <div>
-                <dt>Adresse complète</dt>
+                <dt>Description de l&apos;adresse</dt>
+                <dd>{order.customer.addressDescription}</dd>
+              </div>
+            ) : null}
+            {fullAddress && fullAddress !== (order.customer.city || order.customer.address) ? (
+              <div>
+                <dt>Livraison</dt>
                 <dd>{fullAddress}</dd>
               </div>
             ) : null}

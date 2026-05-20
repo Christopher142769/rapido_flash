@@ -42,6 +42,33 @@
   white-space: pre-wrap;
 }
 
+.shop-pdp-block-body--rich {
+  white-space: normal;
+}
+
+.shop-pdp-block-body--rich strong,
+.shop-pdp-block-body--rich b {
+  font-weight: 800;
+  color: var(--rf-text-dark);
+}
+
+.shop-pdp-block-body--rich em,
+.shop-pdp-block-body--rich i {
+  font-style: italic;
+}
+
+.shop-pdp-block-body--rich u {
+  text-decoration: underline;
+}
+
+.shop-pdp-block-body--rich p {
+  margin: 0 0 0.75em;
+}
+
+.shop-pdp-block-body--rich p:last-child {
+  margin-bottom: 0;
+}
+
 .shop-pdp-block-img-wrap {
   width: 100%;
   aspect-ratio: 1 / 1;

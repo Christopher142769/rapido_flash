@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { getImageUrl } from '../../utils/imagePlaceholder';
 import { getVideoEmbedUrl, isDirectVideo } from '../../utils/shopProductMedia';
+import ShopBlockBody from './ShopBlockBody';
 import './ShopContentBlocks.css';
 
 function FaqBlock({ section }) {
@@ -37,7 +38,7 @@ function FaqBlock({ section }) {
   );
 }
 
-function VideoBlock({ section, baseUrl }) {
+function VideoBlock({ section }) {
   const embed = getVideoEmbedUrl(section.mediaUrl);
   if (!embed) return null;
 
@@ -80,6 +81,7 @@ export default function ShopContentBlocks({ sections, baseUrl }) {
         if (type === 'image' && section.mediaUrl) {
           return (
             <section key={section._id || i} className="shop-pdp-block shop-pdp-block--image">
+              {section.icon ? <span className="shop-pdp-block-eyebrow">{section.icon}</span> : null}
               {section.title ? <h2 className="shop-pdp-block-heading">{section.title}</h2> : null}
               <div className="shop-pdp-block-img-wrap">
                 <img
@@ -89,13 +91,13 @@ export default function ShopContentBlocks({ sections, baseUrl }) {
                   loading="lazy"
                 />
               </div>
-              {section.body ? <p className="shop-pdp-block-caption">{section.body}</p> : null}
+              {section.body ? <ShopBlockBody body={section.body} className="shop-pdp-block-caption" /> : null}
             </section>
           );
         }
 
         if (type === 'video') {
-          return <VideoBlock key={section._id || i} section={section} baseUrl={baseUrl} />;
+          return <VideoBlock key={section._id || i} section={section} />;
         }
 
         if (type === 'faq') {
@@ -106,7 +108,7 @@ export default function ShopContentBlocks({ sections, baseUrl }) {
           <section key={section._id || i} className="shop-pdp-block shop-pdp-block--text">
             {section.icon ? <span className="shop-pdp-block-eyebrow">{section.icon}</span> : null}
             {section.title ? <h2 className="shop-pdp-block-heading">{section.title}</h2> : null}
-            {section.body ? <p className="shop-pdp-block-body">{section.body}</p> : null}
+            {section.body ? <ShopBlockBody body={section.body} /> : null}
           </section>
         );
       })}

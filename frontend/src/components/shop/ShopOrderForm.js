@@ -1,4 +1,5 @@
 import React from 'react';
+import { SHOP_DELIVERY_CITIES } from '../../utils/shopDelivery';
 import './ShopOrderForm.css';
 
 export default function ShopOrderForm({ customer, errors, onFieldChange, idPrefix = 'shop' }) {
@@ -35,7 +36,7 @@ export default function ShopOrderForm({ customer, errors, onFieldChange, idPrefi
       </div>
 
       <div className="shop-order-form-field">
-        <label htmlFor={`${idPrefix}-phone`}>Numéro de téléphone joignable *</label>
+        <label htmlFor={`${idPrefix}-phone`}>Numéro de téléphone joignable (WhatsApp) *</label>
         <input
           id={`${idPrefix}-phone`}
           type="tel"
@@ -50,27 +51,32 @@ export default function ShopOrderForm({ customer, errors, onFieldChange, idPrefi
       </div>
 
       <div className="shop-order-form-field">
-        <label htmlFor={`${idPrefix}-address`}>Adresse de livraison *</label>
-        <input
-          id={`${idPrefix}-address`}
-          className={errors.address ? 'has-error' : ''}
-          value={customer.address}
-          onChange={(e) => setField('address', e.target.value)}
-          placeholder="Quartier, rue, maison…"
-          autoComplete="street-address"
-        />
-        {errors.address ? <span className="shop-order-form-error">{errors.address}</span> : null}
+        <label htmlFor={`${idPrefix}-city`}>Ville *</label>
+        <select
+          id={`${idPrefix}-city`}
+          className={`shop-order-form-select${errors.city ? ' has-error' : ''}`}
+          value={customer.city}
+          onChange={(e) => setField('city', e.target.value)}
+        >
+          <option value="">Choisir une ville</option>
+          {SHOP_DELIVERY_CITIES.map((c) => (
+            <option key={c.value} value={c.value}>
+              {c.label}
+            </option>
+          ))}
+        </select>
+        {errors.city ? <span className="shop-order-form-error">{errors.city}</span> : null}
       </div>
 
       <div className="shop-order-form-field">
-        <label htmlFor={`${idPrefix}-addressDesc`}>Description de l&apos;adresse *</label>
+        <label htmlFor={`${idPrefix}-addressDesc`}>Description de l&apos;adresse (optionnel)</label>
         <textarea
           id={`${idPrefix}-addressDesc`}
           rows={3}
           className={errors.addressDescription ? 'has-error' : ''}
           value={customer.addressDescription}
           onChange={(e) => setField('addressDescription', e.target.value)}
-          placeholder="Repères, couleur du portail, étage, personne à contacter sur place…"
+          placeholder="Quartier, repères, étage, couleur du portail…"
         />
         {errors.addressDescription ? (
           <span className="shop-order-form-error">{errors.addressDescription}</span>
