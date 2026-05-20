@@ -170,8 +170,10 @@ export default function ShopProductLanding() {
               aria-live="polite"
               aria-label="Compte à rebours de l'offre"
             >
-              <p className="shop-pdp-countdown-eyebrow">Offre limitée</p>
-              <p className="shop-pdp-countdown-title">Se termine dans</p>
+              <p className="shop-pdp-countdown-headline">
+                Cette offre est limitée et{' '}
+                <span className="shop-pdp-countdown-headline-accent">se termine dans</span>
+              </p>
               <ShopCountdown endsAt={product.promo.endsAt} variant="urgent" />
             </div>
             <ShopBrandHeader sections={navSections} inTopBar />
@@ -268,9 +270,6 @@ export default function ShopProductLanding() {
 
       {product.copySections?.length ? (
         <div id="shop-section-story" className="shop-pdp-story-wrap">
-          <header className="shop-pdp-story-head">
-            <h2 className="shop-pdp-story-title">En savoir plus</h2>
-          </header>
           <ShopContentBlocks sections={product.copySections} baseUrl={BASE_URL} />
         </div>
       ) : null}

@@ -69,14 +69,15 @@ export default function ShopOrderForm({ customer, errors, onFieldChange, idPrefi
       </div>
 
       <div className="shop-order-form-field">
-        <label htmlFor={`${idPrefix}-addressDesc`}>Description de l&apos;adresse (optionnel)</label>
+        <label htmlFor={`${idPrefix}-addressDesc`}>Adresse complète *</label>
         <textarea
           id={`${idPrefix}-addressDesc`}
           rows={3}
           className={errors.addressDescription ? 'has-error' : ''}
           value={customer.addressDescription}
           onChange={(e) => setField('addressDescription', e.target.value)}
-          placeholder="Quartier, repères, étage, couleur du portail…"
+          placeholder="Quartier, rue, maison, repères, étage…"
+          required
         />
         {errors.addressDescription ? (
           <span className="shop-order-form-error">{errors.addressDescription}</span>

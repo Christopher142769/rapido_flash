@@ -256,8 +256,9 @@
   max-width: 1140px;
 }
 
+/* Page produit shop — pas de navbar sur mobile */
 @media (max-width: 767px) {
-  .shop-brand-header-inner:not(:has(.shop-brand-header-toggle)) {
-    justify-content: center;
+  .shop-brand-header--landing {
+    display: none;
   }
 }

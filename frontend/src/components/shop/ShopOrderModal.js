@@ -114,14 +114,15 @@ export default function ShopOrderModal({ open, onClose, onSubmit, productName, q
           </div>
 
           <div className="shop-order-modal-field">
-            <label htmlFor="shop-addressDesc">Description de l&apos;adresse (optionnel)</label>
+            <label htmlFor="shop-addressDesc">Adresse complète *</label>
             <textarea
               id="shop-addressDesc"
               rows={3}
               className={errors.addressDescription ? 'has-error' : ''}
               value={customer.addressDescription}
               onChange={(e) => setField('addressDescription', e.target.value)}
-              placeholder="Repères, couleur du portail, étage, personne à contacter sur place…"
+              placeholder="Quartier, rue, maison, repères, étage…"
+              required
             />
             {errors.addressDescription ? (
               <span className="shop-order-modal-error">{errors.addressDescription}</span>

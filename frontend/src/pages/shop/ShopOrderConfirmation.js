@@ -95,12 +95,10 @@ export default function ShopOrderConfirmation() {
               <dt>Ville</dt>
               <dd>{order.customer.city || order.customer.address}</dd>
             </div>
-            {order.customer.addressDescription ? (
-              <div>
-                <dt>Description de l&apos;adresse</dt>
-                <dd>{order.customer.addressDescription}</dd>
-              </div>
-            ) : null}
+            <div>
+              <dt>Adresse complète</dt>
+              <dd>{order.customer.addressDescription || '—'}</dd>
+            </div>
             {fullAddress && fullAddress !== (order.customer.city || order.customer.address) ? (
               <div>
                 <dt>Livraison</dt>

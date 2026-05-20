@@ -129,5 +129,8 @@ export function validateCustomerForm(customer) {
   const phone = String(customer.phone || '').replace(/\s/g, '');
   if (!phone || phone.length < 8) errors.phone = 'Un numéro joignable est requis';
   if (!isValidShopCity(customer.city)) errors.city = 'Choisissez Cotonou ou Calavi';
+  if (!customer.addressDescription?.trim()) {
+    errors.addressDescription = 'Indiquez votre adresse complète de livraison';
+  }
   return errors;
 }

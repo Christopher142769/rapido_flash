@@ -1,3 +1,4 @@
+/* Contenu « En savoir plus » — mise en page éditoriale */
 .shop-pdp-story {
   display: flex;
   flex-direction: column;
@@ -5,7 +6,6 @@
 }
 
 .shop-pdp-block {
-  padding: 28px 0;
   border-bottom: 1px solid var(--rf-border);
 }
 
@@ -13,32 +13,66 @@
   border-bottom: none;
 }
 
-.shop-pdp-block-eyebrow {
-  display: block;
-  font-size: 1.4rem;
-  margin-bottom: 8px;
+.shop-pdp-block-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 4px;
 }
 
-.shop-pdp-block-heading {
-  font-size: 1.05rem;
-  font-weight: 800;
-  margin: 0 0 12px;
-  color: var(--rf-amber);
+.shop-pdp-block-inner--prose {
+  padding: 32px 4px 36px;
+}
+
+.shop-pdp-block-inner--title {
+  text-align: center;
+  padding: 40px 16px 36px;
+}
+
+/* ——— Titre hero ——— */
+.shop-pdp-block--title {
+  background: linear-gradient(180deg, rgba(199, 109, 46, 0.06) 0%, #fff 100%);
+}
+
+.shop-pdp-block--title .shop-pdp-block-eyebrow {
+  margin-bottom: 12px;
 }
 
 .shop-pdp-block-title {
-  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  font-size: clamp(1.5rem, 4.5vw, 2rem);
   font-weight: 800;
-  line-height: 1.15;
+  line-height: 1.12;
   margin: 0;
+  letter-spacing: -0.03em;
+  color: var(--rf-text-dark);
+}
+
+/* ——— Texte ——— */
+.shop-pdp-block--text .shop-pdp-block-heading {
+  margin-top: 0;
+}
+
+.shop-pdp-block-eyebrow {
+  display: block;
+  font-size: 1.5rem;
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+.shop-pdp-block-heading {
+  font-size: clamp(1.1rem, 2.8vw, 1.35rem);
+  font-weight: 800;
+  margin: 0 0 14px;
+  line-height: 1.25;
+  color: var(--rf-text-dark);
+  letter-spacing: -0.02em;
 }
 
 .shop-pdp-block-body,
 .shop-pdp-block-caption {
-  font-size: 1rem;
-  line-height: 1.7;
+  font-size: 1.02rem;
+  line-height: 1.75;
   color: var(--rf-text-muted);
-  margin: 12px 0 0;
+  margin: 0;
   white-space: pre-wrap;
 }
 
@@ -62,20 +96,37 @@
 }
 
 .shop-pdp-block-body--rich p {
-  margin: 0 0 0.75em;
+  margin: 0 0 0.85em;
 }
 
 .shop-pdp-block-body--rich p:last-child {
   margin-bottom: 0;
 }
 
-.shop-pdp-block-img-wrap {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  max-width: 640px;
-  margin: 12px auto 0;
-  overflow: hidden;
+/* ——— Image : visuel d’abord, titres & texte après ——— */
+.shop-pdp-block--image {
+  padding: 0;
   background: #fff;
+}
+
+.shop-pdp-block-media {
+  width: 100%;
+  background: #fff;
+}
+
+.shop-pdp-block--image .shop-pdp-block-img-wrap {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: #fafafa;
+}
+
+@media (min-width: 640px) {
+  .shop-pdp-block--image .shop-pdp-block-img-wrap {
+    border-radius: 0;
+  }
 }
 
 .shop-pdp-block-img {
@@ -87,14 +138,51 @@
   background: #fff;
 }
 
-.shop-pdp-video-wrap {
-  position: relative;
+.shop-pdp-block-copy {
+  padding: 24px 16px 32px;
+}
+
+.shop-pdp-block-copy--after-media .shop-pdp-block-heading {
+  color: var(--rf-amber);
+  margin-top: 4px;
+}
+
+.shop-pdp-block-copy--after-media .shop-pdp-block-caption {
+  margin-top: 10px;
+}
+
+.shop-pdp-block-copy--after-media .shop-pdp-block-eyebrow + .shop-pdp-block-heading {
+  margin-top: 0;
+}
+
+/* ——— Vidéo : média puis titre ——— */
+.shop-pdp-block--video {
+  padding: 0;
+}
+
+.shop-pdp-block--video .shop-pdp-block-media {
+  padding: 0;
+}
+
+.shop-pdp-block--video .shop-pdp-video-wrap {
   width: 100%;
   aspect-ratio: 16 / 9;
+  margin: 0;
   background: #111;
-  border-radius: 8px;
   overflow: hidden;
-  margin-top: 12px;
+}
+
+@media (min-width: 640px) {
+  .shop-pdp-block--video .shop-pdp-video-wrap {
+    border-radius: 12px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .shop-pdp-block--video .shop-pdp-block-copy {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
 }
 
 .shop-pdp-video-wrap iframe,
@@ -105,13 +193,33 @@
   display: block;
 }
 
+.shop-pdp-block--video .shop-pdp-block-heading {
+  color: var(--rf-text-dark);
+}
+
+/* ——— FAQ ——— */
+.shop-pdp-block--faq .shop-pdp-block-inner {
+  padding: 32px 4px 36px;
+}
+
+.shop-pdp-block--faq .shop-pdp-block-heading {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
 .shop-pdp-faq-list {
-  margin-top: 12px;
-  border-top: 1px solid var(--rf-border);
+  border: 1px solid var(--rf-border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
 }
 
 .shop-pdp-faq-item {
   border-bottom: 1px solid var(--rf-border);
+}
+
+.shop-pdp-faq-item:last-child {
+  border-bottom: none;
 }
 
 .shop-pdp-faq-q {
@@ -120,29 +228,57 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 0;
+  padding: 16px 18px;
   border: none;
-  background: none;
+  background: #fff;
   text-align: left;
   font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
   color: var(--rf-text-dark);
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
+.shop-pdp-faq-item.is-open .shop-pdp-faq-q,
 .shop-pdp-faq-q:hover {
+  background: rgba(199, 109, 46, 0.06);
   color: var(--rf-amber);
 }
 
 .shop-pdp-faq-icon {
-  color: var(--rf-amber);
   flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(199, 109, 46, 0.12);
+  color: var(--rf-amber);
+  font-size: 1.1rem;
+  font-weight: 800;
 }
 
 .shop-pdp-faq-a {
-  padding: 0 0 14px;
+  padding: 0 18px 16px;
   font-size: 0.92rem;
-  line-height: 1.65;
+  line-height: 1.7;
   color: var(--rf-text-muted);
   white-space: pre-wrap;
+}
+
+@media (min-width: 768px) {
+  .shop-pdp-block-inner--prose,
+  .shop-pdp-block-copy,
+  .shop-pdp-block--faq .shop-pdp-block-inner {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .shop-pdp-block--image .shop-pdp-block-img-wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    border-radius: 12px;
+    border: 1px solid var(--rf-border);
+  }
 }

@@ -48,13 +48,19 @@
   flex-shrink: 0;
 }
 
-.shop-pdp-countdown-strip .shop-pdp-countdown-eyebrow {
-  margin-bottom: 2px;
+.shop-pdp-countdown-headline {
+  margin: 0 0 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--rf-text-muted);
+  text-align: center;
 }
 
-.shop-pdp-countdown-strip .shop-pdp-countdown-title {
-  margin-bottom: 10px;
-  font-size: 0.95rem;
+.shop-pdp-countdown-headline-accent {
+  font-weight: 800;
+  color: var(--rf-danger);
+  letter-spacing: -0.02em;
 }
 
 .shop-pdp-countdown-strip .shop-countdown-track {
@@ -85,23 +91,6 @@
 
 .shop-pdp-countdown-strip .shop-countdown-label {
   font-size: 0.55rem;
-}
-
-.shop-pdp-countdown-eyebrow {
-  margin: 0 0 6px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--rf-danger);
-}
-
-.shop-pdp-countdown-title {
-  margin: 0 0 20px;
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: var(--rf-text-dark);
-  letter-spacing: -0.02em;
 }
 
 /* Layout principal */
@@ -292,23 +281,27 @@
   text-align: center;
   border: none;
   border-radius: 999px;
-  padding: 16px 24px;
-  font-size: 0.95rem;
-  font-weight: 800;
+  padding: 20px 28px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: clamp(1.05rem, 4.2vw, 1.35rem);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.15;
   cursor: pointer;
-  margin-top: 8px;
+  margin-top: 12px;
 }
 
 .shop-pdp-cta--primary {
   background: linear-gradient(165deg, var(--rf-amber) 0%, #a85a24 100%);
   color: #fff;
-  box-shadow: 0 6px 20px rgba(199, 109, 46, 0.38);
+  box-shadow: 0 10px 32px rgba(199, 109, 46, 0.45);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .shop-pdp-cta--primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 26px rgba(199, 109, 46, 0.45);
+  transform: translateY(-3px);
+  box-shadow: 0 14px 40px rgba(199, 109, 46, 0.52);
 }
 
 .shop-pdp-cta:disabled {
@@ -319,10 +312,10 @@
 .shop-pdp-cta--sticky {
   flex: 0 0 auto;
   width: auto;
-  min-width: 148px;
+  min-width: 168px;
   margin-top: 0;
-  padding: 14px 28px;
-  font-size: 0.9rem;
+  padding: 16px 32px;
+  font-size: clamp(0.95rem, 3.5vw, 1.1rem);
   border-radius: 999px;
 }
 
@@ -330,8 +323,9 @@
 .shop-pdp-story-wrap {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 0 16px 48px;
+  padding: 0 0 48px;
   border-top: 1px solid var(--rf-border);
+  overflow: hidden;
 }
 
 .shop-pdp-story-head {
