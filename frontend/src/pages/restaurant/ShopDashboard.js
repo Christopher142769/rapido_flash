@@ -6,6 +6,8 @@ import { getImageUrl } from '../../utils/imagePlaceholder';
 import { getShopPromoState, formatPriceXof } from '../../utils/shopPromo';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
 import ShopCopyBlockEditor from '../../components/shop/ShopCopyBlockEditor';
+import ShopImageUploadZone from '../../components/shop/ShopImageUploadZone';
+import { uploadShopProductImages } from '../../utils/shopImageUpload';
 import { emptyCopyBlock, normalizeCopyBlockForForm } from '../../utils/shopProductMedia';
 import {
   DEFAULT_SHOP_QUANTITY_UNIT,
@@ -23,6 +25,7 @@ import {
   FaShoppingBag,
   FaEye,
 } from 'react-icons/fa';
+import '../../components/shop/ShopImageUploadZone.css';
 import './ShopDashboard.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -76,6 +79,8 @@ export default function ShopDashboard() {
   const [showForm, setShowForm] = useState(false);
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const [mediaPickerTarget, setMediaPickerTarget] = useState(null);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
+  const [uploadingBlockIndex, setUploadingBlockIndex] = useState(null);
 
   const token = localStorage.getItem('token');
   const authHeaders = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
@@ -163,6 +168,61 @@ export default function ShopDashboard() {
   const addGalleryImage = () => {
     setMediaPickerTarget({ kind: 'gallery' });
     setMediaPickerOpen(true);
+  };
+
+  const appendUrlsToGallery = useCallback((urls) => {
+    if (!urls?.length) return;
+    setForm((f) => {
+      const merged = mergeGallery(f.mainImage, f.images);
+      const next = [...merged];
+      for (const path of urls) {
+        if (path && !next.includes(path)) next.push(path);
+      }
+      return {
+        ...f,
+        mainImage: next[0] || '',
+        images: next.slice(1),
+      };
+    });
+  }, []);
+
+  const handleGalleryUpload = async (files) => {
+    if (!token) return;
+    setUploadingGallery(true);
+    try {
+      const urls = await uploadShopProductImages(files, token);
+      if (!urls.length) {
+        alert('Aucune image valide sélectionnée.');
+        return;
+      }
+      appendUrlsToGallery(urls);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Erreur lors de l’import des images');
+    } finally {
+      setUploadingGallery(false);
+    }
+  };
+
+  const handleBlockImageUpload = async (blockIndex, files) => {
+    if (!token) return;
+    setUploadingBlockIndex(blockIndex);
+    try {
+      const urls = await uploadShopProductImages(files, token);
+      const path = urls[0];
+      if (!path) {
+        alert('Aucune image valide.');
+        return;
+      }
+      setForm((f) => {
+        const copySections = [...f.copySections];
+        copySections[blockIndex] = { ...copySections[blockIndex], mediaUrl: path };
+        return { ...f, copySections };
+      });
+    } catch (err) {
+      alert(err.response?.data?.message || 'Erreur lors de l’import');
+    } finally {
+      setUploadingBlockIndex(null);
+    }
   };
 
   const setPrimaryImage = (url) => {
@@ -440,10 +500,20 @@ export default function ShopDashboard() {
 
           <div className="shop-dash-form-section">
             <h4 className="shop-dash-section-title">Galerie photos</h4>
-            <p className="shop-dash-hint">Ajoutez plusieurs vues du produit. L’image « Principale » s’affiche en premier sur la page publique.</p>
-            <button type="button" className="shop-dash-btn secondary" onClick={addGalleryImage}>
-              + Ajouter une photo
-            </button>
+            <p className="shop-dash-hint">
+              Importez depuis votre PC (recommandé) ou choisissez dans la médiathèque. L’image « Principale » s’affiche en premier.
+            </p>
+            <ShopImageUploadZone
+              onFiles={handleGalleryUpload}
+              uploading={uploadingGallery}
+              label="Importer des photos depuis mon PC"
+              hint="Plusieurs fichiers possibles — ajout direct à la galerie du produit"
+            />
+            <div className="shop-dash-upload-actions">
+              <button type="button" className="shop-dash-btn secondary" onClick={addGalleryImage}>
+                Choisir dans la galerie médias
+              </button>
+            </div>
             {galleryUrls.length ? (
               <div className="shop-dash-gallery-grid">
                 {galleryUrls.map((url) => (
@@ -549,6 +619,8 @@ export default function ShopDashboard() {
                 setMediaPickerTarget({ kind: 'block', index });
                 setMediaPickerOpen(true);
               }}
+              onUploadImage={handleBlockImageUpload}
+              uploadingBlockIndex={uploadingBlockIndex}
               onRemove={removeSection}
               onAdd={addSection}
               onMove={moveSection}

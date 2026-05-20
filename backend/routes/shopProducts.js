@@ -66,6 +66,19 @@ router.get('/', auth, isRestaurant, async (req, res) => {
   }
 });
 
+/** Import direct (PC) — URLs Cloudinary pour la galerie produit / blocs, sans passer par la médiathèque */
+router.post('/upload', auth, isRestaurant, upload.array('images', 8), async (req, res) => {
+  try {
+    const urls = (req.files || []).map((f) => f.path).filter(Boolean);
+    if (!urls.length) {
+      return res.status(400).json({ message: 'Aucune image reçue' });
+    }
+    res.status(201).json({ urls });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 router.get('/:id', auth, isRestaurant, async (req, res) => {
   try {
     const product = await ShopProduct.findById(req.params.id);

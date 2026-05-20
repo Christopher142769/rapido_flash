@@ -1,12 +1,15 @@
 import React from 'react';
 import { SHOP_BLOCK_TYPES } from '../../utils/shopProductMedia';
 import ShopRichTextEditor from './ShopRichTextEditor';
+import ShopImageUploadZone from './ShopImageUploadZone';
 import './ShopCopyBlockEditor.css';
 
 export default function ShopCopyBlockEditor({
   sections,
   onChange,
   onPickMedia,
+  onUploadImage,
+  uploadingBlockIndex = null,
   onRemove,
   onAdd,
   onMove,
@@ -108,8 +111,18 @@ export default function ShopCopyBlockEditor({
                 value={sec.mediaUrl}
                 onChange={(e) => update(i, { mediaUrl: e.target.value })}
               />
+              {sec.type === 'image' && onUploadImage ? (
+                <ShopImageUploadZone
+                  compact
+                  multiple={false}
+                  uploading={uploadingBlockIndex === i}
+                  label="Importer l'image depuis mon PC"
+                  hint=""
+                  onFiles={(files) => onUploadImage(i, files)}
+                />
+              ) : null}
               <button type="button" className="shop-block-editor-pick" onClick={() => onPickMedia(i)}>
-                Choisir depuis la galerie médias
+                {sec.type === 'image' ? 'Ou choisir dans la galerie médias' : 'Choisir depuis la galerie médias'}
               </button>
               {sec.type === 'image' ? (
                 <textarea
