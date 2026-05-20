@@ -22,6 +22,7 @@ import {
   normalizeShopQuantityUnit,
 } from '../../utils/shopQuantityUnit';
 import ShopCountdown from '../../components/shop/ShopCountdown';
+import ShopTrustCards from '../../components/shop/ShopTrustCards';
 import { FaClock } from 'react-icons/fa';
 import './shopTypography.css';
 import './ShopProductLanding.css';
@@ -92,6 +93,7 @@ export default function ShopProductLanding() {
     if (product?.copySections?.length) {
       items.push({ id: 'shop-section-story', label: 'En savoir plus' });
     }
+    items.push({ id: 'shop-section-trust', label: 'Avantages' });
     return items;
   }, [product?.copySections?.length]);
 
@@ -262,6 +264,8 @@ export default function ShopProductLanding() {
           <ShopContentBlocks sections={product.copySections} baseUrl={BASE_URL} />
         </div>
       ) : null}
+
+      <ShopTrustCards whatsappNumber={product.whatsappNumber} />
 
       <div className="shop-pdp-sticky">
         <div className="shop-pdp-sticky-inner">
