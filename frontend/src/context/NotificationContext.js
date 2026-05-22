@@ -58,7 +58,7 @@ export function NotificationProvider({ children }) {
         const ordersUp = next.pendingOrders > prev.pendingOrders;
         const msgUp = next.unreadMessages > prev.unreadMessages;
         if (ordersUp || msgUp) {
-          playNotificationChime();
+          playNotificationChime({ variant: ordersUp ? 'full' : 'short' });
           if (isCapacitorAndroid()) {
             void (async () => {
               if (ordersUp && user.role !== 'client') {
