@@ -21,9 +21,10 @@ export async function ensureRapidoAndroidNotificationChannel() {
       id: CHANNEL_ID,
       name: 'Rapido — commandes & messages',
       description: 'Alertes tableau de bord et messagerie',
-      importance: 5,
+      importance: 4,
       visibility: 1,
-      vibration: true,
+      vibration: false,
+      sound: undefined,
     });
     channelEnsured = true;
   } catch (_) {

@@ -6,7 +6,7 @@ import LanguageContext from '../../context/LanguageContext';
 import PageLoader from '../../components/PageLoader';
 import { FaPaperPlane, FaPhone, FaWhatsapp } from 'react-icons/fa';
 import { pickLocalized } from '../../utils/i18nContent';
-import { playUrgentAlertSound } from '../../utils/urgentAlertSound';
+import { playNotificationChime } from '../../utils/notificationSound';
 import { playIncomingCallSound } from '../../utils/incomingCallSound';
 import './RestaurantMessages.css';
 
@@ -139,7 +139,7 @@ const RestaurantMessages = () => {
     const key = urgentList.map((c) => c._id).join(',');
     if (urgentSoundKeyRef.current !== key) {
       urgentSoundKeyRef.current = key;
-      playUrgentAlertSound();
+      playNotificationChime();
     }
   }, [urgentList]);
 

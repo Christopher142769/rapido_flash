@@ -58,59 +58,45 @@ export function NotificationProvider({ children }) {
         const ordersUp = next.pendingOrders > prev.pendingOrders;
         const msgUp = next.unreadMessages > prev.unreadMessages;
         if (ordersUp || msgUp) {
-          playNotificationChime({ variant: ordersUp ? 'full' : 'short' });
-          if (isCapacitorAndroid()) {
-            void (async () => {
-              if (ordersUp && user.role !== 'client') {
-                const ok = await showRapidoAndroidTrayNotification({
-                  title: 'Rapido — Nouvelle commande',
-                  body: 'Une nouvelle commande est en attente de traitement.',
-                });
-                if (ok) return;
-              } else if (msgUp) {
-                const ok = await showRapidoAndroidTrayNotification({
-                  title: 'Rapido — Message',
-                  body: 'Vous avez un nouveau message.',
-                });
-                if (ok) return;
-              }
-              if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-                try {
-                  if (ordersUp && user.role !== 'client') {
-                    new Notification('Rapido — Nouvelle commande', {
-                      body: 'Une nouvelle commande est en attente de traitement.',
-                      icon: '/images/logo.png',
-                      tag: 'rapido-order',
-                    });
-                  } else if (msgUp) {
-                    new Notification('Rapido — Message', {
-                      body: 'Vous avez un nouveau message.',
-                      icon: '/images/logo.png',
-                      tag: 'rapido-msg',
-                    });
-                  }
-                } catch (_) {
-                  /* ignore */
+          playNotificationChime();
+          const inForeground =
+            typeof document !== 'undefined' && document.visibilityState === 'visible';
+          if (!inForeground) {
+            const silentOpts = { silent: true };
+            if (isCapacitorAndroid()) {
+              void (async () => {
+                if (ordersUp && user.role !== 'client') {
+                  await showRapidoAndroidTrayNotification({
+                    title: 'Rapido — Nouvelle commande',
+                    body: 'Une nouvelle commande est en attente de traitement.',
+                  });
+                } else if (msgUp) {
+                  await showRapidoAndroidTrayNotification({
+                    title: 'Rapido — Message',
+                    body: 'Vous avez un nouveau message.',
+                  });
                 }
+              })();
+            } else if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+              try {
+                if (ordersUp && user.role !== 'client') {
+                  new Notification('Rapido — Nouvelle commande', {
+                    body: 'Une nouvelle commande est en attente de traitement.',
+                    icon: '/images/logo.png',
+                    tag: 'rapido-order',
+                    ...silentOpts,
+                  });
+                } else if (msgUp) {
+                  new Notification('Rapido — Message', {
+                    body: 'Vous avez un nouveau message.',
+                    icon: '/images/logo.png',
+                    tag: 'rapido-msg',
+                    ...silentOpts,
+                  });
+                }
+              } catch (_) {
+                /* ignore */
               }
-            })();
-          } else if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-            try {
-              if (ordersUp && user.role !== 'client') {
-                new Notification('Rapido — Nouvelle commande', {
-                  body: 'Une nouvelle commande est en attente de traitement.',
-                  icon: '/images/logo.png',
-                  tag: 'rapido-order',
-                });
-              } else if (msgUp) {
-                new Notification('Rapido — Message', {
-                  body: 'Vous avez un nouveau message.',
-                  icon: '/images/logo.png',
-                  tag: 'rapido-msg',
-                });
-              }
-            } catch (_) {
-              /* ignore */
             }
           }
         }

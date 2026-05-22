@@ -5,7 +5,7 @@ import AuthContext from '../../context/AuthContext';
 import LanguageContext from '../../context/LanguageContext';
 import PageLoader from '../../components/PageLoader';
 import { pickLocalized } from '../../utils/i18nContent';
-import { playUrgentAlertSound } from '../../utils/urgentAlertSound';
+import { playNotificationChime } from '../../utils/notificationSound';
 import { playIncomingCallSound } from '../../utils/incomingCallSound';
 import './PlatformChatModeration.css';
 
@@ -109,7 +109,7 @@ const PlatformChatModeration = () => {
     const key = urgentPlatform.map((c) => c._id).join(',');
     if (urgentSoundKeyRef.current !== key) {
       urgentSoundKeyRef.current = key;
-      playUrgentAlertSound();
+      playNotificationChime();
     }
   }, [urgentPlatform]);
 

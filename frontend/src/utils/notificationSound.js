@@ -17,28 +17,19 @@ if (typeof window !== 'undefined') {
   loadNotificationAudio();
 }
 
-/**
- * @param {'full' | 'short'} variant — full = commande, short = message (volume réduit)
- */
-export function playNotificationChime(options) {
-  const variant = options?.variant === 'short' ? 'short' : 'full';
+/** Joue uniquement le MP3 Shopify (pas de synthèse Web Audio ni autre son). */
+export function playNotificationChime() {
   try {
     const template = loadNotificationAudio();
     if (!template) return;
     const audio = template.cloneNode();
-    audio.volume = variant === 'short' ? 0.7 : 1;
+    audio.volume = 1;
+    audio.currentTime = 0;
     const playPromise = audio.play();
     if (playPromise?.catch) {
-      playPromise.catch(() => {
-        /* autoplay bloqué ou fichier absent */
-      });
+      playPromise.catch(() => {});
     }
   } catch (_) {
     /* ignore */
   }
-}
-
-/** @deprecated Conservé pour compatibilité — utilise le MP3 via playNotificationChime. */
-export function playShopifyCoinNotificationSound(variant = 'full') {
-  playNotificationChime({ variant });
 }
