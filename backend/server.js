@@ -127,6 +127,7 @@ app.use('/api/app-settings', require('./routes/app-settings'));
 app.use('/api/promos', require('./routes/promos'));
 app.use('/api/account-requests', require('./routes/accountRequests'));
 app.use('/api/shop-products', require('./routes/shopProducts'));
+app.use('/api/shop-orders', require('./routes/shopOrders'));
 
 // Healthcheck Render
 app.get('/healthz', (req, res) => {

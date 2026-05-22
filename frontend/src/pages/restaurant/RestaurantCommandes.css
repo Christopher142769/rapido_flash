@@ -24,6 +24,45 @@
   font-weight: 700;
 }
 
+.commandes-shop-hint {
+  margin: -12px 0 20px;
+  font-size: 14px;
+  color: #666;
+}
+
+.commande-shop-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: linear-gradient(135deg, #c62828, #8b4513);
+  color: #fff;
+  vertical-align: middle;
+}
+
+.commande-card--shop {
+  border-left: 4px solid #c62828;
+}
+
+.commande-shop-free-delivery {
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #2e7d32;
+}
+
+.commande-shop-payment {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+}
+
 .restaurant-select {
   padding: 12px 20px;
   border: 2px solid #E0E0E0;

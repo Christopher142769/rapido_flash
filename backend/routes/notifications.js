@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const { auth } = require('../middleware/auth');
 const Restaurant = require('../models/Restaurant');
 const Commande = require('../models/Commande');
+const ShopOrder = require('../models/ShopOrder');
 const Conversation = require('../models/Conversation');
 
 const router = express.Router();
@@ -23,6 +24,7 @@ router.get('/summary', auth, async (req, res) => {
       const rids = owned.map((r) => r._id);
       let pendingOrders = 0;
       let unreadMessages = 0;
+      const shopPending = await ShopOrder.countDocuments({ statut: 'en_attente' });
       if (rids.length > 0) {
         pendingOrders = await Commande.countDocuments({
           restaurant: { $in: rids },
@@ -34,6 +36,7 @@ router.get('/summary', auth, async (req, res) => {
         ]);
         unreadMessages = agg[0]?.total || 0;
       }
+      pendingOrders += shopPending;
       return res.json({
         role: 'staff',
         pendingOrders,

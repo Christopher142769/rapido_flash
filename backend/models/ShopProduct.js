@@ -46,6 +46,8 @@ const shopProductSchema = new mongoose.Schema(
       freeDelivery: { type: Boolean, default: false },
       startsAt: { type: Date, default: null },
       endsAt: { type: Date, default: null },
+      /** Si true (ou fiche publiée + promo active), la promo ne s’éteint pas à endsAt — arrêt manuel uniquement. */
+      runUntilStopped: { type: Boolean, default: false },
     },
     whatsappNumber: { type: String, default: '', trim: true },
     contactPhone: { type: String, default: '', trim: true },

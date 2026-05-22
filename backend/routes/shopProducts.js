@@ -38,6 +38,7 @@ function buildPromoFromBody(body) {
     freeDelivery: promo.freeDelivery === true || promo.freeDelivery === 'true',
     startsAt: promo.startsAt ? new Date(promo.startsAt) : null,
     endsAt: promo.endsAt ? new Date(promo.endsAt) : null,
+    runUntilStopped: promo.runUntilStopped === true || promo.runUntilStopped === 'true',
   };
 }
 
@@ -45,6 +46,7 @@ function buildPromoFromBody(body) {
 
 router.get('/public/:slug', async (req, res) => {
   try {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     const product = await ShopProduct.findOne({ slug: req.params.slug.toLowerCase() });
     if (!product) return res.status(404).json({ message: 'Produit introuvable' });
     const data = serializeShopProduct(product, { publicView: true });

@@ -8,6 +8,26 @@ import {
 
 export const SHOP_ORDER_STORAGE_KEY = 'rapido_shop_order_pending';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+/** Enregistre la commande côté serveur (dashboard + notifications). */
+export async function submitShopOrderToApi(order) {
+  const res = await fetch(`${API_URL}/shop-orders`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      slug: order.slug,
+      quantity: order.quantity,
+      customer: order.customer,
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || 'Impossible d’enregistrer la commande');
+  }
+  return data;
+}
+
 export const SHOP_DELIVERY_NOTE =
   "Note : Assurez-vous d'être prêt à vous faire livrer dans les 24h qui suivent la commande avant de passer commande.";
 

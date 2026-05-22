@@ -12,6 +12,7 @@ import {
   emptyCustomerForm,
   saveShopOrder,
   SHOP_DELIVERY_NOTE,
+  submitShopOrderToApi,
   validateCustomerForm,
 } from '../../utils/shopOrder';
 import { getShopPromoState, formatPriceXof } from '../../utils/shopPromo';
@@ -40,26 +41,49 @@ export default function ShopProductLanding() {
   const [quantity, setQuantity] = useState(1);
   const [customer, setCustomer] = useState(emptyCustomerForm);
   const [formErrors, setFormErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
   const topBarRef = useRef(null);
+
+  const fetchProduct = React.useCallback(() => {
+    return axios
+      .get(`${API_URL}/shop-products/public/${encodeURIComponent(slug)}`, {
+        params: { _t: Date.now() },
+      })
+      .then((res) => {
+        setProduct(res.data);
+        setError('');
+        return res.data;
+      })
+      .catch((err) => {
+        setError(err.response?.data?.message || 'Produit introuvable');
+        setProduct(null);
+        return null;
+      });
+  }, [slug]);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    axios
-      .get(`${API_URL}/shop-products/public/${encodeURIComponent(slug)}`)
-      .then((res) => {
-        if (!cancelled) setProduct(res.data);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err.response?.data?.message || 'Produit introuvable');
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    fetchProduct().finally(() => {
+      if (!cancelled) setLoading(false);
+    });
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+  }, [fetchProduct]);
+
+  /** Après redeploiement / retour onglet : recharger la fiche (promo + minuteur à jour). */
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') fetchProduct();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    const refreshId = setInterval(() => fetchProduct(), 5 * 60 * 1000);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      clearInterval(refreshId);
+    };
+  }, [fetchProduct]);
 
   useEffect(() => {
     if (!product?.name) return;
@@ -76,8 +100,9 @@ export default function ShopProductLanding() {
 
   const promoState = useMemo(() => (product ? getShopPromoState(product) : null), [product]);
   const gallery = useMemo(() => (product ? getProductGallery(product) : []), [product]);
-  const canOrder = !!(product?.whatsappNumber && promoState);
-  const showCountdown = promoState?.isPromoLive && product?.promo?.endsAt;
+  const canOrder = !!product?.whatsappNumber;
+  const countdownEndsAt = promoState?.promoEndsAt || product?.promo?.endsAt || null;
+  const showCountdown = promoState?.isPromoLive && countdownEndsAt;
   const unitPrice = promoState?.isPromoLive ? promoState.promoPrice : product?.basePrice;
   const unitBasePrice = product?.basePrice ?? 0;
   const quantityUnit = normalizeShopQuantityUnit(product?.quantityUnit);
@@ -116,7 +141,7 @@ export default function ShopProductLanding() {
       ro.disconnect();
       window.removeEventListener('resize', syncHeight);
     };
-  }, [showCountdown, product?.promo?.endsAt]);
+  }, [showCountdown, countdownEndsAt]);
 
   const handleFieldChange = (field, value) => {
     setCustomer((c) => ({ ...c, [field]: value }));
@@ -127,9 +152,9 @@ export default function ShopProductLanding() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!canOrder || !product) return;
+    if (!canOrder || !product || submitting) return;
 
     const nextErrors = validateCustomerForm(customer);
     if (Object.keys(nextErrors).length) {
@@ -139,11 +164,19 @@ export default function ShopProductLanding() {
     }
 
     const order = buildShopOrderPayload(product, promoState, quantity, customer);
-    if (!saveShopOrder(order)) {
-      alert('Impossible d’enregistrer la commande. Réessayez.');
-      return;
+    setSubmitting(true);
+    try {
+      const saved = await submitShopOrderToApi(order);
+      const orderForSession = { ...order, orderId: saved._id };
+      if (!saveShopOrder(orderForSession)) {
+        alert('Commande enregistrée, mais le récapitulatif local a échoué. Contactez Rapido sur WhatsApp.');
+      }
+      navigate(`/shop/${slug}/commande`);
+    } catch (err) {
+      alert(err.message || 'Impossible d’enregistrer la commande. Réessayez.');
+    } finally {
+      setSubmitting(false);
     }
-    navigate(`/shop/${slug}/commande`);
   };
 
   if (loading) return <PageLoader />;
@@ -174,7 +207,7 @@ export default function ShopProductLanding() {
                 Cette offre est limitée et{' '}
                 <span className="shop-pdp-countdown-headline-accent">se termine dans</span>
               </p>
-              <ShopCountdown endsAt={product.promo.endsAt} variant="urgent" />
+              <ShopCountdown endsAt={countdownEndsAt} variant="urgent" />
             </div>
             <ShopBrandHeader sections={navSections} inTopBar />
           </div>
@@ -256,8 +289,8 @@ export default function ShopProductLanding() {
             </div>
 
             {canOrder ? (
-              <button type="submit" className="shop-pdp-cta shop-pdp-cta--primary">
-                {product.ctaLabel || 'Commander maintenant'}
+              <button type="submit" className="shop-pdp-cta shop-pdp-cta--primary" disabled={submitting}>
+                {submitting ? 'Enregistrement…' : product.ctaLabel || 'Commander maintenant'}
               </button>
             ) : (
               <button type="button" className="shop-pdp-cta shop-pdp-cta--primary" disabled>
@@ -280,8 +313,13 @@ export default function ShopProductLanding() {
         <div className="shop-pdp-sticky-inner">
           <span className="shop-pdp-sticky-price">{totalLabel}</span>
           {canOrder ? (
-            <button type="submit" form={CHECKOUT_FORM_ID} className="shop-pdp-cta shop-pdp-cta--primary shop-pdp-cta--sticky">
-              Commander
+            <button
+              type="submit"
+              form={CHECKOUT_FORM_ID}
+              className="shop-pdp-cta shop-pdp-cta--primary shop-pdp-cta--sticky"
+              disabled={submitting}
+            >
+              {submitting ? 'Enregistrement…' : 'Commander'}
             </button>
           ) : null}
         </div>

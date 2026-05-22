@@ -47,6 +47,7 @@ const emptyForm = () => ({
     freeDelivery: false,
     startsAt: '',
     endsAt: '',
+    runUntilStopped: true,
   },
   whatsappNumber: '',
   contactPhone: '',
@@ -131,6 +132,7 @@ export default function ShopDashboard() {
         freeDelivery: !!p.promo?.freeDelivery,
         startsAt: toDatetimeLocal(p.promo?.startsAt),
         endsAt: toDatetimeLocal(p.promo?.endsAt),
+        runUntilStopped: p.promo?.runUntilStopped !== false,
       },
       whatsappNumber: p.whatsappNumber || '',
       contactPhone: p.contactPhone || '',
@@ -284,6 +286,7 @@ export default function ShopDashboard() {
           freeDelivery: form.promo.freeDelivery,
           startsAt: form.promo.startsAt ? new Date(form.promo.startsAt).toISOString() : null,
           endsAt: form.promo.endsAt ? new Date(form.promo.endsAt).toISOString() : null,
+          runUntilStopped: !!form.promo.runUntilStopped,
         }),
         whatsappNumber: form.whatsappNumber,
         contactPhone: form.contactPhone,
@@ -307,7 +310,10 @@ export default function ShopDashboard() {
   const launchPromo = async (p) => {
     const discount = window.prompt('Pourcentage de réduction (1-90) ?', String(p.promo?.discountPercent || 10));
     if (discount == null) return;
-    const hours = window.prompt('Durée de la promo en heures ?', '48');
+    const hours = window.prompt(
+      'Durée affichée du compte à rebours (heures) ? La promo reste active jusqu’à arrêt manuel.',
+      '168'
+    );
     if (hours == null) return;
     const endsAt = new Date(Date.now() + Number(hours) * 3600 * 1000).toISOString();
     const freeDelivery = window.confirm('Activer la livraison gratuite pour cette promo ?');
@@ -320,6 +326,7 @@ export default function ShopDashboard() {
           freeDelivery,
           endsAt,
           startsAt: new Date().toISOString(),
+          runUntilStopped: true,
           published: true,
         },
         authHeaders
@@ -334,7 +341,7 @@ export default function ShopDashboard() {
     try {
       await axios.patch(
         `${API_URL}/shop-products/${p._id}/promo`,
-        { active: false, discountPercent: 0, freeDelivery: false, endsAt: null },
+        { active: false, discountPercent: 0, freeDelivery: false, endsAt: null, runUntilStopped: false },
         authHeaders
       );
       await loadProducts();
@@ -542,7 +549,7 @@ export default function ShopDashboard() {
               <span className="shop-dash-form-step">3</span>
               <div>
                 <h4>Campagne promo express</h4>
-                <p>Réduction, livraison gratuite et compteur.</p>
+                <p>Réduction, livraison gratuite et compteur. Une fiche publiée reste en promo jusqu’à arrêt manuel.</p>
               </div>
             </div>
           <div className="shop-dash-promo-box">
@@ -588,7 +595,7 @@ export default function ShopDashboard() {
                 />
               </div>
               <div>
-                <label>Fin promo (compteur)</label>
+                <label>Fin affichée du compteur (optionnel)</label>
                 <input
                   className="shop-dash-input"
                   type="datetime-local"
@@ -596,6 +603,16 @@ export default function ShopDashboard() {
                   onChange={(e) => setForm((f) => ({ ...f, promo: { ...f.promo, endsAt: e.target.value } }))}
                 />
               </div>
+              <label className="shop-dash-check shop-dash-check--wide">
+                <input
+                  type="checkbox"
+                  checked={form.promo.runUntilStopped}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, promo: { ...f.promo, runUntilStopped: e.target.checked } }))
+                  }
+                />
+                Garder la promo active après la date du compteur (recommandé)
+              </label>
             </div>
           </div>
           </section>
