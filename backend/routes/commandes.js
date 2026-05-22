@@ -1,6 +1,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const Commande = require('../models/Commande');
+const ShopOrder = require('../models/ShopOrder');
 const Restaurant = require('../models/Restaurant');
 const { auth } = require('../middleware/auth');
 
@@ -310,23 +311,6 @@ router.get('/dashboard-stats', auth, async (req, res) => {
       annulee: 0,
     };
 
-    if (ids.length === 0) {
-      const today = isoDateUtc(new Date());
-      return res.json({
-        from: today,
-        to: today,
-        granularity: 'hour',
-        enterpriseCount: 0,
-        unreadMessages: 0,
-        countsByStatus: { ...emptyCounts },
-        totalCommandes: 0,
-        series: Array.from({ length: 24 }, (_, h) => ({
-          label: `${String(h).padStart(2, '0')}h`,
-          count: 0,
-        })),
-      });
-    }
-
     const todayIso = isoDateUtc(new Date());
     let fromStr = req.query.from;
     let toStr = req.query.to;
@@ -350,44 +334,127 @@ router.get('/dashboard-stats', auth, async (req, res) => {
     }
 
     const sameDay = fromStr === toStr;
+    const shopDateMatch = { createdAt: { $gte: start, $lte: end } };
+
+    async function fetchShopStats() {
+      const [shopStatus, shopAmounts] = await Promise.all([
+        ShopOrder.aggregate([
+          { $match: shopDateMatch },
+          { $group: { _id: '$statut', count: { $sum: 1 } } },
+        ]),
+        ShopOrder.aggregate([
+          { $match: shopDateMatch },
+          {
+            $group: {
+              _id: null,
+              totalMontant: {
+                $sum: { $cond: [{ $ne: ['$statut', 'annulee'] }, '$totalPrice', 0] },
+              },
+              chiffreAffaires: {
+                $sum: { $cond: [{ $eq: ['$statut', 'livree'] }, '$totalPrice', 0] },
+              },
+            },
+          },
+        ]),
+      ]);
+      return { shopStatus, shopAmounts: shopAmounts[0] || {} };
+    }
+
+    if (ids.length === 0) {
+      const { shopStatus, shopAmounts } = await fetchShopStats();
+      const countsByStatus = { ...emptyCounts };
+      let shopTotal = 0;
+      for (const row of shopStatus) {
+        if (row._id && Object.prototype.hasOwnProperty.call(countsByStatus, row._id)) {
+          countsByStatus[row._id] = row.count;
+          shopTotal += row.count;
+        }
+      }
+      return res.json({
+        from: fromStr,
+        to: toStr,
+        granularity: sameDay ? 'hour' : 'day',
+        enterpriseCount: 0,
+        unreadMessages: 0,
+        countsByStatus,
+        totalCommandes: shopTotal,
+        montantTotalCommandes: shopAmounts.totalMontant || 0,
+        chiffreAffaires: shopAmounts.chiffreAffaires || 0,
+        series: sameDay
+          ? Array.from({ length: 24 }, (_, h) => ({
+              label: `${String(h).padStart(2, '0')}h`,
+              count: 0,
+            }))
+          : [],
+      });
+    }
+
     const match = { restaurant: { $in: ids }, createdAt: { $gte: start, $lte: end } };
 
-    const [agg] = await Commande.aggregate([
-      { $match: match },
-      {
-        $facet: {
-          byStatus: [{ $group: { _id: '$statut', count: { $sum: 1 } } }],
-          byBucket: sameDay
-            ? [
-                { $group: { _id: { $dateToString: { format: '%H', date: '$createdAt' } }, count: { $sum: 1 } } },
-                { $sort: { _id: 1 } },
-              ]
-            : [
-                {
-                  $group: {
-                    _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
-                    count: { $sum: 1 },
+    const [agg, shopStats] = await Promise.all([
+      Commande.aggregate([
+        { $match: match },
+        {
+          $facet: {
+            byStatus: [{ $group: { _id: '$statut', count: { $sum: 1 } } }],
+            amounts: [
+              {
+                $group: {
+                  _id: null,
+                  totalMontant: {
+                    $sum: { $cond: [{ $ne: ['$statut', 'annulee'] }, '$total', 0] },
+                  },
+                  chiffreAffaires: {
+                    $sum: { $cond: [{ $eq: ['$statut', 'livree'] }, '$total', 0] },
                   },
                 },
-                { $sort: { _id: 1 } },
-              ],
+              },
+            ],
+            byBucket: sameDay
+              ? [
+                  { $group: { _id: { $dateToString: { format: '%H', date: '$createdAt' } }, count: { $sum: 1 } } },
+                  { $sort: { _id: 1 } },
+                ]
+              : [
+                  {
+                    $group: {
+                      _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+                      count: { $sum: 1 },
+                    },
+                  },
+                  { $sort: { _id: 1 } },
+                ],
+          },
         },
-      },
+      ]),
+      fetchShopStats(),
     ]);
 
+    const aggRow = agg[0] || {};
+    const cmdAmounts = aggRow.amounts?.[0] || {};
+
     const countsByStatus = { ...emptyCounts };
-    for (const row of agg.byStatus || []) {
+    for (const row of aggRow.byStatus || []) {
       if (row._id && Object.prototype.hasOwnProperty.call(countsByStatus, row._id)) {
         countsByStatus[row._id] = row.count;
       }
     }
+    for (const row of shopStats.shopStatus || []) {
+      if (row._id && Object.prototype.hasOwnProperty.call(countsByStatus, row._id)) {
+        countsByStatus[row._id] += row.count;
+      }
+    }
 
     const totalCommandes = Object.values(countsByStatus).reduce((a, b) => a + b, 0);
+    const montantTotalCommandes =
+      (cmdAmounts.totalMontant || 0) + (shopStats.shopAmounts.totalMontant || 0);
+    const chiffreAffaires =
+      (cmdAmounts.chiffreAffaires || 0) + (shopStats.shopAmounts.chiffreAffaires || 0);
 
     let series = [];
     if (sameDay) {
       const mapH = {};
-      for (const b of agg.byBucket || []) {
+      for (const b of aggRow.byBucket || []) {
         const h = parseInt(b._id, 10);
         if (!Number.isNaN(h)) mapH[h] = b.count;
       }
@@ -396,7 +463,7 @@ router.get('/dashboard-stats', auth, async (req, res) => {
       }
     } else {
       const mapD = {};
-      for (const b of agg.byBucket || []) {
+      for (const b of aggRow.byBucket || []) {
         if (b._id) mapD[b._id] = b.count;
       }
       const cur = new Date(start);
@@ -416,6 +483,8 @@ router.get('/dashboard-stats', auth, async (req, res) => {
       unreadMessages,
       countsByStatus,
       totalCommandes,
+      montantTotalCommandes,
+      chiffreAffaires,
       series,
     });
   } catch (error) {

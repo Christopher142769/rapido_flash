@@ -14,7 +14,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { FaArrowUp, FaBuilding, FaCheckCircle, FaRegEnvelope, FaShoppingBag } from 'react-icons/fa';
+import { FaArrowUp, FaBuilding, FaMoneyBillWave, FaRegEnvelope, FaShoppingBag } from 'react-icons/fa';
 import LanguageContext from '../../context/LanguageContext';
 import PageLoader from '../../components/PageLoader';
 import './DashboardOverviewPage.css';
@@ -183,6 +183,14 @@ export default function DashboardOverviewPage() {
   const rangeLabel = from === to ? from : `${from} → ${to}`;
   const kpiHint = t('dashboardOverview', 'kpiHint');
 
+  const formatXof = useCallback(
+    (amount) => {
+      const n = Math.round(Number(amount) || 0);
+      return `${n.toLocaleString(language === 'en' ? 'en-GB' : 'fr-FR')} FCFA`;
+    },
+    [language]
+  );
+
   const presets = [
     { key: 'today', label: t('dashboardOverview', 'periodToday') },
     { key: '7', label: t('dashboardOverview', 'period7') },
@@ -266,26 +274,36 @@ export default function DashboardOverviewPage() {
 
             <div className="rf-do-kpi-grid">
               <KpiFeatured
-                title={t('dashboardOverview', 'totalOrders')}
-                value={payload.totalCommandes}
-                hint={kpiHint}
-                Icon={FaShoppingBag}
+                title={t('dashboardOverview', 'kpiChiffreAffaires')}
+                value={formatXof(payload.chiffreAffaires ?? 0)}
+                hint={t('dashboardOverview', 'kpiChiffreAffairesHint')}
+                Icon={FaMoneyBillWave}
                 delay={0}
                 reduce={reduce}
               />
-              <KpiStandard title={t('dashboardOverview', 'kpiEntreprises')} value={payload.enterpriseCount} delay={0.04} reduce={reduce}>
-                <FaBuilding className="pointer-events-none absolute bottom-3 right-3 text-3xl text-[#14532d] opacity-[0.12]" aria-hidden />
-              </KpiStandard>
-              <KpiStandard title={t('dashboardOverview', 'kpiMessages')} value={payload.unreadMessages} delay={0.08} reduce={reduce}>
-                <FaRegEnvelope className="pointer-events-none absolute bottom-3 right-3 text-3xl text-[#14532d] opacity-[0.12]" aria-hidden />
-              </KpiStandard>
               <KpiStandard
-                title={t('dashboardOverview', 'status_livree')}
-                value={payload.countsByStatus?.livree ?? 0}
-                delay={0.12}
+                title={t('dashboardOverview', 'kpiMontantTotal')}
+                value={formatXof(payload.montantTotalCommandes ?? 0)}
+                hint={t('dashboardOverview', 'kpiMontantTotalHint')}
+                delay={0.04}
                 reduce={reduce}
               >
-                <FaCheckCircle className="pointer-events-none absolute bottom-3 right-3 text-3xl text-[#22c55e] opacity-[0.15]" aria-hidden />
+                <FaMoneyBillWave className="pointer-events-none absolute bottom-3 right-3 text-3xl text-[#14532d] opacity-[0.12]" aria-hidden />
+              </KpiStandard>
+              <KpiStandard
+                title={t('dashboardOverview', 'totalOrders')}
+                value={payload.totalCommandes}
+                hint={kpiHint}
+                delay={0.08}
+                reduce={reduce}
+              >
+                <FaShoppingBag className="pointer-events-none absolute bottom-3 right-3 text-3xl text-[#14532d] opacity-[0.12]" aria-hidden />
+              </KpiStandard>
+              <KpiStandard title={t('dashboardOverview', 'kpiEntreprises')} value={payload.enterpriseCount} delay={0.1} reduce={reduce}>
+                <FaBuilding className="pointer-events-none absolute bottom-3 right-3 text-3xl text-[#14532d] opacity-[0.12]" aria-hidden />
+              </KpiStandard>
+              <KpiStandard title={t('dashboardOverview', 'kpiMessages')} value={payload.unreadMessages} delay={0.12} reduce={reduce}>
+                <FaRegEnvelope className="pointer-events-none absolute bottom-3 right-3 text-3xl text-[#14532d] opacity-[0.12]" aria-hidden />
               </KpiStandard>
             </div>
 

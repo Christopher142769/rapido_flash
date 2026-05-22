@@ -188,7 +188,13 @@
 
 @media (min-width: 1024px) {
   .rf-do-kpi-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .rf-do-kpi-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 
