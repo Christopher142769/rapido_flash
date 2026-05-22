@@ -1,0 +1,132 @@
+.push-notif-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.push-notif-card {
+  background: #fff;
+  border: 1px solid rgba(139, 69, 19, 0.14);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.05);
+}
+
+.push-notif-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.push-notif-stat {
+  border: 1px solid rgba(139, 69, 19, 0.12);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+}
+
+.push-notif-stat strong {
+  display: block;
+  font-size: 1.5rem;
+  color: #8b4513;
+  line-height: 1.2;
+}
+
+.push-notif-stat span {
+  font-size: 12px;
+  color: #666;
+}
+
+.push-notif-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.push-notif-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #444;
+}
+
+.push-notif-input,
+.push-notif-textarea {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(139, 69, 19, 0.2);
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.push-notif-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.push-notif-hint {
+  font-size: 12px;
+  color: #777;
+  margin: -4px 0 0;
+}
+
+.push-notif-channels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.push-notif-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.push-notif-badge.ok {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.push-notif-badge.off {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.push-notif-button {
+  align-self: flex-start;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #8b4513;
+  color: #fff;
+}
+
+.push-notif-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.push-notif-alert {
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.push-notif-alert.success {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.push-notif-alert.error {
+  background: #ffebee;
+  color: #b71c1c;
+}
+
+.push-notif-alert.warn {
+  background: #fff8e1;
+  color: #f57f17;
+}

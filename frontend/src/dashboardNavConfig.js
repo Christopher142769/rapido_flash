@@ -16,6 +16,7 @@ import {
   FaUserFriends,
   FaInbox,
   FaShoppingBag,
+  FaBell,
 } from 'react-icons/fa';
 
 export const DASHBOARD_HOME_SECTION = 'dashboard_home';
@@ -57,6 +58,13 @@ export function buildDashboardNavItems({ isAdmin, t, canManageMaintenance = fals
     { id: 'utilisateurs-promo', label: 'Utilisateurs', path: '/dashboard/utilisateurs-promo', section: GESTION_NAV_SECTION, Icon: FaUserFriends },
     { id: 'avis', label: t('reviews', 'sidebarReviews'), path: '/dashboard/avis', section: GESTION_NAV_SECTION, Icon: FaStar },
     { id: 'bannieres', label: 'Bannières', path: '/dashboard/bannieres', section: GESTION_NAV_SECTION, Icon: FaFlag },
+    {
+      id: 'notifications-push',
+      label: 'Notifications push',
+      path: '/dashboard/notifications-push',
+      section: GESTION_NAV_SECTION,
+      Icon: FaBell,
+    },
   ];
 
   if (isAdmin) {

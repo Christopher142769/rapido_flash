@@ -44,6 +44,7 @@ import DashboardOverviewPage from './pages/restaurant/DashboardOverviewPage';
 import PromoOffersDashboard from './pages/restaurant/PromoOffersDashboard';
 import PromoUsersDashboard from './pages/restaurant/PromoUsersDashboard';
 import ShopDashboard from './pages/restaurant/ShopDashboard';
+import PushNotificationsDashboard from './pages/restaurant/PushNotificationsDashboard';
 import ShopProductLanding from './pages/shop/ShopProductLanding';
 import ShopOrderConfirmation from './pages/shop/ShopOrderConfirmation';
 import ChatThread from './pages/client/ChatThread';
@@ -150,6 +151,7 @@ function App() {
             <Route path="categories" element={<Categories />} />
             <Route path="commandes" element={<RestaurantCommandes />} />
             <Route path="bannieres" element={<Bannieres />} />
+            <Route path="notifications-push" element={<PushNotificationsDashboard />} />
             <Route path="gestionnaires" element={<Gestionnaires />} />
             <Route path="avis" element={<RestaurantAvis />} />
             <Route path="messages" element={<RestaurantMessages />} />

@@ -1,12 +1,13 @@
 const express = require('express');
 const PushSubscription = require('../models/PushSubscription');
 const MobilePushToken = require('../models/MobilePushToken');
-const { auth } = require('../middleware/auth');
+const { auth, isRestaurant } = require('../middleware/auth');
 const {
   isPushConfigured,
   isExponentToken,
   isLikelyFcmDeviceToken,
 } = require('../services/pushNotifications');
+const { getBroadcastStats, broadcastToClients } = require('../services/pushBroadcast');
 
 const router = express.Router();
 
@@ -145,6 +146,33 @@ router.post('/fcm/unregister', auth, async (req, res) => {
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ message: e.message });
+  }
+});
+
+/** Stats audience push (dashboard restaurant / gestionnaire). */
+router.get('/broadcast/stats', auth, isRestaurant, async (req, res) => {
+  try {
+    const stats = await getBroadcastStats();
+    res.json(stats);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+/** Diffusion info à tous les clients avec notifications activées. */
+router.post('/broadcast', auth, isRestaurant, async (req, res) => {
+  try {
+    const { title, body, url, tag } = req.body || {};
+    const result = await broadcastToClients(
+      { title, body, url, tag },
+      { sentBy: req.user._id }
+    );
+    res.status(202).json(result);
+  } catch (e) {
+    const status = e.message?.includes('requis') || e.message?.includes('trop long') || e.message?.includes('invalide')
+      ? 400
+      : 500;
+    res.status(status).json({ message: e.message });
   }
 });
 
