@@ -218,6 +218,14 @@ function metaForPath(pathname) {
   if (pathname === '/loading') {
     return { title: 'Chargement — Rapido Flash', description: DEFAULT_DESC, robots: 'noindex, nofollow' };
   }
+  if (pathname.startsWith('/recrutement')) {
+    return {
+      title: 'RAPIDO · Manager de Plateforme — Recrutement 2026',
+      description:
+        'RAPIDO recrute son Manager de Plateforme. Poste pivot rattaché à la Direction Générale : stratégie marketing, prospection B2B, partenaires vendeurs et force de vente.',
+      robots: 'index, follow',
+    };
+  }
   const base = ROUTES[pathname];
   if (base) {
     return { ...base, robots: 'index, follow' };

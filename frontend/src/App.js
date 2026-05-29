@@ -24,6 +24,7 @@ import Factures from './pages/client/Factures';
 import ReceiptPage from './pages/client/ReceiptPage';
 import Settings from './pages/client/Settings';
 import AccountDeletion from './pages/AccountDeletion';
+import RecrutementPage from './pages/RecrutementPage';
 
 // Pages Restaurant
 import Dashboard from './pages/restaurant/Dashboard';
@@ -81,6 +82,89 @@ function DashboardLegacyRedirect() {
   return <Navigate to={target} replace />;
 }
 
+function AppRoutes() {
+  const location = useLocation();
+  const isRecrutement = location.pathname.startsWith('/recrutement');
+
+  return (
+    <MaintenanceGate>
+      {!isRecrutement && <SupportWidget />}
+      {!isRecrutement && <ChatFab />}
+      {!isRecrutement && <NotificationPermissionBanner />}
+      <Routes>
+        {/* Pages publiques client */}
+        <Route path="/loading" element={<Loading />} />
+        <Route path="/welcome" element={<Welcome />} />
+        <Route path="/location" element={<LocationSelect />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/account-deletion" element={<AccountDeletion />} />
+        <Route path="/suppression-compte" element={<AccountDeletion />} />
+
+        {/* Recrutement : HTML statique recrutement/index.html */}
+        <Route path="/recrutement/merci" element={<RecrutementPage page="merci" />} />
+        <Route path="/recrutement" element={<RecrutementPage page="index" />} />
+
+        {/* Home public : découverte sans connexion */}
+        <Route path="/home" element={<Home />} />
+        <Route path="/livraison-rapide-cotonou" element={<SeoLandingPage />} />
+        <Route path="/service-livraison-cotonou" element={<SeoLandingPage />} />
+        <Route path="/livraison-domicile-cotonou" element={<SeoLandingPage />} />
+        <Route path="/livraison-express-cotonou" element={<SeoLandingPage />} />
+        <Route path="/livraison-colis-cotonou" element={<SeoLandingPage />} />
+        <Route path="/livraison-repas-cotonou" element={<SeoLandingPage />} />
+        <Route path="/livraison-courses-cotonou" element={<SeoLandingPage />} />
+        <Route path="/tarifs-livraison-cotonou" element={<SeoLandingPage />} />
+        <Route path="/livraison-benin" element={<SeoLandingPage />} />
+        <Route path="/contact-livraison-cotonou" element={<SeoLandingPage />} />
+        <Route path="/zones/livraison-akpakpa" element={<SeoLandingPage />} />
+        <Route path="/zones/livraison-fidjrosse" element={<SeoLandingPage />} />
+        <Route path="/zones/livraison-calavi" element={<SeoLandingPage />} />
+        <Route path="/zones/livraison-porto-novo" element={<SeoLandingPage />} />
+        <Route path="/restaurant/:id" element={<RestaurantDetail />} />
+        <Route path="/shop/:slug/commande" element={<ShopOrderConfirmation />} />
+        <Route path="/shop/:slug" element={<ShopProductLanding />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/checkout" element={<PrivateRoute><Checkout /></PrivateRoute>} />
+        <Route path="/ordered/:paymentMode" element={<PrivateRoute><Checkout /></PrivateRoute>} />
+        <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />
+        <Route path="/factures" element={<PrivateRoute><Factures /></PrivateRoute>} />
+        <Route path="/facture/:id" element={<PrivateRoute><ReceiptPage /></PrivateRoute>} />
+        <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+        <Route path="/chats" element={<PrivateRoute><ChatsInbox /></PrivateRoute>} />
+        <Route path="/chat/:restaurantId" element={<PrivateRoute><ChatThread /></PrivateRoute>} />
+
+        {/* Pages restaurant (layout commun : sidebar + header + transitions) */}
+        <Route path={DASHBOARD_BASE_PATH} element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
+          <Route index element={<Dashboard />} />
+          <Route path="tableau" element={<DashboardOverviewPage />} />
+          <Route path="medias" element={<RestaurantMedias />} />
+          <Route path="vitrine-accueil" element={<MiseEnAvantAccueil />} />
+          <Route path="categories-domaine" element={<CategoriesDomaine />} />
+          <Route path="plats" element={<RestaurantPlats />} />
+          <Route path="shop" element={<ShopDashboard />} />
+          <Route path="categories" element={<Categories />} />
+          <Route path="commandes" element={<RestaurantCommandes />} />
+          <Route path="bannieres" element={<Bannieres />} />
+          <Route path="notifications-push" element={<PushNotificationsDashboard />} />
+          <Route path="gestionnaires" element={<Gestionnaires />} />
+          <Route path="avis" element={<RestaurantAvis />} />
+          <Route path="messages" element={<RestaurantMessages />} />
+          <Route path="offres-promo" element={<PromoOffersDashboard />} />
+          <Route path="utilisateurs-promo" element={<PromoUsersDashboard />} />
+          <Route path="messages-moderation" element={<PlatformChatModeration />} />
+          <Route path="maintenance" element={<MaintenanceDashboardPage />} />
+          <Route path="demandes-compte" element={<AccountRequestsDashboard />} />
+        </Route>
+        <Route path="/dashboard/*" element={<DashboardLegacyRedirect />} />
+        <Route path="/entreprises" element={<Navigate to={DASHBOARD_BASE_PATH} replace />} />
+
+        <Route path="/" element={<Navigate to="/home" replace />} />
+      </Routes>
+    </MaintenanceGate>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -96,77 +180,7 @@ function App() {
         >
           <MetaPixelPageViewOnRoute />
           <SeoRouteMeta />
-          <MaintenanceGate>
-          <SupportWidget />
-          <ChatFab />
-          <NotificationPermissionBanner />
-          <Routes>
-          {/* Pages publiques client */}
-          <Route path="/loading" element={<Loading />} />
-          <Route path="/welcome" element={<Welcome />} />
-          <Route path="/location" element={<LocationSelect />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/account-deletion" element={<AccountDeletion />} />
-          <Route path="/suppression-compte" element={<AccountDeletion />} />
-          
-          {/* Home public : découverte sans connexion */}
-          <Route path="/home" element={<Home />} />
-          <Route path="/livraison-rapide-cotonou" element={<SeoLandingPage />} />
-          <Route path="/service-livraison-cotonou" element={<SeoLandingPage />} />
-          <Route path="/livraison-domicile-cotonou" element={<SeoLandingPage />} />
-          <Route path="/livraison-express-cotonou" element={<SeoLandingPage />} />
-          <Route path="/livraison-colis-cotonou" element={<SeoLandingPage />} />
-          <Route path="/livraison-repas-cotonou" element={<SeoLandingPage />} />
-          <Route path="/livraison-courses-cotonou" element={<SeoLandingPage />} />
-          <Route path="/tarifs-livraison-cotonou" element={<SeoLandingPage />} />
-          <Route path="/livraison-benin" element={<SeoLandingPage />} />
-          <Route path="/contact-livraison-cotonou" element={<SeoLandingPage />} />
-          <Route path="/zones/livraison-akpakpa" element={<SeoLandingPage />} />
-          <Route path="/zones/livraison-fidjrosse" element={<SeoLandingPage />} />
-          <Route path="/zones/livraison-calavi" element={<SeoLandingPage />} />
-          <Route path="/zones/livraison-porto-novo" element={<SeoLandingPage />} />
-          <Route path="/restaurant/:id" element={<RestaurantDetail />} />
-          <Route path="/shop/:slug/commande" element={<ShopOrderConfirmation />} />
-          <Route path="/shop/:slug" element={<ShopProductLanding />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout" element={<PrivateRoute><Checkout /></PrivateRoute>} />
-          <Route path="/ordered/:paymentMode" element={<PrivateRoute><Checkout /></PrivateRoute>} />
-          <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />
-          <Route path="/factures" element={<PrivateRoute><Factures /></PrivateRoute>} />
-          <Route path="/facture/:id" element={<PrivateRoute><ReceiptPage /></PrivateRoute>} />
-          <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
-          <Route path="/chats" element={<PrivateRoute><ChatsInbox /></PrivateRoute>} />
-          <Route path="/chat/:restaurantId" element={<PrivateRoute><ChatThread /></PrivateRoute>} />
-          
-          {/* Pages restaurant (layout commun : sidebar + header + transitions) */}
-          <Route path={DASHBOARD_BASE_PATH} element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
-            <Route index element={<Dashboard />} />
-            <Route path="tableau" element={<DashboardOverviewPage />} />
-            <Route path="medias" element={<RestaurantMedias />} />
-            <Route path="vitrine-accueil" element={<MiseEnAvantAccueil />} />
-            <Route path="categories-domaine" element={<CategoriesDomaine />} />
-            <Route path="plats" element={<RestaurantPlats />} />
-            <Route path="shop" element={<ShopDashboard />} />
-            <Route path="categories" element={<Categories />} />
-            <Route path="commandes" element={<RestaurantCommandes />} />
-            <Route path="bannieres" element={<Bannieres />} />
-            <Route path="notifications-push" element={<PushNotificationsDashboard />} />
-            <Route path="gestionnaires" element={<Gestionnaires />} />
-            <Route path="avis" element={<RestaurantAvis />} />
-            <Route path="messages" element={<RestaurantMessages />} />
-            <Route path="offres-promo" element={<PromoOffersDashboard />} />
-            <Route path="utilisateurs-promo" element={<PromoUsersDashboard />} />
-            <Route path="messages-moderation" element={<PlatformChatModeration />} />
-            <Route path="maintenance" element={<MaintenanceDashboardPage />} />
-            <Route path="demandes-compte" element={<AccountRequestsDashboard />} />
-          </Route>
-          <Route path="/dashboard/*" element={<DashboardLegacyRedirect />} />
-          <Route path="/entreprises" element={<Navigate to={DASHBOARD_BASE_PATH} replace />} />
-          
-          <Route path="/" element={<Navigate to="/home" replace />} />
-        </Routes>
-          </MaintenanceGate>
+          <AppRoutes />
       </Router>
         </ModalProvider>
         </SupportWidgetProvider>
