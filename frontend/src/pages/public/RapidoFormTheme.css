@@ -566,6 +566,21 @@
   opacity: 0.7;
 }
 
+.rform-step-input--date {
+  max-width: 280px;
+  font-size: clamp(16px, 2vw, 20px);
+}
+
+.rform-step-input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+.rform-step-input[type='number']::-webkit-outer-spin-button,
+.rform-step-input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .rform-choices {
   display: flex;
   flex-direction: column;

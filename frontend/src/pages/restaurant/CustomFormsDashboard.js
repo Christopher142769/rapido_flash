@@ -15,6 +15,8 @@ import {
   FaListUl,
   FaCheckSquare,
   FaEnvelope,
+  FaCalendarAlt,
+  FaHashtag,
 } from 'react-icons/fa';
 import { defaultFormSettings } from '../../utils/customFormSteps';
 import FormRichTextEditor from '../../components/forms/FormRichTextEditor';
@@ -57,6 +59,8 @@ const FIELD_ICONS = {
   text: FaFont,
   textarea: FaAlignLeft,
   email: FaEnvelope,
+  number: FaHashtag,
+  date: FaCalendarAlt,
   image: FaImage,
   pdf: FaFilePdf,
   choice: FaListUl,
@@ -68,6 +72,8 @@ const FIELD_TYPE_LABELS = {
   text: 'Texte court',
   textarea: 'Texte long',
   email: 'E-mail',
+  number: 'Nombre',
+  date: 'Date',
   image: 'Image',
   pdf: 'PDF',
   choice: 'Choix unique',
@@ -80,6 +86,8 @@ function FieldTypeSelect({ value, onChange }) {
       <option value="text">Texte court</option>
       <option value="textarea">Texte long</option>
       <option value="email">E-mail</option>
+      <option value="number">Nombre (chiffres uniquement)</option>
+      <option value="date">Date</option>
       <option value="choice">Choix unique (une réponse)</option>
       <option value="checkbox">Choix multiples</option>
       <option value="image">Image</option>

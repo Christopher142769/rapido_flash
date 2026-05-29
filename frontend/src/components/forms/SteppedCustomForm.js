@@ -65,6 +65,13 @@ function validateStep(step, state) {
   if (block.fieldType === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(tv)) {
     return 'E-mail invalide';
   }
+  if (block.fieldType === 'number') {
+    const n = tv.replace(/\s/g, '').replace(',', '.');
+    if (!/^-?\d+(\.\d+)?$/.test(n)) return 'Saisissez un nombre valide';
+  }
+  if (block.fieldType === 'date' && tv && !/^\d{4}-\d{2}-\d{2}$/.test(tv)) {
+    return 'Date invalide';
+  }
   return '';
 }
 
@@ -86,7 +93,7 @@ function initStateFromForm(form) {
         choiceValues[key] = [];
       } else if (b.fieldType === 'choice') {
         choiceValues[key] = '';
-      } else if (['text', 'textarea', 'email'].includes(b.fieldType)) {
+      } else if (['text', 'textarea', 'email', 'number', 'date'].includes(b.fieldType)) {
         textValues[key] = '';
       }
     });
@@ -403,6 +410,39 @@ export default function SteppedCustomForm({ form, slug, onDone }) {
           />
           {file ? <p className="rform-file-name">{file.name}</p> : null}
         </div>
+      );
+    }
+
+    if (block.fieldType === 'date') {
+      return (
+        <input
+          ref={inputRef}
+          type="date"
+          className="rform-input rform-step-input rform-step-input--date"
+          value={textValues[key] || ''}
+          onChange={(e) =>
+            setFieldState((p) => ({ ...p, textValues: { ...p.textValues, [key]: e.target.value } }))
+          }
+          onKeyDown={onKeyDown}
+        />
+      );
+    }
+
+    if (block.fieldType === 'number') {
+      return (
+        <input
+          ref={inputRef}
+          type="number"
+          inputMode="decimal"
+          step="any"
+          className="rform-input rform-step-input"
+          value={textValues[key] || ''}
+          onChange={(e) =>
+            setFieldState((p) => ({ ...p, textValues: { ...p.textValues, [key]: e.target.value } }))
+          }
+          onKeyDown={onKeyDown}
+          placeholder="0"
+        />
       );
     }
 

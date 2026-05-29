@@ -21,7 +21,7 @@ const customFormSectionSchema = new mongoose.Schema(
         kind: { type: String, enum: ['field', 'table'], required: true },
         fieldType: {
           type: String,
-          enum: ['text', 'textarea', 'email', 'image', 'pdf', 'choice', 'checkbox'],
+          enum: ['text', 'textarea', 'email', 'number', 'date', 'image', 'pdf', 'choice', 'checkbox'],
           default: 'text',
         },
         label: { type: String, default: '' },

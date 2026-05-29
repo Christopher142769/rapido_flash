@@ -28,7 +28,7 @@ function filePublicUrl(req, filename) {
   return `${base.replace(/\/$/, '')}/uploads/custom-forms/${filename}`;
 }
 
-const FIELD_TYPES = ['text', 'textarea', 'email', 'image', 'pdf', 'choice', 'checkbox'];
+const FIELD_TYPES = ['text', 'textarea', 'email', 'number', 'date', 'image', 'pdf', 'choice', 'checkbox'];
 
 function normalizeOptions(raw) {
   if (!Array.isArray(raw)) return [];
@@ -134,6 +134,16 @@ function validateSubmission(form, payload, fileMap) {
         if (!sel.length) return `Sélectionnez au moins une réponse pour « ${block.label} »`;
       } else if (block.fieldType === 'image' || block.fieldType === 'pdf') {
         if (!hasFile) return `Le fichier « ${block.label} » est obligatoire`;
+      } else if (block.fieldType === 'number') {
+        const tv = String(a.textValue || '').trim();
+        if (!tv) return `Le champ « ${block.label} » est obligatoire`;
+        if (!/^-?\d+([.,]\d+)?$/.test(tv.replace(/\s/g, ''))) {
+          return `« ${block.label} » doit être un nombre`;
+        }
+      } else if (block.fieldType === 'date') {
+        const tv = String(a.textValue || '').trim();
+        if (!tv) return `Le champ « ${block.label} » est obligatoire`;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(tv)) return `« ${block.label} » : date invalide`;
       } else {
         const tv = String(a.textValue || '').trim();
         if (!tv) return `Le champ « ${block.label} » est obligatoire`;
