@@ -32,9 +32,17 @@ function collectUploadedImages(req) {
 
 function buildPromoFromBody(body) {
   const promo = parseJsonField(body.promo, {});
+  const priceMode = promo.priceMode === 'manual' ? 'manual' : 'percent';
+  const manualRaw = promo.manualPrice;
+  const manualPrice =
+    manualRaw === '' || manualRaw == null || manualRaw === undefined
+      ? null
+      : Math.max(0, Number(manualRaw));
   return {
     active: promo.active === true || promo.active === 'true',
-    discountPercent: Number(promo.discountPercent || 0),
+    priceMode,
+    discountPercent: Math.min(100, Math.max(0, Number(promo.discountPercent || 0))),
+    manualPrice: Number.isFinite(manualPrice) ? manualPrice : null,
     freeDelivery: promo.freeDelivery === true || promo.freeDelivery === 'true',
     startsAt: promo.startsAt ? new Date(promo.startsAt) : null,
     endsAt: promo.endsAt ? new Date(promo.endsAt) : null,

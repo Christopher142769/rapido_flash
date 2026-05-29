@@ -3,7 +3,13 @@ import axios from 'axios';
 import PageLoader from '../../components/PageLoader';
 import MediaPickerModal from '../../components/MediaPickerModal';
 import { getImageUrl } from '../../utils/imagePlaceholder';
-import { getShopPromoState, formatPriceXof } from '../../utils/shopPromo';
+import {
+  getShopPromoState,
+  formatPriceXof,
+  applyBoostDefaults,
+  promoPayloadFromForm,
+  DEFAULT_BOOST_HOURS,
+} from '../../utils/shopPromo';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
 import ShopCopyBlockEditor from '../../components/shop/ShopCopyBlockEditor';
 import ShopFormSectionHead from '../../components/shop/ShopFormSectionHead';
@@ -47,11 +53,14 @@ const emptyForm = () => ({
   copySections: [emptyCopyBlock('text')],
   promo: {
     active: false,
+    priceMode: 'percent',
     discountPercent: 10,
+    manualPrice: '',
     freeDelivery: false,
     startsAt: '',
     endsAt: '',
     runUntilStopped: true,
+    boostHours: DEFAULT_BOOST_HOURS,
   },
   whatsappNumber: '',
   contactPhone: '',
@@ -119,14 +128,9 @@ function buildProductPayload(f, galleryList) {
     mainImage: gallery[0] || null,
     images: JSON.stringify(gallery),
     copySections: JSON.stringify(copySections),
-    promo: JSON.stringify({
-      active: f.promo.active,
-      discountPercent: Number(f.promo.discountPercent),
-      freeDelivery: f.promo.freeDelivery,
-      startsAt: f.promo.startsAt ? new Date(f.promo.startsAt).toISOString() : null,
-      endsAt: f.promo.endsAt ? new Date(f.promo.endsAt).toISOString() : null,
-      runUntilStopped: !!f.promo.runUntilStopped,
-    }),
+    promo: JSON.stringify(
+      promoPayloadFromForm(f.promo.active ? applyBoostDefaults(f.promo, f.promo.boostHours) : f.promo)
+    ),
     whatsappNumber: f.whatsappNumber,
     contactPhone: f.contactPhone,
     ctaLabel: f.ctaLabel,
@@ -152,6 +156,7 @@ export default function ShopDashboard() {
   const [uploadingGallery, setUploadingGallery] = useState(false);
   const [uploadingBlockIndex, setUploadingBlockIndex] = useState(null);
   const [refreshingPage, setRefreshingPage] = useState(false);
+  const [boosting, setBoosting] = useState(false);
 
   const formRef = useRef(form);
   const editingIdRef = useRef(editingId);
@@ -209,11 +214,15 @@ export default function ShopDashboard() {
           : [emptyCopyBlock('text')],
       promo: {
         active: !!p.promo?.active,
+        priceMode: p.promo?.priceMode === 'manual' ? 'manual' : 'percent',
         discountPercent: p.promo?.discountPercent ?? 10,
+        manualPrice:
+          p.promo?.manualPrice != null && p.promo?.manualPrice !== '' ? String(p.promo.manualPrice) : '',
         freeDelivery: !!p.promo?.freeDelivery,
         startsAt: toDatetimeLocal(p.promo?.startsAt),
         endsAt: toDatetimeLocal(p.promo?.endsAt),
         runUntilStopped: p.promo?.runUntilStopped !== false,
+        boostHours: DEFAULT_BOOST_HOURS,
       },
       whatsappNumber: p.whatsappNumber || '',
       contactPhone: p.contactPhone || '',
@@ -254,6 +263,20 @@ export default function ShopDashboard() {
   const galleryUrls = useMemo(
     () => mergeGallery(form.mainImage, form.images),
     [form.mainImage, form.images]
+  );
+
+  const formPromoPreview = useMemo(
+    () =>
+      getShopPromoState({
+        basePrice: Number(form.basePrice) || 0,
+        published: form.published,
+        promo: {
+          ...form.promo,
+          manualPrice:
+            form.promo.manualPrice === '' ? null : Number(form.promo.manualPrice),
+        },
+      }),
+    [form.basePrice, form.published, form.promo]
   );
 
   const persistProduct = useCallback(
@@ -449,49 +472,105 @@ export default function ShopDashboard() {
     });
   };
 
+  const patchPromoAndRefresh = useCallback(
+    async (productId, promoBody, { publish = true } = {}) => {
+      const res = await axios.patch(
+        `${API_URL}/shop-products/${productId}/promo`,
+        { ...promoBody, ...(publish ? { published: true } : {}) },
+        authHeaders
+      );
+      const updated = res.data;
+      setProducts((prev) => prev.map((item) => (item._id === productId ? updated : item)));
+      if (editingIdRef.current === productId) {
+        fillFormFromProduct(updated);
+      }
+      return updated;
+    },
+    [authHeaders, fillFormFromProduct]
+  );
+
   const saveProduct = async (e) => {
     e.preventDefault();
-    await persistProduct({ formState: form, galleryList: galleryUrls, closeAfter: true });
+    const formToSave = {
+      ...form,
+      published: form.promo.active ? true : form.published,
+      promo: form.promo.active ? applyBoostDefaults(form.promo, form.promo.boostHours) : form.promo,
+    };
+    setForm(formToSave);
+    await persistProduct({ formState: formToSave, galleryList: galleryUrls, closeAfter: true });
+  };
+
+  const boostNow = async () => {
+    if (!canPersistProduct(form)) {
+      alert('Indiquez le nom et le prix de base avant de booster.');
+      return;
+    }
+    const boostedPromo = applyBoostDefaults(
+      { ...form.promo, active: true, runUntilStopped: true },
+      form.promo.boostHours
+    );
+    setBoosting(true);
+    try {
+      let id = editingIdRef.current;
+      if (!id) {
+        const minimal = {
+          ...form,
+          published: true,
+          promo: boostedPromo,
+        };
+        const result = await persistProduct({ formState: minimal, closeAfter: false });
+        if (!result.ok) return;
+        id = editingIdRef.current;
+      }
+      await patchPromoAndRefresh(id, promoPayloadFromForm(boostedPromo), { publish: true });
+      setForm((f) => ({ ...f, promo: boostedPromo, published: true }));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Erreur lors du boost');
+    } finally {
+      setBoosting(false);
+    }
   };
 
   const launchPromo = async (p) => {
-    const discount = window.prompt('Pourcentage de réduction (1-90) ?', String(p.promo?.discountPercent || 10));
-    if (discount == null) return;
-    const hours = window.prompt(
-      'Durée affichée du compte à rebours (heures) ? La promo reste active jusqu’à arrêt manuel.',
-      '168'
+    const boosted = applyBoostDefaults(
+      {
+        active: true,
+        priceMode: p.promo?.priceMode === 'manual' ? 'manual' : 'percent',
+        discountPercent: p.promo?.discountPercent ?? 10,
+        manualPrice: p.promo?.manualPrice ?? null,
+        freeDelivery: !!p.promo?.freeDelivery,
+        runUntilStopped: true,
+        startsAt: p.promo?.startsAt,
+        endsAt: p.promo?.endsAt,
+      },
+      DEFAULT_BOOST_HOURS
     );
-    if (hours == null) return;
-    const endsAt = new Date(Date.now() + Number(hours) * 3600 * 1000).toISOString();
-    const freeDelivery = window.confirm('Activer la livraison gratuite pour cette promo ?');
+    setBoosting(true);
     try {
-      await axios.patch(
-        `${API_URL}/shop-products/${p._id}/promo`,
-        {
-          active: true,
-          discountPercent: Number(discount),
-          freeDelivery,
-          endsAt,
-          startsAt: new Date().toISOString(),
-          runUntilStopped: true,
-          published: true,
-        },
-        authHeaders
-      );
-      await loadProducts();
+      await patchPromoAndRefresh(p._id, promoPayloadFromForm(boosted), { publish: true });
     } catch (err) {
       alert(err.response?.data?.message || 'Erreur promo');
+    } finally {
+      setBoosting(false);
     }
   };
 
   const stopPromo = async (p) => {
     try {
-      await axios.patch(
-        `${API_URL}/shop-products/${p._id}/promo`,
-        { active: false, discountPercent: 0, freeDelivery: false, endsAt: null, runUntilStopped: false },
-        authHeaders
+      await patchPromoAndRefresh(
+        p._id,
+        {
+          active: false,
+          discountPercent: 0,
+          manualPrice: null,
+          priceMode: 'percent',
+          freeDelivery: false,
+          endsAt: null,
+          startsAt: null,
+          runUntilStopped: false,
+        },
+        { publish: false }
       );
-      await loadProducts();
     } catch (err) {
       alert(err.response?.data?.message || 'Erreur');
     }
@@ -600,7 +679,7 @@ export default function ShopDashboard() {
               />
             </div>
             <div>
-              <label>Prix de base (CFA) *</label>
+              <label>Prix initial (CFA) *</label>
               <input
                 className="shop-dash-input"
                 type="number"
@@ -609,6 +688,37 @@ export default function ShopDashboard() {
                 onChange={(e) => setForm((f) => ({ ...f, basePrice: e.target.value }))}
                 required
               />
+            </div>
+            <div>
+              <label>Prix actuel promo (CFA)</label>
+              <input
+                className="shop-dash-input"
+                type="number"
+                min="0"
+                value={form.promo.priceMode === 'manual' ? form.promo.manualPrice : ''}
+                disabled={form.promo.priceMode !== 'manual'}
+                placeholder={
+                  form.promo.priceMode === 'percent' && formPromoPreview.isPromoLive
+                    ? String(formPromoPreview.promoPrice)
+                    : 'Via % ou mode manuel'
+                }
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    promo: { ...f.promo, priceMode: 'manual', manualPrice: e.target.value, active: true },
+                  }))
+                }
+              />
+              <p className="shop-dash-hint shop-dash-hint--inline">
+                {formPromoPreview.isPromoLive ? (
+                  <>
+                    Affiché : <strong>{formatPriceXof(formPromoPreview.promoPrice)}</strong>
+                    {formPromoPreview.discountPercent > 0 ? ` (−${formPromoPreview.discountPercent}%)` : null}
+                  </>
+                ) : (
+                  'Activez la promo (section 3) pour afficher un prix barré.'
+                )}
+              </p>
             </div>
             <div>
               <label>Type de quantité *</label>
@@ -715,28 +825,126 @@ export default function ShopDashboard() {
               refreshing={refreshingPage}
             />
           <div className="shop-dash-promo-box">
+            <div className="shop-dash-boost-actions">
+              <button
+                type="button"
+                className="shop-dash-btn primary"
+                disabled={boosting || saving}
+                onClick={() => void boostNow()}
+              >
+                <FaRocket /> {boosting ? 'Boost en cours…' : 'Booster maintenant (rapide)'}
+              </button>
+              <p className="shop-dash-hint">
+                Lance la promo + compteur + publication <strong>sans</strong> ré-enregistrer toute la fiche (plus
+                rapide). « Enregistrer » en bas applique aussi le boost si la promo est cochée.
+              </p>
+            </div>
+
             <div className="shop-dash-grid">
               <label className="shop-dash-check">
                 <input
                   type="checkbox"
                   checked={form.promo.active}
-                  onChange={(e) => setForm((f) => ({ ...f, promo: { ...f.promo, active: e.target.checked } }))}
+                  onChange={(e) => {
+                    const active = e.target.checked;
+                    setForm((f) => ({
+                      ...f,
+                      published: active ? true : f.published,
+                      promo: active
+                        ? applyBoostDefaults({ ...f.promo, active: true }, f.promo.boostHours)
+                        : { ...f.promo, active: false },
+                    }));
+                  }}
                 />
                 Promo active
               </label>
+
+              <div className="shop-dash-field-full">
+                <span className="shop-dash-label-inline">Type de prix promo</span>
+                <div className="shop-dash-price-mode">
+                  <label className="shop-dash-check">
+                    <input
+                      type="radio"
+                      name="promoPriceMode"
+                      checked={form.promo.priceMode !== 'manual'}
+                      onChange={() =>
+                        setForm((f) => ({ ...f, promo: { ...f.promo, priceMode: 'percent' } }))
+                      }
+                    />
+                    Réduction en %
+                  </label>
+                  <label className="shop-dash-check">
+                    <input
+                      type="radio"
+                      name="promoPriceMode"
+                      checked={form.promo.priceMode === 'manual'}
+                      onChange={() =>
+                        setForm((f) => ({
+                          ...f,
+                          promo: { ...f.promo, priceMode: 'manual', active: true },
+                        }))
+                      }
+                    />
+                    Prix actuel fixe (manuel)
+                  </label>
+                </div>
+              </div>
+
+              {form.promo.priceMode === 'manual' ? (
+                <div>
+                  <label>Prix actuel (CFA)</label>
+                  <input
+                    className="shop-dash-input"
+                    type="number"
+                    min="0"
+                    value={form.promo.manualPrice}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        promo: { ...f.promo, manualPrice: e.target.value, active: true },
+                      }))
+                    }
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label>% réduction</label>
+                  <input
+                    className="shop-dash-input"
+                    type="number"
+                    min="0"
+                    max="90"
+                    value={form.promo.discountPercent}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        promo: { ...f.promo, discountPercent: e.target.value, active: true },
+                      }))
+                    }
+                  />
+                </div>
+              )}
+
               <div>
-                <label>% réduction</label>
+                <label>Durée du compteur (heures)</label>
                 <input
                   className="shop-dash-input"
                   type="number"
-                  min="0"
-                  max="90"
-                  value={form.promo.discountPercent}
+                  min="1"
+                  max="720"
+                  value={form.promo.boostHours}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, promo: { ...f.promo, discountPercent: e.target.value } }))
+                    setForm((f) => ({
+                      ...f,
+                      promo: { ...f.promo, boostHours: e.target.value, endsAt: '' },
+                    }))
                   }
                 />
+                <p className="shop-dash-hint shop-dash-hint--inline">
+                  Rempli automatiquement au boost ({DEFAULT_BOOST_HOURS} h par défaut).
+                </p>
               </div>
+
               <label className="shop-dash-check">
                 <input
                   type="checkbox"
@@ -747,6 +955,7 @@ export default function ShopDashboard() {
                 />
                 Livraison gratuite
               </label>
+
               <div>
                 <label>Début promo</label>
                 <input
@@ -757,7 +966,7 @@ export default function ShopDashboard() {
                 />
               </div>
               <div>
-                <label>Fin affichée du compteur (optionnel)</label>
+                <label>Fin affichée du compteur</label>
                 <input
                   className="shop-dash-input"
                   type="datetime-local"
@@ -765,6 +974,7 @@ export default function ShopDashboard() {
                   onChange={(e) => setForm((f) => ({ ...f, promo: { ...f.promo, endsAt: e.target.value } }))}
                 />
               </div>
+
               <label className="shop-dash-check shop-dash-check--wide">
                 <input
                   type="checkbox"
@@ -776,6 +986,14 @@ export default function ShopDashboard() {
                 Garder la promo active après la date du compteur (recommandé)
               </label>
             </div>
+
+            {formPromoPreview.isPromoLive ? (
+              <p className="shop-dash-promo-preview">
+                Aperçu client :{' '}
+                <span className="shop-dash-price-old">{formatPriceXof(formPromoPreview.basePrice)}</span>{' '}
+                <span className="shop-dash-price-promo">{formatPriceXof(formPromoPreview.promoPrice)}</span>
+              </p>
+            ) : null}
           </div>
           </section>
 

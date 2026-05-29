@@ -367,6 +367,46 @@
   background: transparent;
 }
 
+.shop-dash-boost-actions {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(199, 109, 46, 0.08);
+  border: 1px solid rgba(199, 109, 46, 0.22);
+}
+
+.shop-dash-boost-actions .shop-dash-btn {
+  margin-bottom: 8px;
+}
+
+.shop-dash-price-mode {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.shop-dash-label-inline {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--rf-text-muted, #6b5c4f);
+  margin-bottom: 4px;
+}
+
+.shop-dash-field-full {
+  grid-column: 1 / -1;
+}
+
+.shop-dash-promo-preview {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--rf-surface, #fbf7ef);
+  border: 1px solid rgba(199, 109, 46, 0.2);
+  font-size: 0.92rem;
+}
+
 .shop-dash-list-title {
   margin: 0 0 18px;
   font-family: var(--font-display), sans-serif;

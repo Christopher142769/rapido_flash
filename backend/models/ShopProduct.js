@@ -42,7 +42,10 @@ const shopProductSchema = new mongoose.Schema(
     published: { type: Boolean, default: false },
     promo: {
       active: { type: Boolean, default: false },
+      /** percent = réduction % ; manual = prix promo fixe (manualPrice) */
+      priceMode: { type: String, enum: ['percent', 'manual'], default: 'percent' },
       discountPercent: { type: Number, default: 0, min: 0, max: 100 },
+      manualPrice: { type: Number, default: null, min: 0 },
       freeDelivery: { type: Boolean, default: false },
       startsAt: { type: Date, default: null },
       endsAt: { type: Date, default: null },

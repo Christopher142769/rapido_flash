@@ -2,20 +2,34 @@
  * État promo Shop — aligné sur backend/utils/shopPromo.js
  * Fiche publiée : promo active jusqu'à arrêt manuel (pas de coupure à endsAt).
  */
+export const DEFAULT_BOOST_HOURS = 72;
+
 export function getShopPromoState(product, now = new Date()) {
   const promo = product?.promo || {};
   const published = !!product?.published;
   const basePrice = Number(product?.basePrice || 0);
+  const priceMode = promo.priceMode === 'manual' ? 'manual' : 'percent';
   const discountPercent = Math.min(100, Math.max(0, Number(promo.discountPercent || 0)));
+  const manualPrice = Number(promo.manualPrice);
+  const hasManualPromo =
+    priceMode === 'manual' &&
+    Number.isFinite(manualPrice) &&
+    manualPrice >= 0 &&
+    basePrice > 0 &&
+    manualPrice < basePrice;
+  const hasPercentPromo = discountPercent > 0;
   const startsAt = promo.startsAt ? new Date(promo.startsAt) : null;
   const endsAt = promo.endsAt ? new Date(promo.endsAt) : null;
   const t = now.getTime();
 
   const runUntilStopped =
     promo.runUntilStopped === true ||
-    (promo.runUntilStopped !== false && published && !!promo.active && discountPercent > 0);
+    (promo.runUntilStopped !== false &&
+      published &&
+      !!promo.active &&
+      (hasManualPromo || hasPercentPromo));
 
-  let isPromoLive = !!promo.active && discountPercent > 0;
+  let isPromoLive = !!promo.active && (hasManualPromo || hasPercentPromo);
   if (startsAt && t < startsAt.getTime()) isPromoLive = false;
   if (endsAt && t > endsAt.getTime() && !runUntilStopped) isPromoLive = false;
 
@@ -26,9 +40,19 @@ export function getShopPromoState(product, now = new Date()) {
     }
   }
 
-  const promoPrice = isPromoLive
-    ? Math.round(basePrice * (1 - discountPercent / 100))
-    : basePrice;
+  let promoPrice = basePrice;
+  if (isPromoLive) {
+    promoPrice = hasManualPromo
+      ? Math.round(manualPrice)
+      : Math.round(basePrice * (1 - discountPercent / 100));
+  }
+
+  const effectiveDiscount =
+    isPromoLive && basePrice > 0
+      ? hasManualPromo
+        ? Math.round((1 - promoPrice / basePrice) * 100)
+        : discountPercent
+      : 0;
 
   const timeRemainingMs =
     isPromoLive && countdownEndsAt ? Math.max(0, countdownEndsAt.getTime() - t) : 0;
@@ -36,13 +60,52 @@ export function getShopPromoState(product, now = new Date()) {
   return {
     basePrice,
     promoPrice,
-    discountPercent: isPromoLive ? discountPercent : 0,
+    priceMode: isPromoLive ? priceMode : 'percent',
+    manualPrice: hasManualPromo ? Math.round(manualPrice) : null,
+    discountPercent: effectiveDiscount,
     freeDelivery: isPromoLive && !!promo.freeDelivery,
     isPromoLive,
     runUntilStopped,
     promoEndsAt: countdownEndsAt ? countdownEndsAt.toISOString() : null,
     promoStartsAt: startsAt ? startsAt.toISOString() : null,
     timeRemainingMs,
+  };
+}
+
+/** Applique dates de boost + compteur (sans enregistrer). */
+export function applyBoostDefaults(promo, hours = DEFAULT_BOOST_HOURS) {
+  const h = Math.min(720, Math.max(1, Number(hours) || DEFAULT_BOOST_HOURS));
+  const now = new Date();
+  const end = new Date(now.getTime() + h * 3600 * 1000);
+  const pad = (n) => String(n).padStart(2, '0');
+  const toLocal = (d) =>
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+  return {
+    ...promo,
+    active: true,
+    runUntilStopped: promo.runUntilStopped !== false,
+    startsAt: promo.startsAt || toLocal(now),
+    endsAt: promo.endsAt || toLocal(end),
+    boostHours: h,
+  };
+}
+
+export function promoPayloadFromForm(promo) {
+  const p = promo || {};
+  const priceMode = p.priceMode === 'manual' ? 'manual' : 'percent';
+  const manualRaw = p.manualPrice;
+  const manualPrice =
+    manualRaw === '' || manualRaw == null ? null : Math.max(0, Number(manualRaw));
+  return {
+    active: !!p.active,
+    priceMode,
+    discountPercent: Math.min(100, Math.max(0, Number(p.discountPercent) || 0)),
+    manualPrice: Number.isFinite(manualPrice) ? manualPrice : null,
+    freeDelivery: !!p.freeDelivery,
+    startsAt: p.startsAt ? new Date(p.startsAt).toISOString() : null,
+    endsAt: p.endsAt ? new Date(p.endsAt).toISOString() : null,
+    runUntilStopped: p.runUntilStopped !== false,
   };
 }
 
