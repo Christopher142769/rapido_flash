@@ -48,8 +48,13 @@ function normalizeCopySections(sections) {
 }
 
 function normalizeGalleryImages(images, mainImage) {
-  const list = Array.isArray(images) ? images.filter(Boolean) : [];
-  const main = mainImage || list[0] || null;
+  const list = Array.isArray(images)
+    ? images
+        .map((v) => (typeof v === 'string' ? v.trim() : ''))
+        .filter(Boolean)
+    : [];
+  const safeMain = typeof mainImage === 'string' ? mainImage.trim() : '';
+  const main = safeMain || list[0] || null;
   const ordered = [];
   if (main) ordered.push(main);
   for (const url of list) {

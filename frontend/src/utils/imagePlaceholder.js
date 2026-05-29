@@ -43,8 +43,9 @@ export function generatePlaceholderSVG(color, width = 400, height = 300, text = 
 
 // Obtenir l'URL de l'image ou le placeholder
 export function getImageUrl(image, plat, baseUrl = '') {
-  if (image && !image.includes('placeholder.com')) {
-    return image.startsWith('http') ? image : `${baseUrl}${image}`;
+  const src = typeof image === 'string' ? image.trim() : '';
+  if (src && !src.includes('placeholder.com')) {
+    return src.startsWith('http') ? src : `${baseUrl}${src}`;
   }
   // Générer un placeholder coloré
   const color = getPlaceholderColor(plat);

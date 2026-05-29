@@ -64,9 +64,11 @@ function toDatetimeLocal(iso) {
 
 function mergeGallery(mainImage, images) {
   const urls = [];
-  if (mainImage) urls.push(mainImage);
+  if (typeof mainImage === 'string' && mainImage.trim()) urls.push(mainImage.trim());
   for (const u of images || []) {
-    if (u && !urls.includes(u)) urls.push(u);
+    if (typeof u !== 'string') continue;
+    const clean = u.trim();
+    if (clean && !urls.includes(clean)) urls.push(clean);
   }
   return urls;
 }
@@ -112,6 +114,7 @@ export default function ShopDashboard() {
   };
 
   const openEdit = (p) => {
+    const safeGallery = mergeGallery(p.mainImage, Array.isArray(p.images) ? p.images : []);
     setEditingId(p._id);
     setForm({
       name: p.name || '',
@@ -120,8 +123,8 @@ export default function ShopDashboard() {
       basePrice: String(p.basePrice ?? ''),
       quantityUnit: normalizeShopQuantityUnit(p.quantityUnit),
       published: !!p.published,
-      mainImage: p.mainImage || '',
-      images: Array.isArray(p.images) ? p.images : [],
+      mainImage: safeGallery[0] || '',
+      images: safeGallery.slice(1),
       copySections:
         p.copySections?.length > 0
           ? p.copySections.map((s) => normalizeCopyBlockForForm(s))
@@ -147,21 +150,27 @@ export default function ShopDashboard() {
   );
 
   const onMediaChosen = (path) => {
+    const cleanPath = typeof path === 'string' ? path.trim() : '';
+    if (!cleanPath) {
+      setMediaPickerOpen(false);
+      setMediaPickerTarget(null);
+      return;
+    }
     if (mediaPickerTarget?.kind === 'gallery') {
       setForm((f) => {
-        const images = f.images.includes(path) ? f.images : [...f.images, path];
-        const mainImage = f.mainImage || path;
+        const images = f.images.includes(cleanPath) ? f.images : [...f.images, cleanPath];
+        const mainImage = f.mainImage || cleanPath;
         return { ...f, images, mainImage };
       });
     } else if (mediaPickerTarget?.kind === 'block') {
       const idx = mediaPickerTarget.index;
       setForm((f) => {
         const copySections = [...f.copySections];
-        copySections[idx] = { ...copySections[idx], mediaUrl: path };
+        copySections[idx] = { ...copySections[idx], mediaUrl: cleanPath };
         return { ...f, copySections };
       });
     } else {
-      setForm((f) => ({ ...f, mainImage: path }));
+      setForm((f) => ({ ...f, mainImage: cleanPath }));
     }
     setMediaPickerOpen(false);
     setMediaPickerTarget(null);
@@ -236,8 +245,10 @@ export default function ShopDashboard() {
   };
 
   const removeGalleryImage = (url) => {
+    const target = typeof url === 'string' ? url.trim() : '';
+    if (!target) return;
     setForm((f) => {
-      const remaining = mergeGallery(f.mainImage, f.images).filter((u) => u !== url);
+      const remaining = mergeGallery(f.mainImage, f.images).filter((u) => u !== target);
       return { mainImage: remaining[0] || '', images: remaining.slice(1) };
     });
   };
