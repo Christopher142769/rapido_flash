@@ -106,6 +106,7 @@ app.use('/uploads/categories-domaine', express.static(path.join(__dirname, 'uplo
 app.use('/uploads/categories-produit', express.static(path.join(__dirname, 'uploads/categories-produit')));
 app.use('/uploads/produits', express.static(path.join(__dirname, 'uploads/produits')));
 app.use('/uploads/medias', express.static(path.join(__dirname, 'uploads/medias')));
+app.use('/uploads/custom-forms', express.static(path.join(__dirname, 'uploads/custom-forms')));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -128,6 +129,7 @@ app.use('/api/promos', require('./routes/promos'));
 app.use('/api/account-requests', require('./routes/accountRequests'));
 app.use('/api/shop-products', require('./routes/shopProducts'));
 app.use('/api/shop-orders', require('./routes/shopOrders'));
+app.use('/api/custom-forms', require('./routes/customForms'));
 
 // Healthcheck Render
 app.get('/healthz', (req, res) => {

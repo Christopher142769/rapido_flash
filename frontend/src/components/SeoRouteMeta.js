@@ -218,6 +218,13 @@ function metaForPath(pathname) {
   if (pathname === '/loading') {
     return { title: 'Chargement — Rapido Flash', description: DEFAULT_DESC, robots: 'noindex, nofollow' };
   }
+  if (pathname.startsWith('/form/') || pathname.startsWith('/formulaire/')) {
+    return {
+      title: 'Formulaire — RAPIDO',
+      description: 'Formulaire Rapido Flash.',
+      robots: 'noindex, nofollow',
+    };
+  }
   if (pathname.startsWith('/recrutement')) {
     return {
       title: 'RAPIDO · Manager de Plateforme — Recrutement 2026',

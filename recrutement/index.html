@@ -515,9 +515,8 @@
     }
   }
   const MERCI_URL = getMerciUrl();
-  /* Configuration obligatoire côté Google Forms (une seule fois) :
-     Formulaire → Paramètres (engrenage) → Présentation → activer « Rediriger vers une URL »
-     → coller exactement : MERCI_URL (prod : https://rapido.bj/recrutement/merci) */
+  /* Google Forms : Settings → Presentation → AFTER SUBMISSION → Confirmation message → Edit
+     Coller MERCI_URL dans le message (Google ne redirige pas automatiquement sans add-on). */
 
   document.querySelectorAll("[data-cta]").forEach((a) => {
     a.setAttribute("href", FORM_URL);

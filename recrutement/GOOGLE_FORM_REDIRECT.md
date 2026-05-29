@@ -1,41 +1,53 @@
-# Redirection Google Form → page merci
+# Après envoi du Google Form → page merci Rapido
 
-Après un envoi réussi du formulaire, le candidat doit arriver sur la page de remerciement Rapido.
+## Où configurer (interface actuelle)
 
-## URL à configurer dans Google Forms
+Tu es au bon endroit sur ta capture :
 
-**Production (à utiliser dans le formulaire) :**
+1. Onglet **Settings** (Paramètres) — en haut du formulaire  
+2. Section **Presentation** (Présentation) — déjà ouverte  
+3. Bloc **AFTER SUBMISSION** (Après l’envoi)  
+4. Ligne **Confirmation message** → cliquer **Edit** (Modifier)
+
+C’est **ici** que tu configures le message affiché après un envoi réussi.
+
+> **Important :** Google Forms standard **ne propose pas** de redirection automatique vers une URL externe (pas de case « Rediriger vers une URL »). Il faut soit mettre un **lien cliquable** dans le message de confirmation, soit utiliser une extension (voir plus bas).
+
+---
+
+## Option recommandée (gratuite) — Lien dans le message de confirmation
+
+1. **Settings** → **Presentation** → **Confirmation message** → **Edit**
+2. Remplace le texte par (ou adapte) :
 
 ```
+Merci, votre candidature a bien été enregistrée.
+
+Pour accéder à la page de confirmation Rapido, cliquez sur le lien ci-dessous :
+
 https://rapido.bj/recrutement/merci
 ```
 
-Si tu utilises aussi `rapido.online`, Google Forms n’accepte qu’**une** URL de redirection : garde `rapido.bj` (la page merci fonctionne pareil).
+3. **Save** (Enregistrer)
 
-**Test en local :**
+Google transforme en général l’URL en lien cliquable. Le candidat clique une fois après **Envoyer** et arrive sur la page merci.
 
-```
-http://localhost:3000/recrutement/merci
-```
+**Test :** https://rapido.bj/recrutement/merci
 
-## Étapes dans Google Forms (à faire une fois)
+---
 
-1. Ouvre le formulaire en édition : [forms.gle/zbSuG4Ernog2aZdR6](https://forms.gle/zbSuG4Ernog2aZdR6) → icône **crayon** / « Modifier le formulaire ».
-2. Clique sur **Paramètres** (engrenage en haut).
-3. Onglet **Présentation**.
-4. Coche **Rediriger vers une URL** (ou « Redirect to a URL »).
-5. Colle : `https://rapido.bj/recrutement/merci`
-6. Enregistre.
+## Option redirection automatique (sans clic)
 
-## Parcours candidat
+Google Forms seul ne le permet pas. Possibilités :
 
-1. `/recrutement` → clic **Postuler**
-2. Formulaire Google (même onglet)
-3. Clic **Envoyer** → Google redirige vers `/recrutement/merci` (page `merci.html`)
+| Solution | Effort |
+|----------|--------|
+| Extension **Formfacade** (Google Workspace Marketplace) | Add-on → réglage « Redirect to a webpage » sur le bouton Envoyer |
+| Formulaire hébergé sur le site (autre outil : Tally, Jotform, etc.) | Recréer le formulaire |
+| Message de confirmation + lien (ci-dessus) | 2 minutes |
 
-## Vérification
+---
 
-- Envoie une réponse test depuis le formulaire.
-- Tu dois voir la page « Merci. Votre dossier est entre nos mains. » avec le sceau vert.
+## Parcours candidat (avec lien dans le message)
 
-Si tu restes sur l’écran de confirmation Google sans redirection, l’option **Rediriger vers une URL** n’est pas activée ou l’URL est incorrecte.
+`/recrutement` → **Postuler** → formulaire Google → **Envoyer** → message Google → **clic sur le lien** → `/recrutement/merci`

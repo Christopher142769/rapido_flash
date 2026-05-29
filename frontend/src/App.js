@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ModalProvider } from './context/ModalContext';
 import { LanguageProvider } from './context/LanguageContext';
@@ -25,6 +25,8 @@ import ReceiptPage from './pages/client/ReceiptPage';
 import Settings from './pages/client/Settings';
 import AccountDeletion from './pages/AccountDeletion';
 import RecrutementPage from './pages/RecrutementPage';
+import CustomFormsDashboard from './pages/restaurant/CustomFormsDashboard';
+import PublicCustomFormPage from './pages/public/PublicCustomFormPage';
 
 // Pages Restaurant
 import Dashboard from './pages/restaurant/Dashboard';
@@ -82,9 +84,15 @@ function DashboardLegacyRedirect() {
   return <Navigate to={target} replace />;
 }
 
+function FormLegacyRedirect() {
+  const { slug } = useParams();
+  return <Navigate to={`/form/${slug}`} replace />;
+}
+
 function AppRoutes() {
   const location = useLocation();
-  const isRecrutement = location.pathname.startsWith('/recrutement');
+  const isRecrutement =
+    location.pathname.startsWith('/recrutement') || location.pathname.startsWith('/form');
 
   return (
     <MaintenanceGate>
@@ -104,6 +112,8 @@ function AppRoutes() {
         {/* Recrutement : HTML statique recrutement/index.html */}
         <Route path="/recrutement/merci" element={<RecrutementPage page="merci" />} />
         <Route path="/recrutement" element={<RecrutementPage page="index" />} />
+        <Route path="/form/:slug" element={<PublicCustomFormPage />} />
+        <Route path="/formulaire/:slug" element={<FormLegacyRedirect />} />
 
         {/* Home public : découverte sans connexion */}
         <Route path="/home" element={<Home />} />
@@ -147,6 +157,7 @@ function AppRoutes() {
           <Route path="commandes" element={<RestaurantCommandes />} />
           <Route path="bannieres" element={<Bannieres />} />
           <Route path="notifications-push" element={<PushNotificationsDashboard />} />
+          <Route path="formulaires" element={<CustomFormsDashboard />} />
           <Route path="gestionnaires" element={<Gestionnaires />} />
           <Route path="avis" element={<RestaurantAvis />} />
           <Route path="messages" element={<RestaurantMessages />} />

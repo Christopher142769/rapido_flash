@@ -78,4 +78,37 @@ const sendDashboardLoginCode = async (email, code) => {
   return { sent: true };
 };
 
-module.exports = { sendLoginCode, sendDashboardLoginCode };
+const sendCustomFormNotification = async ({ to, subject, text, html }) => {
+  const recipients = Array.isArray(to) ? to.filter(Boolean) : [to].filter(Boolean);
+  if (!recipients.length) return { sent: false, error: 'no_recipients' };
+
+  const hasSmtp = process.env.SMTP_HOST && process.env.SMTP_USER;
+
+  if (hasSmtp) {
+    try {
+      const nodemailer = require('nodemailer');
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || '587', 10),
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+      const from = process.env.MAIL_FROM || process.env.SMTP_USER;
+      await transporter.sendMail({ from, to: recipients.join(','), subject, text, html });
+      return { sent: true };
+    } catch (err) {
+      console.error('Erreur envoi email formulaire:', err.message);
+      return { sent: false, error: err.message };
+    }
+  }
+
+  console.log('📧 [DEV] Notification formulaire →', recipients.join(', '));
+  console.log(subject);
+  console.log(text);
+  return { sent: true };
+};
+
+module.exports = { sendLoginCode, sendDashboardLoginCode, sendCustomFormNotification };

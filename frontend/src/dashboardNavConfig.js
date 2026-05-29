@@ -17,6 +17,7 @@ import {
   FaInbox,
   FaShoppingBag,
   FaBell,
+  FaWpforms,
 } from 'react-icons/fa';
 
 export const DASHBOARD_HOME_SECTION = 'dashboard_home';
@@ -64,6 +65,13 @@ export function buildDashboardNavItems({ isAdmin, t, canManageMaintenance = fals
       path: '/dashboard/notifications-push',
       section: GESTION_NAV_SECTION,
       Icon: FaBell,
+    },
+    {
+      id: 'formulaires',
+      label: 'Formulaires',
+      path: '/dashboard/formulaires',
+      section: GESTION_NAV_SECTION,
+      Icon: FaWpforms,
     },
   ];
 
