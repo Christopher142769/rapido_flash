@@ -1,5 +1,6 @@
 const { sendCustomFormNotification } = require('../utils/mailer');
 const { getPlatformAdminEmails } = require('../utils/maintenanceAccess');
+const { notifyOrderWhatsApp } = require('./orderNotificationWhatsApp');
 
 /** Si PLATFORM_ADMIN_EMAIL est vide (dev local). */
 const FALLBACK_ORDER_NOTIFY_EMAIL = 'rapido002026@gmail.com';
@@ -69,15 +70,25 @@ async function notifyShopOrderCreated(order) {
     <p style="color:#666;font-size:12px;margin-top:24px">Réf. ${escapeHtml(String(order._id))} — Rapido Flash</p>
   `;
   const text = [
-    'Nouvelle commande Shop express',
+    '🛒 Nouvelle commande Shop express',
+    '',
     `Produit: ${order.productName}`,
     `Quantité: ${order.quantityLabel || order.quantity}`,
     `Total: ${formatCfa(order.totalPrice)}`,
+    order.isPromoLive ? `Promo: −${order.discountPercent || 0}%` : null,
+    '',
     `Client: ${clientName}`,
     `Tél: ${c.phone}`,
-    `Adresse: ${address}`,
+    `Livraison: ${address}`,
+    '',
     `Dashboard: ${dashUrl}`,
-  ].join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  void notifyOrderWhatsApp(text).catch((err) => {
+    console.error('Notification WhatsApp commande Shop:', err.message);
+  });
 
   return sendToOrderInbox({ subject, html, text });
 }
@@ -131,16 +142,31 @@ async function notifyCommandeCreated(commande, restaurant) {
     <p style="margin-top:20px"><a href="${escapeHtml(dashUrl)}" style="color:#c76d2e;font-weight:700">Ouvrir le dashboard Commandes</a></p>
     <p style="color:#666;font-size:12px;margin-top:24px">Réf. ${escapeHtml(String(commande._id))} — Rapido Flash</p>
   `;
+  const itemsText = formatCommandeLines(commande)
+    .replace(/<br\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/• /g, '- ');
+
   const text = [
-    'Nouvelle commande application',
+    '🛒 Nouvelle commande application',
+    '',
     `Structure: ${restoName}`,
     `Total: ${formatCfa(commande.total)}`,
     `Paiement: ${modeLabel}`,
+    '',
+    'Articles:',
+    itemsText,
+    '',
     `Client: ${clientName}`,
     `Tél: ${clientPhone}`,
     `Adresse: ${addressLine}`,
+    '',
     `Dashboard: ${dashUrl}`,
   ].join('\n');
+
+  void notifyOrderWhatsApp(text).catch((err) => {
+    console.error('Notification WhatsApp commande app:', err.message);
+  });
 
   return sendToOrderInbox({ subject, html, text });
 }

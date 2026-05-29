@@ -28,6 +28,29 @@ function filePublicUrl(req, filename) {
   return `${base.replace(/\/$/, '')}/uploads/custom-forms/${filename}`;
 }
 
+const FIELD_TYPES = ['text', 'textarea', 'email', 'image', 'pdf', 'choice', 'checkbox'];
+
+function normalizeOptions(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((o) => ({
+      id: o.id || uid(),
+      label: String(o.label || '').trim().slice(0, 200),
+    }))
+    .filter((o) => o.label);
+}
+
+function normalizeSettings(raw) {
+  const s = raw && typeof raw === 'object' ? raw : {};
+  return {
+    showProgressBar: s.showProgressBar !== false,
+    collectContact: s.collectContact !== false,
+    requireName: !!s.requireName,
+    requireEmail: !!s.requireEmail,
+    confirmationMessage: String(s.confirmationMessage || '').slice(0, 2000),
+  };
+}
+
 function normalizeSections(sections) {
   if (!Array.isArray(sections)) return [];
   return sections.map((sec) => ({
@@ -40,6 +63,7 @@ function normalizeSections(sections) {
           id: b.id || uid(),
           kind: 'table',
           label: String(b.label || '').trim().slice(0, 300),
+          required: !!b.required,
           columns: (b.columns || []).map((c) => ({
             id: c.id || uid(),
             label: String(c.label || '').trim().slice(0, 120),
@@ -47,15 +71,76 @@ function normalizeSections(sections) {
           rowCount: Math.min(30, Math.max(1, parseInt(b.rowCount, 10) || 3)),
         };
       }
-      return {
+      const fieldType = FIELD_TYPES.includes(b.fieldType) ? b.fieldType : 'text';
+      const block = {
         id: b.id || uid(),
         kind: 'field',
-        fieldType: ['text', 'textarea', 'image', 'pdf'].includes(b.fieldType) ? b.fieldType : 'text',
+        fieldType,
         label: String(b.label || '').trim().slice(0, 300),
         required: !!b.required,
       };
+      if (fieldType === 'choice' || fieldType === 'checkbox') {
+        const options = normalizeOptions(b.options);
+        block.options = options.length ? options : [{ id: uid(), label: 'Option 1' }];
+      }
+      return block;
     }),
   }));
+}
+
+function validateSubmission(form, payload, fileMap) {
+  const settings = normalizeSettings(form.settings);
+  const respondentName = String(payload.respondentName || '').trim();
+  const respondentEmail = String(payload.respondentEmail || '').trim().toLowerCase();
+
+  if (settings.collectContact && settings.requireName && !respondentName) {
+    return 'Le nom est obligatoire';
+  }
+  if (settings.collectContact && settings.requireEmail) {
+    if (!respondentEmail) return 'L’e-mail est obligatoire';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(respondentEmail)) return 'E-mail invalide';
+  }
+
+  const answerMap = new Map();
+  (Array.isArray(payload.answers) ? payload.answers : []).forEach((a) => {
+    answerMap.set(`${a.sectionId}_${a.blockId}`, a);
+  });
+
+  for (const sec of form.sections || []) {
+    for (const block of sec.blocks || []) {
+      const key = `${sec.id}_${block.id}`;
+      const a = answerMap.get(key) || {};
+
+      if (block.kind === 'table') {
+        const rows = a.tableRows || [];
+        const hasData = rows.some((row) => row.some((c) => String(c).trim()));
+        if (block.required && !hasData) {
+          return `Le tableau « ${block.label || sec.title} » est obligatoire`;
+        }
+        continue;
+      }
+
+      if (!block.required) continue;
+
+      const fileKey = `file_${sec.id}_${block.id}`;
+      const hasFile = !!fileMap[fileKey];
+
+      if (block.fieldType === 'choice') {
+        const sel = (a.selectedValues || []).filter(Boolean);
+        if (!sel.length) return `Le champ « ${block.label} » est obligatoire`;
+      } else if (block.fieldType === 'checkbox') {
+        const sel = (a.selectedValues || []).filter(Boolean);
+        if (!sel.length) return `Sélectionnez au moins une réponse pour « ${block.label} »`;
+      } else if (block.fieldType === 'image' || block.fieldType === 'pdf') {
+        if (!hasFile) return `Le fichier « ${block.label} » est obligatoire`;
+      } else {
+        const tv = String(a.textValue || '').trim();
+        if (!tv) return `Le champ « ${block.label} » est obligatoire`;
+      }
+    }
+  }
+
+  return null;
 }
 
 function normalizeRedirectUrl(raw) {
@@ -158,17 +243,29 @@ router.post('/public/:slug/submit', uploadCustomForm.any(), async (req, res) => 
       };
     });
 
+    const validationError = validateSubmission(form, payload, fileMap);
+    if (validationError) {
+      return res.status(400).json({ message: validationError });
+    }
+
     const answers = rawAnswers.map((a) => {
+      const selectedValues = Array.isArray(a.selectedValues)
+        ? a.selectedValues.map((v) => String(v).trim()).filter(Boolean)
+        : [];
       const base = {
         sectionId: a.sectionId,
         blockId: a.blockId,
         label: String(a.label || ''),
         fieldType: a.fieldType || 'text',
         textValue: String(a.textValue || ''),
+        selectedValues,
         fileUrl: '',
         fileName: '',
         tableRows: a.tableRows || undefined,
       };
+      if (selectedValues.length) {
+        base.textValue = selectedValues.join(', ');
+      }
       const key = `file_${a.sectionId}_${a.blockId}`;
       if (fileMap[key]) {
         base.fileUrl = fileMap[key].url;
@@ -229,6 +326,7 @@ router.post('/', auth, isRestaurant, async (req, res) => {
       notifyEmails: parseNotifyEmails(req.body.notifyEmails),
       redirectUrl: normalizeRedirectUrl(req.body.redirectUrl),
       isPublished: !!req.body.isPublished,
+      settings: normalizeSettings(req.body.settings),
       sections: normalizeSections(req.body.sections),
       createdBy: req.user._id,
     });
@@ -248,6 +346,7 @@ router.put('/:id', auth, isRestaurant, async (req, res) => {
     if (req.body.notifyEmails != null) form.notifyEmails = parseNotifyEmails(req.body.notifyEmails);
     if (req.body.redirectUrl != null) form.redirectUrl = normalizeRedirectUrl(req.body.redirectUrl);
     if (req.body.isPublished != null) form.isPublished = !!req.body.isPublished;
+    if (req.body.settings != null) form.settings = normalizeSettings(req.body.settings);
     if (req.body.sections != null) form.sections = normalizeSections(req.body.sections);
     if (req.body.slug != null) {
       const next = slugify(req.body.slug);

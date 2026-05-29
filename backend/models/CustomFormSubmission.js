@@ -7,6 +7,7 @@ const customFormAnswerSchema = new mongoose.Schema(
     label: { type: String, default: '' },
     fieldType: { type: String, default: 'text' },
     textValue: { type: String, default: '' },
+    selectedValues: [{ type: String }],
     fileUrl: { type: String, default: '' },
     fileName: { type: String, default: '' },
     tableRows: [[String]],

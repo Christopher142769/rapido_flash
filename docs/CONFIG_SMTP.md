@@ -1,7 +1,7 @@
 # Configuration SMTP (envoi du code de connexion)
 
 Ajoute ces variables dans ton fichier **`.env`** à la racine du projet (`rapido_flash/.env`).  
-Si `SMTP_HOST` et `SMTP_USER` sont renseignés, les codes de connexion, les réponses aux formulaires personnalisés et les **notifications de commandes** (Shop + app) sont envoyés par e-mail. Destinataires des commandes : `PLATFORM_ADMIN_EMAIL` (voir [CONFIG_MAINTENANCE.md](./CONFIG_MAINTENANCE.md)). Sinon, le code s’affiche dans la console du backend (mode dev).
+Si `SMTP_HOST` et `SMTP_USER` sont renseignés, les codes de connexion, les réponses aux formulaires personnalisés et les **notifications de commandes** (Shop + app) sont envoyés par e-mail. Destinataires des commandes : `PLATFORM_ADMIN_EMAIL` (voir [CONFIG_MAINTENANCE.md](./CONFIG_MAINTENANCE.md)). Les **alertes WhatsApp** utilisent `RAPIDO_WHATSAPP` (+229 40 39 39 94 par défaut) — voir [CONFIG_WHATSAPP_COMMANDES.md](./CONFIG_WHATSAPP_COMMANDES.md). Sinon, le code s’affiche dans la console du backend (mode dev).
 
 ## Variables
 

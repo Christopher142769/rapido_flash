@@ -12,7 +12,11 @@ import {
   FaFilePdf,
   FaAlignLeft,
   FaFont,
+  FaListUl,
+  FaCheckSquare,
+  FaEnvelope,
 } from 'react-icons/fa';
+import { defaultFormSettings } from '../../utils/customFormSteps';
 import { useModal } from '../../context/ModalContext';
 import { getFormPublicUrls } from '../../utils/formPublicUrls';
 import './CustomFormsDashboard.css';
@@ -28,6 +32,14 @@ const emptySection = () => ({
   blocks: [],
 });
 
+const defaultSettings = () => ({
+  showProgressBar: true,
+  collectContact: true,
+  requireName: false,
+  requireEmail: false,
+  confirmationMessage: '',
+});
+
 const emptyForm = () => ({
   title: '',
   slug: '',
@@ -35,15 +47,29 @@ const emptyForm = () => ({
   notifyEmails: '',
   redirectUrl: '',
   isPublished: false,
+  settings: defaultSettings(),
   sections: [emptySection()],
 });
 
 const FIELD_ICONS = {
   text: FaFont,
   textarea: FaAlignLeft,
+  email: FaEnvelope,
   image: FaImage,
   pdf: FaFilePdf,
+  choice: FaListUl,
+  checkbox: FaCheckSquare,
   table: FaTable,
+};
+
+const FIELD_TYPE_LABELS = {
+  text: 'Texte court',
+  textarea: 'Texte long',
+  email: 'E-mail',
+  image: 'Image',
+  pdf: 'PDF',
+  choice: 'Choix unique',
+  checkbox: 'Cases à cocher',
 };
 
 function FieldTypeSelect({ value, onChange }) {
@@ -51,9 +77,35 @@ function FieldTypeSelect({ value, onChange }) {
     <select className="cforms-select" value={value} onChange={(e) => onChange(e.target.value)} aria-label="Type de réponse">
       <option value="text">Texte court</option>
       <option value="textarea">Texte long</option>
+      <option value="email">E-mail</option>
+      <option value="choice">Choix unique (une réponse)</option>
+      <option value="checkbox">Choix multiples</option>
       <option value="image">Image</option>
       <option value="pdf">PDF</option>
     </select>
+  );
+}
+
+function OptionsEditor({ options, onChange }) {
+  const lines = (options || []).map((o) => o.label).join('\n');
+  return (
+    <div>
+      <label className="cforms-label">Options (une par ligne)</label>
+      <textarea
+        className="cforms-textarea"
+        rows={4}
+        value={lines}
+        placeholder={'Option A\nOption B\nOption C'}
+        onChange={(e) => {
+          const opts = e.target.value
+            .split('\n')
+            .map((label) => label.trim())
+            .filter(Boolean)
+            .map((label) => ({ id: newId(), label }));
+          onChange(opts.length ? opts : [{ id: newId(), label: 'Option 1' }]);
+        }}
+      />
+    </div>
   );
 }
 
@@ -111,6 +163,7 @@ export default function CustomFormsDashboard() {
       notifyEmails: (form.notifyEmails || []).join(', '),
       redirectUrl: form.redirectUrl || '',
       isPublished: !!form.isPublished,
+      settings: defaultFormSettings(form.settings),
       sections: (form.sections || []).length ? form.sections : [emptySection()],
     });
     setTab('forms');
@@ -140,6 +193,7 @@ export default function CustomFormsDashboard() {
         notifyEmails: draft.notifyEmails,
         redirectUrl: draft.redirectUrl,
         isPublished: draft.isPublished,
+        settings: draft.settings,
         sections: draft.sections,
       };
       if (selectedId) {
@@ -273,8 +327,8 @@ export default function CustomFormsDashboard() {
       <header className="cforms-hero">
         <h1>Formulaires</h1>
         <p>
-          Créez des formulaires sur mesure : sections illustrées, champs texte / image / PDF et tableaux.
-          Les réponses arrivent par e-mail et dans l’onglet Réponses.
+          Créez des formulaires type Google Forms : sections, texte, choix unique / multiple, fichiers et tableaux.
+          La page publique affiche une question à la fois (style Typeform) avec barre de progression.
         </p>
         <div className="cforms-stats">
           <div className="cforms-stat">
@@ -379,6 +433,12 @@ export default function CustomFormsDashboard() {
                         <img src={a.fileUrl} alt="" className="cforms-img-preview" />
                       ) : null}
                     </>
+                  ) : a.selectedValues?.length ? (
+                    <ul className="cforms-answer-list">
+                      {a.selectedValues.map((v, vi) => (
+                        <li key={vi}>{v}</li>
+                      ))}
+                    </ul>
                   ) : (
                     <pre>{a.textValue || '—'}</pre>
                   )}
@@ -519,6 +579,82 @@ export default function CustomFormsDashboard() {
                   </div>
                 </div>
 
+                <div className="cforms-settings-box">
+                  <h3>Présentation (page publique)</h3>
+                  <p className="cforms-hint">Comme Google Forms : barre de progression, coordonnées, message de confirmation.</p>
+                  <label className="cforms-check">
+                    <input
+                      type="checkbox"
+                      checked={!!draft.settings?.showProgressBar}
+                      onChange={(e) =>
+                        setDraft((d) => ({
+                          ...d,
+                          settings: { ...d.settings, showProgressBar: e.target.checked },
+                        }))
+                      }
+                    />
+                    Afficher la barre de progression
+                  </label>
+                  <label className="cforms-check">
+                    <input
+                      type="checkbox"
+                      checked={draft.settings?.collectContact !== false}
+                      onChange={(e) =>
+                        setDraft((d) => ({
+                          ...d,
+                          settings: { ...d.settings, collectContact: e.target.checked },
+                        }))
+                      }
+                    />
+                    Demander nom et e-mail en début de formulaire
+                  </label>
+                  {draft.settings?.collectContact !== false ? (
+                    <>
+                      <label className="cforms-check">
+                        <input
+                          type="checkbox"
+                          checked={!!draft.settings?.requireName}
+                          onChange={(e) =>
+                            setDraft((d) => ({
+                              ...d,
+                              settings: { ...d.settings, requireName: e.target.checked },
+                            }))
+                          }
+                        />
+                        Nom obligatoire
+                      </label>
+                      <label className="cforms-check">
+                        <input
+                          type="checkbox"
+                          checked={!!draft.settings?.requireEmail}
+                          onChange={(e) =>
+                            setDraft((d) => ({
+                              ...d,
+                              settings: { ...d.settings, requireEmail: e.target.checked },
+                            }))
+                          }
+                        />
+                        E-mail obligatoire
+                      </label>
+                    </>
+                  ) : null}
+                  <label className="cforms-label" style={{ marginTop: 12 }}>
+                    Message de confirmation (si pas de redirection)
+                  </label>
+                  <textarea
+                    className="cforms-textarea"
+                    rows={2}
+                    value={draft.settings?.confirmationMessage || ''}
+                    placeholder="Merci pour votre candidature…"
+                    onChange={(e) =>
+                      setDraft((d) => ({
+                        ...d,
+                        settings: { ...d.settings, confirmationMessage: e.target.value },
+                      }))
+                    }
+                  />
+                </div>
+
                 <div className="cforms-publish-row">
                   <div>
                     <strong>Publier le formulaire</strong>
@@ -600,7 +736,7 @@ export default function CustomFormsDashboard() {
                           <div className="cforms-block-header">
                             <span className="cforms-block-type">
                               <TypeIcon style={{ marginRight: 4 }} />
-                              {block.kind === 'table' ? 'Tableau' : block.fieldType}
+                              {block.kind === 'table' ? 'Tableau' : FIELD_TYPE_LABELS[block.fieldType] || block.fieldType}
                             </span>
                             <button
                               type="button"
@@ -647,6 +783,14 @@ export default function CustomFormsDashboard() {
                                 value={block.rowCount || 3}
                                 onChange={(e) => updateBlock(sIdx, bIdx, { rowCount: parseInt(e.target.value, 10) || 3 })}
                               />
+                              <label className="cforms-check" style={{ marginTop: 10 }}>
+                                <input
+                                  type="checkbox"
+                                  checked={!!block.required}
+                                  onChange={(e) => updateBlock(sIdx, bIdx, { required: e.target.checked })}
+                                />
+                                Tableau obligatoire
+                              </label>
                             </>
                           ) : (
                             <div className="cforms-block-fields">
@@ -662,9 +806,28 @@ export default function CustomFormsDashboard() {
                                 <label className="cforms-label">Type</label>
                                 <FieldTypeSelect
                                   value={block.fieldType}
-                                  onChange={(v) => updateBlock(sIdx, bIdx, { fieldType: v })}
+                                  onChange={(v) => {
+                                    const patch = { fieldType: v };
+                                    if (v === 'choice' || v === 'checkbox') {
+                                      patch.options = block.options?.length
+                                        ? block.options
+                                        : [
+                                            { id: newId(), label: 'Option 1' },
+                                            { id: newId(), label: 'Option 2' },
+                                          ];
+                                    }
+                                    updateBlock(sIdx, bIdx, patch);
+                                  }}
                                 />
                               </div>
+                              {(block.fieldType === 'choice' || block.fieldType === 'checkbox') && (
+                                <div className="cforms-field-full">
+                                  <OptionsEditor
+                                    options={block.options}
+                                    onChange={(options) => updateBlock(sIdx, bIdx, { options })}
+                                  />
+                                </div>
+                              )}
                               <label className="cforms-check">
                                 <input
                                   type="checkbox"

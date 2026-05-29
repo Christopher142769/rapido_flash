@@ -28,6 +28,10 @@ function buildAnswersHtml(answers) {
         const name = escapeHtml(a.fileName || 'Fichier');
         return `<div style="margin-bottom:12px"><strong>${label}</strong><br/><a href="${link}">${name}</a></div>`;
       }
+      if (a.selectedValues?.length) {
+        const list = a.selectedValues.map((v) => escapeHtml(v)).join('<br/>');
+        return `<div style="margin-bottom:12px"><strong>${label}</strong><br/>${list}</div>`;
+      }
       const val = escapeHtml(a.textValue || '—');
       return `<div style="margin-bottom:12px"><strong>${label}</strong><br/>${val.replace(/\n/g, '<br/>')}</div>`;
     })
@@ -58,6 +62,7 @@ async function notifyFormSubmission({ form, submission }) {
         return `${a.label}:\n${a.tableRows.map((r) => r.join(' | ')).join('\n')}`;
       }
       if (a.fileUrl) return `${a.label}: ${a.fileUrl}`;
+      if (a.selectedValues?.length) return `${a.label}: ${a.selectedValues.join(', ')}`;
       return `${a.label}: ${a.textValue || '—'}`;
     }),
   ];

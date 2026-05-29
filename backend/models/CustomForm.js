@@ -1,5 +1,13 @@
 const mongoose = require('mongoose');
 
+const customFormOptionSchema = new mongoose.Schema(
+  {
+    id: { type: String, required: true },
+    label: { type: String, default: '', trim: true },
+  },
+  { _id: false }
+);
+
 const customFormSectionSchema = new mongoose.Schema(
   {
     id: { type: String, required: true },
@@ -9,13 +17,29 @@ const customFormSectionSchema = new mongoose.Schema(
       {
         id: { type: String, required: true },
         kind: { type: String, enum: ['field', 'table'], required: true },
-        fieldType: { type: String, enum: ['text', 'textarea', 'image', 'pdf'], default: 'text' },
+        fieldType: {
+          type: String,
+          enum: ['text', 'textarea', 'email', 'image', 'pdf', 'choice', 'checkbox'],
+          default: 'text',
+        },
         label: { type: String, default: '' },
         required: { type: Boolean, default: false },
+        options: [customFormOptionSchema],
         columns: [{ id: String, label: String }],
         rowCount: { type: Number, default: 3, min: 1, max: 30 },
       },
     ],
+  },
+  { _id: false }
+);
+
+const customFormSettingsSchema = new mongoose.Schema(
+  {
+    showProgressBar: { type: Boolean, default: true },
+    collectContact: { type: Boolean, default: true },
+    requireName: { type: Boolean, default: false },
+    requireEmail: { type: Boolean, default: false },
+    confirmationMessage: { type: String, default: '' },
   },
   { _id: false }
 );
@@ -30,6 +54,7 @@ const customFormSchema = new mongoose.Schema(
     redirectUrl: { type: String, default: '' },
     isPublished: { type: Boolean, default: false },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    settings: { type: customFormSettingsSchema, default: () => ({}) },
     sections: [customFormSectionSchema],
   },
   { timestamps: true }
