@@ -56,6 +56,7 @@ function normalizeSections(sections) {
   return sections.map((sec) => ({
     id: sec.id || uid(),
     title: String(sec.title || '').trim().slice(0, 300),
+    description: String(sec.description || '').slice(0, 8000),
     imageUrl: String(sec.imageUrl || '').slice(0, 2000),
     blocks: (sec.blocks || []).map((b) => {
       if (b.kind === 'table') {
@@ -322,7 +323,7 @@ router.post('/', auth, isRestaurant, async (req, res) => {
     const form = await CustomForm.create({
       title,
       slug,
-      description: String(req.body.description || '').slice(0, 2000),
+      description: String(req.body.description || '').slice(0, 12000),
       notifyEmails: parseNotifyEmails(req.body.notifyEmails),
       redirectUrl: normalizeRedirectUrl(req.body.redirectUrl),
       isPublished: !!req.body.isPublished,
@@ -342,7 +343,7 @@ router.put('/:id', auth, isRestaurant, async (req, res) => {
     if (!form) return res.status(404).json({ message: 'Formulaire introuvable' });
 
     if (req.body.title != null) form.title = String(req.body.title).trim().slice(0, 300);
-    if (req.body.description != null) form.description = String(req.body.description).slice(0, 2000);
+    if (req.body.description != null) form.description = String(req.body.description).slice(0, 12000);
     if (req.body.notifyEmails != null) form.notifyEmails = parseNotifyEmails(req.body.notifyEmails);
     if (req.body.redirectUrl != null) form.redirectUrl = normalizeRedirectUrl(req.body.redirectUrl);
     if (req.body.isPublished != null) form.isPublished = !!req.body.isPublished;

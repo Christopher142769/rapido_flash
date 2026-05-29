@@ -288,6 +288,20 @@
   line-height: 1.45;
 }
 
+.cforms-section-toolbar-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.cforms-section-desc {
+  margin-top: 12px;
+  margin-bottom: 8px;
+}
+
+.cforms-section-desc .cforms-hint {
+  margin: 4px 0 8px;
+}
+
 .cforms-settings-box {
   margin: 20px 0;
   padding: 18px 16px;

@@ -36,7 +36,10 @@ export function buildFormSteps(form) {
   }
 
   for (const sec of form.sections || []) {
-    const hasIntro = String(sec.title || '').trim() || sec.imageUrl;
+    const hasIntro =
+      String(sec.title || '').trim() ||
+      String(sec.description || '').trim() ||
+      sec.imageUrl;
     if (hasIntro) {
       steps.push({
         id: `intro_${sec.id}`,

@@ -12,6 +12,8 @@ const customFormSectionSchema = new mongoose.Schema(
   {
     id: { type: String, required: true },
     title: { type: String, required: true, trim: true },
+    /** Texte d’introduction de la section (HTML limité : gras, liens, etc.) */
+    description: { type: String, default: '' },
     imageUrl: { type: String, default: '' },
     blocks: [
       {

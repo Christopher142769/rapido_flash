@@ -17,6 +17,7 @@ import {
   FaEnvelope,
 } from 'react-icons/fa';
 import { defaultFormSettings } from '../../utils/customFormSteps';
+import FormRichTextEditor from '../../components/forms/FormRichTextEditor';
 import { useModal } from '../../context/ModalContext';
 import { getFormPublicUrls } from '../../utils/formPublicUrls';
 import './CustomFormsDashboard.css';
@@ -28,6 +29,7 @@ const newId = () => Math.random().toString(36).slice(2, 11);
 const emptySection = () => ({
   id: newId(),
   title: '',
+  description: '',
   imageUrl: '',
   blocks: [],
 });
@@ -559,12 +561,12 @@ export default function CustomFormsDashboard() {
                     />
                   </div>
                   <div className="cforms-field-full">
-                    <label className="cforms-label">Description</label>
-                    <textarea
-                      className="cforms-textarea"
+                    <label className="cforms-label">Description (page d’accueil du formulaire)</label>
+                    <FormRichTextEditor
                       value={draft.description}
-                      placeholder="Texte d’introduction affiché en haut du formulaire public"
-                      onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
+                      placeholder="Texte d’introduction : sélectionnez un passage pour le mettre en gras, italique, lien…"
+                      minHeight={120}
+                      onChange={(html) => setDraft((d) => ({ ...d, description: html }))}
                     />
                   </div>
                   <div className="cforms-field-full">
@@ -704,7 +706,7 @@ export default function CustomFormsDashboard() {
                   <div key={sec.id} className="cforms-section">
                     <span className="cforms-section-num">SECTION {sIdx + 1}</span>
                     <div className="cforms-section-toolbar">
-                      <div>
+                      <div className="cforms-section-toolbar-title">
                         <label className="cforms-label">Titre de la section *</label>
                         <input
                           className="cforms-input"
@@ -721,6 +723,18 @@ export default function CustomFormsDashboard() {
                       >
                         <FaTrash />
                       </button>
+                    </div>
+                    <div className="cforms-section-desc">
+                      <label className="cforms-label">Description de la section</label>
+                      <p className="cforms-hint">
+                        Instructions, liens ou texte formaté affiché avant les questions de cette section.
+                      </p>
+                      <FormRichTextEditor
+                        value={sec.description || ''}
+                        placeholder="Texte de la section…"
+                        minHeight={90}
+                        onChange={(html) => updateSection(sIdx, { description: html })}
+                      />
                     </div>
                     <div className="cforms-file-wrap">
                       <label className="cforms-label">Image illustrative (optionnel)</label>

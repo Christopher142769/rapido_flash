@@ -6,6 +6,7 @@ import {
   defaultFormSettings,
   isFileField,
 } from '../../utils/customFormSteps';
+import FormRichHtml from './FormRichHtml';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -425,7 +426,7 @@ export default function SteppedCustomForm({ form, slug, onDone }) {
       return (
         <div className="rform-step-welcome">
           <h1 className="rform-step-title">{step.title}</h1>
-          {step.description ? <p className="rform-step-desc">{step.description}</p> : null}
+          {step.description ? <FormRichHtml html={step.description} className="rform-step-desc rform-rich-html" /> : null}
         </div>
       );
     }
@@ -467,7 +468,10 @@ export default function SteppedCustomForm({ form, slug, onDone }) {
       return (
         <div className="rform-step-section-intro">
           <span className="rform-step-section-tag">Section</span>
-          <h2 className="rform-step-title">{sec.title}</h2>
+          {sec.title ? <h2 className="rform-step-title">{sec.title}</h2> : null}
+          {sec.description ? (
+            <FormRichHtml html={sec.description} className="rform-step-desc rform-rich-html" />
+          ) : null}
           {sec.imageUrl ? <img src={sec.imageUrl} alt="" className="rform-sec-img" /> : null}
         </div>
       );

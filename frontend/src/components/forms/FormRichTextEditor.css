@@ -1,0 +1,86 @@
+.form-rich-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-rich-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-rich-editor-toolbar button {
+  min-width: 34px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--cf-line, #e0d5c8);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--cf-ink, #1c1712);
+}
+
+.form-rich-editor-toolbar button:hover {
+  border-color: var(--cf-bronze, #a8531f);
+  background: rgba(168, 83, 31, 0.08);
+}
+
+.form-rich-editor-sep {
+  width: 1px;
+  height: 22px;
+  background: var(--cf-line, #e0d5c8);
+  margin: 0 2px;
+}
+
+.form-rich-editor-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--cf-ink-mute, #897c6b);
+}
+
+.form-rich-editor-area {
+  padding: 12px 14px;
+  border: 1px solid var(--cf-line, #e0d5c8);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  outline: none;
+  background: #fff;
+}
+
+.form-rich-editor-area:focus {
+  border-color: var(--cf-bronze, #a8531f);
+  box-shadow: 0 0 0 2px rgba(168, 83, 31, 0.12);
+}
+
+.form-rich-editor-area:empty::before {
+  content: attr(data-placeholder);
+  color: var(--cf-ink-mute, #897c6b);
+  pointer-events: none;
+}
+
+.form-rich-editor-area a {
+  color: var(--cf-bronze, #a8531f);
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.form-rich-editor-area .rform-txt-lowercase {
+  text-transform: lowercase;
+}
+
+.form-rich-editor-area .rform-txt-uppercase {
+  text-transform: uppercase;
+}
+
+.form-rich-editor-area .rform-txt-capitalize {
+  text-transform: capitalize;
+}
+
+.form-rich-editor-area .rform-txt-small {
+  font-size: 0.85em;
+  color: var(--cf-ink-mute, #897c6b);
+}
