@@ -1,12 +1,23 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { FaPlus, FaTrash, FaCopy, FaExternalLinkAlt } from 'react-icons/fa';
+import {
+  FaPlus,
+  FaTrash,
+  FaCopy,
+  FaExternalLinkAlt,
+  FaWpforms,
+  FaInbox,
+  FaTable,
+  FaImage,
+  FaFilePdf,
+  FaAlignLeft,
+  FaFont,
+} from 'react-icons/fa';
 import { useModal } from '../../context/ModalContext';
 import { getFormPublicUrls } from '../../utils/formPublicUrls';
 import './CustomFormsDashboard.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const SITE_ORIGIN = typeof window !== 'undefined' ? window.location.origin : '';
 
 const newId = () => Math.random().toString(36).slice(2, 11);
 
@@ -27,9 +38,17 @@ const emptyForm = () => ({
   sections: [emptySection()],
 });
 
+const FIELD_ICONS = {
+  text: FaFont,
+  textarea: FaAlignLeft,
+  image: FaImage,
+  pdf: FaFilePdf,
+  table: FaTable,
+};
+
 function FieldTypeSelect({ value, onChange }) {
   return (
-    <select className="cforms-select" value={value} onChange={(e) => onChange(e.target.value)}>
+    <select className="cforms-select" value={value} onChange={(e) => onChange(e.target.value)} aria-label="Type de réponse">
       <option value="text">Texte court</option>
       <option value="textarea">Texte long</option>
       <option value="image">Image</option>
@@ -49,6 +68,7 @@ export default function CustomFormsDashboard() {
   const [draft, setDraft] = useState(emptyForm());
   const [filterFormId, setFilterFormId] = useState('');
   const [detailSubmission, setDetailSubmission] = useState(null);
+  const [editorOpen, setEditorOpen] = useState(false);
 
   const token = localStorage.getItem('token');
   const authHeaders = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
@@ -79,8 +99,10 @@ export default function CustomFormsDashboard() {
     if (!form) {
       setSelectedId(null);
       setDraft(emptyForm());
+      setEditorOpen(true);
       return;
     }
+    setEditorOpen(true);
     setSelectedId(form._id);
     setDraft({
       title: form.title || '',
@@ -153,7 +175,7 @@ export default function CustomFormsDashboard() {
 
   const copyPublicLink = (slug) => {
     const urls = getFormPublicUrls(slug);
-    const text = urls.length ? urls.join('\n') : `${SITE_ORIGIN}/form/${slug}`;
+    const text = urls.length ? urls.join('\n') : '';
     navigator.clipboard.writeText(text).then(() => showSuccess('Liens copiés'));
   };
 
@@ -243,41 +265,68 @@ export default function CustomFormsDashboard() {
     }
   };
 
+  const isEditing = editorOpen;
+  const publishedCount = forms.filter((f) => f.isPublished).length;
+
   return (
     <div className="dashboard-page cforms-page">
-      <header>
-        <h1 className="text-xl font-bold text-[var(--rf-text-dark)]">Formulaires</h1>
-        <p className="mt-1 text-sm text-[var(--rf-text-muted)]">
-          Créez des formulaires avec sections, champs (texte, image, PDF) ou tableaux. Les réponses sont envoyées par
-          e-mail et listées dans « Réponses ».
+      <header className="cforms-hero">
+        <h1>Formulaires</h1>
+        <p>
+          Créez des formulaires sur mesure : sections illustrées, champs texte / image / PDF et tableaux.
+          Les réponses arrivent par e-mail et dans l’onglet Réponses.
         </p>
+        <div className="cforms-stats">
+          <div className="cforms-stat">
+            <strong>{forms.length}</strong>
+            <span>Formulaires</span>
+          </div>
+          <div className="cforms-stat">
+            <strong>{publishedCount}</strong>
+            <span>Publiés</span>
+          </div>
+          <div className="cforms-stat">
+            <strong>{submissions.length}</strong>
+            <span>Réponses</span>
+          </div>
+        </div>
       </header>
 
-      <div className="cforms-tabs">
-        <button type="button" className={`cforms-tab ${tab === 'forms' ? 'active' : ''}`} onClick={() => setTab('forms')}>
+      <div className="cforms-tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'forms'}
+          className={`cforms-tab ${tab === 'forms' ? 'active' : ''}`}
+          onClick={() => setTab('forms')}
+        >
+          <FaWpforms style={{ marginRight: 6 }} />
           Mes formulaires
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={tab === 'responses'}
           className={`cforms-tab ${tab === 'responses' ? 'active' : ''}`}
           onClick={() => {
             setTab('responses');
             loadSubmissions();
           }}
         >
-          Réponses formulaire
+          <FaInbox style={{ marginRight: 6 }} />
+          Réponses
         </button>
       </div>
 
       {loading ? (
-        <p className="text-sm text-[var(--rf-text-muted)]">Chargement…</p>
+        <div className="cforms-loading">Chargement…</div>
       ) : tab === 'responses' ? (
         <div className="cforms-card">
-          <div className="cforms-field-row" style={{ marginBottom: 12 }}>
-            <div>
+          <div className="cforms-responses-toolbar">
+            <div className="cforms-field-grow">
               <label className="cforms-label">Filtrer par formulaire</label>
               <select className="cforms-select" value={filterFormId} onChange={(e) => setFilterFormId(e.target.value)}>
-                <option value="">Tous</option>
+                <option value="">Tous les formulaires</option>
                 {forms.map((f) => (
                   <option key={f._id} value={f._id}>
                     {f.title}
@@ -292,38 +341,44 @@ export default function CustomFormsDashboard() {
 
           {detailSubmission ? (
             <div className="cforms-detail">
-              <button type="button" className="cforms-btn ghost" style={{ marginBottom: 12 }} onClick={() => setDetailSubmission(null)}>
+              <button type="button" className="cforms-btn ghost" onClick={() => setDetailSubmission(null)}>
                 ← Retour à la liste
               </button>
-              <h3 className="font-bold">{detailSubmission.formTitle}</h3>
-              <p className="text-sm text-[var(--rf-text-muted)]">
-                {detailSubmission.respondentName || '—'} · {detailSubmission.respondentEmail || '—'} ·{' '}
-                {new Date(detailSubmission.createdAt).toLocaleString('fr-FR')}
-              </p>
+              <div className="cforms-detail-header">
+                <span className="cforms-badge email-ok">{detailSubmission.formTitle}</span>
+                <h3>{detailSubmission.respondentName || 'Sans nom'}</h3>
+                <p className="cforms-response-meta">
+                  {detailSubmission.respondentEmail || '—'} ·{' '}
+                  {new Date(detailSubmission.createdAt).toLocaleString('fr-FR')}
+                  {detailSubmission.emailSent ? ' · E-mail envoyé' : ''}
+                </p>
+              </div>
               {detailSubmission.answers?.map((a, i) => (
-                <div key={i} style={{ marginTop: 12 }}>
+                <div key={i} className="cforms-answer-card">
                   <strong>{a.label}</strong>
                   {a.tableRows?.length ? (
-                    <table className="cforms-table-preview">
-                      <tbody>
-                        {a.tableRows.map((row, ri) => (
-                          <tr key={ri}>
-                            {row.map((cell, ci) => (
-                              <td key={ci}>{cell}</td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <div className="cforms-table-wrap">
+                      <table className="cforms-table-preview">
+                        <tbody>
+                          {a.tableRows.map((row, ri) => (
+                            <tr key={ri}>
+                              {row.map((cell, ci) => (
+                                <td key={ci}>{cell}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   ) : a.fileUrl ? (
-                    <p>
+                    <>
                       <a className="cforms-link" href={a.fileUrl} target="_blank" rel="noreferrer">
                         {a.fileName || 'Voir le fichier'}
                       </a>
                       {a.fieldType === 'image' ? (
                         <img src={a.fileUrl} alt="" className="cforms-img-preview" />
                       ) : null}
-                    </p>
+                    </>
                   ) : (
                     <pre>{a.textValue || '—'}</pre>
                   )}
@@ -331,12 +386,18 @@ export default function CustomFormsDashboard() {
               ))}
             </div>
           ) : submissions.length === 0 ? (
-            <p className="text-sm text-[var(--rf-text-muted)]">Aucune réponse pour le moment.</p>
+            <div className="cforms-empty">
+              <FaInbox size={32} style={{ opacity: 0.35 }} />
+              <p>Aucune réponse pour le moment.</p>
+            </div>
           ) : (
             submissions.map((s) => (
               <div
                 key={s._id}
-                className="cforms-response-item"
+                className="cforms-response-card"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.click()}
                 onClick={async () => {
                   try {
                     const res = await axios.get(`${API_URL}/custom-forms/submissions/${s._id}`, authHeaders);
@@ -347,258 +408,305 @@ export default function CustomFormsDashboard() {
                 }}
               >
                 <strong>{s.formTitle}</strong>
-                <span className="text-sm text-[var(--rf-text-muted)]">
-                  {' '}
-                  — {s.respondentName || 'Anonyme'} — {new Date(s.createdAt).toLocaleString('fr-FR')}
+                <span className="cforms-response-meta">
+                  {s.respondentName || 'Anonyme'}
+                  {s.respondentEmail ? ` · ${s.respondentEmail}` : ''}
+                  <br />
+                  {new Date(s.createdAt).toLocaleString('fr-FR')}
                 </span>
-                {s.emailSent ? (
-                  <span className="cforms-badge on">E-mail envoyé</span>
-                ) : (
-                  <span className="cforms-badge off">E-mail non envoyé</span>
-                )}
+                <div className="cforms-form-item-meta">
+                  {s.emailSent ? (
+                    <span className="cforms-badge on">E-mail OK</span>
+                  ) : (
+                    <span className="cforms-badge off">E-mail non envoyé</span>
+                  )}
+                </div>
               </div>
             ))
           )}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 280px) 1fr', gap: 16 }}>
-          <div className="cforms-card">
-            <button
-              type="button"
-              className="cforms-btn primary"
-              style={{ width: '100%', marginBottom: 12 }}
-              onClick={() => selectForm(null)}
-            >
-              <FaPlus style={{ marginRight: 6 }} /> Nouveau formulaire
+        <div className="cforms-layout">
+          <aside className="cforms-card cforms-sidebar">
+            <button type="button" className="cforms-btn primary block" onClick={() => selectForm(null)}>
+              <FaPlus /> Nouveau formulaire
             </button>
-            <div className="cforms-grid" style={{ gridTemplateColumns: '1fr' }}>
-              {forms.map((f) => (
-                <div
-                  key={f._id}
-                  className={`cforms-form-item ${selectedId === f._id ? 'selected' : ''}`}
-                  onClick={() => selectForm(f)}
-                >
-                  <h3>{f.title}</h3>
-                  <span className={`cforms-badge ${f.isPublished ? 'on' : 'off'}`}>
-                    {f.isPublished ? 'Publié' : 'Brouillon'}
-                  </span>
-                  <p className="text-xs text-[var(--rf-text-muted)] mt-1">/{f.slug}</p>
-                </div>
-              ))}
+            <div className="cforms-sidebar-list">
+              {forms.length === 0 ? (
+                <p className="cforms-hint" style={{ textAlign: 'center', padding: 16 }}>
+                  Aucun formulaire. Créez-en un.
+                </p>
+              ) : (
+                forms.map((f) => (
+                  <button
+                    key={f._id}
+                    type="button"
+                    className={`cforms-form-item ${selectedId === f._id ? 'selected' : ''}`}
+                    onClick={() => selectForm(f)}
+                  >
+                    <h3>{f.title}</h3>
+                    <div className="cforms-form-item-meta">
+                      <span className={`cforms-badge ${f.isPublished ? 'on' : 'off'}`}>
+                        {f.isPublished ? 'Publié' : 'Brouillon'}
+                      </span>
+                      <span className="cforms-form-slug">/form/{f.slug}</span>
+                    </div>
+                  </button>
+                ))
+              )}
             </div>
-          </div>
+          </aside>
 
           <div className="cforms-card cforms-editor">
-            <div>
-              <label className="cforms-label">Titre du formulaire *</label>
-              <input
-                className="cforms-input"
-                value={draft.title}
-                onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
-              />
-            </div>
-            <div className="cforms-field-row">
-              <div>
-                <label className="cforms-label">Slug (URL)</label>
-                <input
-                  className="cforms-input"
-                  value={draft.slug}
-                  placeholder="auto depuis le titre"
-                  onChange={(e) => setDraft((d) => ({ ...d, slug: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="cforms-label">E-mails de notification</label>
-                <input
-                  className="cforms-input"
-                  value={draft.notifyEmails}
-                  placeholder="a@ex.com, b@ex.com"
-                  onChange={(e) => setDraft((d) => ({ ...d, notifyEmails: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div>
-              <label className="cforms-label">Description</label>
-              <textarea
-                className="cforms-textarea"
-                value={draft.description}
-                onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="cforms-label">Page de remerciement (après envoi)</label>
-              <input
-                className="cforms-input"
-                value={draft.redirectUrl}
-                placeholder="https://rapido.bj/recrutement/merci ou /recrutement/merci"
-                onChange={(e) => setDraft((d) => ({ ...d, redirectUrl: e.target.value }))}
-              />
-              <p className="text-xs text-[var(--rf-text-muted)] mt-1">
-                URL absolue ou chemin relatif. Si vide, une page merci au style Rapido s’affiche sur le site.
-              </p>
-            </div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
-              <input
-                type="checkbox"
-                checked={draft.isPublished}
-                onChange={(e) => setDraft((d) => ({ ...d, isPublished: e.target.checked }))}
-              />
-              Publier le formulaire (accessible publiquement)
-            </label>
-
-            {draft.slug ? (
-              <div className="text-sm" style={{ marginTop: 8 }}>
-                {!draft.isPublished ? (
-                  <p className="text-xs text-[var(--rf-text-muted)] mb-2">
-                    Publiez le formulaire pour le rendre accessible via ces liens.
-                  </p>
-                ) : null}
-                <p className="cforms-label" style={{ marginBottom: 6 }}>
-                  Liens publics
-                </p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 10px' }}>
-                  {getFormPublicUrls(draft.slug).map((url) => (
-                    <li key={url} style={{ marginBottom: 6 }}>
-                      <a className="cforms-link" href={url} target="_blank" rel="noreferrer">
-                        {url}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-                <button type="button" className="cforms-btn ghost" onClick={() => copyPublicLink(draft.slug)}>
-                  <FaCopy /> Copier les liens (.bj + .online)
+            {!isEditing ? (
+              <div className="cforms-editor-empty">
+                <FaWpforms size={40} style={{ opacity: 0.25, color: 'var(--cf-bronze)' }} />
+                <p>Sélectionnez un formulaire ou créez-en un nouveau pour commencer.</p>
+                <button type="button" className="cforms-btn primary" style={{ marginTop: 16 }} onClick={() => selectForm(null)}>
+                  <FaPlus /> Créer un formulaire
                 </button>
               </div>
-            ) : null}
+            ) : (
+              <>
+                <h2 className="cforms-editor-title">{selectedId ? 'Modifier le formulaire' : 'Nouveau formulaire'}</h2>
 
-            <h3 className="font-bold mt-2">Sections</h3>
-            {draft.sections.map((sec, sIdx) => (
-              <div key={sec.id} className="cforms-section">
-                <div className="cforms-field-row">
-                  <div>
-                    <label className="cforms-label">Titre de la section *</label>
+                <div className="cforms-field-grid">
+                  <div className="cforms-field-full">
+                    <label className="cforms-label">Titre du formulaire *</label>
                     <input
                       className="cforms-input"
-                      value={sec.title}
-                      onChange={(e) => updateSection(sIdx, { title: e.target.value })}
+                      value={draft.title}
+                      placeholder="Ex. Candidature Manager 2026"
+                      onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
                     />
                   </div>
                   <div>
-                    <label className="cforms-label">Image de section</label>
+                    <label className="cforms-label">Slug (URL)</label>
                     <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => onSectionImage(sIdx, e.target.files?.[0])}
+                      className="cforms-input"
+                      value={draft.slug}
+                      placeholder="auto depuis le titre"
+                      onChange={(e) => setDraft((d) => ({ ...d, slug: e.target.value }))}
                     />
                   </div>
-                  <button type="button" className="cforms-btn danger" onClick={() => removeSection(sIdx)}>
-                    <FaTrash />
-                  </button>
+                  <div>
+                    <label className="cforms-label">E-mails de notification</label>
+                    <input
+                      className="cforms-input"
+                      value={draft.notifyEmails}
+                      placeholder="a@ex.com, b@ex.com"
+                      onChange={(e) => setDraft((d) => ({ ...d, notifyEmails: e.target.value }))}
+                    />
+                  </div>
+                  <div className="cforms-field-full">
+                    <label className="cforms-label">Description</label>
+                    <textarea
+                      className="cforms-textarea"
+                      value={draft.description}
+                      placeholder="Texte d’introduction affiché en haut du formulaire public"
+                      onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
+                    />
+                  </div>
+                  <div className="cforms-field-full">
+                    <label className="cforms-label">Page de remerciement (après envoi)</label>
+                    <input
+                      className="cforms-input"
+                      value={draft.redirectUrl}
+                      placeholder="https://rapido.bj/recrutement/merci"
+                      onChange={(e) => setDraft((d) => ({ ...d, redirectUrl: e.target.value }))}
+                    />
+                    <p className="cforms-hint">URL absolue ou chemin relatif (/recrutement/merci). Sinon, page merci intégrée.</p>
+                  </div>
                 </div>
-                {sec.imageUrl ? (
-                  <img src={sec.imageUrl} alt="" className="cforms-img-preview" />
+
+                <div className="cforms-publish-row">
+                  <div>
+                    <strong>Publier le formulaire</strong>
+                    <span>Rendre accessible via rapido.bj/form et rapido.online/form</span>
+                  </div>
+                  <label className="cforms-switch" aria-label="Publier">
+                    <input
+                      type="checkbox"
+                      checked={draft.isPublished}
+                      onChange={(e) => setDraft((d) => ({ ...d, isPublished: e.target.checked }))}
+                    />
+                    <span className="cforms-switch-slider" />
+                  </label>
+                </div>
+
+                {draft.slug ? (
+                  <div className="cforms-links-box">
+                    {!draft.isPublished ? (
+                      <p className="cforms-hint" style={{ marginBottom: 10 }}>
+                        Publiez pour activer les liens publics.
+                      </p>
+                    ) : null}
+                    <span className="cforms-label">Liens publics</span>
+                    <ul>
+                      {getFormPublicUrls(draft.slug).map((url) => (
+                        <li key={url}>
+                          <a className="cforms-link" href={url} target="_blank" rel="noreferrer">
+                            {url}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                    <button type="button" className="cforms-btn ghost" onClick={() => copyPublicLink(draft.slug)}>
+                      <FaCopy /> Copier les liens
+                    </button>
+                  </div>
                 ) : null}
 
-                {sec.blocks.map((block, bIdx) => (
-                  <div key={block.id} className="cforms-block">
-                    {block.kind === 'table' ? (
-                      <>
-                        <label className="cforms-label">Tableau — libellé</label>
+                <div className="cforms-sections-head">
+                  <h3>Sections du formulaire</h3>
+                  <button type="button" className="cforms-btn ghost" onClick={addSection}>
+                    <FaPlus /> Section
+                  </button>
+                </div>
+
+                {draft.sections.map((sec, sIdx) => (
+                  <div key={sec.id} className="cforms-section">
+                    <span className="cforms-section-num">SECTION {sIdx + 1}</span>
+                    <div className="cforms-section-toolbar">
+                      <div>
+                        <label className="cforms-label">Titre de la section *</label>
                         <input
                           className="cforms-input"
-                          value={block.label}
-                          onChange={(e) => updateBlock(sIdx, bIdx, { label: e.target.value })}
+                          value={sec.title}
+                          placeholder="Ex. Expérience professionnelle"
+                          onChange={(e) => updateSection(sIdx, { title: e.target.value })}
                         />
-                        <label className="cforms-label" style={{ marginTop: 8 }}>
-                          Colonnes (séparées par ;)
-                        </label>
-                        <input
-                          className="cforms-input"
-                          value={(block.columns || []).map((c) => c.label).join('; ')}
-                          onChange={(e) => {
-                            const cols = e.target.value
-                              .split(';')
-                              .map((label) => label.trim())
-                              .filter(Boolean)
-                              .map((label) => ({ id: newId(), label }));
-                            updateBlock(sIdx, bIdx, { columns: cols.length ? cols : [{ id: newId(), label: 'Colonne 1' }] });
-                          }}
-                        />
-                        <label className="cforms-label" style={{ marginTop: 8 }}>
-                          Nombre de lignes
-                        </label>
-                        <input
-                          type="number"
-                          min={1}
-                          max={30}
-                          className="cforms-input"
-                          value={block.rowCount || 3}
-                          onChange={(e) => updateBlock(sIdx, bIdx, { rowCount: parseInt(e.target.value, 10) || 3 })}
-                        />
-                      </>
-                    ) : (
-                      <div className="cforms-field-row">
-                        <div>
-                          <label className="cforms-label">Libellé du champ</label>
-                          <input
-                            className="cforms-input"
-                            value={block.label}
-                            onChange={(e) => updateBlock(sIdx, bIdx, { label: e.target.value })}
-                          />
-                        </div>
-                        <div>
-                          <label className="cforms-label">Type de réponse</label>
-                          <FieldTypeSelect
-                            value={block.fieldType}
-                            onChange={(v) => updateBlock(sIdx, bIdx, { fieldType: v })}
-                          />
-                        </div>
-                        <label style={{ fontSize: 13 }}>
-                          <input
-                            type="checkbox"
-                            checked={!!block.required}
-                            onChange={(e) => updateBlock(sIdx, bIdx, { required: e.target.checked })}
-                          />{' '}
-                          Obligatoire
-                        </label>
                       </div>
-                    )}
-                    <button type="button" className="cforms-btn danger" style={{ marginTop: 8 }} onClick={() => removeBlock(sIdx, bIdx)}>
-                      Supprimer le bloc
-                    </button>
+                      <button
+                        type="button"
+                        className="cforms-btn danger icon-only"
+                        aria-label="Supprimer la section"
+                        onClick={() => removeSection(sIdx)}
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                    <div className="cforms-file-wrap">
+                      <label className="cforms-label">Image illustrative (optionnel)</label>
+                      <input type="file" accept="image/*" onChange={(e) => onSectionImage(sIdx, e.target.files?.[0])} />
+                    </div>
+                    {sec.imageUrl ? <img src={sec.imageUrl} alt="" className="cforms-img-preview" /> : null}
+
+                    {sec.blocks.map((block, bIdx) => {
+                      const typeKey = block.kind === 'table' ? 'table' : block.fieldType;
+                      const TypeIcon = FIELD_ICONS[typeKey] || FaFont;
+                      return (
+                        <div key={block.id} className="cforms-block">
+                          <div className="cforms-block-header">
+                            <span className="cforms-block-type">
+                              <TypeIcon style={{ marginRight: 4 }} />
+                              {block.kind === 'table' ? 'Tableau' : block.fieldType}
+                            </span>
+                            <button
+                              type="button"
+                              className="cforms-btn danger icon-only"
+                              aria-label="Supprimer le bloc"
+                              onClick={() => removeBlock(sIdx, bIdx)}
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
+                          {block.kind === 'table' ? (
+                            <>
+                              <label className="cforms-label">Libellé du tableau</label>
+                              <input
+                                className="cforms-input"
+                                value={block.label}
+                                onChange={(e) => updateBlock(sIdx, bIdx, { label: e.target.value })}
+                              />
+                              <label className="cforms-label" style={{ marginTop: 10 }}>
+                                Colonnes (séparées par ;)
+                              </label>
+                              <input
+                                className="cforms-input"
+                                value={(block.columns || []).map((c) => c.label).join('; ')}
+                                onChange={(e) => {
+                                  const cols = e.target.value
+                                    .split(';')
+                                    .map((label) => label.trim())
+                                    .filter(Boolean)
+                                    .map((label) => ({ id: newId(), label }));
+                                  updateBlock(sIdx, bIdx, {
+                                    columns: cols.length ? cols : [{ id: newId(), label: 'Colonne 1' }],
+                                  });
+                                }}
+                              />
+                              <label className="cforms-label" style={{ marginTop: 10 }}>
+                                Nombre de lignes
+                              </label>
+                              <input
+                                type="number"
+                                min={1}
+                                max={30}
+                                className="cforms-input"
+                                value={block.rowCount || 3}
+                                onChange={(e) => updateBlock(sIdx, bIdx, { rowCount: parseInt(e.target.value, 10) || 3 })}
+                              />
+                            </>
+                          ) : (
+                            <div className="cforms-block-fields">
+                              <div>
+                                <label className="cforms-label">Libellé</label>
+                                <input
+                                  className="cforms-input"
+                                  value={block.label}
+                                  onChange={(e) => updateBlock(sIdx, bIdx, { label: e.target.value })}
+                                />
+                              </div>
+                              <div>
+                                <label className="cforms-label">Type</label>
+                                <FieldTypeSelect
+                                  value={block.fieldType}
+                                  onChange={(v) => updateBlock(sIdx, bIdx, { fieldType: v })}
+                                />
+                              </div>
+                              <label className="cforms-check">
+                                <input
+                                  type="checkbox"
+                                  checked={!!block.required}
+                                  onChange={(e) => updateBlock(sIdx, bIdx, { required: e.target.checked })}
+                                />
+                                Champ obligatoire
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    <div className="cforms-section-actions">
+                      <button type="button" className="cforms-btn ghost" onClick={() => addFieldBlock(sIdx)}>
+                        + Champ
+                      </button>
+                      <button type="button" className="cforms-btn ghost" onClick={() => addTableBlock(sIdx)}>
+                        + Tableau
+                      </button>
+                    </div>
                   </div>
                 ))}
 
-                <div className="cforms-actions">
-                  <button type="button" className="cforms-btn ghost" onClick={() => addFieldBlock(sIdx)}>
-                    + Champ
+                <div className="cforms-actions cforms-actions-sticky">
+                  <button type="button" className="cforms-btn primary" disabled={saving} onClick={saveForm}>
+                    {saving ? 'Enregistrement…' : 'Enregistrer'}
                   </button>
-                  <button type="button" className="cforms-btn ghost" onClick={() => addTableBlock(sIdx)}>
-                    + Tableau
-                  </button>
+                  {selectedId && draft.slug && draft.isPublished ? (
+                    <a className="cforms-btn ghost" href={`/form/${draft.slug}`} target="_blank" rel="noreferrer">
+                      <FaExternalLinkAlt /> Aperçu
+                    </a>
+                  ) : null}
+                  {selectedId ? (
+                    <button type="button" className="cforms-btn danger" onClick={deleteForm}>
+                      Supprimer
+                    </button>
+                  ) : null}
                 </div>
-              </div>
-            ))}
-
-            <button type="button" className="cforms-btn ghost" onClick={addSection}>
-              + Ajouter une section
-            </button>
-
-            <div className="cforms-actions">
-              <button type="button" className="cforms-btn primary" disabled={saving} onClick={saveForm}>
-                {saving ? 'Enregistrement…' : 'Enregistrer'}
-              </button>
-              {selectedId && draft.slug && draft.isPublished ? (
-                <a className="cforms-btn ghost" href={`/form/${draft.slug}`} target="_blank" rel="noreferrer">
-                  <FaExternalLinkAlt /> Aperçu
-                </a>
-              ) : null}
-              {selectedId ? (
-                <button type="button" className="cforms-btn danger" onClick={deleteForm}>
-                  Supprimer
-                </button>
-              ) : null}
-            </div>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -275,30 +275,32 @@ export default function PublicCustomFormPage() {
                     return (
                       <div key={block.id} className="rform-block">
                         <span className="rform-label">{block.label || 'Tableau à remplir'}</span>
-                        <table className="rform-table">
-                          <thead>
-                            <tr>
-                              {cols.map((c) => (
-                                <th key={c.id}>{c.label}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {rows.map((row, ri) => (
-                              <tr key={ri}>
-                                {row.map((cell, ci) => (
-                                  <td key={ci}>
-                                    <input
-                                      className="rform-input"
-                                      value={cell}
-                                      onChange={(e) => setTableCell(key, ri, ci, e.target.value)}
-                                    />
-                                  </td>
+                        <div className="rform-table-wrap">
+                          <table className="rform-table">
+                            <thead>
+                              <tr>
+                                {cols.map((c) => (
+                                  <th key={c.id}>{c.label}</th>
                                 ))}
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            </thead>
+                            <tbody>
+                              {rows.map((row, ri) => (
+                                <tr key={ri}>
+                                  {row.map((cell, ci) => (
+                                    <td key={ci}>
+                                      <input
+                                        className="rform-input"
+                                        value={cell}
+                                        onChange={(e) => setTableCell(key, ri, ci, e.target.value)}
+                                      />
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     );
                   }
