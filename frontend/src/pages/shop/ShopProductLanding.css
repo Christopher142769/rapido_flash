@@ -250,6 +250,33 @@
   margin-bottom: 4px;
   font-size: 0.88rem;
   font-weight: 700;
+  border-radius: 12px;
+  transition: box-shadow 0.2s, background 0.2s;
+}
+
+.shop-pdp-buybox-qty--highlight {
+  padding: 10px 12px;
+  margin: 0 -12px 8px;
+  background: #fff8f0;
+  box-shadow: 0 0 0 2px rgba(199, 109, 46, 0.45);
+}
+
+.shop-pdp-buybox-qty-hint {
+  margin: 0 0 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--rf-amber);
+}
+
+.shop-pdp-buybox-price--empty .shop-pdp-buybox-price-current {
+  font-size: 1.35rem;
+  color: var(--rf-text-muted);
+}
+
+.shop-pdp-buybox-price-placeholder {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--rf-text-muted);
 }
 
 .shop-pdp-qty-controls {

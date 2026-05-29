@@ -1,0 +1,47 @@
+.rf-section-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: var(--radius-md, 10px);
+  border: 1px solid var(--rf-border, #e8e0d8);
+  background: var(--rf-surface, #fff);
+  color: var(--rf-text-muted, #6b6560);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.rf-section-refresh-btn:hover:not(:disabled) {
+  border-color: var(--rf-amber, #c76d2e);
+  color: var(--rf-amber, #c76d2e);
+  box-shadow: var(--shadow-card, 0 2px 8px rgba(0, 0, 0, 0.06));
+}
+
+.rf-section-refresh-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.rf-section-refresh-btn--compact {
+  padding: 6px 8px;
+}
+
+.rf-section-refresh-btn--compact span {
+  display: none;
+}
+
+.rf-section-refresh-spin {
+  animation: rf-section-refresh-spin 0.75s linear infinite;
+}
+
+@keyframes rf-section-refresh-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -6,7 +6,11 @@ import { getImageUrl } from '../../utils/imagePlaceholder';
 import { getShopPromoState, formatPriceXof } from '../../utils/shopPromo';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
 import ShopCopyBlockEditor from '../../components/shop/ShopCopyBlockEditor';
+import ShopFormSectionHead from '../../components/shop/ShopFormSectionHead';
 import ShopImageUploadZone from '../../components/shop/ShopImageUploadZone';
+import SectionRefreshButton from '../../components/dashboard/SectionRefreshButton';
+import { useRegisterDashboardRefresh } from '../../context/DashboardRefreshContext';
+import '../../components/dashboard/section-refresh.css';
 import { uploadShopProductImages } from '../../utils/shopImageUpload';
 import { emptyCopyBlock, normalizeCopyBlockForForm } from '../../utils/shopProductMedia';
 import {
@@ -147,6 +151,7 @@ export default function ShopDashboard() {
   const [mediaPickerTarget, setMediaPickerTarget] = useState(null);
   const [uploadingGallery, setUploadingGallery] = useState(false);
   const [uploadingBlockIndex, setUploadingBlockIndex] = useState(null);
+  const [refreshingPage, setRefreshingPage] = useState(false);
 
   const formRef = useRef(form);
   const editingIdRef = useRef(editingId);
@@ -187,10 +192,9 @@ export default function ShopDashboard() {
     setShowForm(true);
   };
 
-  const openEdit = (p) => {
+  const fillFormFromProduct = useCallback((p) => {
     const safeGallery = mergeGallery(p.mainImage, p.images);
-    setEditingId(p._id);
-    setForm({
+    const nextForm = {
       name: p.name || '',
       slug: p.slug || '',
       shortDescription: p.shortDescription || '',
@@ -214,9 +218,38 @@ export default function ShopDashboard() {
       whatsappNumber: p.whatsappNumber || '',
       contactPhone: p.contactPhone || '',
       ctaLabel: p.ctaLabel || 'Commander maintenant',
-    });
+    };
+    setEditingId(p._id);
+    editingIdRef.current = p._id;
+    setForm(nextForm);
+    formRef.current = nextForm;
+  }, []);
+
+  const openEdit = (p) => {
+    fillFormFromProduct(p);
     setShowForm(true);
   };
+
+  const refreshPage = useCallback(async () => {
+    setRefreshingPage(true);
+    try {
+      await loadProducts();
+      const id = editingIdRef.current;
+      if (id) {
+        const res = await axios.get(`${API_URL}/shop-products/${id}`, authHeaders);
+        if (res.data) {
+          fillFormFromProduct(res.data);
+          setShowForm(true);
+        }
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Impossible d’actualiser la page.');
+    } finally {
+      setRefreshingPage(false);
+    }
+  }, [authHeaders, fillFormFromProduct, loadProducts]);
+
+  useRegisterDashboardRefresh(refreshPage);
 
   const galleryUrls = useMemo(
     () => mergeGallery(form.mainImage, form.images),
@@ -532,18 +565,21 @@ export default function ShopDashboard() {
               <h3 className="shop-dash-form-title">{editingId ? 'Modifier le produit' : 'Nouveau produit'}</h3>
               <p className="shop-dash-form-sub">Configurez la page publique, la galerie et le copywriting.</p>
             </div>
-            <button type="button" className="shop-dash-btn secondary" onClick={resetForm}>
-              Fermer
-            </button>
+            <div className="shop-dash-form-header-actions">
+              <SectionRefreshButton onRefresh={refreshPage} loading={refreshingPage} />
+              <button type="button" className="shop-dash-btn secondary" onClick={resetForm}>
+                Fermer
+              </button>
+            </div>
           </header>
           <section className="shop-dash-form-block">
-            <div className="shop-dash-form-block-head">
-              <span className="shop-dash-form-step">1</span>
-              <div>
-                <h4>Informations produit</h4>
-                <p>Nom, prix et visibilité.</p>
-              </div>
-            </div>
+            <ShopFormSectionHead
+              step="1"
+              title="Informations produit"
+              subtitle="Nom, prix et visibilité."
+              onRefresh={refreshPage}
+              refreshing={refreshingPage}
+            />
           <div className="shop-dash-grid">
             <div>
               <label>Nom du produit *</label>
@@ -603,13 +639,13 @@ export default function ShopDashboard() {
           </section>
 
           <section className="shop-dash-form-block">
-            <div className="shop-dash-form-block-head">
-              <span className="shop-dash-form-step">2</span>
-              <div>
-                <h4>Galerie & accroche</h4>
-                <p>Visuels carrés 1080×1080 — image principale en premier.</p>
-              </div>
-            </div>
+            <ShopFormSectionHead
+              step="2"
+              title="Galerie & accroche"
+              subtitle="Visuels carrés 1080×1080 — image principale en premier."
+              onRefresh={refreshPage}
+              refreshing={refreshingPage}
+            />
           <div className="shop-dash-field">
             <label>Accroche courte</label>
             <textarea
@@ -671,13 +707,13 @@ export default function ShopDashboard() {
           </section>
 
           <section className="shop-dash-form-block shop-dash-form-block--promo">
-            <div className="shop-dash-form-block-head">
-              <span className="shop-dash-form-step">3</span>
-              <div>
-                <h4>Campagne promo express</h4>
-                <p>Réduction, livraison gratuite et compteur. Une fiche publiée reste en promo jusqu’à arrêt manuel.</p>
-              </div>
-            </div>
+            <ShopFormSectionHead
+              step="3"
+              title="Campagne promo express"
+              subtitle="Réduction, livraison gratuite et compteur. Une fiche publiée reste en promo jusqu’à arrêt manuel."
+              onRefresh={refreshPage}
+              refreshing={refreshingPage}
+            />
           <div className="shop-dash-promo-box">
             <div className="shop-dash-grid">
               <label className="shop-dash-check">
@@ -744,13 +780,13 @@ export default function ShopDashboard() {
           </section>
 
           <section className="shop-dash-form-block">
-            <div className="shop-dash-form-block-head">
-              <span className="shop-dash-form-step">4</span>
-              <div>
-                <h4>Contenu de la page</h4>
-                <p>Textes, images, vidéos et FAQ sous la fiche produit.</p>
-              </div>
-            </div>
+            <ShopFormSectionHead
+              step="4"
+              title="Contenu de la page"
+              subtitle="Textes, images, vidéos et FAQ sous la fiche produit."
+              onRefresh={refreshPage}
+              refreshing={refreshingPage}
+            />
           <div className="shop-dash-form-section shop-dash-form-section--flat">
             <p className="shop-dash-hint">
               Composez la page comme une landing : titres, visuels et questions fréquentes.
@@ -772,13 +808,13 @@ export default function ShopDashboard() {
           </section>
 
           <section className="shop-dash-form-block">
-            <div className="shop-dash-form-block-head">
-              <span className="shop-dash-form-step">5</span>
-              <div>
-                <h4>Contact & commande</h4>
-                <p>WhatsApp pour recevoir les commandes clients.</p>
-              </div>
-            </div>
+            <ShopFormSectionHead
+              step="5"
+              title="Contact & commande"
+              subtitle="WhatsApp pour recevoir les commandes clients."
+              onRefresh={refreshPage}
+              refreshing={refreshingPage}
+            />
           <div className="shop-dash-grid">
             <div>
               <label>WhatsApp (229…)</label>
@@ -819,9 +855,12 @@ export default function ShopDashboard() {
       ) : null}
 
       <div className="shop-dash-card">
-        <h3 className="shop-dash-list-title">
-          Produits <span className="shop-dash-count">{products.length}</span>
-        </h3>
+        <div className="shop-dash-list-head">
+          <h3 className="shop-dash-list-title">
+            Produits <span className="shop-dash-count">{products.length}</span>
+          </h3>
+          <SectionRefreshButton onRefresh={refreshPage} loading={refreshingPage} />
+        </div>
         <div className="shop-dash-product-grid">
           {products.map((p) => {
             const promo = getShopPromoState(p);

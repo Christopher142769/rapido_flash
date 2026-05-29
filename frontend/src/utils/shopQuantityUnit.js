@@ -28,10 +28,10 @@ export function getQuantityPickerLabel(unit) {
   return `Quantité (${u.symbol || u.short})`;
 }
 
-/** Affichage : "2 kg", "3 L", "1" */
+/** Affichage : "0", "2 kg", "3 L", "1" */
 export function formatQuantityWithUnit(quantity, unit) {
   const q = Number(quantity);
-  const safeQty = Number.isFinite(q) && q > 0 ? q : 1;
+  const safeQty = Number.isFinite(q) && q >= 0 ? Math.floor(q) : 0;
   const u = getShopQuantityUnitOption(unit);
   if (u.value === 'unit') return String(safeQty);
   return `${safeQty} ${u.symbol || u.short}`;

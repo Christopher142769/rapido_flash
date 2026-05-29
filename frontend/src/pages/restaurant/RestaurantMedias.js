@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import PageLoader from '../../components/PageLoader';
+import SectionRefreshButton from '../../components/dashboard/SectionRefreshButton';
+import { useRegisterDashboardRefresh } from '../../context/DashboardRefreshContext';
+import '../../components/dashboard/section-refresh.css';
 import './RestaurantMedias.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -13,7 +16,7 @@ const RestaurantMedias = () => {
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef(null);
 
-  const fetchMedias = async () => {
+  const fetchMedias = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
@@ -27,11 +30,13 @@ const RestaurantMedias = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchMedias();
-  }, []);
+  }, [fetchMedias]);
+
+  useRegisterDashboardRefresh(fetchMedias);
 
   const uploadFileList = async (files) => {
     const allowedExt = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif'];
@@ -113,7 +118,10 @@ const RestaurantMedias = () => {
             </div>
           </header>
 
-          <h2 className="medias-section-title">Importer dans la galerie</h2>
+          <div className="medias-section-head">
+            <h2 className="medias-section-title">Importer dans la galerie</h2>
+            <SectionRefreshButton onRefresh={fetchMedias} loading={loading} />
+          </div>
           <p className="medias-section-sub">
             Glissez-déposez des images ou utilisez le bouton. Elles sont enregistrées sur votre compte.
           </p>
@@ -154,7 +162,10 @@ const RestaurantMedias = () => {
             </div>
           </div>
 
-          <h2 className="medias-section-title medias-library-title">Votre bibliothèque</h2>
+          <div className="medias-section-head medias-library-title">
+            <h2 className="medias-section-title">Votre bibliothèque</h2>
+            <SectionRefreshButton onRefresh={fetchMedias} loading={loading} />
+          </div>
 
           {loading ? (
             <PageLoader message="Chargement de la galerie…" />

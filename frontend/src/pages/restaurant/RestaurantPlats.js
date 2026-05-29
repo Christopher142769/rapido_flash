@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useCallback, useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import LanguageContext from '../../context/LanguageContext';
@@ -7,6 +7,7 @@ import MediaPickerModal from '../../components/MediaPickerModal';
 import { getImageUrl } from '../../utils/imagePlaceholder';
 import ProductDescriptionRich from '../../components/ProductDescriptionRich';
 import { DashboardEditIconButton, DashboardDeleteIconButton } from '../../components/ui/DashboardIconButtons';
+import { useRegisterDashboardRefresh } from '../../context/DashboardRefreshContext';
 import './RestaurantPlats.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -66,17 +67,7 @@ const RestaurantPlats = () => {
     }).catch(() => {});
   }, []);
 
-  useEffect(() => {
-    if (!currentRestaurantId) {
-      setProduits([]);
-      setCategoriesProduit([]);
-      setLoading(false);
-      return;
-    }
-    fetchData();
-  }, [currentRestaurantId]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!currentRestaurantId) return;
     try {
       setLoading(true);
@@ -94,7 +85,19 @@ const RestaurantPlats = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentRestaurantId]);
+
+  useRegisterDashboardRefresh(fetchData);
+
+  useEffect(() => {
+    if (!currentRestaurantId) {
+      setProduits([]);
+      setCategoriesProduit([]);
+      setLoading(false);
+      return;
+    }
+    fetchData();
+  }, [currentRestaurantId, fetchData]);
 
   const setCurrentRestaurantId = (id) => {
     setCurrentRestaurantIdState(id || '');

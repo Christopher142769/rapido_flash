@@ -23,6 +23,8 @@ import {
   normalizeShopQuantityUnit,
 } from '../../utils/shopQuantityUnit';
 import ShopCountdown from '../../components/shop/ShopCountdown';
+import ShopQuantityModal from '../../components/shop/ShopQuantityModal';
+import ShopQuantityPicker from '../../components/shop/ShopQuantityPicker';
 import ShopTrustCards from '../../components/shop/ShopTrustCards';
 import { FaClock } from 'react-icons/fa';
 import './shopTypography.css';
@@ -38,10 +40,12 @@ export default function ShopProductLanding() {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(0);
   const [customer, setCustomer] = useState(emptyCustomerForm);
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [qtyModalOpen, setQtyModalOpen] = useState(false);
+  const [highlightQty, setHighlightQty] = useState(false);
   const topBarRef = useRef(null);
 
   const fetchProduct = React.useCallback(() => {
@@ -109,9 +113,10 @@ export default function ShopProductLanding() {
   const quantityLabel = getQuantityPickerLabel(quantityUnit);
   const quantityDisplay = formatQuantityWithUnit(quantity, quantityUnit);
   const priceUnitSuffix = getPriceUnitSuffix(quantityUnit);
-  const totalPrice = (unitPrice || 0) * quantity;
-  const totalBasePrice = unitBasePrice * quantity;
-  const totalLabel = formatPriceXof(totalPrice);
+  const hasQuantity = quantity >= 1;
+  const totalPrice = hasQuantity ? (unitPrice || 0) * quantity : 0;
+  const totalBasePrice = hasQuantity ? unitBasePrice * quantity : 0;
+  const totalLabel = hasQuantity ? formatPriceXof(totalPrice) : null;
 
   const navSections = useMemo(() => {
     const items = [
@@ -152,18 +157,16 @@ export default function ShopProductLanding() {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!canOrder || !product || submitting) return;
-
+  const completeOrder = async (orderQuantity) => {
     const nextErrors = validateCustomerForm(customer);
     if (Object.keys(nextErrors).length) {
       setFormErrors(nextErrors);
+      setQtyModalOpen(false);
       document.getElementById('shop-order-fields')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
 
-    const order = buildShopOrderPayload(product, promoState, quantity, customer);
+    const order = buildShopOrderPayload(product, promoState, orderQuantity, customer);
     setSubmitting(true);
     try {
       const saved = await submitShopOrderToApi(order);
@@ -171,12 +174,37 @@ export default function ShopProductLanding() {
       if (!saveShopOrder(orderForSession)) {
         alert('Commande enregistrée, mais le récapitulatif local a échoué. Contactez Rapido sur WhatsApp.');
       }
+      setQtyModalOpen(false);
       navigate(`/shop/${slug}/commande`);
     } catch (err) {
       alert(err.message || 'Impossible d’enregistrer la commande. Réessayez.');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const requestOrder = (e) => {
+    e?.preventDefault?.();
+    if (!canOrder || !product || submitting) return;
+
+    if (quantity < 1) {
+      setHighlightQty(true);
+      setQtyModalOpen(true);
+      return;
+    }
+
+    void completeOrder(quantity);
+  };
+
+  const handleQtyModalConfirm = (pickedQty) => {
+    setQuantity(pickedQty);
+    setHighlightQty(false);
+    void completeOrder(pickedQty);
+  };
+
+  const handleQuantityChange = (nextQty) => {
+    setQuantity(nextQty);
+    if (nextQty >= 1) setHighlightQty(false);
   };
 
   if (loading) return <PageLoader />;
@@ -228,7 +256,7 @@ export default function ShopProductLanding() {
         </div>
 
         <div id="shop-section-order" className="shop-pdp-buy-col">
-          <form id={CHECKOUT_FORM_ID} className="shop-pdp-checkout" onSubmit={handleSubmit} noValidate>
+          <form id={CHECKOUT_FORM_ID} className="shop-pdp-checkout" onSubmit={requestOrder} noValidate>
             <p className="shop-pdp-buybox-brand">Rapido</p>
             <h1 className="shop-pdp-buybox-title">{product.name}</h1>
             {product.shortDescription ? <p className="shop-pdp-buybox-sub">{product.shortDescription}</p> : null}
@@ -238,24 +266,42 @@ export default function ShopProductLanding() {
               <span>{SHOP_DELIVERY_NOTE}</span>
             </aside>
 
-            <div className="shop-pdp-buybox-price">
-              <span className="shop-pdp-buybox-price-current">
-                {totalLabel}
-                {quantity === 1 && priceUnitSuffix ? (
-                  <span className="shop-pdp-price-unit">{priceUnitSuffix}</span>
-                ) : null}
-              </span>
-              {promoState?.isPromoLive ? (
-                <span className="shop-pdp-buybox-price-old">{formatPriceXof(totalBasePrice)}</span>
-              ) : null}
-              {quantity > 1 ? (
-                <span className="shop-pdp-buybox-price-unit-line">
-                  {formatPriceXof(unitPrice)}
-                  {priceUnitSuffix}
-                  {' × '}
-                  {quantityDisplay}
-                </span>
-              ) : null}
+            <div className={`shop-pdp-buybox-price${!hasQuantity ? ' shop-pdp-buybox-price--empty' : ''}`}>
+              {hasQuantity ? (
+                <>
+                  <span className="shop-pdp-buybox-price-current">
+                    {totalLabel}
+                    {quantity === 1 && priceUnitSuffix ? (
+                      <span className="shop-pdp-price-unit">{priceUnitSuffix}</span>
+                    ) : null}
+                  </span>
+                  {promoState?.isPromoLive ? (
+                    <span className="shop-pdp-buybox-price-old">{formatPriceXof(totalBasePrice)}</span>
+                  ) : null}
+                  {quantity > 1 ? (
+                    <span className="shop-pdp-buybox-price-unit-line">
+                      {formatPriceXof(unitPrice)}
+                      {priceUnitSuffix}
+                      {' × '}
+                      {quantityDisplay}
+                    </span>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <span className="shop-pdp-buybox-price-current">
+                    {formatPriceXof(unitPrice)}
+                    {priceUnitSuffix ? <span className="shop-pdp-price-unit">{priceUnitSuffix}</span> : null}
+                  </span>
+                  {promoState?.isPromoLive ? (
+                    <span className="shop-pdp-buybox-price-old">
+                      {formatPriceXof(unitBasePrice)}
+                      {priceUnitSuffix}
+                    </span>
+                  ) : null}
+                  <span className="shop-pdp-buybox-price-placeholder">Choisissez votre quantité</span>
+                </>
+              )}
             </div>
 
             <div className="shop-pdp-buybox-tags">
@@ -267,18 +313,19 @@ export default function ShopProductLanding() {
               ) : null}
             </div>
 
-            <div className="shop-pdp-buybox-qty">
-              <span>{quantityLabel}</span>
-              <div className="shop-pdp-qty-controls">
-                <button type="button" aria-label="Moins" onClick={() => setQuantity((q) => Math.max(1, q - 1))}>
-                  −
-                </button>
-                <span className="shop-pdp-qty-value">{quantityDisplay}</span>
-                <button type="button" aria-label="Plus" onClick={() => setQuantity((q) => q + 1)}>
-                  +
-                </button>
-              </div>
-            </div>
+            {!hasQuantity ? (
+              <p className="shop-pdp-buybox-qty-hint">Sélectionnez une quantité avant de commander.</p>
+            ) : null}
+
+            <ShopQuantityPicker
+              id="shop-quantity-section"
+              quantity={quantity}
+              onChange={handleQuantityChange}
+              quantityUnit={quantityUnit}
+              quantityLabel={quantityLabel}
+              min={0}
+              highlight={highlightQty && !hasQuantity}
+            />
 
             <div id="shop-order-fields">
               <ShopOrderForm
@@ -309,9 +356,26 @@ export default function ShopProductLanding() {
 
       <ShopTrustCards whatsappNumber={product.whatsappNumber} />
 
+      <ShopQuantityModal
+        open={qtyModalOpen}
+        onClose={() => setQtyModalOpen(false)}
+        productName={product.name}
+        quantityUnit={quantityUnit}
+        quantityLabel={quantityLabel}
+        unitPrice={unitPrice}
+        unitBasePrice={unitBasePrice}
+        isPromoLive={!!promoState?.isPromoLive}
+        initialQuantity={quantity}
+        ctaLabel={product.ctaLabel || 'Commander maintenant'}
+        onConfirm={handleQtyModalConfirm}
+        submitting={submitting}
+      />
+
       <div className="shop-pdp-sticky">
         <div className="shop-pdp-sticky-inner">
-          <span className="shop-pdp-sticky-price">{totalLabel}</span>
+          <span className="shop-pdp-sticky-price">
+            {hasQuantity ? totalLabel : formatPriceXof(unitPrice) + (priceUnitSuffix || '')}
+          </span>
           {canOrder ? (
             <button
               type="submit"

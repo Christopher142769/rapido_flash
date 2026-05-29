@@ -1,0 +1,123 @@
+.shop-qty-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  background: rgba(26, 20, 16, 0.52);
+  backdrop-filter: blur(4px);
+}
+
+.shop-qty-modal {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  padding: 22px 20px 24px;
+  border-radius: 20px 20px 16px 16px;
+  background: #fff;
+  box-shadow: 0 24px 64px rgba(26, 20, 16, 0.22);
+}
+
+.shop-qty-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: var(--rf-surface-warm, #f7f4ef);
+  color: var(--rf-text-muted);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.shop-qty-modal-title {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--rf-text-dark);
+}
+
+.shop-qty-modal-product {
+  margin: 0 0 18px;
+  font-size: 0.88rem;
+  color: var(--rf-text-muted);
+  line-height: 1.4;
+}
+
+.shop-qty-modal .shop-pdp-buybox-qty {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.shop-qty-modal .shop-pdp-qty-controls {
+  justify-content: center;
+}
+
+.shop-qty-modal-price {
+  text-align: center;
+  margin-bottom: 16px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--rf-surface-warm, #f7f4ef);
+}
+
+.shop-qty-modal-price-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--rf-text-muted);
+  margin-bottom: 4px;
+}
+
+.shop-qty-modal-price-main {
+  display: block;
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: var(--rf-amber);
+}
+
+.shop-qty-modal-price-old {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.95rem;
+  color: var(--rf-text-light);
+  text-decoration: line-through;
+}
+
+.shop-qty-modal-hint {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: var(--rf-text-muted);
+}
+
+.shop-qty-modal-error {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--rf-danger);
+  text-align: center;
+}
+
+.shop-qty-modal-cta {
+  margin-top: 0;
+}
+
+@media (min-width: 520px) {
+  .shop-qty-modal-overlay {
+    align-items: center;
+  }
+
+  .shop-qty-modal {
+    border-radius: 20px;
+  }
+}

@@ -195,6 +195,36 @@
   margin-bottom: 16px;
 }
 
+.shop-dash-form-block-head-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.shop-dash-section-refresh {
+  margin-left: auto;
+  align-self: center;
+}
+
+.shop-dash-form-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.shop-dash-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.shop-dash-list-head .shop-dash-list-title {
+  margin-bottom: 0;
+}
+
 .shop-dash-form-step {
   flex-shrink: 0;
   width: 32px;

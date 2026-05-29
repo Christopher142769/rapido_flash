@@ -38,6 +38,18 @@
   font-size: 15px;
 }
 
+.medias-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 28px 0 8px;
+}
+
+.medias-section-head .medias-section-title {
+  margin: 0;
+}
+
 .medias-section-title {
   font-size: 1.15rem;
   color: var(--dark-brown, #5c3a1e);

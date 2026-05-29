@@ -4,7 +4,10 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { FaBell, FaSearch, FaBars } from 'react-icons/fa';
 import AuthContext from '../../context/AuthContext';
 import LanguageContext from '../../context/LanguageContext';
+import { useDashboardRefresh } from '../../context/DashboardRefreshContext';
 import { useNotifications } from '../../context/NotificationContext';
+import SectionRefreshButton from '../dashboard/SectionRefreshButton';
+import '../dashboard/section-refresh.css';
 
 function titleForPath(pathname, user, t) {
   if (pathname === '/dashboard') {
@@ -17,6 +20,8 @@ function titleForPath(pathname, user, t) {
     ['/dashboard/categories-domaine', 'Catégories domaine'],
     ['/dashboard/categories', 'Catégories produits'],
     ['/dashboard/plats', 'Produits'],
+    ['/dashboard/shop', 'Shop express'],
+    ['/dashboard/formulaires', 'Formulaires'],
     ['/dashboard/commandes', 'Commandes'],
     ['/dashboard/messages', 'Messages'],
     ['/dashboard/offres-promo', 'Offres promo'],
@@ -40,6 +45,7 @@ export default function DashboardHeaderPremium({ onOpenDrawer }) {
   const { user } = useContext(AuthContext);
   const { t } = useContext(LanguageContext);
   const { pendingOrders, unreadMessages } = useNotifications();
+  const { refresh, refreshing } = useDashboardRefresh();
   const reduce = useReducedMotion();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
@@ -109,6 +115,17 @@ export default function DashboardHeaderPremium({ onOpenDrawer }) {
       </motion.div>
 
       <div className="flex items-center gap-3">
+        <SectionRefreshButton
+          onRefresh={refresh}
+          loading={refreshing}
+          className="hidden sm:inline-flex"
+        />
+        <SectionRefreshButton
+          onRefresh={refresh}
+          loading={refreshing}
+          compact
+          className="sm:hidden"
+        />
         <button
           type="button"
           className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[var(--rf-border)] bg-[var(--rf-surface)] text-lg outline-none transition hover:shadow-[var(--shadow-hover)]"

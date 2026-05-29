@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { DashboardRefreshProvider } from '../../context/DashboardRefreshContext';
 import DashboardSidebarPremium from './DashboardSidebarPremium';
 import DashboardHeaderPremium from './DashboardHeaderPremium';
 import DashboardMobileBottomNav from './DashboardMobileBottomNav';
@@ -15,6 +16,7 @@ export default function DashboardLayout() {
   }, [location.pathname]);
 
   return (
+    <DashboardRefreshProvider>
     <div className="rf-dashboard-root min-h-screen text-[var(--rf-text-dark)]">
       {mobileDrawerOpen ? (
         <button
@@ -49,5 +51,6 @@ export default function DashboardLayout() {
         <DashboardMobileBottomNav onNavigate={() => setMobileDrawerOpen(false)} />
       </div>
     </div>
+    </DashboardRefreshProvider>
   );
 }
