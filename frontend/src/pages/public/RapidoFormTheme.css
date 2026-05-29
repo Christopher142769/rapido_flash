@@ -588,9 +588,15 @@
   margin-top: 8px;
 }
 
+.rform-choice-label {
+  white-space: pre-line;
+  text-align: left;
+  line-height: 1.45;
+}
+
 .rform-choice {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 14px;
   width: 100%;
   text-align: left;
@@ -619,6 +625,7 @@
 .rform-choice-marker {
   width: 20px;
   height: 20px;
+  margin-top: 2px;
   border: 2px solid var(--line);
   border-radius: 50%;
   flex-shrink: 0;

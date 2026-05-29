@@ -97,22 +97,36 @@ function FieldTypeSelect({ value, onChange }) {
 }
 
 function OptionsEditor({ options, onChange }) {
-  const lines = (options || []).map((o) => o.label).join('\n');
+  const list = options?.length ? options : [{ id: newId(), label: '' }];
+  const lines = list.map((o) => o.label ?? '').join('\n');
+
+  const syncFromText = (raw) => {
+    const parts = raw.split('\n');
+    const next = parts.map((label, i) => ({
+      id: list[i]?.id || newId(),
+      label,
+    }));
+    onChange(next.length ? next : [{ id: newId(), label: '' }]);
+  };
+
   return (
     <div>
-      <label className="cforms-label">Options (une par ligne)</label>
+      <label className="cforms-label">Options de réponse</label>
+      <p className="cforms-hint">
+        <strong>Entrée</strong> : option suivante (une réponse par ligne).
+        <br />
+        <strong>Shift + Entrée</strong> : retour à la ligne dans le texte de la même option.
+      </p>
       <textarea
-        className="cforms-textarea"
-        rows={4}
+        className="cforms-textarea cforms-options-textarea"
+        rows={6}
         value={lines}
         placeholder={'Option A\nOption B\nOption C'}
-        onChange={(e) => {
-          const opts = e.target.value
-            .split('\n')
-            .map((label) => label.trim())
-            .filter(Boolean)
-            .map((label) => ({ id: newId(), label }));
-          onChange(opts.length ? opts : [{ id: newId(), label: 'Option 1' }]);
+        onChange={(e) => syncFromText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && e.shiftKey) {
+            e.stopPropagation();
+          }
         }}
       />
     </div>

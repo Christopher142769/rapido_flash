@@ -35,7 +35,10 @@ function normalizeOptions(raw) {
   return raw
     .map((o) => ({
       id: o.id || uid(),
-      label: String(o.label || '').trim().slice(0, 200),
+      label: String(o.label || '')
+        .replace(/\r\n/g, '\n')
+        .trim()
+        .slice(0, 500),
     }))
     .filter((o) => o.label);
 }

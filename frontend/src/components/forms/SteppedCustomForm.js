@@ -370,7 +370,7 @@ export default function SteppedCustomForm({ form, slug, onDone }) {
                 }
               >
                 <span className="rform-choice-marker" aria-hidden />
-                <span>{opt.label}</span>
+                <span className="rform-choice-label">{opt.label}</span>
               </button>
             );
           })}
