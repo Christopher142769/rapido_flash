@@ -505,15 +505,25 @@
 
 <script>
   const FORM_URL = "https://forms.gle/zbSuG4Ernog2aZdR6";
-  const MERCI_URL = (() => {
-    try { return new URL("merci.html", window.location.href).href; }
-    catch { return "/recrutement/merci.html"; }
-  })();
-  /* Google Forms → Paramètres → Présentation → « Rediriger vers une URL » → coller MERCI_URL */
-  document.querySelectorAll('[data-cta]').forEach(a=>{
-    a.setAttribute('href', FORM_URL);
-    a.setAttribute('target','_blank');
-    a.setAttribute('rel','noopener');
+
+  /** URL de remerciement (même domaine que la page recrutement). À coller dans Google Forms. */
+  function getMerciUrl() {
+    try {
+      return new URL("/recrutement/merci", window.location.origin).href;
+    } catch {
+      return "https://rapido.bj/recrutement/merci";
+    }
+  }
+  const MERCI_URL = getMerciUrl();
+  /* Configuration obligatoire côté Google Forms (une seule fois) :
+     Formulaire → Paramètres (engrenage) → Présentation → activer « Rediriger vers une URL »
+     → coller exactement : MERCI_URL (prod : https://rapido.bj/recrutement/merci) */
+
+  document.querySelectorAll("[data-cta]").forEach((a) => {
+    a.setAttribute("href", FORM_URL);
+    a.setAttribute("target", "_self");
+    a.setAttribute("rel", "noopener");
+    a.setAttribute("title", "Formulaire de candidature — redirection vers la page merci après envoi");
   });
 
   // sticky header
