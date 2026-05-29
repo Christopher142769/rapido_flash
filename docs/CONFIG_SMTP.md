@@ -1,7 +1,7 @@
 # Configuration SMTP (envoi du code de connexion)
 
 Ajoute ces variables dans ton fichier **`.env`** à la racine du projet (`rapido_flash/.env`).  
-Si `SMTP_HOST` et `SMTP_USER` sont renseignés, les codes de connexion sont envoyés par email. Sinon, le code s’affiche dans la console du backend.
+Si `SMTP_HOST` et `SMTP_USER` sont renseignés, les codes de connexion, les réponses aux formulaires personnalisés et les **notifications de commandes** (Shop + app) sont envoyés par e-mail. Destinataires des commandes : `PLATFORM_ADMIN_EMAIL` (voir [CONFIG_MAINTENANCE.md](./CONFIG_MAINTENANCE.md)). Sinon, le code s’affiche dans la console du backend (mode dev).
 
 ## Variables
 

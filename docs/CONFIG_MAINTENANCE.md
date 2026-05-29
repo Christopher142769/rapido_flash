@@ -4,7 +4,7 @@
 
 | Variable | Obligatoire | Description |
 |----------|-------------|-------------|
-| `PLATFORM_ADMIN_EMAIL` | non | Une ou plusieurs adresses email **séparées par des virgules** autorisées à activer/désactiver la maintenance depuis le dashboard. Si **non défini**, tout compte **restaurant** ou **gestionnaire** peut modifier le paramètre. |
+| `PLATFORM_ADMIN_EMAIL` | non | Une ou plusieurs adresses **séparées par des virgules** : droit maintenance dashboard, modération conversations, et **destinataires des e-mails** à chaque nouvelle commande (Shop + app). Envoi via `SMTP_*` / `MAIL_FROM` (voir [CONFIG_SMTP.md](./CONFIG_SMTP.md)). Si **non défini** pour la maintenance, tout compte **restaurant** ou **gestionnaire** peut modifier le paramètre ; pour les e-mails commandes, repli local sur `rapido002026@gmail.com`. |
 
 ## Comportement
 

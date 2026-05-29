@@ -8,6 +8,7 @@ const { auth } = require('../middleware/auth');
 const RECEIPT_VALIDITY_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
 const { effectiveProduitPrice } = require('../utils/productPromo');
 const { sendToUserId, sendToUserIds } = require('../services/pushNotifications');
+const { notifyCommandeCreated } = require('../services/orderNotificationMailer');
 const PromoCode = require('../models/PromoCode');
 const { validatePromoCodeForOrder } = require('../utils/promoEngine');
 
@@ -237,6 +238,13 @@ router.post('/', auth, async (req, res) => {
         tag: `rapido-order-${commande._id}`,
       }
     ).catch(() => {});
+
+    void notifyCommandeCreated(
+      commande.toObject ? commande.toObject() : commande,
+      restaurant
+    ).catch((err) => {
+      console.error('Notification e-mail commande:', err.message);
+    });
 
     res.status(201).json(commande);
   } catch (error) {

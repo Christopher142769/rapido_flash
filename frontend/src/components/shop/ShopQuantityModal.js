@@ -45,9 +45,13 @@ export default function ShopQuantityModal({
   if (!open) return null;
 
   const priceUnitSuffix = getPriceUnitSuffix(quantityUnit);
+  const hasQty = draftQty >= 1;
   const total = (unitPrice || 0) * draftQty;
   const totalBase = (unitBasePrice || 0) * draftQty;
   const qtyDisplay = formatQuantityWithUnit(draftQty, quantityUnit);
+  const showPromoStrike = isPromoLive && unitBasePrice > unitPrice;
+  const mainPrice = hasQty ? total : unitPrice;
+  const strikePrice = hasQty ? totalBase : unitBasePrice;
 
   const handleConfirm = () => {
     if (draftQty < 1) {
@@ -87,29 +91,28 @@ export default function ShopQuantityModal({
         />
 
         <div className="shop-qty-modal-price">
-          {draftQty < 1 ? (
-            <>
-              <span className="shop-qty-modal-price-label">Prix unitaire</span>
-              <span className="shop-qty-modal-price-main">
-                {formatPriceXof(unitPrice)}
-                {priceUnitSuffix ? <span className="shop-pdp-price-unit">{priceUnitSuffix}</span> : null}
-              </span>
-              <p className="shop-qty-modal-hint">Augmentez la quantité pour voir le total.</p>
-            </>
+          <span className="shop-qty-modal-price-label">{hasQty ? 'Total' : 'Prix unitaire'}</span>
+          <span className="shop-qty-modal-price-main">
+            {formatPriceXof(mainPrice)}
+            {!hasQty && priceUnitSuffix ? (
+              <span className="shop-pdp-price-unit">{priceUnitSuffix}</span>
+            ) : null}
+          </span>
+          {showPromoStrike ? (
+            <span className="shop-qty-modal-price-old">
+              {formatPriceXof(strikePrice)}
+              {!hasQty && priceUnitSuffix ? priceUnitSuffix : ''}
+            </span>
+          ) : null}
+          {hasQty ? (
+            <p className="shop-qty-modal-hint">
+              {formatPriceXof(unitPrice)}
+              {priceUnitSuffix}
+              {' × '}
+              {qtyDisplay}
+            </p>
           ) : (
-            <>
-              <span className="shop-qty-modal-price-label">Total</span>
-              <span className="shop-qty-modal-price-main">{formatPriceXof(total)}</span>
-              {isPromoLive ? (
-                <span className="shop-qty-modal-price-old">{formatPriceXof(totalBase)}</span>
-              ) : null}
-              <p className="shop-qty-modal-hint">
-                {formatPriceXof(unitPrice)}
-                {priceUnitSuffix}
-                {' × '}
-                {qtyDisplay}
-              </p>
-            </>
+            <p className="shop-qty-modal-hint">Augmentez la quantité pour voir le total.</p>
           )}
         </div>
 

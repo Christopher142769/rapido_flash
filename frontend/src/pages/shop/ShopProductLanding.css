@@ -1,9 +1,12 @@
 /* Page shop — fond blanc, sans cartes ombrées */
 .shop-pdp {
+  --shop-pdp-gutter: clamp(18px, 5.2vw, 24px);
+  --shop-pdp-gutter-wide: clamp(20px, 5.5vw, 28px);
   min-height: 100vh;
   background: #fff;
   color: var(--rf-text-dark);
   padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  overflow-x: hidden;
 }
 
 .shop-pdp-error {
@@ -97,9 +100,10 @@
 .shop-pdp-layout {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: 20px var(--shop-pdp-gutter-wide) 28px;
   display: grid;
-  gap: 32px;
+  gap: 28px;
+  box-sizing: border-box;
 }
 
 @media (min-width: 900px) {
@@ -256,7 +260,7 @@
 
 .shop-pdp-buybox-qty--highlight {
   padding: 10px 12px;
-  margin: 0 -12px 8px;
+  margin: 0 0 8px;
   background: #fff8f0;
   box-shadow: 0 0 0 2px rgba(199, 109, 46, 0.45);
 }
@@ -350,9 +354,10 @@
 .shop-pdp-story-wrap {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 0 0 48px;
+  padding: 0 var(--shop-pdp-gutter-wide) 48px;
   border-top: 1px solid var(--rf-border);
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .shop-pdp-story-head {
@@ -374,7 +379,8 @@
   z-index: 50;
   background: #fff;
   border-top: 1px solid var(--rf-border);
-  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  padding: 12px var(--shop-pdp-gutter-wide) calc(12px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
 }
 
 .shop-pdp-sticky-inner {
@@ -383,6 +389,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  width: 100%;
 }
 
 .shop-pdp-sticky-price {
@@ -394,5 +401,96 @@
 @media (min-width: 900px) {
   .shop-pdp-sticky {
     display: none;
+  }
+}
+
+/* ——— Mobile : marges, lisibilité, zone tactile ——— */
+@media (max-width: 899px) {
+  .shop-pdp-layout {
+    padding-top: 16px;
+    padding-bottom: 24px;
+    gap: 24px;
+  }
+
+  .shop-pdp-gallery-viewport {
+    border-radius: var(--radius-md, 12px);
+    border: 1px solid var(--rf-border);
+  }
+
+  .shop-pdp-checkout {
+    max-width: 100%;
+  }
+
+  .shop-pdp-buybox-brand {
+    margin-bottom: 6px;
+  }
+
+  .shop-pdp-buybox-title {
+    font-size: clamp(1.35rem, 6vw, 1.65rem);
+    line-height: 1.2;
+    word-break: break-word;
+  }
+
+  .shop-pdp-buybox-sub {
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+
+  .shop-pdp-delivery-note {
+    padding: 12px 0;
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+
+  .shop-pdp-buybox-price-current {
+    font-size: 1.55rem;
+  }
+
+  .shop-pdp-buybox-price-placeholder {
+    flex: 0 0 100%;
+    font-size: 0.95rem;
+    margin-top: 2px;
+  }
+
+  .shop-pdp-buybox-qty {
+    gap: 12px;
+    padding: 4px 0;
+  }
+
+  .shop-pdp-buybox-qty > span:first-child {
+    flex: 1;
+    min-width: 0;
+    padding-right: 8px;
+  }
+
+  .shop-pdp-cta {
+    padding: 18px 20px;
+    font-size: 1rem;
+    letter-spacing: 0.06em;
+  }
+
+  .shop-pdp-sticky-price {
+    font-size: 1rem;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .shop-pdp-cta--sticky {
+    min-width: 140px;
+    padding: 14px 22px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .shop-pdp {
+    --shop-pdp-gutter-wide: 16px;
+  }
+
+  .shop-pdp-qty-controls button {
+    width: 44px;
+    height: 44px;
   }
 }

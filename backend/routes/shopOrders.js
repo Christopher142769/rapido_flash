@@ -7,6 +7,7 @@ const { getShopPromoState } = require('../utils/shopPromo');
 const { normalizeShopQuantityUnit } = require('../utils/shopQuantityUnit');
 const { formatQuantityWithUnit } = require('../utils/shopQuantityLabel');
 const { sendToUserIds } = require('../services/pushNotifications');
+const { notifyShopOrderCreated } = require('../services/orderNotificationMailer');
 
 const router = express.Router();
 
@@ -102,6 +103,10 @@ router.post('/', async (req, res) => {
         tag: `rapido-shop-order-${order._id}`,
       }).catch(() => {});
     }
+
+    void notifyShopOrderCreated(order.toObject ? order.toObject() : order).catch((err) => {
+      console.error('Notification e-mail commande Shop:', err.message);
+    });
 
     res.status(201).json(order);
   } catch (e) {

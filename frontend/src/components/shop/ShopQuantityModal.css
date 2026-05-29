@@ -88,8 +88,9 @@
 
 .shop-qty-modal-price-old {
   display: block;
-  margin-top: 4px;
-  font-size: 0.95rem;
+  margin-top: 6px;
+  font-size: 1.05rem;
+  font-weight: 700;
   color: var(--rf-text-light);
   text-decoration: line-through;
 }

@@ -16,16 +16,16 @@
 .shop-pdp-block-inner {
   max-width: 720px;
   margin: 0 auto;
-  padding: 0 4px;
+  padding: 0;
 }
 
 .shop-pdp-block-inner--prose {
-  padding: 32px 4px 36px;
+  padding: 28px 0 32px;
 }
 
 .shop-pdp-block-inner--title {
   text-align: center;
-  padding: 40px 16px 36px;
+  padding: 32px 0 28px;
 }
 
 /* ——— Titre hero ——— */
@@ -139,7 +139,7 @@
 }
 
 .shop-pdp-block-copy {
-  padding: 24px 16px 32px;
+  padding: 20px 0 28px;
 }
 
 .shop-pdp-block-copy--after-media .shop-pdp-block-heading {
@@ -199,7 +199,7 @@
 
 /* ——— FAQ ——— */
 .shop-pdp-block--faq .shop-pdp-block-inner {
-  padding: 32px 4px 36px;
+  padding: 28px 0 32px;
 }
 
 .shop-pdp-block--faq .shop-pdp-block-heading {

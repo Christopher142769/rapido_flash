@@ -6,7 +6,8 @@
 .shop-pdp-trust-inner {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 28px 16px 36px;
+  padding: 28px clamp(18px, 5.5vw, 24px) 36px;
+  box-sizing: border-box;
 }
 
 .shop-pdp-trust-grid {
