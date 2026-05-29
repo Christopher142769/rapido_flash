@@ -566,6 +566,12 @@
   font-size: 0.78rem;
 }
 
+.shop-dash-hint--saving {
+  margin-top: 0;
+  color: #c76d2e;
+  font-weight: 600;
+}
+
 .shop-dash-gallery-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));

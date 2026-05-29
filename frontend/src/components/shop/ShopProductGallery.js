@@ -63,7 +63,7 @@ export default function ShopProductGallery({ urls, baseUrl, productName, promoPe
           {gallery.map((url, i) => (
             <div key={`${url}-${i}`} className="shop-pdp-gallery-slide">
               <img
-                src={getImageUrl(url, baseUrl)}
+                src={getImageUrl(url, null, baseUrl)}
                 alt={gallery.length > 1 ? `${productName} — photo ${i + 1}` : productName}
                 className="shop-pdp-gallery-slide-img"
                 draggable={false}

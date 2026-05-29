@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import PageLoader from '../../components/PageLoader';
 import MediaPickerModal from '../../components/MediaPickerModal';
@@ -62,15 +62,78 @@ function toDatetimeLocal(iso) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function coerceImageList(images) {
+  if (Array.isArray(images)) return images;
+  if (typeof images === 'string') {
+    const raw = images.trim();
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [raw];
+    } catch {
+      return [raw];
+    }
+  }
+  return [];
+}
+
 function mergeGallery(mainImage, images) {
   const urls = [];
   if (typeof mainImage === 'string' && mainImage.trim()) urls.push(mainImage.trim());
-  for (const u of images || []) {
+  for (const u of coerceImageList(images)) {
     if (typeof u !== 'string') continue;
     const clean = u.trim();
     if (clean && !urls.includes(clean)) urls.push(clean);
   }
   return urls;
+}
+
+function appendUrlsToForm(f, urls) {
+  if (!urls?.length) return f;
+  const merged = mergeGallery(f.mainImage, f.images);
+  const next = [...merged];
+  for (const path of urls) {
+    if (path && !next.includes(path)) next.push(path);
+  }
+  return {
+    ...f,
+    mainImage: next[0] || '',
+    images: next.slice(1),
+  };
+}
+
+function buildProductPayload(f, galleryList) {
+  const gallery = galleryList ?? mergeGallery(f.mainImage, f.images);
+  const copySections = Array.isArray(f.copySections) ? f.copySections : [];
+  return {
+    name: f.name.trim(),
+    slug: f.slug.trim() || undefined,
+    shortDescription: f.shortDescription,
+    basePrice: Number(f.basePrice),
+    quantityUnit: f.quantityUnit,
+    published: f.published,
+    mainImage: gallery[0] || null,
+    images: JSON.stringify(gallery),
+    copySections: JSON.stringify(copySections),
+    promo: JSON.stringify({
+      active: f.promo.active,
+      discountPercent: Number(f.promo.discountPercent),
+      freeDelivery: f.promo.freeDelivery,
+      startsAt: f.promo.startsAt ? new Date(f.promo.startsAt).toISOString() : null,
+      endsAt: f.promo.endsAt ? new Date(f.promo.endsAt).toISOString() : null,
+      runUntilStopped: !!f.promo.runUntilStopped,
+    }),
+    whatsappNumber: f.whatsappNumber,
+    contactPhone: f.contactPhone,
+    ctaLabel: f.ctaLabel,
+  };
+}
+
+function canPersistProduct(f) {
+  if (!f.name.trim()) return false;
+  if (f.basePrice === '' || f.basePrice == null) return false;
+  const basePrice = Number(f.basePrice);
+  return Number.isFinite(basePrice) && basePrice >= 0;
 }
 
 export default function ShopDashboard() {
@@ -84,6 +147,15 @@ export default function ShopDashboard() {
   const [mediaPickerTarget, setMediaPickerTarget] = useState(null);
   const [uploadingGallery, setUploadingGallery] = useState(false);
   const [uploadingBlockIndex, setUploadingBlockIndex] = useState(null);
+
+  const formRef = useRef(form);
+  const editingIdRef = useRef(editingId);
+  useEffect(() => {
+    formRef.current = form;
+  }, [form]);
+  useEffect(() => {
+    editingIdRef.current = editingId;
+  }, [editingId]);
 
   const token = localStorage.getItem('token');
   const authHeaders = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
@@ -104,17 +176,19 @@ export default function ShopDashboard() {
   const resetForm = () => {
     setForm(emptyForm());
     setEditingId(null);
+    editingIdRef.current = null;
     setShowForm(false);
   };
 
   const openCreate = () => {
     setForm(emptyForm());
     setEditingId(null);
+    editingIdRef.current = null;
     setShowForm(true);
   };
 
   const openEdit = (p) => {
-    const safeGallery = mergeGallery(p.mainImage, Array.isArray(p.images) ? p.images : []);
+    const safeGallery = mergeGallery(p.mainImage, p.images);
     setEditingId(p._id);
     setForm({
       name: p.name || '',
@@ -149,53 +223,91 @@ export default function ShopDashboard() {
     [form.mainImage, form.images]
   );
 
-  const onMediaChosen = (path) => {
+  const persistProduct = useCallback(
+    async ({ formState, galleryList, closeAfter = false } = {}) => {
+      const f = formState ?? formRef.current;
+      const gallery = galleryList ?? mergeGallery(f.mainImage, f.images);
+
+      if (!canPersistProduct(f)) {
+        return { ok: false, needsFields: true };
+      }
+
+      setSaving(true);
+      try {
+        const payload = buildProductPayload(f, gallery);
+        let id = editingIdRef.current;
+        if (id) {
+          await axios.put(`${API_URL}/shop-products/${id}`, payload, authHeaders);
+        } else {
+          const res = await axios.post(`${API_URL}/shop-products`, payload, authHeaders);
+          id = res.data._id;
+          setEditingId(id);
+          editingIdRef.current = id;
+        }
+        await loadProducts();
+        if (closeAfter) resetForm();
+        return { ok: true };
+      } catch (err) {
+        alert(err.response?.data?.message || 'Erreur lors de l’enregistrement');
+        return { ok: false };
+      } finally {
+        setSaving(false);
+      }
+    },
+    [authHeaders, loadProducts]
+  );
+
+  const autoSaveAfterGalleryChange = useCallback(
+    async (formState, { quiet = false } = {}) => {
+      const gallery = mergeGallery(formState.mainImage, formState.images);
+      if (!canPersistProduct(formState)) {
+        return { ok: false, needsFields: true };
+      }
+      const result = await persistProduct({ formState, galleryList: gallery, closeAfter: false });
+      if (result.needsFields && !quiet) {
+        alert('Indiquez le nom et le prix du produit pour enregistrer la galerie automatiquement.');
+      }
+      return result;
+    },
+    [persistProduct]
+  );
+
+  const onMediaChosen = async (path) => {
     const cleanPath = typeof path === 'string' ? path.trim() : '';
     if (!cleanPath) {
       setMediaPickerOpen(false);
       setMediaPickerTarget(null);
       return;
     }
-    if (mediaPickerTarget?.kind === 'gallery') {
-      setForm((f) => {
-        const images = f.images.includes(cleanPath) ? f.images : [...f.images, cleanPath];
-        const mainImage = f.mainImage || cleanPath;
-        return { ...f, images, mainImage };
-      });
-    } else if (mediaPickerTarget?.kind === 'block') {
-      const idx = mediaPickerTarget.index;
-      setForm((f) => {
-        const copySections = [...f.copySections];
-        copySections[idx] = { ...copySections[idx], mediaUrl: cleanPath };
-        return { ...f, copySections };
-      });
-    } else {
-      setForm((f) => ({ ...f, mainImage: cleanPath }));
-    }
+    const target = mediaPickerTarget;
     setMediaPickerOpen(false);
     setMediaPickerTarget(null);
+
+    if (target?.kind === 'gallery') {
+      const f = formRef.current;
+      const images = f.images.includes(cleanPath) ? f.images : [...f.images, cleanPath];
+      const newForm = { ...f, images, mainImage: f.mainImage || cleanPath };
+      setForm(newForm);
+      await autoSaveAfterGalleryChange(newForm);
+    } else if (target?.kind === 'block') {
+      const idx = target.index;
+      const f = formRef.current;
+      const copySections = [...f.copySections];
+      copySections[idx] = { ...copySections[idx], mediaUrl: cleanPath };
+      const newForm = { ...f, copySections };
+      setForm(newForm);
+      await persistProduct({ formState: newForm, closeAfter: false });
+    } else {
+      const newForm = { ...formRef.current, mainImage: cleanPath };
+      setForm(newForm);
+      await autoSaveAfterGalleryChange(newForm);
+    }
   };
 
   const addGalleryImage = () => {
     setMediaPickerTarget({ kind: 'gallery' });
     setMediaPickerOpen(true);
   };
-
-  const appendUrlsToGallery = useCallback((urls) => {
-    if (!urls?.length) return;
-    setForm((f) => {
-      const merged = mergeGallery(f.mainImage, f.images);
-      const next = [...merged];
-      for (const path of urls) {
-        if (path && !next.includes(path)) next.push(path);
-      }
-      return {
-        ...f,
-        mainImage: next[0] || '',
-        images: next.slice(1),
-      };
-    });
-  }, []);
 
   const handleGalleryUpload = async (files) => {
     if (!token) return;
@@ -206,7 +318,9 @@ export default function ShopDashboard() {
         alert('Aucune image valide sélectionnée.');
         return;
       }
-      appendUrlsToGallery(urls);
+      const newForm = appendUrlsToForm(formRef.current, urls);
+      setForm(newForm);
+      await autoSaveAfterGalleryChange(newForm);
     } catch (err) {
       alert(err.response?.data?.message || 'Erreur lors de l’import des images');
     } finally {
@@ -224,11 +338,15 @@ export default function ShopDashboard() {
         alert('Aucune image valide.');
         return;
       }
-      setForm((f) => {
-        const copySections = [...f.copySections];
-        copySections[blockIndex] = { ...copySections[blockIndex], mediaUrl: path };
-        return { ...f, copySections };
-      });
+      const f = formRef.current;
+      const copySections = [...f.copySections];
+      copySections[blockIndex] = { ...copySections[blockIndex], mediaUrl: path };
+      const newForm = { ...f, copySections };
+      setForm(newForm);
+      const result = await persistProduct({ formState: newForm, closeAfter: false });
+      if (result.needsFields) {
+        alert('Indiquez le nom et le prix du produit pour enregistrer automatiquement.');
+      }
     } catch (err) {
       alert(err.response?.data?.message || 'Erreur lors de l’import');
     } finally {
@@ -236,21 +354,42 @@ export default function ShopDashboard() {
     }
   };
 
-  const setPrimaryImage = (url) => {
-    setForm((f) => {
-      const all = mergeGallery(f.mainImage, f.images);
-      const reordered = [url, ...all.filter((u) => u !== url)];
-      return { mainImage: reordered[0] || '', images: reordered.slice(1) };
-    });
+  const setPrimaryImage = async (url) => {
+    const f = formRef.current;
+    const all = mergeGallery(f.mainImage, f.images);
+    const reordered = [url, ...all.filter((u) => u !== url)];
+    const newForm = {
+      ...f,
+      mainImage: reordered[0] || '',
+      images: reordered.slice(1),
+    };
+    setForm(newForm);
+    await autoSaveAfterGalleryChange(newForm);
   };
 
-  const removeGalleryImage = (url) => {
+  const removeGalleryImage = async (url) => {
     const target = typeof url === 'string' ? url.trim() : '';
     if (!target) return;
-    setForm((f) => {
+
+    try {
+      const f = formRef.current;
       const remaining = mergeGallery(f.mainImage, f.images).filter((u) => u !== target);
-      return { mainImage: remaining[0] || '', images: remaining.slice(1) };
-    });
+      const sections = Array.isArray(f.copySections) ? f.copySections : [];
+      const newForm = {
+        ...f,
+        mainImage: remaining[0] || '',
+        images: remaining.slice(1),
+        copySections: sections.map((sec) =>
+          sec?.mediaUrl === target ? { ...sec, mediaUrl: '' } : sec
+        ),
+      };
+      setForm(newForm);
+      formRef.current = newForm;
+      await autoSaveAfterGalleryChange(newForm, { quiet: true });
+    } catch (err) {
+      console.error('removeGalleryImage', err);
+      alert('Impossible de retirer cette image. Réessayez.');
+    }
   };
 
   const addSection = () => {
@@ -279,43 +418,7 @@ export default function ShopDashboard() {
 
   const saveProduct = async (e) => {
     e.preventDefault();
-    setSaving(true);
-    try {
-      const payload = {
-        name: form.name.trim(),
-        slug: form.slug.trim() || undefined,
-        shortDescription: form.shortDescription,
-        basePrice: Number(form.basePrice),
-        quantityUnit: form.quantityUnit,
-        published: form.published,
-        mainImage: form.mainImage || galleryUrls[0] || null,
-        images: JSON.stringify(galleryUrls),
-        copySections: JSON.stringify(form.copySections),
-        promo: JSON.stringify({
-          active: form.promo.active,
-          discountPercent: Number(form.promo.discountPercent),
-          freeDelivery: form.promo.freeDelivery,
-          startsAt: form.promo.startsAt ? new Date(form.promo.startsAt).toISOString() : null,
-          endsAt: form.promo.endsAt ? new Date(form.promo.endsAt).toISOString() : null,
-          runUntilStopped: !!form.promo.runUntilStopped,
-        }),
-        whatsappNumber: form.whatsappNumber,
-        contactPhone: form.contactPhone,
-        ctaLabel: form.ctaLabel,
-      };
-
-      if (editingId) {
-        await axios.put(`${API_URL}/shop-products/${editingId}`, payload, authHeaders);
-      } else {
-        await axios.post(`${API_URL}/shop-products`, payload, authHeaders);
-      }
-      await loadProducts();
-      resetForm();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Erreur lors de l’enregistrement');
-    } finally {
-      setSaving(false);
-    }
+    await persistProduct({ formState: form, galleryList: galleryUrls, closeAfter: true });
   };
 
   const launchPromo = async (p) => {
@@ -519,13 +622,16 @@ export default function ShopDashboard() {
           <div className="shop-dash-form-section">
             <h4 className="shop-dash-section-title">Galerie photos</h4>
             <p className="shop-dash-hint">
-              Importez depuis votre PC (recommandé) ou choisissez dans la médiathèque. L’image « Principale » s’affiche en premier.
+              Importez depuis votre PC ou la médiathèque — la galerie est{' '}
+              <strong>enregistrée automatiquement</strong> après chaque ajout ou retrait (nom et prix requis pour un
+              nouveau produit). L’image « Principale » s’affiche en premier.
             </p>
+            {saving ? <p className="shop-dash-hint shop-dash-hint--saving">Enregistrement en cours…</p> : null}
             <ShopImageUploadZone
               onFiles={handleGalleryUpload}
-              uploading={uploadingGallery}
+              uploading={uploadingGallery || saving}
               label="Importer des photos depuis mon PC"
-              hint="Plusieurs fichiers possibles — ajout direct à la galerie du produit"
+              hint="Plusieurs fichiers possibles — sauvegarde automatique après import"
             />
             <div className="shop-dash-upload-actions">
               <button type="button" className="shop-dash-btn secondary" onClick={addGalleryImage}>
@@ -534,9 +640,9 @@ export default function ShopDashboard() {
             </div>
             {galleryUrls.length ? (
               <div className="shop-dash-gallery-grid">
-                {galleryUrls.map((url) => (
-                  <div key={url} className="shop-dash-gallery-item">
-                    <img src={getImageUrl(url, BASE_URL)} alt="" />
+                {galleryUrls.map((url, index) => (
+                  <div key={`gallery-${index}-${url}`} className="shop-dash-gallery-item">
+                    <img src={getImageUrl(url, null, BASE_URL)} alt="" />
                     {form.mainImage === url ? <span className="shop-dash-gallery-primary">Principale</span> : null}
                     <div className="shop-dash-gallery-actions">
                       {form.mainImage !== url ? (
@@ -544,7 +650,16 @@ export default function ShopDashboard() {
                           <FaStar />
                         </button>
                       ) : null}
-                      <button type="button" title="Retirer" onClick={() => removeGalleryImage(url)}>
+                      <button
+                        type="button"
+                        title="Retirer"
+                        aria-label="Retirer cette image"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          void removeGalleryImage(url);
+                        }}
+                      >
                         ×
                       </button>
                     </div>
@@ -641,7 +756,7 @@ export default function ShopDashboard() {
               Composez la page comme une landing : titres, visuels et questions fréquentes.
             </p>
             <ShopCopyBlockEditor
-              sections={form.copySections}
+              sections={Array.isArray(form.copySections) ? form.copySections : [emptyCopyBlock('text')]}
               onChange={(copySections) => setForm((f) => ({ ...f, copySections }))}
               onPickMedia={(index) => {
                 setMediaPickerTarget({ kind: 'block', index });
@@ -717,7 +832,7 @@ export default function ShopDashboard() {
                 className={`shop-dash-product-card${p.published ? '' : ' shop-dash-product-card--draft'}`}
               >
                 <div className="shop-dash-product-card-img-wrap">
-                  <img src={getImageUrl(p.mainImage || p.images?.[0], BASE_URL)} alt="" />
+                  <img src={getImageUrl(p.mainImage || p.images?.[0], null, BASE_URL)} alt="" />
                   {promo.isPromoLive ? <span className="shop-dash-product-card-promo">Promo</span> : null}
                   {!p.published ? <span className="shop-dash-product-card-draft">Brouillon</span> : null}
                 </div>

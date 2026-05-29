@@ -87,7 +87,7 @@ function ImageBlock({ section, baseUrl }) {
       <div className="shop-pdp-block-media">
         <div className="shop-pdp-block-img-wrap">
           <img
-            src={getImageUrl(section.mediaUrl, baseUrl)}
+            src={getImageUrl(section.mediaUrl, null, baseUrl)}
             alt={section.title || 'Visuel produit'}
             className="shop-pdp-block-img"
             loading="lazy"

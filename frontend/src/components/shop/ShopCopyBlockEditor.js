@@ -21,7 +21,7 @@ export default function ShopCopyBlockEditor({
 
   const updateFaq = (secIndex, faqIndex, field, value) => {
     const sec = sections[secIndex];
-    const faqItems = sec.faqItems.map((f, i) => (i === faqIndex ? { ...f, [field]: value } : f));
+    const faqItems = (sec.faqItems || []).map((f, i) => (i === faqIndex ? { ...f, [field]: value } : f));
     update(secIndex, { faqItems });
   };
 
