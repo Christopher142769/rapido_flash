@@ -20,6 +20,7 @@ import {
 } from 'react-icons/fa';
 import { defaultFormSettings } from '../../utils/customFormSteps';
 import FormRichTextEditor from '../../components/forms/FormRichTextEditor';
+import FormAnswerFilePreview from '../../components/forms/FormAnswerFilePreview';
 import { useModal } from '../../context/ModalContext';
 import { getFormPublicUrls } from '../../utils/formPublicUrls';
 import './CustomFormsDashboard.css';
@@ -456,25 +457,8 @@ export default function CustomFormsDashboard() {
                         </tbody>
                       </table>
                     </div>
-                  ) : a.fileAttachments?.length ? (
-                    <ul className="cforms-answer-files">
-                      {a.fileAttachments.map((f, fi) => (
-                        <li key={fi}>
-                          <a className="cforms-link" href={f.fileUrl} target="_blank" rel="noreferrer">
-                            {f.fileName || `Fichier ${fi + 1}`}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : a.fileUrl ? (
-                    <>
-                      <a className="cforms-link" href={a.fileUrl} target="_blank" rel="noreferrer">
-                        {a.fileName || 'Voir le fichier'}
-                      </a>
-                      {a.fieldType === 'image' ? (
-                        <img src={a.fileUrl} alt="" className="cforms-img-preview" />
-                      ) : null}
-                    </>
+                  ) : a.fileAttachments?.length || a.fileUrl ? (
+                    <FormAnswerFilePreview answer={a} />
                   ) : a.selectedValues?.length ? (
                     <ul className="cforms-answer-list">
                       {a.selectedValues.map((v, vi) => (

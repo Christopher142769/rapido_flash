@@ -339,13 +339,79 @@
   margin-bottom: 4px;
 }
 
-.cforms-answer-files {
-  margin: 8px 0 0;
-  padding-left: 1.2rem;
+.cforms-file-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 10px;
 }
 
-.cforms-answer-files li {
-  margin-bottom: 6px;
+.cforms-file-preview-item {
+  border: 1px solid var(--cf-line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.cforms-file-preview-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--cf-paper);
+  border-bottom: 1px solid var(--cf-line);
+}
+
+.cforms-file-preview-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--cf-ink);
+  word-break: break-word;
+}
+
+.cforms-file-preview-label svg {
+  flex-shrink: 0;
+  color: var(--cf-accent, #e85d04);
+}
+
+.cforms-file-preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cforms-btn.sm {
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  gap: 6px;
+}
+
+.cforms-file-preview-media {
+  display: block;
+  padding: 12px;
+  text-align: center;
+}
+
+.cforms-img-preview--answer {
+  max-height: 360px;
+  width: auto;
+  max-width: 100%;
+  margin-top: 0;
+  object-fit: contain;
+  cursor: zoom-in;
+}
+
+.cforms-pdf-preview {
+  display: block;
+  width: 100%;
+  height: min(480px, 70vh);
+  border: 0;
+  background: #f4f4f5;
 }
 
 .cforms-publish-row {
