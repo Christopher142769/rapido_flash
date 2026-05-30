@@ -735,6 +735,50 @@
   color: var(--ink-soft);
 }
 
+.rform-file-hint {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--ink-mute);
+}
+
+.rform-file-list {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rform-file-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  font-size: 14px;
+}
+
+.rform-file-list li em {
+  font-style: normal;
+  color: var(--ink-mute);
+  font-size: 12px;
+}
+
+.rform-file-remove {
+  border: none;
+  background: transparent;
+  color: var(--bronze);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.rform-file-remove:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 520px) {
   .rform-wrap {
     padding: 0 16px;

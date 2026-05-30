@@ -26,7 +26,7 @@ const fileFilter = (_req, file, cb) => {
 
 const uploadCustomForm = multer({
   storage,
-  limits: { fileSize: 15 * 1024 * 1024 },
+  limits: { fileSize: 50 * 1024 * 1024, files: 30 },
   fileFilter,
 });
 

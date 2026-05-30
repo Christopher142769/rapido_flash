@@ -10,6 +10,12 @@ const customFormAnswerSchema = new mongoose.Schema(
     selectedValues: [{ type: String }],
     fileUrl: { type: String, default: '' },
     fileName: { type: String, default: '' },
+    fileAttachments: [
+      {
+        fileUrl: { type: String, default: '' },
+        fileName: { type: String, default: '' },
+      },
+    ],
     tableRows: [[String]],
   },
   { _id: false }

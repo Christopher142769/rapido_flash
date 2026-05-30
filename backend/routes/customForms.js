@@ -6,6 +6,7 @@ const CustomFormSubmission = require('../models/CustomFormSubmission');
 const { auth, isRestaurant } = require('../middleware/auth');
 const uploadCustomForm = require('../middleware/uploadCustomForm');
 const { notifyFormSubmission } = require('../services/customFormMailer');
+const { collectBlockFiles, validateBlockUploads } = require('../utils/customFormFiles');
 
 const router = express.Router();
 
@@ -87,6 +88,10 @@ function normalizeSections(sections) {
         const options = normalizeOptions(b.options);
         block.options = options.length ? options : [{ id: uid(), label: 'Option 1' }];
       }
+      if (fieldType === 'pdf') {
+        block.pdfMaxCount = Math.min(10, Math.max(1, parseInt(b.pdfMaxCount, 10) || 1));
+        block.pdfMaxSizeMb = Math.min(50, Math.max(1, parseInt(b.pdfMaxSizeMb, 10) || 15));
+      }
       return block;
     }),
   }));
@@ -124,10 +129,13 @@ function validateSubmission(form, payload, fileMap) {
         continue;
       }
 
-      if (!block.required) continue;
+      if (block.fieldType === 'image' || block.fieldType === 'pdf') {
+        const uploadErr = validateBlockUploads(block, sec.id, block.id, fileMap, block.required);
+        if (uploadErr) return uploadErr;
+        continue;
+      }
 
-      const fileKey = `file_${sec.id}_${block.id}`;
-      const hasFile = !!fileMap[fileKey];
+      if (!block.required) continue;
 
       if (block.fieldType === 'choice') {
         const sel = (a.selectedValues || []).filter(Boolean);
@@ -135,8 +143,6 @@ function validateSubmission(form, payload, fileMap) {
       } else if (block.fieldType === 'checkbox') {
         const sel = (a.selectedValues || []).filter(Boolean);
         if (!sel.length) return `Sélectionnez au moins une réponse pour « ${block.label} »`;
-      } else if (block.fieldType === 'image' || block.fieldType === 'pdf') {
-        if (!hasFile) return `Le fichier « ${block.label} » est obligatoire`;
       } else if (block.fieldType === 'number') {
         const tv = String(a.textValue || '').trim();
         if (!tv) return `Le champ « ${block.label} » est obligatoire`;
@@ -254,6 +260,7 @@ router.post('/public/:slug/submit', uploadCustomForm.any(), async (req, res) => 
       fileMap[f.fieldname] = {
         url: filePublicUrl(req, f.filename),
         fileName: f.originalname,
+        size: f.size,
       };
     });
 
@@ -280,10 +287,14 @@ router.post('/public/:slug/submit', uploadCustomForm.any(), async (req, res) => 
       if (selectedValues.length) {
         base.textValue = selectedValues.join(', ');
       }
-      const key = `file_${a.sectionId}_${a.blockId}`;
-      if (fileMap[key]) {
-        base.fileUrl = fileMap[key].url;
-        base.fileName = fileMap[key].fileName;
+      const attachments = collectBlockFiles(fileMap, a.sectionId, a.blockId).map((f) => ({
+        fileUrl: f.url,
+        fileName: f.fileName,
+      }));
+      if (attachments.length) {
+        base.fileAttachments = attachments;
+        base.fileUrl = attachments[0].fileUrl;
+        base.fileName = attachments[0].fileName;
       }
       return base;
     });

@@ -23,10 +23,21 @@ function buildAnswersHtml(answers) {
           .join('');
         return `<div style="margin-bottom:16px"><strong>${label}</strong><table style="border-collapse:collapse;margin-top:8px">${rows}</table></div>`;
       }
-      if (a.fileUrl) {
-        const link = escapeHtml(a.fileUrl);
-        const name = escapeHtml(a.fileName || 'Fichier');
-        return `<div style="margin-bottom:12px"><strong>${label}</strong><br/><a href="${link}">${name}</a></div>`;
+      const attachments =
+        a.fileAttachments?.length > 0
+          ? a.fileAttachments
+          : a.fileUrl
+            ? [{ fileUrl: a.fileUrl, fileName: a.fileName }]
+            : [];
+      if (attachments.length) {
+        const links = attachments
+          .map((f) => {
+            const link = escapeHtml(f.fileUrl);
+            const name = escapeHtml(f.fileName || 'Fichier');
+            return `<a href="${link}">${name}</a>`;
+          })
+          .join('<br/>');
+        return `<div style="margin-bottom:12px"><strong>${label}</strong><br/>${links}</div>`;
       }
       if (a.selectedValues?.length) {
         const list = a.selectedValues.map((v) => escapeHtml(v)).join('<br/>');
@@ -60,6 +71,9 @@ async function notifyFormSubmission({ form, submission }) {
     ...(submission.answers || []).map((a) => {
       if (a.tableRows?.length) {
         return `${a.label}:\n${a.tableRows.map((r) => r.join(' | ')).join('\n')}`;
+      }
+      if (a.fileAttachments?.length) {
+        return `${a.label}: ${a.fileAttachments.map((f) => f.fileUrl).join(', ')}`;
       }
       if (a.fileUrl) return `${a.label}: ${a.fileUrl}`;
       if (a.selectedValues?.length) return `${a.label}: ${a.selectedValues.join(', ')}`;

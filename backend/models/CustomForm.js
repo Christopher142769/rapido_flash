@@ -27,6 +27,10 @@ const customFormSectionSchema = new mongoose.Schema(
         label: { type: String, default: '' },
         required: { type: Boolean, default: false },
         options: [customFormOptionSchema],
+        /** PDF uniquement : nombre max de fichiers (1–10) */
+        pdfMaxCount: { type: Number, default: 1, min: 1, max: 10 },
+        /** PDF uniquement : taille max par fichier en Mo (1–50) */
+        pdfMaxSizeMb: { type: Number, default: 15, min: 1, max: 50 },
         columns: [{ id: String, label: String }],
         rowCount: { type: Number, default: 3, min: 1, max: 30 },
       },

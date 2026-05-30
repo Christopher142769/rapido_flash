@@ -281,7 +281,15 @@ export default function CustomFormsDashboard() {
         ...sections[sIdx],
         blocks: [
           ...sections[sIdx].blocks,
-          { id: newId(), kind: 'field', fieldType: 'text', label: '', required: false },
+          {
+            id: newId(),
+            kind: 'field',
+            fieldType: 'text',
+            label: '',
+            required: false,
+            pdfMaxCount: 1,
+            pdfMaxSizeMb: 15,
+          },
         ],
       };
       return { ...d, sections };
@@ -448,6 +456,16 @@ export default function CustomFormsDashboard() {
                         </tbody>
                       </table>
                     </div>
+                  ) : a.fileAttachments?.length ? (
+                    <ul className="cforms-answer-files">
+                      {a.fileAttachments.map((f, fi) => (
+                        <li key={fi}>
+                          <a className="cforms-link" href={f.fileUrl} target="_blank" rel="noreferrer">
+                            {f.fileName || `Fichier ${fi + 1}`}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
                   ) : a.fileUrl ? (
                     <>
                       <a className="cforms-link" href={a.fileUrl} target="_blank" rel="noreferrer">
@@ -852,6 +870,10 @@ export default function CustomFormsDashboard() {
                                             { id: newId(), label: 'Option 2' },
                                           ];
                                     }
+                                    if (v === 'pdf') {
+                                      patch.pdfMaxCount = block.pdfMaxCount ?? 1;
+                                      patch.pdfMaxSizeMb = block.pdfMaxSizeMb ?? 15;
+                                    }
                                     updateBlock(sIdx, bIdx, patch);
                                   }}
                                 />
@@ -863,6 +885,40 @@ export default function CustomFormsDashboard() {
                                     onChange={(options) => updateBlock(sIdx, bIdx, { options })}
                                   />
                                 </div>
+                              )}
+                              {block.fieldType === 'pdf' && (
+                                <>
+                                  <div>
+                                    <label className="cforms-label">Nombre max de PDF</label>
+                                    <input
+                                      className="cforms-input"
+                                      type="number"
+                                      min={1}
+                                      max={10}
+                                      value={block.pdfMaxCount ?? 1}
+                                      onChange={(e) =>
+                                        updateBlock(sIdx, bIdx, {
+                                          pdfMaxCount: parseInt(e.target.value, 10) || 1,
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="cforms-label">Taille max par PDF (Mo)</label>
+                                    <input
+                                      className="cforms-input"
+                                      type="number"
+                                      min={1}
+                                      max={50}
+                                      value={block.pdfMaxSizeMb ?? 15}
+                                      onChange={(e) =>
+                                        updateBlock(sIdx, bIdx, {
+                                          pdfMaxSizeMb: parseInt(e.target.value, 10) || 15,
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                </>
                               )}
                               <label className="cforms-check">
                                 <input

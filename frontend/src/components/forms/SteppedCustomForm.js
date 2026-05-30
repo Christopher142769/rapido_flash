@@ -6,6 +6,7 @@ import {
   defaultFormSettings,
   isFileField,
 } from '../../utils/customFormSteps';
+import { fileFieldPrefix, getUploadLimits, formatFileSize } from '../../utils/customFormFiles';
 import FormRichHtml from './FormRichHtml';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -20,7 +21,8 @@ function resolveRedirect(url) {
 }
 
 function validateStep(step, state) {
-  const { respondentName, respondentEmail, textValues, choiceValues, tableValues, files } = state;
+  const { respondentName, respondentEmail, textValues, choiceValues, tableValues, files, fileLists } =
+    state;
 
   if (step.type === 'contact') {
     if (step.requireName && !String(respondentName || '').trim()) {
@@ -57,7 +59,22 @@ function validateStep(step, state) {
     return sel.length ? '' : 'Sélectionnez au moins une réponse';
   }
   if (isFileField(block)) {
-    return files[`file_${section.id}_${block.id}`] ? '' : 'Joignez un fichier';
+    const prefix = fileFieldPrefix(section.id, block.id);
+    if (block.fieldType === 'pdf') {
+      const limits = getUploadLimits(block);
+      const list = fileLists[prefix] || [];
+      if (block.required && !list.length) return 'Joignez au moins un PDF';
+      if (list.length > limits.maxCount) {
+        return `Maximum ${limits.maxCount} PDF pour ce champ`;
+      }
+      for (const f of list) {
+        if (f.size > limits.maxSizeBytes) {
+          return `« ${f.name} » dépasse ${limits.maxSizeMb} Mo par fichier`;
+        }
+      }
+      return '';
+    }
+    return files[prefix] ? '' : 'Joignez un fichier';
   }
 
   const tv = String(textValues[key] || '').trim();
@@ -99,7 +116,7 @@ function initStateFromForm(form) {
     });
   });
 
-  return { textValues, choiceValues, tableValues, files: {} };
+  return { textValues, choiceValues, tableValues, files: {}, fileLists: {} };
 }
 
 export default function SteppedCustomForm({ form, slug, onDone }) {
@@ -113,7 +130,7 @@ export default function SteppedCustomForm({ form, slug, onDone }) {
 
   const [respondentName, setRespondentName] = useState('');
   const [respondentEmail, setRespondentEmail] = useState('');
-  const [{ textValues, choiceValues, tableValues, files }, setFieldState] = useState(() =>
+  const [{ textValues, choiceValues, tableValues, files, fileLists }, setFieldState] = useState(() =>
     initStateFromForm(form)
   );
 
@@ -143,13 +160,21 @@ export default function SteppedCustomForm({ form, slug, onDone }) {
   );
 
   const validateAll = useCallback(() => {
-    const state = { respondentName, respondentEmail, textValues, choiceValues, tableValues, files };
+    const state = {
+      respondentName,
+      respondentEmail,
+      textValues,
+      choiceValues,
+      tableValues,
+      files,
+      fileLists,
+    };
     for (const s of steps) {
       const err = validateStep(s, state);
       if (err) return err;
     }
     return '';
-  }, [steps, respondentName, respondentEmail, textValues, choiceValues, tableValues, files]);
+  }, [steps, respondentName, respondentEmail, textValues, choiceValues, tableValues, files, fileLists]);
 
   const buildAnswers = useCallback(() => {
     const answers = [];
@@ -209,6 +234,11 @@ export default function SteppedCustomForm({ form, slug, onDone }) {
       Object.entries(files).forEach(([key, file]) => {
         if (file) fd.append(key, file);
       });
+      Object.entries(fileLists).forEach(([prefix, list]) => {
+        (list || []).forEach((file, index) => {
+          if (file) fd.append(`${prefix}_${index}`, file);
+        });
+      });
 
       const res = await axios.post(`${API_URL}/custom-forms/public/${encodeURIComponent(slug)}/submit`, fd);
       const target = resolveRedirect(res.data?.redirectUrl || form.redirectUrl);
@@ -222,7 +252,18 @@ export default function SteppedCustomForm({ form, slug, onDone }) {
     } finally {
       setSubmitting(false);
     }
-  }, [buildAnswers, files, form.redirectUrl, onDone, respondentEmail, respondentName, settings.confirmationMessage, slug, validateAll]);
+  }, [
+    buildAnswers,
+    files,
+    fileLists,
+    form.redirectUrl,
+    onDone,
+    respondentEmail,
+    respondentName,
+    settings.confirmationMessage,
+    slug,
+    validateAll,
+  ]);
 
   const onNext = useCallback(() => {
     if (!step) return;
@@ -233,6 +274,7 @@ export default function SteppedCustomForm({ form, slug, onDone }) {
       choiceValues,
       tableValues,
       files,
+      fileLists,
     });
     if (err) {
       setError(err);
@@ -243,7 +285,20 @@ export default function SteppedCustomForm({ form, slug, onDone }) {
       return;
     }
     goTo(stepIndex + 1);
-  }, [step, respondentName, respondentEmail, textValues, choiceValues, tableValues, files, isLast, stepIndex, goTo, submitForm]);
+  }, [
+    step,
+    respondentName,
+    respondentEmail,
+    textValues,
+    choiceValues,
+    tableValues,
+    files,
+    fileLists,
+    isLast,
+    stepIndex,
+    goTo,
+    submitForm,
+  ]);
 
   const onPrev = () => {
     if (stepIndex > 0) goTo(stepIndex - 1);
@@ -395,20 +450,108 @@ export default function SteppedCustomForm({ form, slug, onDone }) {
     }
 
     if (isFileField(block)) {
-      const fileKey = `file_${section.id}_${block.id}`;
-      const file = files[fileKey];
+      const prefix = fileFieldPrefix(section.id, block.id);
+      const limits = getUploadLimits(block);
+
+      if (block.fieldType === 'pdf') {
+        const list = fileLists[prefix] || [];
+        const canAddMore = list.length < limits.maxCount;
+
+        const addPdfFiles = (incoming) => {
+          if (!incoming?.length) return;
+          const maxBytes = limits.maxSizeBytes;
+          const accepted = [];
+          for (const f of incoming) {
+            if (f.size > maxBytes) {
+              setError(`« ${f.name} » dépasse ${limits.maxSizeMb} Mo (max par fichier)`);
+              return;
+            }
+            accepted.push(f);
+          }
+          setFieldState((p) => {
+            const cur = [...(p.fileLists[prefix] || [])];
+            const room = limits.maxCount - cur.length;
+            const next = [...cur, ...accepted.slice(0, room)];
+            if (accepted.length > room) {
+              setError(`Maximum ${limits.maxCount} PDF pour ce champ`);
+            } else {
+              setError('');
+            }
+            return { ...p, fileLists: { ...p.fileLists, [prefix]: next } };
+          });
+        };
+
+        return (
+          <div className="rform-file-step">
+            <p className="rform-file-hint">
+              Jusqu’à <strong>{limits.maxCount}</strong> PDF · max <strong>{limits.maxSizeMb} Mo</strong>{' '}
+              chacun
+              {list.length > 0 ? ` · ${list.length}/${limits.maxCount} sélectionné(s)` : ''}
+            </p>
+            <input
+              type="file"
+              accept="application/pdf,.pdf"
+              multiple={limits.maxCount > 1}
+              className="rform-file"
+              disabled={!canAddMore}
+              onChange={(e) => {
+                addPdfFiles(Array.from(e.target.files || []));
+                e.target.value = '';
+              }}
+            />
+            {list.length ? (
+              <ul className="rform-file-list">
+                {list.map((f, i) => (
+                  <li key={`${f.name}-${i}`}>
+                    <span>
+                      {f.name} <em>({formatFileSize(f.size)})</em>
+                    </span>
+                    <button
+                      type="button"
+                      className="rform-file-remove"
+                      onClick={() =>
+                        setFieldState((p) => {
+                          const next = (p.fileLists[prefix] || []).filter((_, j) => j !== i);
+                          return { ...p, fileLists: { ...p.fileLists, [prefix]: next } };
+                        })
+                      }
+                    >
+                      Retirer
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        );
+      }
+
+      const file = files[prefix];
       return (
         <div className="rform-file-step">
+          <p className="rform-file-hint">
+            1 image · max <strong>{limits.maxSizeMb} Mo</strong>
+          </p>
           <input
             type="file"
-            accept={block.fieldType === 'pdf' ? 'application/pdf,.pdf' : 'image/*'}
+            accept="image/*"
             className="rform-file"
             onChange={(e) => {
               const f = e.target.files?.[0];
-              if (f) setFieldState((p) => ({ ...p, files: { ...p.files, [fileKey]: f } }));
+              if (!f) return;
+              if (f.size > limits.maxSizeBytes) {
+                setError(`Le fichier dépasse ${limits.maxSizeMb} Mo`);
+                return;
+              }
+              setError('');
+              setFieldState((p) => ({ ...p, files: { ...p.files, [prefix]: f } }));
             }}
           />
-          {file ? <p className="rform-file-name">{file.name}</p> : null}
+          {file ? (
+            <p className="rform-file-name">
+              {file.name} ({formatFileSize(file.size)})
+            </p>
+          ) : null}
         </div>
       );
     }
