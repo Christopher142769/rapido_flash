@@ -251,7 +251,7 @@
         <a href="#profil">Profil</a>
         <a href="#process">Processus</a>
       </div>
-      <a class="btn btn-primary" data-cta href="#">Postuler <span class="arr">↗</span></a>
+      <a class="btn btn-primary" data-cta href="/form/formulaire-de-candidature-manager-de-plateforme-rapido">Postuler <span class="arr">↗</span></a>
       <button class="burger" id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
     </div>
   </nav>
@@ -263,7 +263,7 @@
   <a href="#missions" class="mlink">Missions</a>
   <a href="#profil" class="mlink">Profil recherché</a>
   <a href="#process" class="mlink">Processus</a>
-  <a class="btn btn-primary" data-cta href="#">Postuler maintenant ↗</a>
+  <a class="btn btn-primary" data-cta href="/form/formulaire-de-candidature-manager-de-plateforme-rapido">Postuler maintenant ↗</a>
 </div>
 
 <a id="top"></a>
@@ -277,7 +277,7 @@
     <h1 class="rv" style="--d:.08s">Devenez le Manager qui pilote la <span class="serif-i">croissance</span> de RAPIDO.</h1>
     <p class="hero-lead rv" style="--d:.16s">Plateforme e-commerce &amp; marketplace de référence à Cotonou. Un poste pivot, rattaché à la Direction Générale, avec une responsabilité complète sur le marketing, la prospection B2B, l'animation des partenaires vendeurs et le pilotage de la force de vente.</p>
     <div class="hero-cta rv" style="--d:.24s">
-      <a class="btn btn-primary" data-cta href="#">Postuler maintenant <span class="arr">↗</span></a>
+      <a class="btn btn-primary" data-cta href="/form/formulaire-de-candidature-manager-de-plateforme-rapido">Postuler maintenant <span class="arr">↗</span></a>
       <a class="btn btn-ghost" href="#poste">Découvrir le poste</a>
     </div>
     <p class="hero-note rv" style="--d:.3s">⏱ <span>20 questions · <b>25 à 35 minutes</b> · candidature notée sur 100</span></p>
@@ -420,7 +420,7 @@
           <span>Évolution accélérée</span>
         </div>
         <div style="margin-top:34px">
-          <a class="btn btn-light" data-cta href="#">Tenter ma chance ↗</a>
+          <a class="btn btn-light" data-cta href="/form/formulaire-de-candidature-manager-de-plateforme-rapido">Tenter ma chance ↗</a>
         </div>
       </div>
     </div>
@@ -468,7 +468,7 @@
     <span class="eyebrow rv">Les candidatures sont ouvertes</span>
     <h2 class="rv">Prêt à écrire le prochain <span class="serif-i">chapitre</span> de RAPIDO&nbsp;?</h2>
     <p class="rv">20 questions. 25 minutes. Une seule chance de prouver, chiffres à l'appui, que ce poste est fait pour vous.</p>
-    <div class="rv"><a class="btn btn-light" data-cta href="#">Postuler maintenant ↗</a></div>
+    <div class="rv"><a class="btn btn-light" data-cta href="/form/formulaire-de-candidature-manager-de-plateforme-rapido">Postuler maintenant ↗</a></div>
     <p class="micro rv">Tout dossier incomplet ou sans preuves chiffrées sera écarté. Un numéro de téléphone joignable et un CV sont obligatoires.</p>
   </div>
 </section>
@@ -496,7 +496,7 @@
         <p>Plateforme e-commerce &amp; marketplace · Cotonou, Bénin. Recrutement du Manager de Plateforme — 2026.</p>
       </div>
       <div style="text-align:right">
-        <a class="btn btn-primary" data-cta href="#">Postuler ↗</a>
+        <a class="btn btn-primary" data-cta href="/form/formulaire-de-candidature-manager-de-plateforme-rapido">Postuler ↗</a>
         <p class="conf" style="margin-top:16px">Réf. CDC-MANAGER-RAPIDO-2026</p>
       </div>
     </div>
@@ -504,25 +504,20 @@
 </footer>
 
 <script>
-  const FORM_URL = "https://forms.gle/zbSuG4Ernog2aZdR6";
-
-  /** URL de remerciement (même domaine que la page recrutement). À coller dans Google Forms. */
-  function getMerciUrl() {
+  const FORM_PATH = "/form/formulaire-de-candidature-manager-de-plateforme-rapido";
+  const FORM_URL = (() => {
     try {
-      return new URL("/recrutement/merci", window.location.origin).href;
+      return new URL(FORM_PATH, window.location.origin).href;
     } catch {
-      return "https://rapido.bj/recrutement/merci";
+      return "https://www.rapido.bj/form/formulaire-de-candidature-manager-de-plateforme-rapido";
     }
-  }
-  const MERCI_URL = getMerciUrl();
-  /* Google Forms : Settings → Presentation → AFTER SUBMISSION → Confirmation message → Edit
-     Coller MERCI_URL dans le message (Google ne redirige pas automatiquement sans add-on). */
+  })();
 
   document.querySelectorAll("[data-cta]").forEach((a) => {
     a.setAttribute("href", FORM_URL);
     a.setAttribute("target", "_self");
     a.setAttribute("rel", "noopener");
-    a.setAttribute("title", "Formulaire de candidature — redirection vers la page merci après envoi");
+    a.setAttribute("title", "Formulaire de candidature Manager de Plateforme — Rapido");
   });
 
   // sticky header
