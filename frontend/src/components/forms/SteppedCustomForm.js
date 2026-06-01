@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   buildFormSteps,
@@ -113,7 +112,6 @@ function initStateFromForm(form) {
 }
 
 export default function SteppedCustomForm({ form, slug, onDone }) {
-  const navigate = useNavigate();
   const settings = useMemo(() => defaultFormSettings(form.settings), [form.settings]);
   const steps = useMemo(() => buildFormSteps(form), [form]);
   const [stepIndex, setStepIndex] = useState(0);
@@ -237,7 +235,7 @@ export default function SteppedCustomForm({ form, slug, onDone }) {
       const res = await axios.post(`${API_URL}/custom-forms/public/${encodeURIComponent(slug)}/submit`, fd);
       const thanksPath = toInAppThanksPath(res.data?.redirectUrl || form.redirectUrl);
       if (thanksPath) {
-        navigate(thanksPath, { replace: true });
+        window.location.assign(thanksPath);
         return;
       }
       onDone?.({ confirmationMessage: settings.confirmationMessage });
@@ -251,7 +249,6 @@ export default function SteppedCustomForm({ form, slug, onDone }) {
     files,
     fileLists,
     form.redirectUrl,
-    navigate,
     onDone,
     respondentEmail,
     respondentName,

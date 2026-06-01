@@ -409,7 +409,7 @@ src="https://www.facebook.com/tr?id=1536465181424806&ev=PageView&noscript=1"></n
           <div><b>Contrat</b><span>CDI · Cadre</span></div>
           <div><b>Lieu</b><span>Cotonou + terrain</span></div>
           <div><b>Rattach.</b><span>Direction Générale</span></div>
-          <div><b>Profil</b><span>Bac+4/+5, 2 ans+ en management</span></div>
+          <div><b>Profil</b><span>Bac+3/+5, 2 ans+ en management</span></div>
         </div>
         <div class="role-cta">
           <a class="btn btn-primary" data-cta="manager" href="/form/formulaire-de-candidature-manager-de-plateforme-rapido">Postuler — Manager <span class="arr">↗</span></a>
@@ -449,7 +449,7 @@ src="https://www.facebook.com/tr?id=1536465181424806&ev=PageView&noscript=1"></n
           <div><b>Contrat</b><span>CDD 3 mois → CDI</span></div>
           <div><b>Lieu</b><span>Restaurant RAPIDO · Cotonou</span></div>
           <div><b>Avantages</b><span>Repas offerts · tenue fournie</span></div>
-          <div><b>Profil</b><span>CAP/BEP Cuisine · 2 ans+ d'expérience</span></div>
+          <div><b>Profil</b><span>CAP/BEPC/Licence Cuisine · 2 ans+ d'expérience</span></div>
         </div>
         <div class="role-cta">
           <a class="btn btn-ghost" data-cta="cuisinier" href="/form/formulaire-de-candidature-cuisine">Postuler — Cuisinier·ère <span class="arr">↗</span></a>
@@ -501,7 +501,7 @@ src="https://www.facebook.com/tr?id=1536465181424806&ev=PageView&noscript=1"></n
 
         <span class="req-title">Profil requis</span>
         <ul class="req-list">
-          <li>Bac+4/+5 en marketing, commerce ou management.</li>
+          <li>Bac+3/+5 en marketing, commerce ou management.</li>
           <li>2 ans+ en management commercial ou marketing digital.</li>
           <li>Encadrement prouvé d'une équipe (min. 3 personnes).</li>
           <li>Expérience confirmée en e-commerce, marketplace ou retail digital.</li>
@@ -621,7 +621,7 @@ src="https://www.facebook.com/tr?id=1536465181424806&ev=PageView&noscript=1"></n
 
         <span class="req-title">Profil requis</span>
         <ul class="req-list">
-          <li>CAP/BEP Cuisine, BTS Hôtellerie-Restauration ou équivalent.</li>
+          <li>CAP/BEPC/Licence Cuisine, BTS Hôtellerie-Restauration ou équivalent.</li>
           <li>Minimum 2 ans en cuisine professionnelle (restaurant, hôtel, traiteur).</li>
           <li>Maîtrise de la cuisine béninoise / ouest-africaine : atout déterminant.</li>
           <li>Certificat médical d'aptitude alimentaire (obligatoire avant prise de poste).</li>
@@ -744,8 +744,16 @@ src="https://www.facebook.com/tr?id=1536465181424806&ev=PageView&noscript=1"></n
     cuisinier: '/form/formulaire-de-candidature-cuisine',
   };
 
+  function topWindow() {
+    try {
+      return window.top && window.top !== window ? window.top : window;
+    } catch {
+      return window;
+    }
+  }
+
   function rapidoFormUrl(path) {
-    const host = (window.location.hostname || '').toLowerCase();
+    const host = (topWindow().location.hostname || '').toLowerCase();
     if (host.includes('rapido.online')) {
       return 'https://rapido.online' + path;
     }
@@ -774,11 +782,16 @@ src="https://www.facebook.com/tr?id=1536465181424806&ev=PageView&noscript=1"></n
   document.querySelectorAll('[data-cta]').forEach((a) => {
     const key = a.getAttribute('data-cta');
     if (!FORMS[key]) return;
-    a.setAttribute('href', FORMS[key]);
+    const url = FORMS[key];
+    a.setAttribute('href', url);
     a.setAttribute('rel', 'noopener');
     if (RAPIDO_FORM_PATHS[key]) {
-      a.setAttribute('target', '_self');
+      a.setAttribute('target', '_top');
       if (FORM_TITLES[key]) a.setAttribute('title', FORM_TITLES[key]);
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        topWindow().location.href = url;
+      });
     } else {
       a.setAttribute('target', '_blank');
     }
