@@ -1,5 +1,5 @@
 /politique-confidentialite    /privacy.html   200
 /shop/static/*    /static/:splat    200
 /recrutement/merci    /recrutement/merci.html    200
-/recrutement    /recrutement/index.html    200
+/recrutement    /recrutement/carrieres.html    200
 /*    /index.html   200

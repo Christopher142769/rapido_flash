@@ -163,9 +163,11 @@ function validateSubmission(form, payload, fileMap) {
   return null;
 }
 
+const DEFAULT_FORM_THANKS_PATH = '/recrutement/merci';
+
 function normalizeRedirectUrl(raw) {
   const s = String(raw || '').trim();
-  if (!s) return '';
+  if (!s) return DEFAULT_FORM_THANKS_PATH;
   if (s.startsWith('/') && !s.startsWith('//')) return s.slice(0, 500);
   try {
     const u = new URL(s);
@@ -317,7 +319,7 @@ router.post('/public/:slug/submit', uploadCustomForm.any(), async (req, res) => 
       ok: true,
       message: 'Réponse enregistrée. Merci !',
       emailSent: submission.emailSent,
-      redirectUrl: form.redirectUrl || '',
+      redirectUrl: form.redirectUrl?.trim() || DEFAULT_FORM_THANKS_PATH,
     });
   } catch (err) {
     console.error('[customForms submit]', err);

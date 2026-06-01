@@ -225,11 +225,18 @@ function metaForPath(pathname) {
       robots: 'noindex, nofollow',
     };
   }
+  if (pathname === '/recrutement/merci' || pathname === '/recrutement/merci/') {
+    return {
+      title: 'Candidature reçue · RAPIDO',
+      description: 'Votre candidature RAPIDO a bien été enregistrée. Merci.',
+      robots: 'noindex, follow',
+    };
+  }
   if (pathname.startsWith('/recrutement')) {
     return {
-      title: 'RAPIDO · Manager de Plateforme — Recrutement 2026',
+      title: 'RAPIDO · Carrières — 3 postes ouverts',
       description:
-        'RAPIDO recrute son Manager de Plateforme. Poste pivot rattaché à la Direction Générale : stratégie marketing, prospection B2B, partenaires vendeurs et force de vente.',
+        'RAPIDO recrute : Manager de Plateforme, Commercial Terrain B2C et Cuisinier(ère). Grilles salariales attractives, CDI évolutifs, équipe ambitieuse à Cotonou.',
       robots: 'index, follow',
     };
   }

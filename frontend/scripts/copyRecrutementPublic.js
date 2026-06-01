@@ -8,7 +8,7 @@ const root = path.resolve(__dirname, '../..');
 const srcDir = path.join(root, 'recrutement');
 const destDir = path.join(__dirname, '../public/recrutement');
 
-const FILES = ['index.html', 'merci.html', 'logo.png', '_redirects'];
+const FILES = ['carrieres.html', 'merci.html', 'logo.png', '_redirects'];
 
 function copyFile(name) {
   const from = path.join(srcDir, name);
@@ -27,4 +27,11 @@ if (!fs.existsSync(srcDir)) {
 
 fs.mkdirSync(destDir, { recursive: true });
 FILES.forEach(copyFile);
+
+const staleIndex = path.join(destDir, 'index.html');
+if (fs.existsSync(staleIndex)) {
+  fs.unlinkSync(staleIndex);
+  console.log('[copyRecrutementPublic] index.html obsolète supprimé');
+}
+
 console.log('[copyRecrutementPublic] → public/recrutement/');

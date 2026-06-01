@@ -1,12 +1,12 @@
 import React from 'react';
 
 const PAGES = {
-  index: '/recrutement/index.html',
+  index: '/recrutement/carrieres.html',
   merci: '/recrutement/merci.html',
 };
 
 /**
- * Affiche la landing statique (recrutement/index.html) dans l’app React.
+ * Affiche la landing statique (recrutement/carrieres.html) dans l’app React.
  * Nécessaire car Render sert /* → index.html : /recrutement seul ne charge pas le HTML statique.
  */
 export default function RecrutementPage({ page = 'index' }) {
@@ -14,7 +14,7 @@ export default function RecrutementPage({ page = 'index' }) {
   const title =
     page === 'merci'
       ? 'Candidature reçue · RAPIDO'
-      : 'RAPIDO · Manager de Plateforme — Recrutement';
+      : 'RAPIDO · Carrières';
 
   return (
     <iframe

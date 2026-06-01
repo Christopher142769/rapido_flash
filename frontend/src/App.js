@@ -109,7 +109,7 @@ function AppRoutes() {
         <Route path="/account-deletion" element={<AccountDeletion />} />
         <Route path="/suppression-compte" element={<AccountDeletion />} />
 
-        {/* Recrutement : HTML statique recrutement/index.html */}
+        {/* Recrutement : HTML statique recrutement/carrieres.html */}
         <Route path="/recrutement/merci" element={<RecrutementPage page="merci" />} />
         <Route path="/recrutement" element={<RecrutementPage page="index" />} />
         <Route path="/form/:slug" element={<PublicCustomFormPage />} />

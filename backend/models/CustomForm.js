@@ -57,7 +57,7 @@ const customFormSchema = new mongoose.Schema(
     description: { type: String, default: '' },
     notifyEmails: [{ type: String, trim: true, lowercase: true }],
     /** URL absolue ou chemin relatif (/recrutement/merci) après envoi réussi */
-    redirectUrl: { type: String, default: '' },
+    redirectUrl: { type: String, default: '/recrutement/merci' },
     isPublished: { type: Boolean, default: false },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     settings: { type: customFormSettingsSchema, default: () => ({}) },

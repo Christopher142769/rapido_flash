@@ -50,7 +50,7 @@ const emptyForm = () => ({
   slug: '',
   description: '',
   notifyEmails: '',
-  redirectUrl: '',
+  redirectUrl: '/recrutement/merci',
   isPublished: false,
   settings: defaultSettings(),
   sections: [emptySection()],
@@ -186,7 +186,7 @@ export default function CustomFormsDashboard() {
       slug: form.slug || '',
       description: form.description || '',
       notifyEmails: (form.notifyEmails || []).join(', '),
-      redirectUrl: form.redirectUrl || '',
+      redirectUrl: form.redirectUrl || '/recrutement/merci',
       isPublished: !!form.isPublished,
       settings: defaultFormSettings(form.settings),
       sections: (form.sections || []).length ? form.sections : [emptySection()],
@@ -601,7 +601,10 @@ export default function CustomFormsDashboard() {
                       placeholder="https://rapido.bj/recrutement/merci"
                       onChange={(e) => setDraft((d) => ({ ...d, redirectUrl: e.target.value }))}
                     />
-                    <p className="cforms-hint">URL absolue ou chemin relatif (/recrutement/merci). Sinon, page merci intégrée.</p>
+                    <p className="cforms-hint">
+                      URL absolue ou chemin relatif. Par défaut : <code>/recrutement/merci</code> (affiché dans le
+                      navigateur après envoi).
+                    </p>
                   </div>
                 </div>
 

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   buildFormSteps,
@@ -8,17 +9,9 @@ import {
 } from '../../utils/customFormSteps';
 import { fileFieldPrefix, getUploadLimits, formatFileSize } from '../../utils/customFormFiles';
 import FormRichHtml from './FormRichHtml';
+import { toInAppThanksPath } from '../../utils/customFormRedirect';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
-function resolveRedirect(url) {
-  const s = String(url || '').trim();
-  if (!s) return '';
-  if (s.startsWith('/') && !s.startsWith('//')) {
-    return `${window.location.origin}${s}`;
-  }
-  return s;
-}
 
 function validateStep(step, state) {
   const { respondentName, respondentEmail, textValues, choiceValues, tableValues, files, fileLists } =
@@ -120,6 +113,7 @@ function initStateFromForm(form) {
 }
 
 export default function SteppedCustomForm({ form, slug, onDone }) {
+  const navigate = useNavigate();
   const settings = useMemo(() => defaultFormSettings(form.settings), [form.settings]);
   const steps = useMemo(() => buildFormSteps(form), [form]);
   const [stepIndex, setStepIndex] = useState(0);
@@ -241,9 +235,9 @@ export default function SteppedCustomForm({ form, slug, onDone }) {
       });
 
       const res = await axios.post(`${API_URL}/custom-forms/public/${encodeURIComponent(slug)}/submit`, fd);
-      const target = resolveRedirect(res.data?.redirectUrl || form.redirectUrl);
-      if (target) {
-        window.location.assign(target);
+      const thanksPath = toInAppThanksPath(res.data?.redirectUrl || form.redirectUrl);
+      if (thanksPath) {
+        navigate(thanksPath, { replace: true });
         return;
       }
       onDone?.({ confirmationMessage: settings.confirmationMessage });
@@ -257,6 +251,7 @@ export default function SteppedCustomForm({ form, slug, onDone }) {
     files,
     fileLists,
     form.redirectUrl,
+    navigate,
     onDone,
     respondentEmail,
     respondentName,
