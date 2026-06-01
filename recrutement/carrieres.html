@@ -19,6 +19,7 @@ s.parentNode.insertBefore(t,s)}(window, document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
 fbq('init', '1536465181424806');
 fbq('track', 'PageView');
+fbq('track', 'ViewContent', { content_name: 'Page Carrières', content_category: 'Recrutement' });
 </script>
 <noscript><img height="1" width="1" style="display:none" alt=""
 src="https://www.facebook.com/tr?id=1536465181424806&ev=PageView&noscript=1"></noscript>
@@ -773,11 +774,29 @@ src="https://www.facebook.com/tr?id=1536465181424806&ev=PageView&noscript=1"></n
     cuisinier: 'Formulaire de candidature Cuisine — Rapido',
   };
 
+  const POSTE_NAMES = {
+    manager: 'Manager de Plateforme',
+    commercial: 'Commercial Terrain B2C',
+    cuisinier: 'Cuisinier·ère',
+  };
+
   const FORMS = {
     manager: rapidoFormUrl(RAPIDO_FORM_PATHS.manager),
     commercial: rapidoFormUrl(RAPIDO_FORM_PATHS.commercial),
     cuisinier: rapidoFormUrl(RAPIDO_FORM_PATHS.cuisinier),
   };
+
+  function metaTrack(event, params) {
+    try {
+      if (typeof fbq === 'function') fbq('track', event, params || {});
+    } catch (_) {}
+    try {
+      window.parent.postMessage(
+        { source: 'rapido-recrutement', event: event, params: params || {} },
+        '*'
+      );
+    } catch (_) {}
+  }
 
   document.querySelectorAll('[data-cta]').forEach((a) => {
     const key = a.getAttribute('data-cta');
@@ -785,11 +804,18 @@ src="https://www.facebook.com/tr?id=1536465181424806&ev=PageView&noscript=1"></n
     const url = FORMS[key];
     a.setAttribute('href', url);
     a.setAttribute('rel', 'noopener');
+    a.setAttribute('data-fb-event', 'Lead');
     if (RAPIDO_FORM_PATHS[key]) {
       a.setAttribute('target', '_top');
+      a.id = 'fb-cta-' + key;
       if (FORM_TITLES[key]) a.setAttribute('title', FORM_TITLES[key]);
       a.addEventListener('click', (e) => {
         e.preventDefault();
+        metaTrack('Lead', {
+          content_name: 'Postuler — ' + (POSTE_NAMES[key] || key),
+          content_category: 'Recrutement',
+          content_ids: [key],
+        });
         topWindow().location.href = url;
       });
     } else {

@@ -9,6 +9,7 @@ import {
 import { fileFieldPrefix, getUploadLimits, formatFileSize } from '../../utils/customFormFiles';
 import FormRichHtml from './FormRichHtml';
 import { toInAppThanksPath } from '../../utils/customFormRedirect';
+import { trackMeta } from '../../utils/metaPixel';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -233,6 +234,11 @@ export default function SteppedCustomForm({ form, slug, onDone }) {
       });
 
       const res = await axios.post(`${API_URL}/custom-forms/public/${encodeURIComponent(slug)}/submit`, fd);
+      trackMeta('CompleteRegistration', {
+        content_name: form.title || slug,
+        content_category: 'Recrutement',
+      });
+
       const thanksPath = toInAppThanksPath(res.data?.redirectUrl || form.redirectUrl);
       if (thanksPath) {
         window.location.assign(thanksPath);

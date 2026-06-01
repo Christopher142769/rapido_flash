@@ -60,19 +60,21 @@ import './App.css';
 import MaintenanceGate from './components/MaintenanceGate';
 import SeoRouteMeta from './components/SeoRouteMeta';
 import { DASHBOARD_BASE_PATH } from './config/dashboardPath';
+import { trackMetaForRoute } from './utils/metaPixel';
 
-/** Meta Pixel PageView on client-side navigations (initial load is tracked in index.html). */
+/** Meta Pixel sur navigations SPA (chargement initial = index.html). */
 function MetaPixelPageViewOnRoute() {
   const location = useLocation();
   const skipFirst = useRef(true);
   useEffect(() => {
-    if (skipFirst.current) {
+    const p = location.pathname;
+    const isRecrutementOrForm = p.startsWith('/recrutement') || p.startsWith('/form/');
+    if (skipFirst.current && !isRecrutementOrForm) {
       skipFirst.current = false;
       return;
     }
-    if (typeof window.fbq === 'function') {
-      window.fbq('track', 'PageView');
-    }
+    skipFirst.current = false;
+    trackMetaForRoute(p);
   }, [location.pathname, location.search]);
   return null;
 }

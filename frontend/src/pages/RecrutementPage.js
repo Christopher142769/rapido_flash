@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useCallback } from 'react';
+import { trackMeta } from '../utils/metaPixel';
 
 const PAGES = {
   index: '/recrutement/carrieres.html',
@@ -6,9 +7,8 @@ const PAGES = {
 };
 
 /**
- * Affiche la landing statique dans une iframe (Render sert /* → index.html).
- * Les liens « Postuler » dans carrieres.html utilisent target="_top" pour changer l’URL
- * vers /form/... dans la barre d’adresse (tracking Meta).
+ * Landing statique en iframe (Render → index.html).
+ * Les clics Postuler dans carrieres.html envoient des évènements Meta au parent via postMessage.
  */
 export default function RecrutementPage({ page = 'index' }) {
   const src = PAGES[page] || PAGES.index;
@@ -17,10 +17,36 @@ export default function RecrutementPage({ page = 'index' }) {
       ? 'Candidature reçue · RAPIDO'
       : 'RAPIDO · Carrières';
 
+  useEffect(() => {
+    const onMessage = (event) => {
+      if (event.data?.source !== 'rapido-recrutement') return;
+      const { event: eventName, params } = event.data;
+      if (eventName) trackMeta(eventName, params || {});
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
+  const onIframeLoad = useCallback(() => {
+    if (page === 'merci') {
+      trackMeta('CompleteRegistration', {
+        content_name: 'Candidature reçue',
+        content_category: 'Recrutement',
+      });
+    } else {
+      trackMeta('ViewContent', {
+        content_name: 'Page Carrières',
+        content_category: 'Recrutement',
+      });
+    }
+  }, [page]);
+
   return (
     <iframe
       title={title}
       src={src}
+      onLoad={onIframeLoad}
+      allow="autoplay; clipboard-write"
       style={{
         position: 'fixed',
         inset: 0,
