@@ -1,42 +1,35 @@
-import { useEffect } from 'react';
+import React from 'react';
 
-const STATIC_FILES = {
+const PAGES = {
   index: '/recrutement/carrieres.html',
   merci: '/recrutement/merci.html',
 };
 
 /**
- * Sort du shell React : charge la page statique sur /recrutement ou /recrutement/merci
- * pour que l’URL dans le navigateur soit correcte (tracking, partage, etc.).
+ * Affiche la landing statique dans une iframe (Render sert /* → index.html).
+ * Les liens « Postuler » dans carrieres.html utilisent target="_top" pour changer l’URL
+ * vers /form/... dans la barre d’adresse (tracking Meta).
  */
 export default function RecrutementPage({ page = 'index' }) {
-  useEffect(() => {
-    const path = page === 'merci' ? '/recrutement/merci' : '/recrutement';
-    const staticFile = STATIC_FILES[page] || STATIC_FILES.index;
-    const suffix = `${window.location.search || ''}${window.location.hash || ''}`;
-    const reloadKey = `rapido-recrutement-reload:${path}`;
+  const src = PAGES[page] || PAGES.index;
+  const title =
+    page === 'merci'
+      ? 'Candidature reçue · RAPIDO'
+      : 'RAPIDO · Carrières';
 
-    if (window.location.pathname !== path) {
-      window.location.replace(`${path}${suffix}`);
-      return;
-    }
-
-    const root = document.getElementById('root');
-    const inSpaShell = root && root.childElementCount > 0;
-
-    if (inSpaShell) {
-      if (!sessionStorage.getItem(reloadKey)) {
-        sessionStorage.setItem(reloadKey, '1');
-        window.location.reload();
-        return;
-      }
-      sessionStorage.removeItem(reloadKey);
-      window.location.replace(`${staticFile}${suffix}`);
-      return;
-    }
-
-    sessionStorage.removeItem(reloadKey);
-  }, [page]);
-
-  return null;
+  return (
+    <iframe
+      title={title}
+      src={src}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        border: 'none',
+        zIndex: 100000,
+        background: '#F6F1E8',
+      }}
+    />
+  );
 }
