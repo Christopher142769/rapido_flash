@@ -11,6 +11,7 @@ uploads/
 .DS_Store
 *.log
 exports/
+!exports/recovered-custom-forms/.gitkeep
 .mongodb/
 frontend/build/
 frontend/releases/

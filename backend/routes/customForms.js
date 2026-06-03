@@ -24,9 +24,19 @@ function slugify(title) {
     .slice(0, 80) || `form-${uid()}`;
 }
 
+/** URL locale legacy (fichiers déjà en base avant Cloudinary). */
 function filePublicUrl(req, filename) {
   const base = process.env.API_PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
   return `${base.replace(/\/$/, '')}/uploads/custom-forms/${filename}`;
+}
+
+/** Cloudinary : req.file.path = secure_url ; disque : nom de fichier local. */
+function fileUrlFromUpload(req, file) {
+  if (!file) return '';
+  const stored = String(file.path || '').trim();
+  if (stored.startsWith('http://') || stored.startsWith('https://')) return stored;
+  if (file.filename) return filePublicUrl(req, file.filename);
+  return stored;
 }
 
 const FIELD_TYPES = ['text', 'textarea', 'email', 'number', 'date', 'image', 'pdf', 'choice', 'checkbox'];
@@ -260,7 +270,7 @@ router.post('/public/:slug/submit', uploadCustomForm.any(), async (req, res) => 
     const fileMap = {};
     (req.files || []).forEach((f) => {
       fileMap[f.fieldname] = {
-        url: filePublicUrl(req, f.filename),
+        url: fileUrlFromUpload(req, f),
         fileName: f.originalname,
         size: f.size,
       };

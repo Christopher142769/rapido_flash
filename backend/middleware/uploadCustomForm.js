@@ -1,11 +1,24 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { createCloudinaryStorage } = require('./cloudinaryStorage');
 
 const uploadDir = path.join(__dirname, '../uploads/custom-forms');
-fs.mkdirSync(uploadDir, { recursive: true });
+const useCloudinary = !!(
+  process.env.CLOUDINARY_CLOUD_NAME &&
+  process.env.CLOUDINARY_API_KEY &&
+  process.env.CLOUDINARY_API_SECRET
+);
 
-const storage = multer.diskStorage({
+if (!useCloudinary) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+  // eslint-disable-next-line no-console
+  console.warn(
+    '[uploadCustomForm] CLOUDINARY_* non configuré — fichiers en local (perdus au redéploiement Render).'
+  );
+}
+
+const diskStorage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadDir),
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname || '').toLowerCase() || '';
@@ -14,6 +27,14 @@ const storage = multer.diskStorage({
     cb(null, name);
   },
 });
+
+const storage = useCloudinary
+  ? createCloudinaryStorage({
+      folder: 'rapido/custom-forms',
+      publicIdPrefix: 'cf',
+      resourceType: 'auto',
+    })
+  : diskStorage;
 
 const fileFilter = (_req, file, cb) => {
   const mime = String(file.mimetype || '');
@@ -29,5 +50,7 @@ const uploadCustomForm = multer({
   limits: { fileSize: 50 * 1024 * 1024, files: 30 },
   fileFilter,
 });
+
+uploadCustomForm.useCloudinary = useCloudinary;
 
 module.exports = uploadCustomForm;
