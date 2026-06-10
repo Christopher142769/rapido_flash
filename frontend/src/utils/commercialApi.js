@@ -7,6 +7,19 @@ export function authHeaders() {
   return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
 }
 
+export async function fetchPointsProducts() {
+  const res = await axios.get(`${API_URL}/commercial/points/products`, authHeaders());
+  return res.data;
+}
+
+export async function fetchPointsSummary(params) {
+  const res = await axios.get(`${API_URL}/commercial/points/summary`, {
+    ...authHeaders(),
+    params,
+  });
+  return res.data;
+}
+
 export async function fetchCommercialOverview() {
   const res = await axios.get(`${API_URL}/commercial/overview`, authHeaders());
   return res.data;

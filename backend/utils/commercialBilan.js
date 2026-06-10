@@ -9,6 +9,50 @@ function bilanBaseQuery(extra = {}) {
   };
 }
 
+function parseDateInput(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** Filtre MongoDB sur orderDate (ou createdAt si orderDate absent). */
+function buildPeriodFilter(dateFrom, dateTo) {
+  const from = parseDateInput(dateFrom);
+  const to = parseDateInput(dateTo);
+  if (!from && !to) return null;
+
+  const range = {};
+  if (from) range.$gte = from;
+  if (to) {
+    const end = new Date(to);
+    end.setHours(23, 59, 59, 999);
+    range.$lte = end;
+  }
+
+  return {
+    $or: [
+      { orderDate: range },
+      {
+        $and: [
+          { $or: [{ orderDate: null }, { orderDate: { $exists: false } }] },
+          { createdAt: range },
+        ],
+      },
+    ],
+  };
+}
+
+/** Commandes confirmées (hors en attente / annulées). */
+const CONFIRMED_STATUTS = ['confirmee', 'en_preparation', 'en_livraison', 'livree'];
+
+function confirmedOrdersQuery(extra = {}) {
+  return {
+    ...bilanBaseQuery(),
+    statut: { $in: CONFIRMED_STATUTS },
+    ...extra,
+  };
+}
+
 function orderLocation(order) {
   if (order.isOffPlatform) return order.offPlatformLocation || '—';
   const c = order.customer || {};
@@ -48,6 +92,9 @@ function bilanRowFromOrder(order) {
 module.exports = {
   BILAN_START_DATE,
   bilanBaseQuery,
+  buildPeriodFilter,
+  confirmedOrdersQuery,
+  CONFIRMED_STATUTS,
   orderLocation,
   bilanRowFromOrder,
   resolveCommercialStatus,

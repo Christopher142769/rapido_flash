@@ -55,6 +55,7 @@ import CommercialCommandesPage from './pages/commercial/CommercialCommandesPage'
 import CommercialBilanPage from './pages/commercial/CommercialBilanPage';
 import CommercialRelancesPage from './pages/commercial/CommercialRelancesPage';
 import CommerciauxDashboard from './pages/commercial/CommerciauxDashboard';
+import CommercialPointsPage from './pages/commercial/CommercialPointsPage';
 import ChatThread from './pages/client/ChatThread';
 import ChatsInbox from './pages/client/ChatsInbox';
 import ChatFab from './components/ChatFab';
@@ -181,6 +182,7 @@ function AppRoutes() {
           <Route path="commercial-commandes" element={<CommercialCommandesPage />} />
           <Route path="commercial-bilan" element={<CommercialBilanPage />} />
           <Route path="commercial-relances" element={<CommercialRelancesPage />} />
+          <Route path="commercial-points" element={<CommercialPointsPage />} />
           <Route path="commerciaux" element={<CommerciauxDashboard />} />
         </Route>
         <Route path="/dashboard/*" element={<DashboardLegacyRedirect />} />

@@ -21,6 +21,7 @@ import {
   FaFileExcel,
   FaBell as FaBellRelance,
   FaUserTie,
+  FaBullseye,
 } from 'react-icons/fa';
 
 export const DASHBOARD_HOME_SECTION = 'dashboard_home';
@@ -58,6 +59,13 @@ function buildCommercialNavItems({ isAdmin, t }) {
       path: '/dashboard/commercial-relances',
       section: COMMERCIAL_NAV_SECTION,
       Icon: FaBellRelance,
+    },
+    {
+      id: 'commercial-points',
+      label: 'Points',
+      path: '/dashboard/commercial-points',
+      section: COMMERCIAL_NAV_SECTION,
+      Icon: FaBullseye,
     },
   ];
   if (isAdmin) {

@@ -38,6 +38,7 @@ function titleForPath(pathname, user, t) {
     ['/dashboard/commercial-commandes', 'Commandes Shop'],
     ['/dashboard/commercial-bilan', 'Bilan commercial'],
     ['/dashboard/commercial-relances', 'Relances'],
+    ['/dashboard/commercial-points', 'Points'],
     ['/dashboard/commerciaux', 'Commerciaux'],
   ]);
   if (map.has(pathname)) return map.get(pathname);

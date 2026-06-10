@@ -1,12 +1,16 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const ShopOrder = require('../models/ShopOrder');
+const ShopProduct = require('../models/ShopProduct');
 const { auth, isCommercialStaff, isRestaurantAdmin } = require('../middleware/auth');
 const { generateShopOrderNumber, startOfDay, endOfDay } = require('../utils/shopOrderNumber');
 const {
   bilanBaseQuery,
   bilanRowFromOrder,
   resolveCommercialStatus,
+  buildPeriodFilter,
+  confirmedOrdersQuery,
   BILAN_START_DATE,
 } = require('../utils/commercialBilan');
 const { sendToUserIds } = require('../services/pushNotifications');
@@ -122,6 +126,105 @@ router.patch('/accounts/:id', auth, isRestaurantAdmin, async (req, res) => {
     const out = user.toObject();
     delete out.password;
     res.json(out);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ——— Points (quantités confirmées par période / produit) ———
+
+router.get('/points/products', auth, isCommercialStaff, async (req, res) => {
+  try {
+    const catalog = await ShopProduct.find()
+      .select('name slug quantityUnit')
+      .sort({ name: 1 })
+      .lean();
+
+    const orderNames = await ShopOrder.distinct('productName', {
+      createdAt: { $gte: BILAN_START_DATE },
+      productName: { $exists: true, $ne: '' },
+    });
+
+    const catalogNames = new Set(catalog.map((p) => p.name.toLowerCase()));
+    const extras = orderNames
+      .filter((n) => n && !catalogNames.has(String(n).toLowerCase()))
+      .sort((a, b) => a.localeCompare(b, 'fr'))
+      .map((name) => ({ _id: null, name, slug: '', quantityUnit: 'unit', fromOrders: true }));
+
+    res.json([...catalog, ...extras]);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.get('/points/summary', auth, isCommercialStaff, async (req, res) => {
+  try {
+    const dateFrom = req.query.dateFrom;
+    const dateTo = req.query.dateTo;
+    const productId = String(req.query.productId || '').trim();
+    const productName = String(req.query.productName || '').trim();
+
+    if (!dateFrom || !dateTo) {
+      return res.status(400).json({ message: 'Période requise (date de début et date de fin)' });
+    }
+    if (!productId && !productName) {
+      return res.status(400).json({ message: 'Sélectionnez un produit' });
+    }
+
+    const periodClause = buildPeriodFilter(dateFrom, dateTo);
+    if (!periodClause) {
+      return res.status(400).json({ message: 'Période invalide' });
+    }
+
+    let resolvedName = productName;
+    let resolvedUnit = 'unit';
+
+    const filter = confirmedOrdersQuery();
+
+    if (productId && mongoose.Types.ObjectId.isValid(productId)) {
+      const product = await ShopProduct.findById(productId).select('name quantityUnit').lean();
+      if (!product) return res.status(404).json({ message: 'Produit introuvable' });
+      resolvedName = product.name;
+      resolvedUnit = product.quantityUnit || 'unit';
+      const nameRx = new RegExp(`^${product.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+      filter.$or = [{ shopProduct: product._id }, { isOffPlatform: true, productName: nameRx }];
+    } else if (resolvedName) {
+      const escaped = resolvedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      filter.productName = new RegExp(`^${escaped}$`, 'i');
+    }
+
+    filter.$and = [periodClause];
+
+    const orders = await ShopOrder.find(filter)
+      .select('orderNumber quantity quantityLabel quantityUnit productName orderDate createdAt statut')
+      .sort({ orderDate: -1, createdAt: -1 })
+      .lean();
+
+    if (orders.length && !resolvedName) {
+      resolvedName = orders[0].productName;
+    }
+    if (orders.length) {
+      resolvedUnit = orders[0].quantityUnit || resolvedUnit;
+    }
+
+    const totalQuantity = orders.reduce((sum, o) => sum + Number(o.quantity || 0), 0);
+
+    res.json({
+      productName: resolvedName,
+      quantityUnit: resolvedUnit,
+      dateFrom,
+      dateTo,
+      orderCount: orders.length,
+      totalQuantity,
+      orders: orders.map((o) => ({
+        id: String(o._id),
+        orderNumber: o.orderNumber,
+        quantity: o.quantity,
+        quantityLabel: o.quantityLabel,
+        date: o.orderDate || o.createdAt,
+        statut: o.statut,
+      })),
+    });
   } catch (e) {
     res.status(500).json({ message: e.message });
   }
