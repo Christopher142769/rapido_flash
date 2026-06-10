@@ -130,6 +130,7 @@ export default function CommercialBilanPage() {
             >
               <option value="">Tous</option>
               <option value="commande">Commande</option>
+              <option value="confirme">Confirmé</option>
               <option value="relance">Relance</option>
               <option value="livree">Livré</option>
             </select>

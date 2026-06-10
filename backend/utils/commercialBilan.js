@@ -60,10 +60,37 @@ function orderLocation(order) {
 }
 
 function resolveCommercialStatus(order) {
-  if (order.commercialStatus) return order.commercialStatus;
+  const s = order.commercialStatus;
+  if (s === 'confirme' || s === 'relance' || s === 'livree' || s === 'annulee') return s;
   if (order.statut === 'livree') return 'livree';
   if (order.scheduledDeliveryAt) return 'relance';
-  return 'commande';
+  if (
+    order.confirmedAt ||
+    order.statut === 'confirmee' ||
+    order.statut === 'en_preparation' ||
+    order.statut === 'en_livraison'
+  ) {
+    return 'confirme';
+  }
+  return s || 'commande';
+}
+
+function pointsOrderDetail(order) {
+  const base = bilanRowFromOrder(order);
+  const c = order.customer || {};
+  return {
+    ...base,
+    firstName: order.isOffPlatform ? '—' : c.firstName || '—',
+    lastName: order.isOffPlatform ? '—' : c.lastName || '—',
+    phone: c.phone || '—',
+    city: order.isOffPlatform ? '—' : c.city || '—',
+    address: order.isOffPlatform ? order.offPlatformLocation || '—' : c.addressDescription || '—',
+    location: orderLocation(order),
+    requestedDeliveryAt: order.requestedDeliveryAt || null,
+    scheduledDeliveryAt: order.scheduledDeliveryAt || null,
+    commercialStatus: resolveCommercialStatus(order),
+    statutLabel: order.statut,
+  };
 }
 
 function bilanRowFromOrder(order) {
@@ -97,5 +124,6 @@ module.exports = {
   CONFIRMED_STATUTS,
   orderLocation,
   bilanRowFromOrder,
+  pointsOrderDetail,
   resolveCommercialStatus,
 };

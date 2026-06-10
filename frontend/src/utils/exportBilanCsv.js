@@ -32,6 +32,7 @@ export function exportBilanToCsv(rows, filename = 'bilan-commercial.csv') {
   const statusLabel = (s) => {
     if (s === 'livree') return 'Livré';
     if (s === 'relance') return 'Relance';
+    if (s === 'confirme') return 'Confirmé';
     if (s === 'commande') return 'Commande';
     return s;
   };

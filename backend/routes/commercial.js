@@ -8,6 +8,7 @@ const { generateShopOrderNumber, startOfDay, endOfDay } = require('../utils/shop
 const {
   bilanBaseQuery,
   bilanRowFromOrder,
+  pointsOrderDetail,
   resolveCommercialStatus,
   buildPeriodFilter,
   confirmedOrdersQuery,
@@ -17,7 +18,7 @@ const { sendToUserIds } = require('../services/pushNotifications');
 
 const router = express.Router();
 
-const COMMERCIAL_STATUSES = ['commande', 'relance', 'livree', 'annulee'];
+const COMMERCIAL_STATUSES = ['commande', 'confirme', 'relance', 'livree', 'annulee'];
 
 async function getCommercialStaffIds() {
   const staff = await User.find({
@@ -196,7 +197,6 @@ router.get('/points/summary', auth, isCommercialStaff, async (req, res) => {
     filter.$and = [periodClause];
 
     const orders = await ShopOrder.find(filter)
-      .select('orderNumber quantity quantityLabel quantityUnit productName orderDate createdAt statut')
       .sort({ orderDate: -1, createdAt: -1 })
       .lean();
 
@@ -208,6 +208,7 @@ router.get('/points/summary', auth, isCommercialStaff, async (req, res) => {
     }
 
     const totalQuantity = orders.reduce((sum, o) => sum + Number(o.quantity || 0), 0);
+    const detailRows = orders.map(pointsOrderDetail);
 
     res.json({
       productName: resolvedName,
@@ -216,14 +217,8 @@ router.get('/points/summary', auth, isCommercialStaff, async (req, res) => {
       dateTo,
       orderCount: orders.length,
       totalQuantity,
-      orders: orders.map((o) => ({
-        id: String(o._id),
-        orderNumber: o.orderNumber,
-        quantity: o.quantity,
-        quantityLabel: o.quantityLabel,
-        date: o.orderDate || o.createdAt,
-        statut: o.statut,
-      })),
+      totalAmount: detailRows.reduce((s, r) => s + Number(r.amount || 0), 0),
+      orders: detailRows,
     });
   } catch (e) {
     res.status(500).json({ message: e.message });
@@ -252,6 +247,8 @@ router.get('/overview', auth, isCommercialStaff, async (req, res) => {
         deliveryCount += 1;
       } else if (status === 'relance') {
         relanceCount += 1;
+      } else if (status === 'confirme') {
+        pendingCount += 1;
       } else if (status === 'commande') {
         pendingCount += 1;
       }
@@ -289,14 +286,29 @@ router.get('/overview', auth, isCommercialStaff, async (req, res) => {
 router.get('/orders', auth, isCommercialStaff, async (req, res) => {
   try {
     const filter = { createdAt: { $gte: BILAN_START_DATE } };
-    if (req.query.status && COMMERCIAL_STATUSES.includes(req.query.status)) {
-      filter.commercialStatus = req.query.status;
+    const status = req.query.status;
+    if (status === 'confirme') {
+      filter.$or = [
+        { commercialStatus: 'confirme' },
+        {
+          commercialStatus: 'commande',
+          confirmedAt: { $ne: null },
+          statut: { $in: ['confirmee', 'en_preparation', 'en_livraison'] },
+        },
+      ];
+    } else if (status && COMMERCIAL_STATUSES.includes(status)) {
+      filter.commercialStatus = status;
     }
     const orders = await ShopOrder.find(filter)
       .populate('shopProduct', 'name slug mainImage')
       .sort({ createdAt: -1 })
       .lean();
-    res.json(orders);
+    res.json(
+      orders.map((o) => ({
+        ...o,
+        commercialStatusResolved: resolveCommercialStatus(o),
+      }))
+    );
   } catch (e) {
     res.status(500).json({ message: e.message });
   }
@@ -308,9 +320,7 @@ router.put('/orders/:id/confirm', auth, isCommercialStaff, async (req, res) => {
     if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
 
     order.statut = 'confirmee';
-    if (order.commercialStatus === 'commande') {
-      order.commercialStatus = 'commande';
-    }
+    order.commercialStatus = 'confirme';
     order.confirmedAt = new Date();
     await order.save();
     res.json(order);

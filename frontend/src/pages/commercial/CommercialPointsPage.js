@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import PageLoader from '../../components/PageLoader';
-import { fetchPointsProducts, fetchPointsSummary } from '../../utils/commercialApi';
+import { fetchPointsProducts, fetchPointsSummary, formatCommercialStatus, formatPrice } from '../../utils/commercialApi';
+import { exportPointsToCsv, exportPointsToPdf } from '../../utils/exportPointsDelivery';
 import { formatQuantityWithUnit } from '../../utils/shopQuantityUnit';
 import './commercial.css';
 
@@ -74,8 +75,8 @@ export default function CommercialPointsPage() {
     <div className="commercial-page">
       <h1>Points</h1>
       <p className="commercial-lead">
-        Quantité totale des commandes <strong>confirmées</strong> pour un produit sur une période
-        donnée.
+        Quantité totale des commandes <strong>confirmées</strong> pour un produit sur une période.
+        Exportez la liste complète pour vos livreurs (nom, téléphone, adresse, etc.).
       </p>
 
       <div className="commercial-card">
@@ -147,38 +148,72 @@ export default function CommercialPointsPage() {
                 <div className="commercial-kpi-value">{summary.orderCount}</div>
               </div>
               <div className="commercial-kpi">
-                <div className="commercial-kpi-label">Période</div>
-                <div className="commercial-kpi-value" style={{ fontSize: '0.95rem' }}>
-                  {new Date(summary.dateFrom).toLocaleDateString('fr-FR')} →{' '}
-                  {new Date(summary.dateTo).toLocaleDateString('fr-FR')}
-                </div>
+                <div className="commercial-kpi-label">Montant total</div>
+                <div className="commercial-kpi-value">{formatPrice(summary.totalAmount)}</div>
               </div>
             </div>
 
             {summary.orders?.length > 0 ? (
-              <div className="commercial-table-wrap" style={{ marginTop: '1.25rem' }}>
-                <table className="commercial-table">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>N° commande</th>
-                      <th>Quantité</th>
-                      <th>Statut</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {summary.orders.map((row) => (
-                      <tr key={row.id}>
-                        <td>{new Date(row.date).toLocaleDateString('fr-FR')}</td>
-                        <td>{row.orderNumber || '—'}</td>
-                        <td>{row.quantityLabel || row.quantity}</td>
-                        <td>{row.statut}</td>
+              <>
+                <div className="commercial-filters" style={{ marginTop: '1rem' }}>
+                  <button
+                    type="button"
+                    className="commercial-btn commercial-btn--primary"
+                    onClick={() => exportPointsToCsv(summary)}
+                  >
+                    Exporter Excel (CSV)
+                  </button>
+                  <button
+                    type="button"
+                    className="commercial-btn commercial-btn--outline"
+                    onClick={() => exportPointsToPdf(summary)}
+                  >
+                    Exporter PDF livreurs
+                  </button>
+                </div>
+
+                <div className="commercial-table-wrap" style={{ marginTop: '1rem' }}>
+                  <table className="commercial-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>N° commande</th>
+                        <th>Prénom</th>
+                        <th>Nom</th>
+                        <th>Téléphone</th>
+                        <th>Ville</th>
+                        <th>Adresse</th>
+                        <th>Qté</th>
+                        <th>Statut</th>
+                        <th>Montant</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : null}
+                    </thead>
+                    <tbody>
+                      {summary.orders.map((row) => (
+                        <tr key={row.id}>
+                          <td>{new Date(row.date).toLocaleDateString('fr-FR')}</td>
+                          <td>{row.orderNumber || '—'}</td>
+                          <td>{row.firstName}</td>
+                          <td>{row.lastName}</td>
+                          <td>{row.phone}</td>
+                          <td>{row.city}</td>
+                          <td style={{ maxWidth: 180 }}>{row.address}</td>
+                          <td>{row.quantityLabel || row.quantity}</td>
+                          <td>
+                            <span className={`commercial-badge commercial-badge--${row.commercialStatus}`}>
+                              {formatCommercialStatus(row.commercialStatus)}
+                            </span>
+                          </td>
+                          <td>{formatPrice(row.amount)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            ) : (
+              <p style={{ marginTop: '1rem', color: '#666' }}>Aucune commande confirmée sur cette période.</p>
+            )}
           </>
         ) : (
           <p style={{ color: '#666', margin: 0 }}>

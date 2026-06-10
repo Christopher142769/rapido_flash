@@ -7,6 +7,7 @@ import {
   fetchCommercialOrders,
   formatCommercialStatus,
   formatPrice,
+  resolveCommercialStatus,
   setOrderRelance,
 } from '../../utils/commercialApi';
 import './commercial.css';
@@ -73,6 +74,7 @@ export default function CommercialCommandesPage() {
           <select value={filter} onChange={(e) => setFilter(e.target.value)}>
             <option value="">Tous</option>
             <option value="commande">Commande</option>
+            <option value="confirme">Confirmé</option>
             <option value="relance">Relance</option>
             <option value="livree">Livré</option>
           </select>
@@ -86,6 +88,7 @@ export default function CommercialCommandesPage() {
         <p>Aucune commande depuis le 09/06/2026.</p>
       ) : (
         orders.map((o) => {
+          const status = resolveCommercialStatus(o);
           const name = [o.customer?.firstName, o.customer?.lastName].filter(Boolean).join(' ');
           const lieu = o.isOffPlatform
             ? o.offPlatformLocation
@@ -120,13 +123,13 @@ export default function CommercialCommandesPage() {
                   </div>
                 ) : null}
                 <div style={{ marginTop: 6 }}>
-                  <span className={`commercial-badge commercial-badge--${o.commercialStatus}`}>
-                    {formatCommercialStatus(o.commercialStatus)}
+                  <span className={`commercial-badge commercial-badge--${status}`}>
+                    {formatCommercialStatus(status)}
                   </span>
                   <span
                     style={{ marginLeft: 12 }}
                     className={
-                      o.commercialStatus === 'livree'
+                      status === 'livree'
                         ? 'commercial-amount--received'
                         : 'commercial-amount--pending'
                     }
@@ -167,7 +170,7 @@ export default function CommercialCommandesPage() {
               ) : null}
 
               <div className="commercial-order-actions">
-                {o.commercialStatus === 'commande' ? (
+                {status === 'commande' ? (
                   <button
                     type="button"
                     className="commercial-btn commercial-btn--primary commercial-btn--sm"
@@ -177,7 +180,7 @@ export default function CommercialCommandesPage() {
                     Confirmer
                   </button>
                 ) : null}
-                {o.commercialStatus !== 'livree' && o.commercialStatus !== 'annulee' ? (
+                {status !== 'livree' && status !== 'annulee' ? (
                   <>
                     <button
                       type="button"

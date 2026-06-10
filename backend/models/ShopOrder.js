@@ -50,10 +50,10 @@ const shopOrderSchema = new mongoose.Schema(
       default: 'en_attente',
       index: true,
     },
-    /** Statut commercial pour le bilan : commande | relance | livree | annulee */
+    /** Statut commercial : commande | confirme | relance | livree | annulee */
     commercialStatus: {
       type: String,
-      enum: ['commande', 'relance', 'livree', 'annulee'],
+      enum: ['commande', 'confirme', 'relance', 'livree', 'annulee'],
       default: 'commande',
       index: true,
     },

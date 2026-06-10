@@ -87,11 +87,29 @@ export async function triggerRelanceNotifications() {
 export function formatCommercialStatus(status) {
   const map = {
     commande: 'Commande',
+    confirme: 'Confirmé',
     relance: 'Relance',
     livree: 'Livré',
     annulee: 'Annulée',
   };
   return map[status] || status;
+}
+
+/** Statut commercial effectif (rétrocompat. commandes déjà confirmées en base). */
+export function resolveCommercialStatus(order) {
+  const s = order.commercialStatusResolved || order.commercialStatus;
+  if (s === 'confirme' || s === 'relance' || s === 'livree' || s === 'annulee') return s;
+  if (order.statut === 'livree') return 'livree';
+  if (order.scheduledDeliveryAt) return 'relance';
+  if (
+    order.confirmedAt ||
+    order.statut === 'confirmee' ||
+    order.statut === 'en_preparation' ||
+    order.statut === 'en_livraison'
+  ) {
+    return 'confirme';
+  }
+  return s || 'commande';
 }
 
 export function formatPrice(amount) {
