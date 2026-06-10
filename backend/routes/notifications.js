@@ -15,7 +15,7 @@ router.get('/summary', auth, async (req, res) => {
   try {
     const user = req.user;
 
-    if (['restaurant', 'gestionnaire'].includes(user.role)) {
+    if (['restaurant', 'gestionnaire', 'commercial'].includes(user.role)) {
       const owned = await Restaurant.find({
         $or: [{ proprietaire: user._id }, { gestionnaires: user._id }],
       })
@@ -37,11 +37,27 @@ router.get('/summary', auth, async (req, res) => {
         unreadMessages = agg[0]?.total || 0;
       }
       pendingOrders += shopPending;
+
+      const { start, end } = (() => {
+        const now = new Date();
+        const s = new Date(now);
+        s.setHours(0, 0, 0, 0);
+        const e = new Date(now);
+        e.setHours(23, 59, 59, 999);
+        return { start: s, end: e };
+      })();
+
+      const todayRelances = await ShopOrder.countDocuments({
+        commercialStatus: 'relance',
+        scheduledDeliveryAt: { $gte: start, $lte: end },
+      });
+
       return res.json({
-        role: 'staff',
+        role: user.role === 'commercial' ? 'commercial' : 'staff',
         pendingOrders,
         unreadMessages,
-        total: pendingOrders + unreadMessages,
+        todayRelances,
+        total: pendingOrders + unreadMessages + todayRelances,
       });
     }
 

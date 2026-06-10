@@ -33,4 +33,18 @@ const isRestaurant = (req, res, next) => {
   next();
 };
 
-module.exports = { auth, isRestaurant };
+const isCommercialStaff = (req, res, next) => {
+  if (!['restaurant', 'gestionnaire', 'commercial'].includes(req.user.role)) {
+    return res.status(403).json({ message: 'Accès refusé - Espace commercial requis' });
+  }
+  next();
+};
+
+const isRestaurantAdmin = (req, res, next) => {
+  if (req.user.role !== 'restaurant') {
+    return res.status(403).json({ message: 'Accès refusé - Administrateur requis' });
+  }
+  next();
+};
+
+module.exports = { auth, isRestaurant, isCommercialStaff, isRestaurantAdmin };

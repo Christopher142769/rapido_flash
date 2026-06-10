@@ -88,3 +88,26 @@
     font-size: 14px;
   }
 }
+
+/* Google Translate (widget masqué — piloté par le sélecteur Rapido) */
+.google-translate-host,
+#google_translate_element,
+.goog-te-banner-frame,
+.goog-te-menu-frame,
+iframe.skiptranslate,
+.goog-te-gadget {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
+body {
+  top: 0 !important;
+  position: static !important;
+}
+
+.goog-text-highlight {
+  background: none !important;
+  box-shadow: none !important;
+}

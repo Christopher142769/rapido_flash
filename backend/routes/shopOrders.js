@@ -2,7 +2,8 @@ const express = require('express');
 const User = require('../models/User');
 const ShopProduct = require('../models/ShopProduct');
 const ShopOrder = require('../models/ShopOrder');
-const { auth, isRestaurant } = require('../middleware/auth');
+const { auth, isRestaurant, isCommercialStaff } = require('../middleware/auth');
+const { generateShopOrderNumber } = require('../utils/shopOrderNumber');
 const { getShopPromoState } = require('../utils/shopPromo');
 const { normalizeShopQuantityUnit } = require('../utils/shopQuantityUnit');
 const { formatQuantityWithUnit } = require('../utils/shopQuantityLabel');
@@ -33,7 +34,7 @@ function validateShopCustomer(customer) {
 
 async function getShopStaffUserIds() {
   const staff = await User.find({
-    role: { $in: ['restaurant', 'gestionnaire'] },
+    role: { $in: ['restaurant', 'gestionnaire', 'commercial'] },
     banned: { $ne: true },
   })
     .select('_id')
@@ -68,7 +69,15 @@ router.post('/', async (req, res) => {
     const unitPrice = promoState.isPromoLive ? promoState.promoPrice : promoState.basePrice;
     const totalPrice = Math.round(unitPrice * quantity);
 
+    const requestedDeliveryAt = req.body?.requestedDeliveryAt
+      ? new Date(req.body.requestedDeliveryAt)
+      : null;
+    const hasValidRequested =
+      requestedDeliveryAt && !Number.isNaN(requestedDeliveryAt.getTime());
+
+    const orderNumber = await generateShopOrderNumber();
     const order = new ShopOrder({
+      orderNumber,
       shopProduct: product._id,
       slug: product.slug,
       productName: product.name,
@@ -90,6 +99,11 @@ router.post('/', async (req, res) => {
       },
       whatsappNumber: product.whatsappNumber || '',
       statut: 'en_attente',
+      commercialStatus: 'commande',
+      orderDate: new Date(),
+      requestedDeliveryAt: hasValidRequested ? requestedDeliveryAt : undefined,
+      scheduledDeliveryAt: hasValidRequested ? requestedDeliveryAt : undefined,
+      ...(hasValidRequested ? { commercialStatus: 'relance', statut: 'confirmee' } : {}),
     });
 
     await order.save();
@@ -99,7 +113,7 @@ router.post('/', async (req, res) => {
       void sendToUserIds(staffIds, {
         title: 'Rapido Shop — Nouvelle commande',
         body: `${order.productName} · ${order.quantityLabel}`,
-        url: '/dashboard/commandes',
+        url: '/dashboard/commercial-commandes',
         tag: `rapido-shop-order-${order._id}`,
       }).catch(() => {});
     }
@@ -115,7 +129,7 @@ router.post('/', async (req, res) => {
 });
 
 /** Liste des commandes Shop (dashboard restaurant / gestionnaire). */
-router.get('/', auth, isRestaurant, async (req, res) => {
+router.get('/', auth, isCommercialStaff, async (req, res) => {
   try {
     const orders = await ShopOrder.find()
       .populate('shopProduct', 'name slug mainImage')
@@ -127,7 +141,7 @@ router.get('/', auth, isRestaurant, async (req, res) => {
   }
 });
 
-router.put('/:id/statut', auth, isRestaurant, async (req, res) => {
+router.put('/:id/statut', auth, isCommercialStaff, async (req, res) => {
   try {
     const { statut } = req.body;
     const valid = ['en_attente', 'confirmee', 'en_preparation', 'en_livraison', 'livree', 'annulee'];
@@ -139,6 +153,16 @@ router.put('/:id/statut', auth, isRestaurant, async (req, res) => {
     if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
 
     order.statut = statut;
+    if (statut === 'livree') {
+      order.commercialStatus = 'livree';
+      order.deliveredAt = new Date();
+    }
+    if (statut === 'annulee') {
+      order.commercialStatus = 'annulee';
+    }
+    if (statut === 'confirmee' && order.commercialStatus === 'commande') {
+      order.confirmedAt = new Date();
+    }
     await order.save();
 
     res.json(order);

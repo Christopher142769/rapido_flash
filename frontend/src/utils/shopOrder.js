@@ -19,6 +19,9 @@ export async function submitShopOrderToApi(order) {
       slug: order.slug,
       quantity: order.quantity,
       customer: order.customer,
+      requestedDeliveryAt: order.customer?.requestedDeliveryAt
+        ? new Date(order.customer.requestedDeliveryAt).toISOString()
+        : undefined,
     }),
   });
   const data = await res.json().catch(() => ({}));
@@ -38,6 +41,7 @@ export function emptyCustomerForm() {
     phone: '',
     city: '',
     addressDescription: '',
+    requestedDeliveryAt: '',
   };
 }
 

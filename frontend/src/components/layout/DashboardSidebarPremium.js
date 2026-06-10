@@ -10,6 +10,7 @@ import {
   ADMIN_NAV_SECTION,
   GESTION_NAV_SECTION,
   PLATFORM_NAV_SECTION,
+  COMMERCIAL_NAV_SECTION,
   buildDashboardNavItems,
   navBadgeCount,
 } from '../../dashboardNavConfig';
@@ -30,9 +31,9 @@ const itemVariants = {
   },
 };
 
-function NavItem({ item, pendingOrders, unreadMessages, onNavigate, reduce }) {
+function NavItem({ item, pendingOrders, unreadMessages, todayRelances, onNavigate, reduce }) {
   const Icon = item.Icon;
-  const badge = navBadgeCount(item.id, pendingOrders, unreadMessages);
+  const badge = navBadgeCount(item.id, pendingOrders, unreadMessages, todayRelances);
 
   return (
     <motion.li variants={reduce ? { hidden: { opacity: 1 }, visible: { opacity: 1 } } : itemVariants}>
@@ -92,21 +93,24 @@ export default function DashboardSidebarPremium({ onNavigate, className = '' }) 
   const reduce = useReducedMotion();
   const { user, logout } = useContext(AuthContext);
   const { t } = useContext(LanguageContext);
-  const { pendingOrders, unreadMessages } = useNotifications();
+  const { pendingOrders, unreadMessages, todayRelances } = useNotifications();
 
   const items = useMemo(
     () =>
       buildDashboardNavItems({
         isAdmin: user?.role === 'restaurant',
+        isCommercial: user?.role === 'commercial',
         t,
         canManageMaintenance: !!user?.canManageMaintenance,
       }),
     [user?.role, user?.canManageMaintenance, t]
   );
   const homeItems = items.filter((i) => i.section === DASHBOARD_HOME_SECTION);
+  const commercialItems = items.filter((i) => i.section === COMMERCIAL_NAV_SECTION);
   const adminItems = items.filter((i) => i.section === ADMIN_NAV_SECTION);
   const gestionItems = items.filter((i) => i.section === GESTION_NAV_SECTION);
   const plateformeItems = items.filter((i) => i.section === PLATFORM_NAV_SECTION);
+  const isCommercialOnly = user?.role === 'commercial';
 
   return (
     <div
@@ -134,90 +138,126 @@ export default function DashboardSidebarPremium({ onNavigate, className = '' }) 
               className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.18em]"
               style={{ color: 'var(--rf-sidebar-text-muted)' }}
             >
-              Administration
+              {t('dashNav', 'sectionAdmin')}
             </div>
           </div>
         </button>
       </div>
 
       <nav className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
-        <p
-          className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.14em]"
-          style={{ color: 'var(--rf-sidebar-section)' }}
-        >
-          {t('dashboardOverview', 'navSection')}
-        </p>
-        <motion.ul className="mb-6 space-y-1" initial="hidden" animate="visible" variants={containerVariants}>
-          {homeItems.map((item) => (
-            <NavItem
-              key={item.id}
-              item={item}
-              pendingOrders={pendingOrders}
-              unreadMessages={unreadMessages}
-              onNavigate={onNavigate}
-              reduce={reduce}
-            />
-          ))}
-        </motion.ul>
-
-        <p
-          className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.14em]"
-          style={{ color: 'var(--rf-sidebar-section)' }}
-        >
-          Administration
-        </p>
-        <motion.ul className="mb-6 space-y-1" initial="hidden" animate="visible" variants={containerVariants}>
-          {adminItems.map((item) => (
-            <NavItem
-              key={item.id}
-              item={item}
-              pendingOrders={pendingOrders}
-              unreadMessages={unreadMessages}
-              onNavigate={onNavigate}
-              reduce={reduce}
-            />
-          ))}
-        </motion.ul>
-
-        <p
-          className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.14em]"
-          style={{ color: 'var(--rf-sidebar-section)' }}
-        >
-          Gestion
-        </p>
-        <motion.ul className="space-y-1" initial="hidden" animate="visible" variants={containerVariants}>
-          {gestionItems.map((item) => (
-            <NavItem
-              key={item.id}
-              item={item}
-              pendingOrders={pendingOrders}
-              unreadMessages={unreadMessages}
-              onNavigate={onNavigate}
-              reduce={reduce}
-            />
-          ))}
-        </motion.ul>
-
-        {plateformeItems.length > 0 ? (
+        {!isCommercialOnly && homeItems.length > 0 ? (
           <>
             <p
-              className="mb-2 mt-6 px-2 text-[10px] font-bold uppercase tracking-[0.14em]"
+              className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.14em]"
               style={{ color: 'var(--rf-sidebar-section)' }}
             >
-              {t('maintenance', 'navSection')}
+              {t('dashboardOverview', 'navSection')}
             </p>
-            <motion.ul className="space-y-1" initial="hidden" animate="visible" variants={containerVariants}>
-              {plateformeItems.map((item) => (
+            <motion.ul className="mb-6 space-y-1" initial="hidden" animate="visible" variants={containerVariants}>
+              {homeItems.map((item) => (
                 <NavItem
                   key={item.id}
                   item={item}
                   pendingOrders={pendingOrders}
                   unreadMessages={unreadMessages}
+                  todayRelances={todayRelances}
                   onNavigate={onNavigate}
                   reduce={reduce}
                 />
               ))}
             </motion.ul>
+          </>
+        ) : null}
+
+        {commercialItems.length > 0 ? (
+          <>
+            <p
+              className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.14em]"
+              style={{ color: 'var(--rf-sidebar-section)' }}
+            >
+              Commercial
+            </p>
+            <motion.ul className="mb-6 space-y-1" initial="hidden" animate="visible" variants={containerVariants}>
+              {commercialItems.map((item) => (
+                <NavItem
+                  key={item.id}
+                  item={item}
+                  pendingOrders={pendingOrders}
+                  unreadMessages={unreadMessages}
+                  todayRelances={todayRelances}
+                  onNavigate={onNavigate}
+                  reduce={reduce}
+                />
+              ))}
+            </motion.ul>
+          </>
+        ) : null}
+
+        {!isCommercialOnly ? (
+          <>
+            <p
+              className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.14em]"
+              style={{ color: 'var(--rf-sidebar-section)' }}
+            >
+              {t('dashNav', 'sectionAdmin')}
+            </p>
+            <motion.ul className="mb-6 space-y-1" initial="hidden" animate="visible" variants={containerVariants}>
+              {adminItems.map((item) => (
+                <NavItem
+                  key={item.id}
+                  item={item}
+                  pendingOrders={pendingOrders}
+                  unreadMessages={unreadMessages}
+                  todayRelances={todayRelances}
+                  onNavigate={onNavigate}
+                  reduce={reduce}
+                />
+              ))}
+            </motion.ul>
+
+            <p
+              className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.14em]"
+              style={{ color: 'var(--rf-sidebar-section)' }}
+            >
+              {t('dashNav', 'sectionGestion')}
+            </p>
+            <motion.ul className="space-y-1" initial="hidden" animate="visible" variants={containerVariants}>
+              {gestionItems.map((item) => (
+                <NavItem
+                  key={item.id}
+                  item={item}
+                  pendingOrders={pendingOrders}
+                  unreadMessages={unreadMessages}
+                  todayRelances={todayRelances}
+                  onNavigate={onNavigate}
+                  reduce={reduce}
+                />
+              ))}
+            </motion.ul>
+
+            {plateformeItems.length > 0 ? (
+              <>
+                <p
+                  className="mb-2 mt-6 px-2 text-[10px] font-bold uppercase tracking-[0.14em]"
+                  style={{ color: 'var(--rf-sidebar-section)' }}
+                >
+                  {t('dashNav', 'sectionPlateforme')}
+                </p>
+                <motion.ul className="space-y-1" initial="hidden" animate="visible" variants={containerVariants}>
+                  {plateformeItems.map((item) => (
+                    <NavItem
+                      key={item.id}
+                      item={item}
+                      pendingOrders={pendingOrders}
+                      unreadMessages={unreadMessages}
+                      todayRelances={todayRelances}
+                      onNavigate={onNavigate}
+                      reduce={reduce}
+                    />
+                  ))}
+                </motion.ul>
+              </>
+            ) : null}
           </>
         ) : null}
       </nav>

@@ -30,6 +30,11 @@
   padding: 6px 10px;
 }
 
+.lang-switcher--floating .lang-switcher-dropdown {
+  bottom: calc(100% + 6px);
+  top: auto;
+}
+
 .lang-switcher-icon {
   flex-shrink: 0;
 }

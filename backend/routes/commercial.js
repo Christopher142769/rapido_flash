@@ -1,0 +1,408 @@
+const express = require('express');
+const User = require('../models/User');
+const ShopOrder = require('../models/ShopOrder');
+const { auth, isCommercialStaff, isRestaurantAdmin } = require('../middleware/auth');
+const { generateShopOrderNumber, startOfDay, endOfDay } = require('../utils/shopOrderNumber');
+const {
+  bilanBaseQuery,
+  bilanRowFromOrder,
+  resolveCommercialStatus,
+  BILAN_START_DATE,
+} = require('../utils/commercialBilan');
+const { sendToUserIds } = require('../services/pushNotifications');
+
+const router = express.Router();
+
+const COMMERCIAL_STATUSES = ['commande', 'relance', 'livree', 'annulee'];
+
+async function getCommercialStaffIds() {
+  const staff = await User.find({
+    role: { $in: ['restaurant', 'gestionnaire', 'commercial'] },
+    banned: { $ne: true },
+  })
+    .select('_id')
+    .lean();
+  return staff.map((u) => String(u._id));
+}
+
+function parseDateInput(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function todayRange() {
+  const now = new Date();
+  return { start: startOfDay(now), end: endOfDay(now) };
+}
+
+function buildBilanFilter(query) {
+  const filter = bilanBaseQuery();
+  if (query.product) {
+    filter.productName = { $regex: String(query.product).trim(), $options: 'i' };
+  }
+  if (query.status && COMMERCIAL_STATUSES.includes(query.status)) {
+    filter.commercialStatus = query.status;
+  }
+  if (query.offPlatform === 'true') filter.isOffPlatform = true;
+  if (query.offPlatform === 'false') filter.isOffPlatform = { $ne: true };
+  const from = parseDateInput(query.dateFrom);
+  const to = parseDateInput(query.dateTo);
+  if (from || to) {
+    const range = {};
+    if (from) range.$gte = from;
+    if (to) {
+      const end = new Date(to);
+      end.setHours(23, 59, 59, 999);
+      range.$lte = end;
+    }
+    filter.$and = [
+      ...(filter.$and || []),
+      {
+        $or: [
+          { orderDate: range },
+          { $and: [{ $or: [{ orderDate: null }, { orderDate: { $exists: false } }] }, { createdAt: range }] },
+        ],
+      },
+    ];
+  }
+  return filter;
+}
+
+// ——— Gestion des comptes commerciaux (admin restaurant) ———
+
+router.get('/accounts', auth, isRestaurantAdmin, async (req, res) => {
+  try {
+    const users = await User.find({ role: 'commercial' })
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json(users);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.post('/accounts', auth, isRestaurantAdmin, async (req, res) => {
+  try {
+    const nom = String(req.body?.nom || '').trim();
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const telephone = String(req.body?.telephone || '').trim();
+    const password = String(req.body?.password || '');
+
+    if (!nom || !email || password.length < 6) {
+      return res.status(400).json({ message: 'Nom, email et mot de passe (6 car. min) requis' });
+    }
+
+    const exists = await User.findOne({ email });
+    if (exists) return res.status(400).json({ message: 'Cet email est déjà utilisé' });
+
+    const user = new User({ nom, email, telephone, password, role: 'commercial' });
+    await user.save();
+    const out = user.toObject();
+    delete out.password;
+    res.status(201).json(out);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.patch('/accounts/:id', auth, isRestaurantAdmin, async (req, res) => {
+  try {
+    const user = await User.findOne({ _id: req.params.id, role: 'commercial' });
+    if (!user) return res.status(404).json({ message: 'Commercial introuvable' });
+
+    if (req.body.nom) user.nom = String(req.body.nom).trim();
+    if (req.body.telephone !== undefined) user.telephone = String(req.body.telephone || '').trim();
+    if (req.body.banned !== undefined) user.banned = !!req.body.banned;
+    if (req.body.password && String(req.body.password).length >= 6) {
+      user.password = String(req.body.password);
+    }
+    await user.save();
+    const out = user.toObject();
+    delete out.password;
+    res.json(out);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ——— Vue d'ensemble ———
+
+router.get('/overview', auth, isCommercialStaff, async (req, res) => {
+  try {
+    const base = bilanBaseQuery();
+    const orders = await ShopOrder.find(base).lean();
+
+    let totalOrdersAmount = 0;
+    let revenueReceived = 0;
+    let deliveryCount = 0;
+    let pendingCount = 0;
+    let relanceCount = 0;
+
+    for (const o of orders) {
+      const amount = Number(o.totalPrice || 0);
+      const status = resolveCommercialStatus(o);
+      totalOrdersAmount += amount;
+      if (status === 'livree') {
+        revenueReceived += amount;
+        deliveryCount += 1;
+      } else if (status === 'relance') {
+        relanceCount += 1;
+      } else if (status === 'commande') {
+        pendingCount += 1;
+      }
+    }
+
+    const { start, end } = todayRange();
+    const todayRelances = await ShopOrder.countDocuments({
+      commercialStatus: 'relance',
+      scheduledDeliveryAt: { $gte: start, $lte: end },
+    });
+
+    const recent = orders
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 12)
+      .map(bilanRowFromOrder);
+
+    res.json({
+      bilanStartDate: BILAN_START_DATE,
+      totalOrdersAmount,
+      revenueReceived,
+      deliveryCount,
+      pendingCount,
+      relanceCount,
+      todayRelances,
+      orderCount: orders.length,
+      recent,
+    });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ——— Commandes shop (espace commercial) ———
+
+router.get('/orders', auth, isCommercialStaff, async (req, res) => {
+  try {
+    const filter = { createdAt: { $gte: BILAN_START_DATE } };
+    if (req.query.status && COMMERCIAL_STATUSES.includes(req.query.status)) {
+      filter.commercialStatus = req.query.status;
+    }
+    const orders = await ShopOrder.find(filter)
+      .populate('shopProduct', 'name slug mainImage')
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json(orders);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.put('/orders/:id/confirm', auth, isCommercialStaff, async (req, res) => {
+  try {
+    const order = await ShopOrder.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
+
+    order.statut = 'confirmee';
+    if (order.commercialStatus === 'commande') {
+      order.commercialStatus = 'commande';
+    }
+    order.confirmedAt = new Date();
+    await order.save();
+    res.json(order);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.put('/orders/:id/deliver', auth, isCommercialStaff, async (req, res) => {
+  try {
+    const order = await ShopOrder.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
+
+    order.statut = 'livree';
+    order.commercialStatus = 'livree';
+    order.deliveredAt = new Date();
+    if (!order.orderDate) order.orderDate = order.deliveredAt;
+    await order.save();
+    res.json(order);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.put('/orders/:id/relance', auth, isCommercialStaff, async (req, res) => {
+  try {
+    const scheduledDeliveryAt = parseDateInput(req.body?.scheduledDeliveryAt);
+    if (!scheduledDeliveryAt) {
+      return res.status(400).json({ message: 'Date et heure de livraison requises' });
+    }
+
+    const order = await ShopOrder.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
+
+    order.commercialStatus = 'relance';
+    order.scheduledDeliveryAt = scheduledDeliveryAt;
+    order.relanceNotifiedAt = null;
+    order.statut = order.statut === 'en_attente' ? 'confirmee' : order.statut;
+    await order.save();
+    res.json(order);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.put('/orders/:id/commercial-status', auth, isCommercialStaff, async (req, res) => {
+  try {
+    const { commercialStatus } = req.body;
+    if (!COMMERCIAL_STATUSES.includes(commercialStatus)) {
+      return res.status(400).json({ message: 'Statut commercial invalide' });
+    }
+
+    const order = await ShopOrder.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
+
+    order.commercialStatus = commercialStatus;
+    if (commercialStatus === 'livree') {
+      order.statut = 'livree';
+      order.deliveredAt = new Date();
+    }
+    if (commercialStatus === 'annulee') {
+      order.statut = 'annulee';
+    }
+    await order.save();
+    res.json(order);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ——— Bilan ———
+
+router.get('/bilan', auth, isCommercialStaff, async (req, res) => {
+  try {
+    const filter = buildBilanFilter(req.query);
+    const orders = await ShopOrder.find(filter).sort({ orderDate: -1, createdAt: -1 }).lean();
+    const rows = orders.map(bilanRowFromOrder);
+    res.json({ bilanStartDate: BILAN_START_DATE, rows });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.post('/bilan/off-platform', auth, isCommercialStaff, async (req, res) => {
+  try {
+    const productName = String(req.body?.productName || '').trim();
+    const orderNumber = String(req.body?.orderNumber || '').trim();
+    const quantity = Number(req.body?.quantity);
+    const location = String(req.body?.location || '').trim();
+    const amount = Number(req.body?.amount);
+    const commercialStatus = req.body?.commercialStatus || 'commande';
+    const orderDate = parseDateInput(req.body?.orderDate) || new Date();
+
+    if (!productName) return res.status(400).json({ message: 'Produit requis' });
+    if (!orderNumber) return res.status(400).json({ message: 'Numéro de commande requis' });
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      return res.status(400).json({ message: 'Quantité invalide' });
+    }
+    if (!location) return res.status(400).json({ message: 'Lieu requis' });
+    if (!Number.isFinite(amount) || amount < 0) {
+      return res.status(400).json({ message: 'Montant invalide' });
+    }
+    if (!COMMERCIAL_STATUSES.includes(commercialStatus) || commercialStatus === 'annulee') {
+      return res.status(400).json({ message: 'Statut : commande, relance ou livree' });
+    }
+
+    const order = new ShopOrder({
+      orderNumber,
+      productName,
+      slug: 'hors-plateforme',
+      quantity,
+      quantityUnit: 'unit',
+      quantityLabel: String(quantity),
+      unitPrice: amount / quantity,
+      totalPrice: Math.round(amount),
+      isOffPlatform: true,
+      offPlatformLocation: location,
+      commercialStatus,
+      orderDate,
+      createdByCommercial: req.user._id,
+      statut: commercialStatus === 'livree' ? 'livree' : 'confirmee',
+      deliveredAt: commercialStatus === 'livree' ? orderDate : undefined,
+      confirmedAt: orderDate,
+    });
+
+    await order.save();
+    res.status(201).json(order);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ——— Relances du jour ———
+
+router.get('/relances/today', auth, isCommercialStaff, async (req, res) => {
+  try {
+    const { start, end } = todayRange();
+    const orders = await ShopOrder.find({
+      commercialStatus: 'relance',
+      scheduledDeliveryAt: { $gte: start, $lte: end },
+    })
+      .sort({ scheduledDeliveryAt: 1 })
+      .lean();
+
+    res.json(
+      orders.map((o) => ({
+        ...bilanRowFromOrder(o),
+        scheduledDeliveryAt: o.scheduledDeliveryAt,
+      }))
+    );
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.post('/relances/:id/ack', auth, isCommercialStaff, async (req, res) => {
+  try {
+    const order = await ShopOrder.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
+    order.relanceNotifiedAt = new Date();
+    await order.save();
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+/** Déclenche les notifications push pour les relances du jour (appelé par le polling). */
+router.post('/relances/notify-today', auth, isCommercialStaff, async (req, res) => {
+  try {
+    const { start, end } = todayRange();
+    const orders = await ShopOrder.find({
+      commercialStatus: 'relance',
+      scheduledDeliveryAt: { $gte: start, $lte: end },
+      $or: [{ relanceNotifiedAt: null }, { relanceNotifiedAt: { $lt: start } }],
+    }).lean();
+
+    if (orders.length) {
+      const staffIds = await getCommercialStaffIds();
+      const names = orders
+        .slice(0, 3)
+        .map((o) => o.customer?.firstName || o.productName)
+        .join(', ');
+      void sendToUserIds(staffIds, {
+        title: 'Rapido — Relances livraison',
+        body: `${orders.length} livraison(s) à relancer aujourd'hui${names ? ` · ${names}` : ''}`,
+        url: '/dashboard/commercial-relances',
+        tag: `rapido-relance-${start.toISOString().slice(0, 10)}`,
+      }).catch(() => {});
+    }
+
+    res.json({ count: orders.length, notified: orders.length > 0 });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+module.exports = router;

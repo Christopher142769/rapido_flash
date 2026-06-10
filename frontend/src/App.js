@@ -29,7 +29,7 @@ import CustomFormsDashboard from './pages/restaurant/CustomFormsDashboard';
 import PublicCustomFormPage from './pages/public/PublicCustomFormPage';
 
 // Pages Restaurant
-import Dashboard from './pages/restaurant/Dashboard';
+import DashboardIndexRedirect from './components/DashboardIndexRedirect';
 import RestaurantPlats from './pages/restaurant/RestaurantPlats';
 import Categories from './pages/restaurant/Categories';
 import RestaurantCommandes from './pages/restaurant/RestaurantCommandes';
@@ -50,11 +50,18 @@ import ShopDashboard from './pages/restaurant/ShopDashboard';
 import PushNotificationsDashboard from './pages/restaurant/PushNotificationsDashboard';
 import ShopProductLanding from './pages/shop/ShopProductLanding';
 import ShopOrderConfirmation from './pages/shop/ShopOrderConfirmation';
+import CommercialOverviewPage from './pages/commercial/CommercialOverviewPage';
+import CommercialCommandesPage from './pages/commercial/CommercialCommandesPage';
+import CommercialBilanPage from './pages/commercial/CommercialBilanPage';
+import CommercialRelancesPage from './pages/commercial/CommercialRelancesPage';
+import CommerciauxDashboard from './pages/commercial/CommerciauxDashboard';
 import ChatThread from './pages/client/ChatThread';
 import ChatsInbox from './pages/client/ChatsInbox';
 import ChatFab from './components/ChatFab';
 import NotificationPermissionBanner from './components/NotificationPermissionBanner';
 import SupportWidget from './components/SupportWidget';
+import GlobalLangSwitcher from './components/GlobalLangSwitcher';
+import LanguageRouteSync from './components/LanguageRouteSync';
 
 import './App.css';
 import MaintenanceGate from './components/MaintenanceGate';
@@ -98,9 +105,11 @@ function AppRoutes() {
 
   return (
     <MaintenanceGate>
+      <LanguageRouteSync />
       {!isRecrutement && <SupportWidget />}
       {!isRecrutement && <ChatFab />}
       {!isRecrutement && <NotificationPermissionBanner />}
+      {!isRecrutement && <GlobalLangSwitcher />}
       <Routes>
         {/* Pages publiques client */}
         <Route path="/loading" element={<Loading />} />
@@ -148,7 +157,7 @@ function AppRoutes() {
 
         {/* Pages restaurant (layout commun : sidebar + header + transitions) */}
         <Route path={DASHBOARD_BASE_PATH} element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
-          <Route index element={<Dashboard />} />
+          <Route index element={<DashboardIndexRedirect />} />
           <Route path="tableau" element={<DashboardOverviewPage />} />
           <Route path="medias" element={<RestaurantMedias />} />
           <Route path="vitrine-accueil" element={<MiseEnAvantAccueil />} />
@@ -168,6 +177,11 @@ function AppRoutes() {
           <Route path="messages-moderation" element={<PlatformChatModeration />} />
           <Route path="maintenance" element={<MaintenanceDashboardPage />} />
           <Route path="demandes-compte" element={<AccountRequestsDashboard />} />
+          <Route path="commercial" element={<CommercialOverviewPage />} />
+          <Route path="commercial-commandes" element={<CommercialCommandesPage />} />
+          <Route path="commercial-bilan" element={<CommercialBilanPage />} />
+          <Route path="commercial-relances" element={<CommercialRelancesPage />} />
+          <Route path="commerciaux" element={<CommerciauxDashboard />} />
         </Route>
         <Route path="/dashboard/*" element={<DashboardLegacyRedirect />} />
         <Route path="/entreprises" element={<Navigate to={DASHBOARD_BASE_PATH} replace />} />

@@ -6,6 +6,7 @@ import LanguageContext from '../../context/LanguageContext';
 import { useModal } from '../../context/ModalContext';
 import BottomNavbar from '../../components/BottomNavbar';
 import TopNavbar from '../../components/TopNavbar';
+import LangSwitcher from '../../components/LangSwitcher';
 import { FaMapMarkerAlt } from 'react-icons/fa';
 import LocationEditor from '../../components/LocationEditor';
 import './Settings.css';
@@ -212,6 +213,15 @@ const Settings = () => {
               {userLocation?.adresse ? t('settings', 'modifyAddress') : t('settings', 'setAddress')}
             </button>
           </div>
+        </div>
+
+        {/* Langue */}
+        <div className="settings-section notranslate">
+          <h2 className="section-title">{t('common', 'language')}</h2>
+          <p style={{ color: '#666', fontSize: 13, marginTop: 0, marginBottom: 12 }}>
+            {t('common', 'languageHint')}
+          </p>
+          <LangSwitcher variant="inline" />
         </div>
 
         {/* Mot de passe */}

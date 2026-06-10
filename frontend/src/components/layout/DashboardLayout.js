@@ -15,6 +15,11 @@ export default function DashboardLayout() {
     setMobileDrawerOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    document.body.classList.add('dashboard-layout-active');
+    return () => document.body.classList.remove('dashboard-layout-active');
+  }, []);
+
   return (
     <DashboardRefreshProvider>
     <div className="rf-dashboard-root min-h-screen text-[var(--rf-text-dark)]">

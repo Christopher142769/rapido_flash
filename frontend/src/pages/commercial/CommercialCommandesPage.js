@@ -1,0 +1,210 @@
+import React, { useCallback, useEffect, useState } from 'react';
+import PageLoader from '../../components/PageLoader';
+import { useModal } from '../../context/ModalContext';
+import {
+  confirmCommercialOrder,
+  deliverCommercialOrder,
+  fetchCommercialOrders,
+  formatCommercialStatus,
+  formatPrice,
+  setOrderRelance,
+} from '../../utils/commercialApi';
+import './commercial.css';
+
+export default function CommercialCommandesPage() {
+  const { showSuccess, showError } = useModal();
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('');
+  const [relanceId, setRelanceId] = useState(null);
+  const [relanceDate, setRelanceDate] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      const params = filter ? { status: filter } : {};
+      setOrders(await fetchCommercialOrders(params));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, [filter]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const run = async (fn, msg) => {
+    setBusy(true);
+    try {
+      await fn();
+      showSuccess(msg);
+      await load();
+    } catch (e) {
+      showError(e.response?.data?.message || e.message);
+    } finally {
+      setBusy(false);
+      setRelanceId(null);
+    }
+  };
+
+  const submitRelance = (id) => {
+    if (!relanceDate) {
+      showError('Indiquez la date et l’heure de livraison');
+      return;
+    }
+    run(() => setOrderRelance(id, new Date(relanceDate).toISOString()), 'Relance planifiée');
+  };
+
+  if (loading) return <PageLoader />;
+
+  return (
+    <div className="commercial-page">
+      <h1>Commandes Shop</h1>
+      <p className="commercial-lead">
+        Confirmez les commandes, planifiez une relance ou marquez comme livré.
+      </p>
+
+      <div className="commercial-filters">
+        <label>
+          Statut
+          <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+            <option value="">Tous</option>
+            <option value="commande">Commande</option>
+            <option value="relance">Relance</option>
+            <option value="livree">Livré</option>
+          </select>
+        </label>
+        <button type="button" className="commercial-btn commercial-btn--outline" onClick={load}>
+          Actualiser
+        </button>
+      </div>
+
+      {orders.length === 0 ? (
+        <p>Aucune commande depuis le 09/06/2026.</p>
+      ) : (
+        orders.map((o) => {
+          const name = [o.customer?.firstName, o.customer?.lastName].filter(Boolean).join(' ');
+          const lieu = o.isOffPlatform
+            ? o.offPlatformLocation
+            : [o.customer?.city, o.customer?.addressDescription].filter(Boolean).join(' — ');
+          return (
+            <div key={o._id} className="commercial-order-card">
+              <h3>
+                {o.productName} · {o.quantityLabel || o.quantity}
+                {o.isOffPlatform ? (
+                  <span className="commercial-badge commercial-badge--off" style={{ marginLeft: 8 }}>
+                    Hors plateforme
+                  </span>
+                ) : null}
+              </h3>
+              <div className="commercial-order-meta">
+                <div>
+                  <strong>N° {o.orderNumber || '—'}</strong> ·{' '}
+                  {new Date(o.createdAt).toLocaleString('fr-FR')}
+                </div>
+                <div>
+                  {name || 'Client'} · {o.customer?.phone || '—'}
+                </div>
+                <div>{lieu}</div>
+                {o.requestedDeliveryAt ? (
+                  <div>
+                    Livraison demandée : {new Date(o.requestedDeliveryAt).toLocaleString('fr-FR')}
+                  </div>
+                ) : null}
+                {o.scheduledDeliveryAt ? (
+                  <div>
+                    Relance prévue : {new Date(o.scheduledDeliveryAt).toLocaleString('fr-FR')}
+                  </div>
+                ) : null}
+                <div style={{ marginTop: 6 }}>
+                  <span className={`commercial-badge commercial-badge--${o.commercialStatus}`}>
+                    {formatCommercialStatus(o.commercialStatus)}
+                  </span>
+                  <span
+                    style={{ marginLeft: 12 }}
+                    className={
+                      o.commercialStatus === 'livree'
+                        ? 'commercial-amount--received'
+                        : 'commercial-amount--pending'
+                    }
+                  >
+                    {formatPrice(o.totalPrice)}
+                  </span>
+                </div>
+              </div>
+
+              {relanceId === o._id ? (
+                <div className="commercial-form-grid" style={{ marginBottom: 8 }}>
+                  <div className="commercial-form-field">
+                    <label>Date et heure de livraison</label>
+                    <input
+                      type="datetime-local"
+                      value={relanceDate}
+                      onChange={(e) => setRelanceDate(e.target.value)}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+                    <button
+                      type="button"
+                      className="commercial-btn commercial-btn--primary commercial-btn--sm"
+                      disabled={busy}
+                      onClick={() => submitRelance(o._id)}
+                    >
+                      Enregistrer
+                    </button>
+                    <button
+                      type="button"
+                      className="commercial-btn commercial-btn--outline commercial-btn--sm"
+                      onClick={() => setRelanceId(null)}
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="commercial-order-actions">
+                {o.commercialStatus === 'commande' ? (
+                  <button
+                    type="button"
+                    className="commercial-btn commercial-btn--primary commercial-btn--sm"
+                    disabled={busy}
+                    onClick={() => run(() => confirmCommercialOrder(o._id), 'Commande confirmée')}
+                  >
+                    Confirmer
+                  </button>
+                ) : null}
+                {o.commercialStatus !== 'livree' && o.commercialStatus !== 'annulee' ? (
+                  <>
+                    <button
+                      type="button"
+                      className="commercial-btn commercial-btn--outline commercial-btn--sm"
+                      disabled={busy}
+                      onClick={() => {
+                        setRelanceId(o._id);
+                        setRelanceDate('');
+                      }}
+                    >
+                      Relance livraison
+                    </button>
+                    <button
+                      type="button"
+                      className="commercial-btn commercial-btn--success commercial-btn--sm"
+                      disabled={busy}
+                      onClick={() => run(() => deliverCommercialOrder(o._id), 'Marqué comme livré')}
+                    >
+                      Marquer livré
+                    </button>
+                  </>
+                ) : null}
+              </div>
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+}

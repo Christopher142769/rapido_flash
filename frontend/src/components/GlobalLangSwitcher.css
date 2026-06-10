@@ -1,0 +1,33 @@
+.global-lang-switcher {
+  position: fixed;
+  bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  right: calc(0.75rem + env(safe-area-inset-right, 0px));
+  z-index: 10050;
+  pointer-events: auto;
+}
+
+@media (min-width: 768px) {
+  .global-lang-switcher {
+    bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+    right: calc(1.25rem + env(safe-area-inset-right, 0px));
+  }
+}
+
+/* Dashboard : au-dessus de la barre mobile */
+body.dashboard-layout-active .global-lang-switcher {
+  bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  body.dashboard-layout-active .global-lang-switcher {
+    bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+    /* Le header dashboard a déjà le sélecteur sur desktop */
+    display: none;
+  }
+}
+
+.lang-switcher--floating .lang-switcher-btn {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  background: #fff;
+  border: 1px solid rgba(139, 69, 19, 0.2);
+}

@@ -34,8 +34,8 @@ const Login = () => {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      if (user.role === 'restaurant' || user.role === 'gestionnaire') {
-        navigate(toDashboardPath());
+      if (user.role === 'restaurant' || user.role === 'gestionnaire' || user.role === 'commercial') {
+        navigate(user.role === 'commercial' ? toDashboardPath('/commercial') : toDashboardPath());
       } else {
         navigate(afterAuthPath);
       }

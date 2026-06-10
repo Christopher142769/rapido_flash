@@ -13,10 +13,13 @@ const shopCustomerSchema = new mongoose.Schema(
 
 const shopOrderSchema = new mongoose.Schema(
   {
+    orderNumber: { type: String, trim: true, index: true },
     shopProduct: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'ShopProduct',
-      required: true,
+      required: function requiredShopProduct() {
+        return !this.isOffPlatform;
+      },
       index: true,
     },
     slug: { type: String, required: true, trim: true, lowercase: true },
@@ -34,7 +37,12 @@ const shopOrderSchema = new mongoose.Schema(
     isPromoLive: { type: Boolean, default: false },
     discountPercent: { type: Number, default: 0 },
     freeDelivery: { type: Boolean, default: false },
-    customer: { type: shopCustomerSchema, required: true },
+    customer: {
+      type: shopCustomerSchema,
+      required: function requiredCustomer() {
+        return !this.isOffPlatform;
+      },
+    },
     whatsappNumber: { type: String, default: '' },
     statut: {
       type: String,
@@ -42,6 +50,25 @@ const shopOrderSchema = new mongoose.Schema(
       default: 'en_attente',
       index: true,
     },
+    /** Statut commercial pour le bilan : commande | relance | livree | annulee */
+    commercialStatus: {
+      type: String,
+      enum: ['commande', 'relance', 'livree', 'annulee'],
+      default: 'commande',
+      index: true,
+    },
+    /** Date affichée dans le bilan (modifiable pour hors plateforme). */
+    orderDate: { type: Date },
+    /** Livraison demandée par le client (date ultérieure). */
+    requestedDeliveryAt: { type: Date },
+    /** Date/heure de relance planifiée. */
+    scheduledDeliveryAt: { type: Date, index: true },
+    isOffPlatform: { type: Boolean, default: false, index: true },
+    offPlatformLocation: { type: String, default: '', trim: true },
+    createdByCommercial: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    confirmedAt: { type: Date },
+    deliveredAt: { type: Date },
+    relanceNotifiedAt: { type: Date },
   },
   { timestamps: true }
 );

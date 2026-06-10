@@ -7,36 +7,44 @@ import LanguageContext from '../../context/LanguageContext';
 import { useDashboardRefresh } from '../../context/DashboardRefreshContext';
 import { useNotifications } from '../../context/NotificationContext';
 import SectionRefreshButton from '../dashboard/SectionRefreshButton';
+import LangSwitcher from '../LangSwitcher';
 import '../dashboard/section-refresh.css';
 
 function titleForPath(pathname, user, t) {
   if (pathname === '/dashboard') {
-    return user?.role === 'gestionnaire' ? 'Mon entreprise' : 'Mes entreprises';
+    return user?.role === 'gestionnaire' ? t('dashNav', 'monEntreprise') : t('dashNav', 'mesEntreprises');
   }
   const map = new Map([
     ['/dashboard/tableau', t('dashboardOverview', 'pageTitle')],
-    ['/dashboard/medias', "Galerie d'images"],
-    ['/dashboard/vitrine-accueil', 'Vitrine accueil'],
-    ['/dashboard/categories-domaine', 'Catégories domaine'],
-    ['/dashboard/categories', 'Catégories produits'],
-    ['/dashboard/plats', 'Produits'],
-    ['/dashboard/shop', 'Shop express'],
-    ['/dashboard/formulaires', 'Formulaires'],
-    ['/dashboard/commandes', 'Commandes'],
-    ['/dashboard/messages', 'Messages'],
-    ['/dashboard/offres-promo', 'Offres promo'],
-    ['/dashboard/utilisateurs-promo', 'Utilisateurs promo'],
+    ['/dashboard/medias', t('dashNav', 'medias')],
+    ['/dashboard/vitrine-accueil', t('dashNav', 'vitrine')],
+    ['/dashboard/categories-domaine', t('dashNav', 'categoriesDomaine')],
+    ['/dashboard/categories', t('dashNav', 'categories')],
+    ['/dashboard/plats', t('dashNav', 'plats')],
+    ['/dashboard/shop', t('dashNav', 'shop')],
+    ['/dashboard/formulaires', t('dashNav', 'formulaires')],
+    ['/dashboard/commandes', t('dashNav', 'commandes')],
+    ['/dashboard/messages', t('dashNav', 'messages')],
+    ['/dashboard/offres-promo', t('dashNav', 'offresPromo')],
+    ['/dashboard/utilisateurs-promo', t('dashNav', 'utilisateurs')],
     ['/dashboard/avis', t('reviews', 'sidebarReviews')],
-    ['/dashboard/bannieres', 'Bannières'],
-    ['/dashboard/gestionnaires', 'Gestionnaires'],
+    ['/dashboard/bannieres', t('dashNav', 'bannieres')],
+    ['/dashboard/gestionnaires', t('dashNav', 'gestionnaires')],
     ['/dashboard/messages-moderation', t('chat', 'moderationTitle')],
     ['/dashboard/maintenance', t('maintenance', 'dashboardTitle')],
+    ['/dashboard/demandes-compte', t('dashNav', 'demandesCompte')],
+    ['/dashboard/notifications-push', t('dashNav', 'notifPush')],
+    ['/dashboard/commercial', 'Vue d’ensemble commercial'],
+    ['/dashboard/commercial-commandes', 'Commandes Shop'],
+    ['/dashboard/commercial-bilan', 'Bilan commercial'],
+    ['/dashboard/commercial-relances', 'Relances'],
+    ['/dashboard/commerciaux', 'Commerciaux'],
   ]);
   if (map.has(pathname)) return map.get(pathname);
   for (const [path, label] of map) {
     if (pathname.startsWith(path + '/')) return label;
   }
-  return 'Rapido Flash';
+  return t('dashNav', 'defaultTitle');
 }
 
 export default function DashboardHeaderPremium({ onOpenDrawer }) {
@@ -74,7 +82,7 @@ export default function DashboardHeaderPremium({ onOpenDrawer }) {
           borderColor: 'var(--rf-border)',
           boxShadow: 'var(--shadow-card)',
         }}
-        aria-label="Ouvrir le menu"
+        aria-label={t('dashNav', 'ouvrirMenu')}
         onClick={onOpenDrawer}
       >
         <FaBars />
@@ -93,7 +101,7 @@ export default function DashboardHeaderPremium({ onOpenDrawer }) {
         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       >
         <label className="relative block w-full">
-          <span className="sr-only">Rechercher</span>
+          <span className="sr-only">{t('dashNav', 'rechercher')}</span>
           <FaSearch
             className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm opacity-50"
             style={{ color: 'var(--rf-text-muted)' }}
@@ -102,7 +110,7 @@ export default function DashboardHeaderPremium({ onOpenDrawer }) {
           <input
             ref={searchRef}
             type="search"
-            placeholder="Rechercher..."
+            placeholder={`${t('dashNav', 'rechercher')}...`}
             className="w-full rounded-[var(--radius-md)] border bg-white py-2.5 pl-10 pr-3 text-sm outline-none transition-shadow"
             style={{
               borderColor: 'var(--rf-border-strong)',
@@ -130,7 +138,7 @@ export default function DashboardHeaderPremium({ onOpenDrawer }) {
           type="button"
           className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[var(--rf-border)] bg-[var(--rf-surface)] text-lg outline-none transition hover:shadow-[var(--shadow-hover)]"
           style={{ color: 'var(--rf-text-dark)', boxShadow: 'var(--shadow-card)' }}
-          aria-label="Notifications"
+          aria-label={t('dashNav', 'notifications')}
           onClick={() => navigate('/dashboard/commandes')}
         >
           <FaBell />
@@ -165,7 +173,7 @@ export default function DashboardHeaderPremium({ onOpenDrawer }) {
               {(user?.nom || user?.email || 'A').slice(0, 1).toUpperCase()}
             </span>
             <span className="hidden text-sm font-semibold sm:inline" style={{ color: 'var(--rf-text-dark)' }}>
-              Admin
+              {t('dashNav', 'admin')}
             </span>
           </button>
           <AnimatePresence>
@@ -188,11 +196,15 @@ export default function DashboardHeaderPremium({ onOpenDrawer }) {
                     navigate('/home');
                   }}
                 >
-                  Accueil public
+                  {t('dashNav', 'accueilPublic')}
                 </button>
               </motion.div>
             ) : null}
           </AnimatePresence>
+        </div>
+
+        <div className="notranslate hidden sm:block">
+          <LangSwitcher variant="inline" />
         </div>
       </div>
     </header>

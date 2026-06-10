@@ -12,11 +12,12 @@ export default function DashboardMobileBottomNav({ onNavigate }) {
   const reduce = useReducedMotion();
   const { user } = useContext(AuthContext);
   const { t } = useContext(LanguageContext);
-  const { pendingOrders, unreadMessages } = useNotifications();
+  const { pendingOrders, unreadMessages, todayRelances } = useNotifications();
   const items = useMemo(
     () =>
       buildDashboardNavItems({
         isAdmin: user?.role === 'restaurant',
+        isCommercial: user?.role === 'commercial',
         t,
         canManageMaintenance: !!user?.canManageMaintenance,
       }),
@@ -39,7 +40,7 @@ export default function DashboardMobileBottomNav({ onNavigate }) {
         {items.map((item) => {
           const Icon = item.Icon;
           const active = isDashboardNavActive(location.pathname, item.path);
-          const badge = navBadgeCount(item.id, pendingOrders, unreadMessages);
+          const badge = navBadgeCount(item.id, pendingOrders, unreadMessages, todayRelances);
           return (
             <motion.button
               key={item.id}

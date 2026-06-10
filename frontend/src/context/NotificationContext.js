@@ -21,6 +21,7 @@ export function NotificationProvider({ children }) {
   const [summary, setSummary] = useState({
     pendingOrders: 0,
     unreadMessages: 0,
+    todayRelances: 0,
     total: 0,
     role: null,
   });
@@ -33,7 +34,7 @@ export function NotificationProvider({ children }) {
   const fetchSummary = useCallback(async () => {
     const token = localStorage.getItem('token');
     if (!token || !user) return;
-    if (!['restaurant', 'gestionnaire', 'client'].includes(user.role)) return;
+    if (!['restaurant', 'gestionnaire', 'commercial', 'client'].includes(user.role)) return;
     try {
       const res = await axios.get(`${API_URL}/notifications/summary`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -42,6 +43,7 @@ export function NotificationProvider({ children }) {
       const next = {
         pendingOrders: Number(d.pendingOrders || 0),
         unreadMessages: Number(d.unreadMessages || 0),
+        todayRelances: Number(d.todayRelances || 0),
         total: Number(d.total || 0),
         role: d.role || null,
       };
@@ -57,7 +59,8 @@ export function NotificationProvider({ children }) {
       if (prev) {
         const ordersUp = next.pendingOrders > prev.pendingOrders;
         const msgUp = next.unreadMessages > prev.unreadMessages;
-        if (ordersUp || msgUp) {
+        const relanceUp = next.todayRelances > prev.todayRelances;
+        if (ordersUp || msgUp || relanceUp) {
           playNotificationChime();
           const inForeground =
             typeof document !== 'undefined' && document.visibilityState === 'visible';
@@ -79,7 +82,14 @@ export function NotificationProvider({ children }) {
               })();
             } else if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
               try {
-                if (ordersUp && user.role !== 'client') {
+                if (relanceUp && user.role !== 'client') {
+                  new Notification('Rapido — Relance livraison', {
+                    body: `${next.todayRelances} livraison(s) à relancer aujourd'hui.`,
+                    icon: '/images/logo.png',
+                    tag: 'rapido-relance',
+                    ...silentOpts,
+                  });
+                } else if (ordersUp && user.role !== 'client') {
                   new Notification('Rapido — Nouvelle commande', {
                     body: 'Une nouvelle commande est en attente de traitement.',
                     icon: '/images/logo.png',
@@ -125,14 +135,14 @@ export function NotificationProvider({ children }) {
   }, [user?._id]);
 
   useEffect(() => {
-    if (!user || !['restaurant', 'gestionnaire', 'client'].includes(user.role)) return undefined;
+    if (!user || !['restaurant', 'gestionnaire', 'commercial', 'client'].includes(user.role)) return undefined;
     fetchSummary();
     const id = setInterval(fetchSummary, POLL_MS);
     return () => clearInterval(id);
   }, [user, fetchSummary]);
 
   useEffect(() => {
-    if (!user || !['restaurant', 'gestionnaire', 'client'].includes(user.role)) return undefined;
+    if (!user || !['restaurant', 'gestionnaire', 'commercial', 'client'].includes(user.role)) return undefined;
     if (isCapacitorAndroid()) {
       void requestAndroidNativeNotificationPermissions()
         .then(() => registerCapacitorFcmAndSync())
@@ -189,6 +199,7 @@ export function useNotifications() {
     return {
       pendingOrders: 0,
       unreadMessages: 0,
+      todayRelances: 0,
       total: 0,
       role: null,
       notificationPermission: typeof Notification !== 'undefined' ? Notification.permission : 'denied',

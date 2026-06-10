@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { pickLocalized, pickProductDisplayName } from '../utils/i18nContent';
+import { applyGoogleTranslate, clearGoogleTranslateArtifacts } from '../utils/googleTranslate';
 
 const STORAGE_KEY = 'rapido_lang';
 
@@ -363,6 +364,60 @@ export const translations = {
       french: 'Français',
       english: 'English',
       error: 'Erreur',
+      language: 'Langue',
+      languageHint: 'Le français est la langue par défaut. L’anglais traduit automatiquement toute la plateforme.',
+    },
+    dashNav: {
+      entreprise: 'Entreprise',
+      medias: "Galerie d'images",
+      vitrine: 'Vitrine accueil',
+      categoriesDomaine: 'Catégories domaine',
+      categories: 'Catégories produits',
+      plats: 'Produits',
+      shop: 'Shop express',
+      commandes: 'Commandes',
+      messages: 'Messages',
+      offresPromo: 'Offres promo',
+      utilisateurs: 'Utilisateurs',
+      bannieres: 'Bannières',
+      notifPush: 'Notifications push',
+      formulaires: 'Formulaires',
+      gestionnaires: 'Gestionnaires',
+      demandesCompte: 'Demandes utilisateurs',
+      sectionAdmin: 'Administration',
+      sectionGestion: 'Gestion',
+      sectionPlateforme: 'Plateforme',
+      mesEntreprises: 'Mes entreprises',
+      monEntreprise: 'Mon entreprise',
+      rechercher: 'Rechercher',
+      accueilPublic: 'Accueil public',
+      ouvrirMenu: 'Ouvrir le menu',
+      notifications: 'Notifications',
+      admin: 'Admin',
+      defaultTitle: 'Rapido Flash',
+    },
+    auth: {
+      welcomeTitle1: 'Bienvenue sur Rapido',
+      welcomeSub1: 'Votre plateforme de livraison',
+      welcomeDesc1: 'Commandez tous types de produits et recevez-les rapidement à votre porte',
+      welcomeTitle2: 'Livraison rapide',
+      welcomeSub2: 'Où que vous soyez',
+      welcomeDesc2: 'Découvrez les entreprises près de chez vous et commandez en quelques clics',
+      welcomeTitle3: 'Commencez maintenant',
+      welcomeSub3: "C'est simple et rapide",
+      welcomeDesc3: 'Indiquez votre position et explorez les structures et produits disponibles',
+      skip: 'Passer',
+      next: 'Suivant',
+      previous: 'Précédent',
+      start: 'Commencer',
+      login: 'Connexion',
+      register: 'Créer un compte',
+      email: 'Email',
+      password: 'Mot de passe',
+      forgotPassword: 'Mot de passe oublié ?',
+      loginWithCode: 'Connexion par code',
+      noAccount: 'Pas encore de compte ?',
+      hasAccount: 'Déjà un compte ?',
     },
     i18n: {
       nameEn: 'Nom (anglais)',
@@ -971,6 +1026,60 @@ export const translations = {
       french: 'Français',
       english: 'English',
       error: 'Error',
+      language: 'Language',
+      languageHint: 'French is the default. English automatically translates the whole platform.',
+    },
+    dashNav: {
+      entreprise: 'Business',
+      medias: 'Image gallery',
+      vitrine: 'Home showcase',
+      categoriesDomaine: 'Domain categories',
+      categories: 'Product categories',
+      plats: 'Products',
+      shop: 'Express shop',
+      commandes: 'Orders',
+      messages: 'Messages',
+      offresPromo: 'Promo offers',
+      utilisateurs: 'Users',
+      bannieres: 'Banners',
+      notifPush: 'Push notifications',
+      formulaires: 'Forms',
+      gestionnaires: 'Managers',
+      demandesCompte: 'Account requests',
+      sectionAdmin: 'Administration',
+      sectionGestion: 'Management',
+      sectionPlateforme: 'Platform',
+      mesEntreprises: 'My businesses',
+      monEntreprise: 'My business',
+      rechercher: 'Search',
+      accueilPublic: 'Public home',
+      ouvrirMenu: 'Open menu',
+      notifications: 'Notifications',
+      admin: 'Admin',
+      defaultTitle: 'Rapido Flash',
+    },
+    auth: {
+      welcomeTitle1: 'Welcome to Rapido',
+      welcomeSub1: 'Your delivery platform',
+      welcomeDesc1: 'Order all kinds of products and get them delivered quickly to your door',
+      welcomeTitle2: 'Fast delivery',
+      welcomeSub2: 'Wherever you are',
+      welcomeDesc2: 'Discover businesses near you and order in a few taps',
+      welcomeTitle3: 'Get started now',
+      welcomeSub3: 'Simple and quick',
+      welcomeDesc3: 'Set your location and explore available businesses and products',
+      skip: 'Skip',
+      next: 'Next',
+      previous: 'Previous',
+      start: 'Get started',
+      login: 'Log in',
+      register: 'Create account',
+      email: 'Email',
+      password: 'Password',
+      forgotPassword: 'Forgot password?',
+      loginWithCode: 'Log in with code',
+      noAccount: "Don't have an account?",
+      hasAccount: 'Already have an account?',
     },
     i18n: {
       nameEn: 'Name (English)',
@@ -1245,6 +1354,13 @@ export const LanguageProvider = ({ children }) => {
       localStorage.setItem(STORAGE_KEY, language);
     } catch (e) {
       // ignore
+    }
+    document.documentElement.lang = language === 'en' ? 'en' : 'fr';
+    if (language === 'en') {
+      applyGoogleTranslate('en');
+    } else {
+      clearGoogleTranslateArtifacts();
+      applyGoogleTranslate('fr');
     }
   }, [language]);
 
