@@ -12,6 +12,7 @@ const {
   resolveCommercialStatus,
   buildPeriodFilter,
   confirmedOrdersQuery,
+  pointsConfirmedOnlyQuery,
   BILAN_START_DATE,
 } = require('../utils/commercialBilan');
 const { sendToUserIds } = require('../services/pushNotifications');
@@ -180,7 +181,8 @@ router.get('/points/summary', auth, isCommercialStaff, async (req, res) => {
     let resolvedName = productName;
     let resolvedUnit = 'unit';
 
-    const filter = confirmedOrdersQuery();
+    const filter = pointsConfirmedOnlyQuery();
+    const andClauses = [periodClause];
 
     if (productId && mongoose.Types.ObjectId.isValid(productId)) {
       const product = await ShopProduct.findById(productId).select('name quantityUnit').lean();
@@ -188,17 +190,18 @@ router.get('/points/summary', auth, isCommercialStaff, async (req, res) => {
       resolvedName = product.name;
       resolvedUnit = product.quantityUnit || 'unit';
       const nameRx = new RegExp(`^${product.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
-      filter.$or = [{ shopProduct: product._id }, { isOffPlatform: true, productName: nameRx }];
+      andClauses.push({
+        $or: [{ shopProduct: product._id }, { isOffPlatform: true, productName: nameRx }],
+      });
     } else if (resolvedName) {
       const escaped = resolvedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      filter.productName = new RegExp(`^${escaped}$`, 'i');
+      andClauses.push({ productName: new RegExp(`^${escaped}$`, 'i') });
     }
 
-    filter.$and = [periodClause];
+    filter.$and = andClauses;
 
-    const orders = await ShopOrder.find(filter)
-      .sort({ orderDate: -1, createdAt: -1 })
-      .lean();
+    let orders = await ShopOrder.find(filter).sort({ orderDate: -1, createdAt: -1 }).lean();
+    orders = orders.filter((o) => resolveCommercialStatus(o) === 'confirme');
 
     if (orders.length && !resolvedName) {
       resolvedName = orders[0].productName;

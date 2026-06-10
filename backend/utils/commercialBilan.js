@@ -53,6 +53,23 @@ function confirmedOrdersQuery(extra = {}) {
   };
 }
 
+/** Points : uniquement le statut commercial « confirmé » (pas relance, pas livré). */
+function pointsConfirmedOnlyQuery(extra = {}) {
+  return {
+    createdAt: { $gte: BILAN_START_DATE },
+    $or: [
+      { commercialStatus: 'confirme' },
+      {
+        commercialStatus: 'commande',
+        confirmedAt: { $ne: null },
+        statut: { $in: ['confirmee', 'en_preparation', 'en_livraison'] },
+        $or: [{ scheduledDeliveryAt: null }, { scheduledDeliveryAt: { $exists: false } }],
+      },
+    ],
+    ...extra,
+  };
+}
+
 function orderLocation(order) {
   if (order.isOffPlatform) return order.offPlatformLocation || '—';
   const c = order.customer || {};
@@ -121,6 +138,7 @@ module.exports = {
   bilanBaseQuery,
   buildPeriodFilter,
   confirmedOrdersQuery,
+  pointsConfirmedOnlyQuery,
   CONFIRMED_STATUTS,
   orderLocation,
   bilanRowFromOrder,

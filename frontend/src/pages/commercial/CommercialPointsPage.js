@@ -75,8 +75,8 @@ export default function CommercialPointsPage() {
     <div className="commercial-page">
       <h1>Points</h1>
       <p className="commercial-lead">
-        Quantité totale des commandes <strong>confirmées</strong> pour un produit sur une période.
-        Exportez la liste complète pour vos livreurs (nom, téléphone, adresse, etc.).
+        Quantité totale des commandes au statut <strong>Confirmé</strong> uniquement (hors relance et
+        hors livré) pour un produit sur une période. Exportez la liste pour vos livreurs.
       </p>
 
       <div className="commercial-card">
