@@ -1,6 +1,17 @@
 import { jsPDF } from 'jspdf';
 import { formatCommercialStatus } from './commercialApi';
+import { enrichSummaryWithCities } from './pointsByCity';
 import { formatQuantityWithUnit } from './shopQuantityUnit';
+
+const BRAND = {
+  brown: [139, 69, 19],
+  gold: [200, 134, 10],
+  goldLight: [232, 196, 104],
+  cream: [255, 252, 248],
+  text: [26, 26, 26],
+  muted: [102, 102, 102],
+  white: [255, 255, 255],
+};
 
 function escapeCsv(v) {
   const s = String(v ?? '');
@@ -17,152 +28,389 @@ function fmtDate(d) {
   return x.toLocaleString('fr-FR');
 }
 
+function fmtDateShort(d) {
+  if (!d) return '—';
+  const x = new Date(d);
+  if (Number.isNaN(x.getTime())) return '—';
+  return x.toLocaleDateString('fr-FR');
+}
+
 function safeFilenamePart(s) {
   return String(s || 'export')
     .replace(/[^\w.-]+/g, '_')
     .slice(0, 40);
 }
 
-/** Export Excel (CSV) — feuille livreurs avec tous les détails. */
+function fmtMoney(n) {
+  return `${Number(n || 0).toLocaleString('fr-FR')} FCFA`;
+}
+
+function prepareSummary(summary) {
+  const enriched = enrichSummaryWithCities(summary);
+  return {
+    ...enriched,
+    byCity: enriched.byCity?.length ? enriched.byCity : [],
+  };
+}
+
+function rowCells(r, summary) {
+  return [
+    fmtDateShort(r.date),
+    r.orderNumber || '—',
+    r.firstName,
+    r.lastName,
+    r.phone,
+    r.city,
+    r.address,
+    r.location,
+    r.quantityLabel || r.quantity,
+    formatCommercialStatus(r.commercialStatus),
+    r.amount,
+    fmtDate(r.requestedDeliveryAt),
+    fmtDate(r.scheduledDeliveryAt),
+    r.isOffPlatform ? 'Oui' : 'Non',
+  ];
+}
+
+const TABLE_HEADERS = [
+  'Date',
+  'N° commande',
+  'Prénom',
+  'Nom',
+  'Téléphone',
+  'Ville',
+  'Adresse',
+  'Lieu',
+  'Quantité',
+  'Statut',
+  'Montant (FCFA)',
+  'Livraison demandée',
+  'Livraison planifiée',
+  'Hors plateforme',
+];
+
+/** Export Excel stylé (.xls HTML) — groupé par ville avec totaux. */
 export function exportPointsToCsv(summary) {
+  exportPointsToExcel(summary);
+}
+
+export function exportPointsToExcel(summary) {
   if (!summary?.orders?.length) return;
 
-  const headers = [
-    'Date commande',
-    'N° commande',
-    'Produit',
-    'Quantité',
-    'Prénom',
-    'Nom',
-    'Téléphone',
-    'Ville',
-    'Adresse livraison',
-    'Lieu complet',
-    'Statut commercial',
-    'Statut commande',
-    'Montant (FCFA)',
-    'Livraison demandée',
-    'Livraison planifiée',
-    'Hors plateforme',
-  ];
+  const data = prepareSummary(summary);
+  const cityLabel = data.cityFilter ? ` — ${data.cityFilter}` : '';
+  const period = `${fmtDateShort(data.dateFrom)} → ${fmtDateShort(data.dateTo)}`;
 
-  const lines = [
-    `Rapido — Livraisons confirmées`,
-    `Produit;${summary.productName}`,
-    `Période;${summary.dateFrom} au ${summary.dateTo}`,
-    `Quantité totale;${formatQuantityWithUnit(summary.totalQuantity, summary.quantityUnit)}`,
-    `Nombre de commandes;${summary.orderCount}`,
-    '',
-    headers.join(';'),
-    ...summary.orders.map((r) =>
-      [
-        fmtDate(r.date),
-        r.orderNumber,
-        r.productName || summary.productName,
-        r.quantityLabel || r.quantity,
-        r.firstName,
-        r.lastName,
-        r.phone,
-        r.city,
-        r.address,
-        r.location,
-        formatCommercialStatus(r.commercialStatus),
-        r.statutLabel || r.statut,
-        r.amount,
-        fmtDate(r.requestedDeliveryAt),
-        fmtDate(r.scheduledDeliveryAt),
-        r.isOffPlatform ? 'Oui' : 'Non',
-      ]
-        .map(escapeCsv)
-        .join(';')
-    ),
-  ];
+  const cityBlocks = data.byCity
+    .map((group) => {
+      const rows = group.orders
+        .map(
+          (r) => `
+        <tr>
+          ${rowCells(r, data)
+            .map((c) => `<td>${String(c ?? '').replace(/</g, '&lt;')}</td>`)
+            .join('')}
+        </tr>`
+        )
+        .join('');
 
-  const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      return `
+      <tr><td colspan="14" class="city-header">${group.city}</td></tr>
+      <tr class="col-header">
+        ${TABLE_HEADERS.map((h) => `<th>${h}</th>`).join('')}
+      </tr>
+      ${rows}
+      <tr class="city-total">
+        <td colspan="8"><strong>Sous-total ${group.city}</strong></td>
+        <td><strong>${group.totalQuantityLabel || formatQuantityWithUnit(group.totalQuantity, data.quantityUnit)}</strong></td>
+        <td colspan="2"><strong>${group.orderCount} commande(s)</strong></td>
+        <td colspan="3"><strong>${fmtMoney(group.totalAmount)}</strong></td>
+      </tr>
+      <tr class="spacer"><td colspan="14"></td></tr>`;
+    })
+    .join('');
+
+  const html = `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
+<head>
+<meta charset="UTF-8">
+<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
+<x:Name>Livraisons</x:Name>
+<x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+<style>
+  body { font-family: Calibri, Arial, sans-serif; color: #1a1a1a; }
+  .brand-bar { background: linear-gradient(90deg, #8B4513, #c8860a); color: #fff; padding: 16px 20px; }
+  .brand-bar h1 { margin: 0; font-size: 22px; letter-spacing: 0.5px; }
+  .brand-bar p { margin: 6px 0 0; font-size: 13px; opacity: 0.95; }
+  .meta { padding: 14px 20px; background: #fffcf8; border-bottom: 2px solid #e8c468; }
+  .meta table td { padding: 4px 24px 4px 0; font-size: 13px; }
+  .meta strong { color: #8B4513; }
+  .kpi-row td { background: #faf8f5; border: 1px solid #e8e0d8; padding: 12px 16px; text-align: center; }
+  .kpi-label { font-size: 10px; text-transform: uppercase; color: #888; letter-spacing: 0.06em; }
+  .kpi-value { font-size: 18px; font-weight: bold; color: #c8860a; }
+  table.data { width: 100%; border-collapse: collapse; margin: 0 0 8px; }
+  table.data th, table.data td { border: 1px solid #e0d8d0; padding: 7px 9px; font-size: 11px; vertical-align: top; }
+  .city-header { background: #8B4513; color: #fff; font-weight: bold; font-size: 14px; padding: 10px 12px !important; }
+  .col-header th { background: #f5efe8; font-weight: bold; color: #555; font-size: 10px; text-transform: uppercase; }
+  .city-total td { background: #fff8e8; font-weight: bold; border-top: 2px solid #c8860a; }
+  .spacer td { border: none; height: 10px; background: #fff; }
+  .grand-total td { background: #8B4513; color: #fff; font-weight: bold; font-size: 13px; padding: 12px; }
+  .footer { padding: 12px 20px; font-size: 11px; color: #888; border-top: 1px solid #eee; }
+</style>
+</head>
+<body>
+  <div class="brand-bar">
+    <h1>RAPIDO — Livraisons confirmées${cityLabel}</h1>
+    <p>Document de synthèse pour livreurs · Commandes au statut Confirmé</p>
+  </div>
+  <div class="meta">
+    <table>
+      <tr>
+        <td><strong>Produit</strong></td><td>${data.productName}</td>
+        <td><strong>Période</strong></td><td>${period}</td>
+      </tr>
+    </table>
+    <table style="margin-top:10px;width:100%">
+      <tr class="kpi-row">
+        <td><div class="kpi-label">Quantité totale</div><div class="kpi-value">${formatQuantityWithUnit(data.totalQuantity, data.quantityUnit)}</div></td>
+        <td><div class="kpi-label">Commandes</div><div class="kpi-value">${data.orderCount}</div></td>
+        <td><div class="kpi-label">Montant total</div><div class="kpi-value">${fmtMoney(data.totalAmount)}</div></td>
+        <td><div class="kpi-label">Villes</div><div class="kpi-value">${data.byCity.map((g) => g.city).join(' · ') || '—'}</div></td>
+      </tr>
+    </table>
+  </div>
+  <table class="data">
+    <tbody>
+      ${cityBlocks}
+      <tr class="grand-total">
+        <td colspan="8">TOTAL GÉNÉRAL</td>
+        <td>${formatQuantityWithUnit(data.totalQuantity, data.quantityUnit)}</td>
+        <td colspan="2">${data.orderCount} commande(s)</td>
+        <td colspan="3">${fmtMoney(data.totalAmount)}</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="footer">Généré le ${new Date().toLocaleString('fr-FR')} — Rapido Flash</div>
+</body>
+</html>`;
+
+  const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `livraisons-${safeFilenamePart(summary.productName)}-${Date.now()}.csv`;
+  a.download = `livraisons-${safeFilenamePart(data.productName)}${cityLabel ? `-${safeFilenamePart(data.cityFilter)}` : ''}-${Date.now()}.xls`;
   a.click();
   URL.revokeObjectURL(url);
 }
 
-/** Export PDF — liste détaillée pour les livreurs. */
+/** Export PDF — design Rapido, groupé par ville avec totaux. */
 export function exportPointsToPdf(summary) {
   if (!summary?.orders?.length) return;
 
+  const data = prepareSummary(summary);
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-  const margin = 10;
+  const margin = 12;
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
+  const contentW = pageW - 2 * margin;
   let y = margin;
 
-  const addPageIfNeeded = (need = 8) => {
+  const setFill = (rgb) => pdf.setFillColor(...rgb);
+  const setText = (rgb) => pdf.setTextColor(...rgb);
+  const setDraw = (rgb) => pdf.setDrawColor(...rgb);
+
+  const addPageIfNeeded = (need = 10) => {
     if (y + need > pageH - margin) {
       pdf.addPage();
       y = margin;
+      drawPageFooter();
     }
   };
 
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(14);
-  pdf.text('Rapido — Commandes confirmées (livraison)', margin, y);
-  y += 7;
+  const drawPageFooter = () => {
+    const fy = pageH - 8;
+    setDraw(BRAND.goldLight);
+    pdf.setLineWidth(0.3);
+    pdf.line(margin, fy - 3, pageW - margin, fy - 3);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(7);
+    setText(BRAND.muted);
+    pdf.text('Rapido Flash — Document confidentiel livreurs', margin, fy);
+    pdf.text(`Page ${pdf.internal.getNumberOfPages()}`, pageW - margin, fy, { align: 'right' });
+  };
 
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(10);
-  pdf.text(`Produit : ${summary.productName}`, margin, y);
-  y += 5;
-  pdf.text(
-    `Période : ${new Date(summary.dateFrom).toLocaleDateString('fr-FR')} → ${new Date(summary.dateTo).toLocaleDateString('fr-FR')}`,
-    margin,
-    y
-  );
-  y += 5;
-  pdf.text(
-    `Total quantité : ${formatQuantityWithUnit(summary.totalQuantity, summary.quantityUnit)}  |  Commandes : ${summary.orderCount}`,
-    margin,
-    y
-  );
-  y += 8;
+  const drawHeader = () => {
+    setFill(BRAND.brown);
+    pdf.rect(0, 0, pageW, 28, 'F');
+    setFill(BRAND.gold);
+    pdf.rect(0, 26, pageW, 2, 'F');
 
-  summary.orders.forEach((r, idx) => {
-    addPageIfNeeded(32);
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(9);
-    pdf.text(
-      `${idx + 1}. N° ${r.orderNumber || '—'} — ${fmtDate(r.date)} — ${formatCommercialStatus(r.commercialStatus)}`,
-      margin,
-      y
-    );
-    y += 5;
+    pdf.setFontSize(16);
+    setText(BRAND.white);
+    const title = 'RAPIDO — Livraisons confirmées';
+    pdf.text(title, margin, 12);
 
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(8.5);
-    const lines = [
-      `Client : ${r.firstName} ${r.lastName}  |  Tél. : ${r.phone}`,
-      `Produit : ${r.productName || summary.productName}  |  Qté : ${r.quantityLabel || r.quantity}  |  Montant : ${Number(r.amount || 0).toLocaleString('fr-FR')} FCFA`,
-      `Ville : ${r.city}`,
-      `Adresse : ${r.address}`,
-      `Lieu : ${r.location}`,
+    pdf.setFontSize(9);
+    setText(BRAND.goldLight);
+    const sub = data.cityFilter
+      ? `Synthèse ${data.productName} · ${data.cityFilter}`
+      : `Synthèse ${data.productName} · Toutes villes`;
+    pdf.text(sub, margin, 19);
+
+    pdf.setFontSize(8);
+    pdf.text(
+      `Période : ${fmtDateShort(data.dateFrom)} → ${fmtDateShort(data.dateTo)}`,
+      pageW - margin,
+      12,
+      { align: 'right' }
+    );
+    pdf.text(`Généré le ${new Date().toLocaleString('fr-FR')}`, pageW - margin, 19, { align: 'right' });
+
+    y = 34;
+  };
+
+  const drawKpiStrip = () => {
+    const kpiW = contentW / 4;
+    const kpiH = 16;
+    const labels = ['Quantité totale', 'Commandes', 'Montant total', 'Villes'];
+    const values = [
+      formatQuantityWithUnit(data.totalQuantity, data.quantityUnit),
+      String(data.orderCount),
+      fmtMoney(data.totalAmount),
+      data.byCity.map((g) => `${g.city} (${g.totalQuantityLabel || g.totalQuantity})`).join(' · ') || '—',
     ];
-    if (r.scheduledDeliveryAt) {
-      lines.push(`Livraison planifiée : ${fmtDate(r.scheduledDeliveryAt)}`);
-    }
-    if (r.requestedDeliveryAt) {
-      lines.push(`Livraison demandée par le client : ${fmtDate(r.requestedDeliveryAt)}`);
+
+    labels.forEach((label, i) => {
+      const x = margin + i * kpiW;
+      setFill(BRAND.cream);
+      setDraw(BRAND.goldLight);
+      pdf.setLineWidth(0.2);
+      pdf.roundedRect(x + 1, y, kpiW - 2, kpiH, 2, 2, 'FD');
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(6.5);
+      setText(BRAND.muted);
+      pdf.text(label.toUpperCase(), x + 4, y + 5);
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(i === 0 ? 10 : 9);
+      setText(i === 0 ? BRAND.gold : BRAND.text);
+      const val = pdf.splitTextToSize(values[i], kpiW - 8);
+      pdf.text(val[0], x + 4, y + 11);
+    });
+
+    y += kpiH + 6;
+  };
+
+  const drawCityBanner = (city, qtyLabel, count, amount) => {
+    addPageIfNeeded(14);
+    setFill(BRAND.brown);
+    pdf.roundedRect(margin, y, contentW, 10, 1.5, 1.5, 'F');
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11);
+    setText(BRAND.white);
+    pdf.text(city, margin + 4, y + 6.5);
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    setText(BRAND.goldLight);
+    const right = `${qtyLabel}  ·  ${count} cmd  ·  ${fmtMoney(amount)}`;
+    pdf.text(right, pageW - margin - 4, y + 6.5, { align: 'right' });
+
+    y += 12;
+  };
+
+  const drawOrderCard = (r, idx) => {
+    addPageIfNeeded(22);
+    const cardH = 20;
+    setFill(BRAND.white);
+    setDraw(BRAND.goldLight);
+    pdf.setLineWidth(0.15);
+    pdf.roundedRect(margin, y, contentW, cardH, 1.5, 1.5, 'FD');
+
+    setFill(BRAND.gold);
+    pdf.rect(margin, y, 3, cardH, 'F');
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(8);
+    setText(BRAND.brown);
+    pdf.text(`${idx}. N° ${r.orderNumber || '—'}`, margin + 6, y + 5);
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(7);
+    setText(BRAND.muted);
+    pdf.text(`${fmtDateShort(r.date)} · ${formatCommercialStatus(r.commercialStatus)}`, margin + 45, y + 5);
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(8);
+    setText(BRAND.gold);
+    pdf.text(r.quantityLabel || String(r.quantity), pageW - margin - 4, y + 5, { align: 'right' });
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(7.5);
+    setText(BRAND.text);
+    pdf.text(`${r.firstName} ${r.lastName}  ·  ${r.phone}`, margin + 6, y + 10);
+
+    const addr = pdf.splitTextToSize(`Adresse : ${r.address || '—'}`, contentW * 0.55);
+    pdf.text(addr[0], margin + 6, y + 14.5);
+
+    pdf.setFontSize(7);
+    setText(BRAND.muted);
+    const lieu = pdf.splitTextToSize(`Lieu : ${r.location || '—'}`, contentW * 0.35);
+    pdf.text(lieu[0], margin + contentW * 0.58, y + 14.5);
+
+    if (r.scheduledDeliveryAt || r.requestedDeliveryAt) {
+      const del = [
+        r.scheduledDeliveryAt ? `Planifiée : ${fmtDateShort(r.scheduledDeliveryAt)}` : null,
+        r.requestedDeliveryAt ? `Demandée : ${fmtDateShort(r.requestedDeliveryAt)}` : null,
+      ]
+        .filter(Boolean)
+        .join('  ·  ');
+      pdf.text(del, margin + 6, y + 18);
     }
 
-    lines.forEach((line) => {
-      const wrapped = pdf.splitTextToSize(line, pageW - 2 * margin);
-      wrapped.forEach((wl) => {
-        addPageIfNeeded(5);
-        pdf.text(wl, margin, y);
-        y += 4;
-      });
+    y += cardH + 2.5;
+  };
+
+  const drawGrandTotal = () => {
+    addPageIfNeeded(14);
+    y += 2;
+    setFill(BRAND.brown);
+    pdf.roundedRect(margin, y, contentW, 11, 2, 2, 'F');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(10);
+    setText(BRAND.white);
+    pdf.text('TOTAL GÉNÉRAL', margin + 5, y + 7);
+    pdf.text(
+      `${formatQuantityWithUnit(data.totalQuantity, data.quantityUnit)}  ·  ${data.orderCount} commandes  ·  ${fmtMoney(data.totalAmount)}`,
+      pageW - margin - 5,
+      y + 7,
+      { align: 'right' }
+    );
+    y += 14;
+  };
+
+  drawHeader();
+  drawKpiStrip();
+
+  let globalIdx = 0;
+  data.byCity.forEach((group) => {
+    const qtyLabel = group.totalQuantityLabel || formatQuantityWithUnit(group.totalQuantity, data.quantityUnit);
+    drawCityBanner(group.city, qtyLabel, group.orderCount, group.totalAmount);
+    group.orders.forEach((r) => {
+      globalIdx += 1;
+      drawOrderCard(r, globalIdx);
     });
     y += 3;
   });
 
-  pdf.save(`livraisons-${safeFilenamePart(summary.productName)}-${Date.now()}.pdf`);
+  drawGrandTotal();
+  drawPageFooter();
+
+  const citySuffix = data.cityFilter ? `-${safeFilenamePart(data.cityFilter)}` : '';
+  pdf.save(`livraisons-${safeFilenamePart(data.productName)}${citySuffix}-${Date.now()}.pdf`);
 }

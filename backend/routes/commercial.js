@@ -9,6 +9,7 @@ const {
   bilanBaseQuery,
   bilanRowFromOrder,
   pointsOrderDetail,
+  groupPointsByCity,
   resolveCommercialStatus,
   buildPeriodFilter,
   confirmedOrdersQuery,
@@ -165,6 +166,7 @@ router.get('/points/summary', auth, isCommercialStaff, async (req, res) => {
     const dateTo = req.query.dateTo;
     const productId = String(req.query.productId || '').trim();
     const productName = String(req.query.productName || '').trim();
+    const cityFilter = String(req.query.city || '').trim();
 
     if (!dateFrom || !dateTo) {
       return res.status(400).json({ message: 'Période requise (date de début et date de fin)' });
@@ -198,6 +200,18 @@ router.get('/points/summary', auth, isCommercialStaff, async (req, res) => {
       andClauses.push({ productName: new RegExp(`^${escaped}$`, 'i') });
     }
 
+    if (cityFilter === 'Cotonou' || cityFilter === 'Calavi') {
+      andClauses.push({
+        $or: [
+          { 'customer.city': cityFilter },
+          {
+            isOffPlatform: true,
+            offPlatformLocation: new RegExp(cityFilter, 'i'),
+          },
+        ],
+      });
+    }
+
     filter.$and = andClauses;
 
     let orders = await ShopOrder.find(filter).sort({ orderDate: -1, createdAt: -1 }).lean();
@@ -212,15 +226,18 @@ router.get('/points/summary', auth, isCommercialStaff, async (req, res) => {
 
     const totalQuantity = orders.reduce((sum, o) => sum + Number(o.quantity || 0), 0);
     const detailRows = orders.map(pointsOrderDetail);
+    const byCity = groupPointsByCity(detailRows, resolvedUnit);
 
     res.json({
       productName: resolvedName,
       quantityUnit: resolvedUnit,
       dateFrom,
       dateTo,
+      cityFilter: cityFilter || null,
       orderCount: orders.length,
       totalQuantity,
       totalAmount: detailRows.reduce((s, r) => s + Number(r.amount || 0), 0),
+      byCity,
       orders: detailRows,
     });
   } catch (e) {

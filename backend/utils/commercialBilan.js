@@ -92,15 +92,45 @@ function resolveCommercialStatus(order) {
   return s || 'commande';
 }
 
+function inferOrderCity(order) {
+  const c = order.customer || {};
+  if (!order.isOffPlatform && c.city) return c.city;
+  const blob = `${order.offPlatformLocation || ''} ${c.addressDescription || ''}`;
+  if (/calavi/i.test(blob)) return 'Calavi';
+  if (/cotonou/i.test(blob)) return 'Cotonou';
+  if (c.city) return c.city;
+  return order.isOffPlatform ? 'Autre' : '—';
+}
+
+function groupPointsByCity(rows, quantityUnit) {
+  const map = new Map();
+  for (const row of rows) {
+    const city = row.city && row.city !== '—' ? row.city : 'Autre';
+    if (!map.has(city)) {
+      map.set(city, { city, orders: [], totalQuantity: 0, orderCount: 0, totalAmount: 0 });
+    }
+    const g = map.get(city);
+    g.orders.push(row);
+    g.totalQuantity += Number(row.quantity || 0);
+    g.orderCount += 1;
+    g.totalAmount += Number(row.amount || 0);
+  }
+  const order = ['Cotonou', 'Calavi', 'Autre'];
+  return [...map.values()].sort(
+    (a, b) => order.indexOf(a.city) - order.indexOf(b.city) || a.city.localeCompare(b.city, 'fr')
+  );
+}
+
 function pointsOrderDetail(order) {
   const base = bilanRowFromOrder(order);
   const c = order.customer || {};
+  const city = inferOrderCity(order);
   return {
     ...base,
     firstName: order.isOffPlatform ? '—' : c.firstName || '—',
     lastName: order.isOffPlatform ? '—' : c.lastName || '—',
     phone: c.phone || '—',
-    city: order.isOffPlatform ? '—' : c.city || '—',
+    city,
     address: order.isOffPlatform ? order.offPlatformLocation || '—' : c.addressDescription || '—',
     location: orderLocation(order),
     requestedDeliveryAt: order.requestedDeliveryAt || null,
@@ -143,5 +173,7 @@ module.exports = {
   orderLocation,
   bilanRowFromOrder,
   pointsOrderDetail,
+  inferOrderCity,
+  groupPointsByCity,
   resolveCommercialStatus,
 };
