@@ -9,6 +9,7 @@ const { normalizeShopQuantityUnit } = require('../utils/shopQuantityUnit');
 const { formatQuantityWithUnit } = require('../utils/shopQuantityLabel');
 const { sendToUserIds } = require('../services/pushNotifications');
 const { notifyShopOrderCreated } = require('../services/orderNotificationMailer');
+const { isAllowedDeliveryDate, getDefaultDeliveryDateKey, deliveryDateKeyToDate } = require('../utils/shopDeliveryDate');
 
 const router = express.Router();
 
@@ -69,11 +70,15 @@ router.post('/', async (req, res) => {
     const unitPrice = promoState.isPromoLive ? promoState.promoPrice : promoState.basePrice;
     const totalPrice = Math.round(unitPrice * quantity);
 
-    const requestedDeliveryAt = req.body?.requestedDeliveryAt
+    let requestedDeliveryAt = req.body?.requestedDeliveryAt
       ? new Date(req.body.requestedDeliveryAt)
-      : null;
-    const hasValidRequested =
-      requestedDeliveryAt && !Number.isNaN(requestedDeliveryAt.getTime());
+      : deliveryDateKeyToDate(getDefaultDeliveryDateKey());
+    if (!requestedDeliveryAt || Number.isNaN(requestedDeliveryAt.getTime())) {
+      requestedDeliveryAt = deliveryDateKeyToDate(getDefaultDeliveryDateKey());
+    }
+    if (!isAllowedDeliveryDate(requestedDeliveryAt)) {
+      return res.status(400).json({ message: 'Date de livraison invalide' });
+    }
 
     const orderNumber = await generateShopOrderNumber();
     const order = new ShopOrder({
@@ -101,9 +106,7 @@ router.post('/', async (req, res) => {
       statut: 'en_attente',
       commercialStatus: 'commande',
       orderDate: new Date(),
-      requestedDeliveryAt: hasValidRequested ? requestedDeliveryAt : undefined,
-      scheduledDeliveryAt: hasValidRequested ? requestedDeliveryAt : undefined,
-      ...(hasValidRequested ? { commercialStatus: 'relance', statut: 'confirmee' } : {}),
+      requestedDeliveryAt,
     });
 
     await order.save();
@@ -156,16 +159,20 @@ router.put('/:id/statut', auth, isCommercialStaff, async (req, res) => {
     if (statut === 'livree') {
       order.commercialStatus = 'livree';
       order.deliveredAt = new Date();
-    }
-    if (statut === 'annulee') {
+    } else if (statut === 'annulee') {
       order.commercialStatus = 'annulee';
-    }
-    if (['confirmee', 'en_preparation', 'en_livraison'].includes(statut)) {
+    } else if (statut === 'confirmee') {
+      if (!order.orderDate) {
+        order.orderDate = order.createdAt || new Date();
+      }
+      order.commercialStatus = 'confirme';
+      order.confirmedAt = new Date();
+    } else if (['en_preparation', 'en_livraison'].includes(statut)) {
       if (!order.orderDate) {
         order.orderDate = order.createdAt || new Date();
       }
       if (!order.confirmedAt) order.confirmedAt = new Date();
-      if (order.commercialStatus === 'commande' || order.commercialStatus === 'relance') {
+      if (order.commercialStatus !== 'livree' && order.commercialStatus !== 'annulee') {
         order.commercialStatus = 'confirme';
       }
     }

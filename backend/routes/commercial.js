@@ -12,7 +12,7 @@ const {
   groupPointsByCity,
   resolveCommercialStatus,
   buildPeriodFilter,
-  isOrderInPeriod,
+  isOrderConfirmedInPeriod,
   normalizeDateKey,
   confirmedOrdersQuery,
   pointsConfirmedOnlyQuery,
@@ -199,9 +199,9 @@ router.get('/points/summary', auth, isCommercialStaff, async (req, res) => {
       ];
     }
 
-    let orders = await ShopOrder.find(mongoFilter).sort({ orderDate: -1, createdAt: -1 }).lean();
+    let orders = await ShopOrder.find(mongoFilter).sort({ confirmedAt: -1, orderDate: -1 }).lean();
     orders = orders.filter((o) => resolveCommercialStatus(o) === 'confirme');
-    orders = orders.filter((o) => isOrderInPeriod(o, dateFrom, dateTo));
+    orders = orders.filter((o) => isOrderConfirmedInPeriod(o, dateFrom, dateTo));
 
     if (orders.length && !resolvedName) {
       resolvedName = orders[0].productName;
@@ -319,6 +319,9 @@ router.put('/orders/:id/confirm', auth, isCommercialStaff, async (req, res) => {
     const order = await ShopOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
 
+    if (!order.orderDate) {
+      order.orderDate = order.createdAt || new Date();
+    }
     if (!order.orderDate) {
       order.orderDate = order.createdAt || new Date();
     }

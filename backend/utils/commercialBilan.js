@@ -49,6 +49,25 @@ function isOrderInPeriod(order, dateFrom, dateTo) {
   return true;
 }
 
+/** Clé YYYY-MM-DD du jour de confirmation (fuseau Bénin). */
+function confirmedDateKey(order) {
+  if (!order?.confirmedAt) return null;
+  const d = new Date(order.confirmedAt);
+  if (Number.isNaN(d.getTime())) return null;
+  return new Intl.DateTimeFormat('en-CA', { timeZone: SHOP_ORDER_TZ }).format(d);
+}
+
+/** Points : filtre sur la date de confirmation (confirmedAt). */
+function isOrderConfirmedInPeriod(order, dateFrom, dateTo) {
+  const key = confirmedDateKey(order);
+  if (!key) return false;
+  const fromKey = normalizeDateKey(dateFrom);
+  const toKey = normalizeDateKey(dateTo);
+  if (fromKey && key < fromKey) return false;
+  if (toKey && key > toKey) return false;
+  return true;
+}
+
 /**
  * Filtre MongoDB sur le jour de commande (orderDate ou createdAt), fuseau Africa/Porto-Novo.
  * Compare des chaînes YYYY-MM-DD — évite les décalages UTC.
@@ -123,10 +142,10 @@ function orderLocation(order) {
 
 function resolveCommercialStatus(order) {
   const s = order.commercialStatus;
-  if (s === 'confirme' || s === 'relance' || s === 'livree' || s === 'annulee') return s;
-  if (order.statut === 'livree') return 'livree';
-  if (order.scheduledDeliveryAt) return 'relance';
+  if (s === 'livree' || order.statut === 'livree') return 'livree';
+  if (s === 'annulee' || order.statut === 'annulee') return 'annulee';
   if (
+    s === 'confirme' ||
     order.confirmedAt ||
     order.statut === 'confirmee' ||
     order.statut === 'en_preparation' ||
@@ -134,6 +153,7 @@ function resolveCommercialStatus(order) {
   ) {
     return 'confirme';
   }
+  if (s === 'relance' || order.scheduledDeliveryAt) return 'relance';
   return s || 'commande';
 }
 
@@ -173,7 +193,9 @@ function pointsOrderDetail(order) {
   const orderDay = effectiveShopOrderDate(order);
   return {
     ...base,
-    date: orderDay || base.date,
+    date: order.confirmedAt || orderDay || base.date,
+    orderDate: orderDay || order.createdAt,
+    confirmedAt: order.confirmedAt || null,
     firstName: order.isOffPlatform ? '—' : c.firstName || '—',
     lastName: order.isOffPlatform ? '—' : c.lastName || '—',
     phone: c.phone || '—',
@@ -218,6 +240,8 @@ module.exports = {
   effectiveShopOrderDate,
   orderDateKey,
   isOrderInPeriod,
+  confirmedDateKey,
+  isOrderConfirmedInPeriod,
   normalizeDateKey,
   buildPointsStatusFilter,
   confirmedOrdersQuery,

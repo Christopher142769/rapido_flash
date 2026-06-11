@@ -1,18 +1,34 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import PageLoader from '../../components/PageLoader';
 import { useModal } from '../../context/ModalContext';
 import {
-  cancelCommercialOrder,
   confirmCommercialOrder,
-  deliverCommercialOrder,
   fetchShopOrders,
-  formatCommercialStatus,
-  formatPrice,
-  resolveCommercialStatus,
-  setOrderRelance,
   updateOrderSpecifications,
+  updateShopOrderStatut,
 } from '../../utils/commercialApi';
+import { formatDeliveryDateShort } from '../../utils/shopDeliveryDate';
+import '../restaurant/RestaurantCommandes.css';
 import './commercial.css';
+
+const STATUT_LABELS = {
+  en_attente: 'En attente',
+  confirmee: 'Confirmée',
+  en_preparation: 'En préparation',
+  en_livraison: 'En livraison',
+  livree: 'Livrée',
+  annulee: 'Annulée',
+};
+
+const STATUT_COLORS = {
+  en_attente: '#FFA500',
+  confirmee: '#2196F3',
+  en_preparation: '#9C27B0',
+  en_livraison: '#00BCD4',
+  livree: '#4CAF50',
+  annulee: '#F44336',
+};
 
 function formatOrderDate(order) {
   const raw = order.orderDate || order.createdAt;
@@ -20,14 +36,26 @@ function formatOrderDate(order) {
   return new Date(raw).toLocaleString('fr-FR');
 }
 
-/** Page unique Commandes Shop — admin et commercial (même API /shop-orders). */
+function renderPhoneLink(phone) {
+  const trimmed = typeof phone === 'string' ? phone.trim() : '';
+  if (!trimmed) return <span>—</span>;
+  const telDigits = trimmed.replace(/[^\d+]/g, '');
+  const href = telDigits ? `tel:${telDigits}` : null;
+  return href ? (
+    <a href={href} className="commande-livraison-phone-link">
+      {trimmed}
+    </a>
+  ) : (
+    <span>{trimmed}</span>
+  );
+}
+
+/** Page unique Commandes Shop — admin et commercial, cartes alignées sur Commandes. */
 export default function ShopCommandesPage() {
   const { showSuccess, showError } = useModal();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
-  const [relanceId, setRelanceId] = useState(null);
-  const [relanceDate, setRelanceDate] = useState('');
   const [specsOrder, setSpecsOrder] = useState(null);
   const [specsText, setSpecsText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -35,18 +63,24 @@ export default function ShopCommandesPage() {
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      const params = filter ? { status: filter } : {};
-      setOrders(await fetchShopOrders(params));
+      setOrders(await fetchShopOrders());
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, []);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const filteredOrders = useMemo(() => {
+    const list = filter ? orders.filter((o) => o.statut === filter) : orders;
+    return [...list].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [orders, filter]);
 
   const run = async (fn, msg) => {
     setBusy(true);
@@ -58,17 +92,12 @@ export default function ShopCommandesPage() {
       showError(e.response?.data?.message || e.message);
     } finally {
       setBusy(false);
-      setRelanceId(null);
       setSpecsOrder(null);
     }
   };
 
-  const submitRelance = (id) => {
-    if (!relanceDate) {
-      showError('Indiquez la date et l’heure de livraison');
-      return;
-    }
-    run(() => setOrderRelance(id, new Date(relanceDate).toISOString()), 'Relance planifiée');
+  const updateStatut = (order, statut) => {
+    run(() => updateShopOrderStatut(order._id, statut), 'Statut mis à jour');
   };
 
   const openSpecs = (order) => {
@@ -78,186 +107,217 @@ export default function ShopCommandesPage() {
 
   const submitSpecs = () => {
     if (!specsOrder) return;
-    run(
-      () => updateOrderSpecifications(specsOrder._id, specsText),
-      'Spécifications enregistrées'
-    );
+    run(() => updateOrderSpecifications(specsOrder._id, specsText), 'Spécifications enregistrées');
   };
 
-  if (loading) return <PageLoader />;
+  if (loading) return <PageLoader message="Chargement des commandes Shop..." />;
 
   return (
-    <div className="commercial-page">
-      <h1>Commandes Shop</h1>
-      <p className="commercial-lead">
-        Même vue pour l’admin et les commerciaux. Confirmez, ajoutez des spécifications, planifiez une
-        relance, annulez ou marquez comme livré — les statuts sont synchronisés en temps réel.
-      </p>
-
-      <div className="commercial-filters">
-        <label>
-          Statut
-          <select value={filter} onChange={(e) => setFilter(e.target.value)}>
-            <option value="">Tous</option>
-            <option value="commande">Commande</option>
-            <option value="confirme">Confirmé</option>
-            <option value="relance">Relance</option>
-            <option value="livree">Livré</option>
+    <div className="commandes-page">
+      <div className="commandes-content">
+        <div className="commandes-header">
+          <h1>Commandes Shop</h1>
+          <select
+            className="restaurant-select"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          >
+            <option value="">Tous les statuts</option>
+            <option value="en_attente">En attente</option>
+            <option value="confirmee">Confirmée</option>
+            <option value="en_preparation">En préparation</option>
+            <option value="en_livraison">En livraison</option>
+            <option value="livree">Livrée</option>
             <option value="annulee">Annulée</option>
           </select>
-        </label>
-        <button type="button" className="commercial-btn commercial-btn--outline" onClick={load}>
-          Actualiser
-        </button>
-      </div>
+        </div>
 
-      {orders.length === 0 ? (
-        <p>Aucune commande Shop.</p>
-      ) : (
-        orders.map((o) => {
-          const status = resolveCommercialStatus(o);
-          const name = [o.customer?.firstName, o.customer?.lastName].filter(Boolean).join(' ');
-          const lieu = o.isOffPlatform
-            ? o.offPlatformLocation
-            : [o.customer?.city, o.customer?.addressDescription].filter(Boolean).join(' — ');
-          const specs = String(o.clientSpecifications || '').trim();
-          return (
-            <div key={o._id} className="commercial-order-card">
-              <h3>
-                {o.productName} · {o.quantityLabel || o.quantity}
-                {o.isOffPlatform ? (
-                  <span className="commercial-badge commercial-badge--off" style={{ marginLeft: 8 }}>
-                    Hors plateforme
-                  </span>
-                ) : null}
-              </h3>
-              <div className="commercial-order-meta">
-                <div>
-                  <strong>N° {o.orderNumber || '—'}</strong> · Commande le {formatOrderDate(o)}
-                </div>
-                <div>
-                  {name || 'Client'} · {o.customer?.phone || '—'}
-                </div>
-                <div>{lieu}</div>
-                {specs ? (
-                  <div className="commercial-order-specs">
-                    <strong>Spécifications :</strong> {specs}
-                  </div>
-                ) : null}
-                {o.requestedDeliveryAt ? (
-                  <div>
-                    Livraison demandée : {new Date(o.requestedDeliveryAt).toLocaleString('fr-FR')}
-                  </div>
-                ) : null}
-                {o.scheduledDeliveryAt ? (
-                  <div>
-                    Relance prévue : {new Date(o.scheduledDeliveryAt).toLocaleString('fr-FR')}
-                  </div>
-                ) : null}
-                <div style={{ marginTop: 6 }}>
-                  <span className={`commercial-badge commercial-badge--${status}`}>
-                    {formatCommercialStatus(status)}
-                  </span>
-                  <span
-                    style={{ marginLeft: 12 }}
-                    className={
-                      status === 'livree'
-                        ? 'commercial-amount--received'
-                        : 'commercial-amount--pending'
-                    }
-                  >
-                    {formatPrice(o.totalPrice)}
-                  </span>
-                </div>
-              </div>
+        <p className="commandes-shop-hint">
+          Même processus que la section <strong>Commandes</strong> : confirmer, mettre en préparation,
+          envoyer en livraison, marquer comme livrée. Les dates de livraison choisies par le client sont
+          affichées ci-dessous.
+        </p>
 
-              {relanceId === o._id ? (
-                <div className="commercial-form-grid" style={{ marginBottom: 8 }}>
-                  <div className="commercial-form-field">
-                    <label>Date et heure de livraison</label>
-                    <input
-                      type="datetime-local"
-                      value={relanceDate}
-                      onChange={(e) => setRelanceDate(e.target.value)}
-                    />
+        {filteredOrders.length === 0 ? (
+          <div className="no-commandes">
+            <p>Aucune commande Shop{filter ? ' pour ce filtre' : ''}.</p>
+          </div>
+        ) : (
+          <div className="commandes-list">
+            {filteredOrders.map((order) => {
+              const name = [order.customer?.firstName, order.customer?.lastName]
+                .filter(Boolean)
+                .join(' ');
+              const addressLine = order.isOffPlatform
+                ? order.offPlatformLocation
+                : [order.customer?.city, order.customer?.addressDescription].filter(Boolean).join(' — ');
+              const specs = String(order.clientSpecifications || '').trim();
+              const deliveryDate = order.requestedDeliveryAt
+                ? formatDeliveryDateShort(order.requestedDeliveryAt)
+                : null;
+
+              return (
+                <div key={order._id} className="commande-card commande-card--shop">
+                  <div className="commande-header">
+                    <div className="commande-info">
+                      <h3>
+                        Commande #{order.orderNumber || order._id.slice(-6)}
+                        <span className="commande-shop-badge">Shop express</span>
+                        {order.isOffPlatform ? (
+                          <span
+                            className="commande-shop-badge"
+                            style={{ marginLeft: 6, background: '#555' }}
+                          >
+                            Hors plateforme
+                          </span>
+                        ) : null}
+                      </h3>
+                      <p className="commande-structure-name">
+                        <span className="commande-structure-label">Canal:</span> Lien Shop Rapido
+                        {order.slug ? (
+                          <>
+                            {' '}
+                            ·{' '}
+                            <Link to={`/shop/${order.slug}`} target="_blank" rel="noopener noreferrer">
+                              Voir la fiche
+                            </Link>
+                          </>
+                        ) : null}
+                      </p>
+                      <p className="commande-date">Commande le {formatOrderDate(order)}</p>
+                      {deliveryDate ? (
+                        <p className="commande-date">
+                          <strong>Livraison souhaitée :</strong> {deliveryDate}
+                        </p>
+                      ) : null}
+                    </div>
+                    <div
+                      className="commande-statut"
+                      style={{ backgroundColor: STATUT_COLORS[order.statut] || '#666' }}
+                    >
+                      {STATUT_LABELS[order.statut] || order.statut}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+
+                  <div className="commande-client">
+                    <h4>Client:</h4>
+                    <p>
+                      <strong>{name || '—'}</strong>
+                    </p>
+                    {order.customer?.phone ? <p>📞 {order.customer.phone}</p> : null}
+                  </div>
+
+                  <div className="commande-plats">
+                    <h4>Produit Shop:</h4>
+                    <div className="plat-item">
+                      <span>
+                        {order.productName} · {order.quantityLabel || order.quantity}
+                      </span>
+                      <span>{Number(order.totalPrice || 0).toFixed(0)} FCFA</span>
+                    </div>
+                    {order.freeDelivery ? (
+                      <p className="commande-shop-free-delivery">Livraison gratuite (promo)</p>
+                    ) : null}
+                  </div>
+
+                  <div className="commande-livraison">
+                    <h4>Adresse de livraison</h4>
+                    <p>{addressLine || '—'}</p>
+                    <div className="commande-livraison-extra">
+                      <div className="commande-livraison-row">
+                        <span className="commande-livraison-label">WhatsApp / téléphone</span>
+                        {renderPhoneLink(order.customer?.phone)}
+                      </div>
+                      <div className="commande-livraison-row commande-livraison-instructions">
+                        <span className="commande-livraison-label">Spécifications / instructions</span>
+                        <span className="commande-livraison-instructions-text">
+                          {specs || '—'}
+                        </span>
+                      </div>
+                      {order.scheduledDeliveryAt ? (
+                        <div className="commande-livraison-row">
+                          <span className="commande-livraison-label">Relance planifiée</span>
+                          <span>
+                            {new Date(order.scheduledDeliveryAt).toLocaleString('fr-FR')}
+                          </span>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="commande-total">
+                    <strong>Total: {Number(order.totalPrice || 0).toFixed(0)} FCFA</strong>
+                    <span className="commande-shop-payment">Paiement à la livraison</span>
+                  </div>
+
+                  <div className="commande-actions">
                     <button
                       type="button"
-                      className="commercial-btn commercial-btn--primary commercial-btn--sm"
+                      className="btn btn-outline"
                       disabled={busy}
-                      onClick={() => submitRelance(o._id)}
+                      onClick={() => openSpecs(order)}
                     >
-                      Enregistrer
+                      Spécifications
                     </button>
-                    <button
-                      type="button"
-                      className="commercial-btn commercial-btn--outline commercial-btn--sm"
-                      onClick={() => setRelanceId(null)}
-                    >
-                      Fermer
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="commercial-order-actions">
-                <button
-                  type="button"
-                  className="commercial-btn commercial-btn--outline commercial-btn--sm"
-                  disabled={busy}
-                  onClick={() => openSpecs(o)}
-                >
-                  Spécifications
-                </button>
-                {status === 'commande' ? (
-                  <button
-                    type="button"
-                    className="commercial-btn commercial-btn--primary commercial-btn--sm"
-                    disabled={busy}
-                    onClick={() => run(() => confirmCommercialOrder(o._id), 'Commande confirmée')}
-                  >
-                    Confirmer
-                  </button>
-                ) : null}
-                {status !== 'livree' && status !== 'annulee' ? (
-                  <>
-                    <button
-                      type="button"
-                      className="commercial-btn commercial-btn--outline commercial-btn--sm"
-                      disabled={busy}
-                      onClick={() => {
-                        setRelanceId(o._id);
-                        setRelanceDate('');
-                      }}
-                    >
-                      Relance livraison
-                    </button>
-                    {status === 'confirme' || status === 'relance' ? (
+                    {order.statut === 'en_attente' ? (
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          disabled={busy}
+                          onClick={() =>
+                            run(() => confirmCommercialOrder(order._id), 'Commande confirmée')
+                          }
+                        >
+                          Confirmer
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-outline"
+                          disabled={busy}
+                          onClick={() => updateStatut(order, 'annulee')}
+                        >
+                          Annuler
+                        </button>
+                      </>
+                    ) : null}
+                    {order.statut === 'confirmee' ? (
                       <button
                         type="button"
-                        className="commercial-btn commercial-btn--danger commercial-btn--sm"
+                        className="btn btn-primary"
                         disabled={busy}
-                        onClick={() => run(() => cancelCommercialOrder(o._id), 'Commande annulée')}
+                        onClick={() => updateStatut(order, 'en_preparation')}
                       >
-                        Annuler
+                        En préparation
                       </button>
                     ) : null}
-                    <button
-                      type="button"
-                      className="commercial-btn commercial-btn--success commercial-btn--sm"
-                      disabled={busy}
-                      onClick={() => run(() => deliverCommercialOrder(o._id), 'Marqué comme livré')}
-                    >
-                      Marquer livré
-                    </button>
-                  </>
-                ) : null}
-              </div>
-            </div>
-          );
-        })
-      )}
+                    {order.statut === 'en_preparation' ? (
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        disabled={busy}
+                        onClick={() => updateStatut(order, 'en_livraison')}
+                      >
+                        En livraison
+                      </button>
+                    ) : null}
+                    {order.statut === 'en_livraison' ? (
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        disabled={busy}
+                        onClick={() => updateStatut(order, 'livree')}
+                      >
+                        Marquer comme livrée
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {specsOrder ? (
         <div className="commercial-modal-backdrop" role="presentation" onClick={() => setSpecsOrder(null)}>

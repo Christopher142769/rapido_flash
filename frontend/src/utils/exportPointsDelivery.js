@@ -57,7 +57,8 @@ const SIGNATURE_PLACEHOLDER = '';
 
 function rowCells(r) {
   return [
-    fmtDateShort(r.date),
+    fmtDateShort(r.confirmedAt || r.date),
+    fmtDateShort(r.orderDate),
     r.orderNumber || '—',
     r.firstName,
     r.lastName,
@@ -77,7 +78,8 @@ function rowCells(r) {
 }
 
 const TABLE_HEADERS = [
-  'Date',
+  'Date confirmation',
+  'Date commande',
   'N° commande',
   'Prénom',
   'Nom',
@@ -135,7 +137,7 @@ export function exportPointsToExcel(summary) {
       </tr>
       ${rows}
       <tr class="city-total">
-        <td colspan="8"><strong>Sous-total ${group.city}</strong></td>
+        <td colspan="9"><strong>Sous-total ${group.city}</strong></td>
         <td><strong>${group.totalQuantityLabel || formatQuantityWithUnit(group.totalQuantity, data.quantityUnit)}</strong></td>
         <td colspan="3"><strong>${group.orderCount} commande(s)</strong></td>
         <td colspan="5"><strong>${fmtMoney(group.totalAmount)}</strong></td>
@@ -199,7 +201,7 @@ export function exportPointsToExcel(summary) {
     <tbody>
       ${cityBlocks}
       <tr class="grand-total">
-        <td colspan="8">TOTAL GÉNÉRAL</td>
+        <td colspan="9">TOTAL GÉNÉRAL</td>
         <td>${formatQuantityWithUnit(data.totalQuantity, data.quantityUnit)}</td>
         <td colspan="3">${data.orderCount} commande(s)</td>
         <td colspan="5">${fmtMoney(data.totalAmount)}</td>

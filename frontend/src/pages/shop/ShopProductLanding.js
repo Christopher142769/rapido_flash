@@ -41,7 +41,7 @@ export default function ShopProductLanding() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [quantity, setQuantity] = useState(0);
-  const [customer, setCustomer] = useState(emptyCustomerForm);
+  const [customer, setCustomer] = useState(() => emptyCustomerForm());
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [qtyModalOpen, setQtyModalOpen] = useState(false);

@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { SHOP_DELIVERY_CITIES } from '../../utils/shopDelivery';
+import { getDefaultDeliveryDateKey, getShopDeliveryDateOptions } from '../../utils/shopDeliveryDate';
 import './ShopOrderForm.css';
 
 export default function ShopOrderForm({ customer, errors, onFieldChange, idPrefix = 'shop' }) {
   const setField = (field, value) => onFieldChange(field, value);
+  const defaultDeliveryDate = useMemo(() => getDefaultDeliveryDateKey(), []);
+  const deliveryOptions = useMemo(() => getShopDeliveryDateOptions(), []);
+  const isDefaultDate = customer.deliveryDate === defaultDeliveryDate;
 
   return (
     <div className="shop-order-form">
@@ -48,6 +52,36 @@ export default function ShopOrderForm({ customer, errors, onFieldChange, idPrefi
           autoComplete="tel"
         />
         {errors.phone ? <span className="shop-order-form-error">{errors.phone}</span> : null}
+      </div>
+
+      <div
+        className={`shop-order-form-field shop-order-form-field--delivery${
+          isDefaultDate ? ' shop-order-form-field--delivery-default' : ''
+        }`}
+      >
+        <label htmlFor={`${idPrefix}-deliveryDate`}>Date de livraison souhaitée *</label>
+        <select
+          id={`${idPrefix}-deliveryDate`}
+          className={`shop-order-form-select shop-order-form-select--delivery${
+            errors.deliveryDate ? ' has-error' : ''
+          }${isDefaultDate ? ' shop-order-form-select--default' : ''}`}
+          value={customer.deliveryDate || defaultDeliveryDate}
+          onChange={(e) => setField('deliveryDate', e.target.value)}
+        >
+          {deliveryOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+              {opt.value === defaultDeliveryDate ? ' (par défaut)' : ''}
+            </option>
+          ))}
+        </select>
+        <p className="shop-order-form-hint">
+          Par défaut, livraison le lendemain de votre commande. Choisissez un autre jour parmi les 7
+          prochains si besoin.
+        </p>
+        {errors.deliveryDate ? (
+          <span className="shop-order-form-error">{errors.deliveryDate}</span>
+        ) : null}
       </div>
 
       <div className="shop-order-form-field">

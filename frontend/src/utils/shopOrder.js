@@ -1,6 +1,12 @@
 import { formatPriceXof } from './shopPromo';
 import { isValidShopCity } from './shopDelivery';
 import {
+  deliveryDateKeyToIso,
+  formatDeliveryDateShort,
+  getDefaultDeliveryDateKey,
+  isAllowedDeliveryDateKey,
+} from './shopDeliveryDate';
+import {
   formatQuantityWithUnit,
   getPriceUnitSuffix,
   normalizeShopQuantityUnit,
@@ -19,6 +25,7 @@ export async function submitShopOrderToApi(order) {
       slug: order.slug,
       quantity: order.quantity,
       customer: order.customer,
+      requestedDeliveryAt: order.requestedDeliveryAt || undefined,
     }),
   });
   const data = await res.json().catch(() => ({}));
@@ -29,7 +36,7 @@ export async function submitShopOrderToApi(order) {
 }
 
 export const SHOP_DELIVERY_NOTE =
-  "Note : Assurez-vous d'être prêt à vous faire livrer dans les 24h qui suivent la commande avant de passer commande.";
+  'Par défaut, votre commande est livrée le lendemain. Vous pouvez choisir une autre date parmi les 7 prochains jours.';
 
 export function emptyCustomerForm() {
   return {
@@ -38,6 +45,7 @@ export function emptyCustomerForm() {
     phone: '',
     city: '',
     addressDescription: '',
+    deliveryDate: getDefaultDeliveryDateKey(),
   };
 }
 
@@ -45,6 +53,8 @@ export function buildShopOrderPayload(product, promoState, quantity, customer) {
   const unitPrice = promoState?.isPromoLive ? promoState.promoPrice : product.basePrice;
   const total = unitPrice * quantity;
   const quantityUnit = normalizeShopQuantityUnit(product.quantityUnit);
+  const deliveryDate = customer.deliveryDate || getDefaultDeliveryDateKey();
+  const requestedDeliveryAt = deliveryDateKeyToIso(deliveryDate);
   return {
     slug: product.slug,
     productName: product.name,
@@ -65,7 +75,10 @@ export function buildShopOrderPayload(product, promoState, quantity, customer) {
       phone: String(customer.phone || '').trim(),
       city: String(customer.city || '').trim(),
       addressDescription: String(customer.addressDescription || '').trim(),
+      deliveryDate,
     },
+    requestedDeliveryAt,
+    deliveryDateLabel: formatDeliveryDateShort(deliveryDate),
     createdAt: new Date().toISOString(),
   };
 }
@@ -131,7 +144,12 @@ export function buildWhatsAppOrderMessage(order) {
     `Téléphone (WhatsApp) : ${order.customer.phone}`,
     `Ville / livraison : ${addressLine}`,
   );
-  lines.push('', 'Merci de confirmer ma commande et le délai de livraison.');
+  if (order.deliveryDateLabel || order.requestedDeliveryAt) {
+    lines.push(
+      `Date de livraison souhaitée : ${order.deliveryDateLabel || formatDeliveryDateShort(order.requestedDeliveryAt)}`
+    );
+  }
+  lines.push('', 'Merci de confirmer ma commande.');
   return lines.join('\n');
 }
 
@@ -151,6 +169,10 @@ export function validateCustomerForm(customer) {
   if (!isValidShopCity(customer.city)) errors.city = 'Choisissez Cotonou ou Calavi';
   if (!customer.addressDescription?.trim()) {
     errors.addressDescription = 'Indiquez votre adresse complète de livraison';
+  }
+  const deliveryDate = customer.deliveryDate || getDefaultDeliveryDateKey();
+  if (!isAllowedDeliveryDateKey(deliveryDate)) {
+    errors.deliveryDate = 'Choisissez une date de livraison parmi les 7 prochains jours';
   }
   return errors;
 }

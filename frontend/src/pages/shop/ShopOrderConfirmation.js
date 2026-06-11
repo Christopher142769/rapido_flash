@@ -75,6 +75,12 @@ export default function ShopOrderConfirmation() {
                 <dd className="shop-confirm-highlight">Gratuite (offre en cours)</dd>
               </div>
             ) : null}
+            {order.deliveryDateLabel || order.requestedDeliveryAt ? (
+              <div>
+                <dt>Date de livraison souhaitée</dt>
+                <dd>{order.deliveryDateLabel || new Date(order.requestedDeliveryAt).toLocaleDateString('fr-FR')}</dd>
+              </div>
+            ) : null}
           </dl>
         </section>
 

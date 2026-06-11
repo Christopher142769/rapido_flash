@@ -80,8 +80,9 @@ export default function CommercialPointsPage() {
       <h1>Points</h1>
       <p className="commercial-lead">
         Quantité totale des commandes au statut <strong>Confirmé</strong> uniquement (hors relance et
-        hors livré) pour un produit sur une période. Le tri utilise la <strong>date de commande</strong>{' '}
-        (pas la date de confirmation). Filtrez par ville et exportez la synthèse pour vos livreurs.
+        hors livré) pour un produit sur une période. Le tri utilise la <strong>date de confirmation</strong>{' '}
+        (ex. du 10 au 11 : commandes confirmées le 10 et le 11, y compris celles passées le 10 et
+        confirmées le 11). Filtrez par ville et exportez pour vos livreurs.
       </p>
 
       <div className="commercial-card">
@@ -221,7 +222,8 @@ export default function CommercialPointsPage() {
                       <table className="commercial-table">
                         <thead>
                           <tr>
-                            <th>Date</th>
+                            <th>Confirmé le</th>
+                            <th>Commande le</th>
                             <th>N° commande</th>
                             <th>Prénom</th>
                             <th>Nom</th>
@@ -236,7 +238,16 @@ export default function CommercialPointsPage() {
                         <tbody>
                           {group.orders.map((row) => (
                             <tr key={row.id}>
-                              <td>{new Date(row.date).toLocaleDateString('fr-FR')}</td>
+                              <td>
+                                {row.confirmedAt
+                                  ? new Date(row.confirmedAt).toLocaleDateString('fr-FR')
+                                  : new Date(row.date).toLocaleDateString('fr-FR')}
+                              </td>
+                              <td>
+                                {row.orderDate
+                                  ? new Date(row.orderDate).toLocaleDateString('fr-FR')
+                                  : '—'}
+                              </td>
                               <td>{row.orderNumber || '—'}</td>
                               <td>{row.firstName}</td>
                               <td>{row.lastName}</td>

@@ -91,3 +91,21 @@
   color: var(--rf-danger);
   font-weight: 600;
 }
+
+.shop-order-form-hint {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  color: var(--rf-text-muted);
+  line-height: 1.4;
+}
+
+.shop-order-form-field--delivery-default .shop-order-form-select--default {
+  background-color: #f3f3f3;
+  color: #666;
+  border-color: rgba(120, 90, 60, 0.14);
+}
+
+.shop-order-form-field--delivery-default .shop-order-form-select--default:focus {
+  background-color: #fff;
+  color: var(--rf-text-dark);
+}

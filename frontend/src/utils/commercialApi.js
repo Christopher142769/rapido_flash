@@ -85,6 +85,12 @@ export async function cancelCommercialOrder(id) {
   return res.data;
 }
 
+/** Flux opérationnel Shop (confirmée → préparation → livraison → livrée). */
+export async function updateShopOrderStatut(id, statut) {
+  const res = await axios.put(`${API_URL}/shop-orders/${id}/statut`, { statut }, authHeaders());
+  return res.data;
+}
+
 export async function createOffPlatformOrder(payload) {
   const res = await axios.post(`${API_URL}/commercial/bilan/off-platform`, payload, authHeaders());
   return res.data;
@@ -121,13 +127,13 @@ export function formatCommercialStatus(status) {
   return map[status] || status;
 }
 
-/** Statut commercial effectif (rétrocompat. commandes déjà confirmées en base). */
+/** Statut commercial effectif (aligné sur commercialBilan.js). */
 export function resolveCommercialStatus(order) {
   const s = order.commercialStatusResolved || order.commercialStatus;
-  if (s === 'confirme' || s === 'relance' || s === 'livree' || s === 'annulee') return s;
-  if (order.statut === 'livree') return 'livree';
-  if (order.scheduledDeliveryAt) return 'relance';
+  if (s === 'livree' || order.statut === 'livree') return 'livree';
+  if (s === 'annulee' || order.statut === 'annulee') return 'annulee';
   if (
+    s === 'confirme' ||
     order.confirmedAt ||
     order.statut === 'confirmee' ||
     order.statut === 'en_preparation' ||
@@ -135,6 +141,7 @@ export function resolveCommercialStatus(order) {
   ) {
     return 'confirme';
   }
+  if (s === 'relance' || order.scheduledDeliveryAt) return 'relance';
   return s || 'commande';
 }
 
