@@ -59,8 +59,10 @@ async function notifyShopOrderCreated(order) {
     <h2 style="color:#c76d2e;margin:0 0 12px">Nouvelle commande Shop express</h2>
     <p><strong>Produit :</strong> ${escapeHtml(order.productName)}</p>
     <p><strong>Quantité :</strong> ${escapeHtml(order.quantityLabel || order.quantity)}</p>
-    <p><strong>Total :</strong> ${escapeHtml(formatCfa(order.totalPrice))}</p>
-    ${order.isPromoLive ? `<p><strong>Promo :</strong> −${order.discountPercent || 0}%${order.freeDelivery ? ' · Livraison gratuite' : ''}</p>` : ''}
+    <p><strong>Sous-total :</strong> ${escapeHtml(formatCfa(order.subtotalPrice ?? order.totalPrice))}</p>
+    ${order.freeDelivery ? '<p><strong>Livraison :</strong> gratuite (offre en cours)</p>' : Number(order.deliveryFee) > 0 ? `<p><strong>Frais de livraison :</strong> ${escapeHtml(formatCfa(order.deliveryFee))}</p>` : ''}
+    <p><strong>Total à payer :</strong> ${escapeHtml(formatCfa(order.totalPrice))}</p>
+    ${order.isPromoLive ? `<p><strong>Promo :</strong> −${order.discountPercent || 0}%</p>` : ''}
     <hr style="border:none;border-top:1px solid #eee;margin:16px 0"/>
     <p><strong>Client :</strong> ${escapeHtml(clientName)}</p>
     <p><strong>Téléphone :</strong> ${escapeHtml(c.phone)}</p>
@@ -74,7 +76,13 @@ async function notifyShopOrderCreated(order) {
     '',
     `Produit: ${order.productName}`,
     `Quantité: ${order.quantityLabel || order.quantity}`,
-    `Total: ${formatCfa(order.totalPrice)}`,
+    `Sous-total: ${formatCfa(order.subtotalPrice ?? order.totalPrice)}`,
+    order.freeDelivery
+      ? 'Livraison: gratuite'
+      : Number(order.deliveryFee) > 0
+        ? `Frais de livraison: ${formatCfa(order.deliveryFee)}`
+        : null,
+    `Total à payer: ${formatCfa(order.totalPrice)}`,
     order.isPromoLive ? `Promo: −${order.discountPercent || 0}%` : null,
     '',
     `Client: ${clientName}`,

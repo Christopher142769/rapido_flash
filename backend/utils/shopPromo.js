@@ -1,3 +1,14 @@
+function getShopDeliveryFee(product, promoState) {
+  if (promoState?.freeDelivery) return 0;
+  return Math.max(0, Math.round(Number(product?.deliveryFee || 0)));
+}
+
+function computeShopOrderTotals(unitPrice, quantity, deliveryFee) {
+  const subtotalPrice = Math.round(Number(unitPrice || 0) * Number(quantity || 0));
+  const fee = Math.max(0, Math.round(Number(deliveryFee || 0)));
+  return { subtotalPrice, deliveryFee: fee, totalPrice: subtotalPrice + fee };
+}
+
 /**
  * Calcule le prix promo et l'état de la campagne express.
  * Fiche publiée + promo active : la campagne reste live jusqu'à arrêt manuel
@@ -56,13 +67,18 @@ function getShopPromoState(product, now = new Date()) {
   const timeRemainingMs =
     isPromoLive && countdownEndsAt ? Math.max(0, countdownEndsAt.getTime() - t) : 0;
 
+  const freeDelivery = isPromoLive && !!promo.freeDelivery;
+  const effectiveDeliveryFee = getShopDeliveryFee(product, { freeDelivery });
+
   return {
     basePrice,
     promoPrice,
     priceMode: isPromoLive ? priceMode : 'percent',
     manualPrice: hasManualPromo ? Math.round(manualPrice) : null,
     discountPercent: effectiveDiscount,
-    freeDelivery: isPromoLive && !!promo.freeDelivery,
+    freeDelivery,
+    deliveryFee: Number(product?.deliveryFee || 0),
+    effectiveDeliveryFee,
     isPromoLive,
     runUntilStopped,
     promoEndsAt: countdownEndsAt ? countdownEndsAt.toISOString() : null,
@@ -84,4 +100,9 @@ function serializeShopProduct(product, { publicView = false } = {}) {
   return payload;
 }
 
-module.exports = { getShopPromoState, serializeShopProduct };
+module.exports = {
+  getShopPromoState,
+  serializeShopProduct,
+  getShopDeliveryFee,
+  computeShopOrderTotals,
+};

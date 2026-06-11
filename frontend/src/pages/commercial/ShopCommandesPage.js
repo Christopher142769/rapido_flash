@@ -246,6 +246,15 @@ export default function ShopCommandesPage() {
                   </div>
 
                   <div className="commande-total">
+                    {Number(order.subtotalPrice) > 0 && Number(order.deliveryFee) > 0 ? (
+                      <span className="commande-shop-payment">
+                        Sous-total {Number(order.subtotalPrice).toLocaleString('fr-FR')} FCFA
+                        {' · '}
+                        Livraison {Number(order.deliveryFee).toLocaleString('fr-FR')} FCFA
+                      </span>
+                    ) : order.freeDelivery ? (
+                      <span className="commande-shop-payment">Livraison gratuite</span>
+                    ) : null}
                     <strong>Total: {Number(order.totalPrice || 0).toFixed(0)} FCFA</strong>
                     <span className="commande-shop-payment">Paiement à la livraison</span>
                   </div>

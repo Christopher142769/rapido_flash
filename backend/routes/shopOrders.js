@@ -4,7 +4,7 @@ const ShopProduct = require('../models/ShopProduct');
 const ShopOrder = require('../models/ShopOrder');
 const { auth, isRestaurant, isCommercialStaff } = require('../middleware/auth');
 const { generateShopOrderNumber } = require('../utils/shopOrderNumber');
-const { getShopPromoState } = require('../utils/shopPromo');
+const { getShopPromoState, getShopDeliveryFee, computeShopOrderTotals } = require('../utils/shopPromo');
 const { normalizeShopQuantityUnit } = require('../utils/shopQuantityUnit');
 const { formatQuantityWithUnit } = require('../utils/shopQuantityLabel');
 const { sendToUserIds } = require('../services/pushNotifications');
@@ -68,7 +68,8 @@ router.post('/', async (req, res) => {
     const promoState = getShopPromoState(product);
     const quantityUnit = normalizeShopQuantityUnit(product.quantityUnit);
     const unitPrice = promoState.isPromoLive ? promoState.promoPrice : promoState.basePrice;
-    const totalPrice = Math.round(unitPrice * quantity);
+    const deliveryFee = getShopDeliveryFee(product, promoState);
+    const { subtotalPrice, totalPrice } = computeShopOrderTotals(unitPrice, quantity, deliveryFee);
 
     let requestedDeliveryAt = req.body?.requestedDeliveryAt
       ? new Date(req.body.requestedDeliveryAt)
@@ -90,6 +91,8 @@ router.post('/', async (req, res) => {
       quantityUnit,
       quantityLabel: formatQuantityWithUnit(quantity, quantityUnit),
       unitPrice,
+      subtotalPrice,
+      deliveryFee,
       totalPrice,
       basePrice: promoState.basePrice,
       isPromoLive: promoState.isPromoLive,

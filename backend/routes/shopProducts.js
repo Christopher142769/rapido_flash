@@ -129,6 +129,7 @@ router.post('/', auth, isRestaurant, upload.fields(upload.uploadShopFields), asy
       images: gallery.images,
       mainImage: gallery.mainImage,
       basePrice,
+      deliveryFee: Math.max(0, Number(req.body.deliveryFee) || 0),
       quantityUnit: normalizeShopQuantityUnit(req.body.quantityUnit),
       currency: req.body.currency || 'XOF',
       published: req.body.published === 'true' || req.body.published === true,
@@ -166,6 +167,13 @@ router.put('/:id', auth, isRestaurant, upload.fields(upload.uploadShopFields), a
         return res.status(400).json({ message: 'Prix invalide' });
       }
       product.basePrice = basePrice;
+    }
+    if (req.body.deliveryFee != null) {
+      const deliveryFee = Number(req.body.deliveryFee);
+      if (!Number.isFinite(deliveryFee) || deliveryFee < 0) {
+        return res.status(400).json({ message: 'Frais de livraison invalides' });
+      }
+      product.deliveryFee = deliveryFee;
     }
     if (req.body.quantityUnit != null) {
       product.quantityUnit = normalizeShopQuantityUnit(req.body.quantityUnit);

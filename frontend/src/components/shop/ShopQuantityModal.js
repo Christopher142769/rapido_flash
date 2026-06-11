@@ -12,6 +12,8 @@ export default function ShopQuantityModal({
   quantityLabel,
   unitPrice,
   unitBasePrice,
+  deliveryFee = 0,
+  freeDelivery = false,
   isPromoLive,
   initialQuantity = 0,
   ctaLabel = 'Commander maintenant',
@@ -46,7 +48,9 @@ export default function ShopQuantityModal({
 
   const priceUnitSuffix = getPriceUnitSuffix(quantityUnit);
   const hasQty = draftQty >= 1;
-  const total = (unitPrice || 0) * draftQty;
+  const subtotal = (unitPrice || 0) * draftQty;
+  const fee = freeDelivery ? 0 : Math.max(0, Number(deliveryFee) || 0);
+  const total = subtotal + fee;
   const totalBase = (unitBasePrice || 0) * draftQty;
   const qtyDisplay = formatQuantityWithUnit(draftQty, quantityUnit);
   const showPromoStrike = isPromoLive && unitBasePrice > unitPrice;
@@ -105,12 +109,19 @@ export default function ShopQuantityModal({
             </span>
           ) : null}
           {hasQty ? (
-            <p className="shop-qty-modal-hint">
-              {formatPriceXof(unitPrice)}
-              {priceUnitSuffix}
-              {' × '}
-              {qtyDisplay}
-            </p>
+            <>
+              <p className="shop-qty-modal-hint">
+                {formatPriceXof(unitPrice)}
+                {priceUnitSuffix}
+                {' × '}
+                {qtyDisplay}
+              </p>
+              {freeDelivery ? (
+                <p className="shop-qty-modal-hint">Livraison gratuite</p>
+              ) : fee > 0 ? (
+                <p className="shop-qty-modal-hint">+ livraison {formatPriceXof(fee)}</p>
+              ) : null}
+            </>
           ) : (
             <p className="shop-qty-modal-hint">Augmentez la quantité pour voir le total.</p>
           )}

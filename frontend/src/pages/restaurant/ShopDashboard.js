@@ -46,6 +46,7 @@ const emptyForm = () => ({
   slug: '',
   shortDescription: '',
   basePrice: '',
+  deliveryFee: '',
   quantityUnit: DEFAULT_SHOP_QUANTITY_UNIT,
   published: false,
   mainImage: '',
@@ -123,6 +124,7 @@ function buildProductPayload(f, galleryList) {
     slug: f.slug.trim() || undefined,
     shortDescription: f.shortDescription,
     basePrice: Number(f.basePrice),
+    deliveryFee: Math.max(0, Number(f.deliveryFee) || 0),
     quantityUnit: f.quantityUnit,
     published: f.published,
     mainImage: gallery[0] || null,
@@ -204,6 +206,7 @@ export default function ShopDashboard() {
       slug: p.slug || '',
       shortDescription: p.shortDescription || '',
       basePrice: String(p.basePrice ?? ''),
+      deliveryFee: p.deliveryFee != null && p.deliveryFee !== '' ? String(p.deliveryFee) : '',
       quantityUnit: normalizeShopQuantityUnit(p.quantityUnit),
       published: !!p.published,
       mainImage: safeGallery[0] || '',
@@ -956,6 +959,24 @@ export default function ShopDashboard() {
                 Livraison gratuite
               </label>
 
+              {!form.promo.freeDelivery ? (
+                <div>
+                  <label>Frais de livraison (FCFA)</label>
+                  <input
+                    className="shop-dash-input"
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="Ex. 1500"
+                    value={form.deliveryFee}
+                    onChange={(e) => setForm((f) => ({ ...f, deliveryFee: e.target.value }))}
+                  />
+                  <p className="shop-dash-hint shop-dash-hint--inline">
+                    Montant ajouté au total payé par le client (facture et récap commande).
+                  </p>
+                </div>
+              ) : null}
+
               <div>
                 <label>Début promo</label>
                 <input
@@ -1108,7 +1129,11 @@ export default function ShopDashboard() {
                       formatPriceXof(p.basePrice)
                     )}
                   </p>
-                  {promo.freeDelivery ? <span className="shop-dash-tag">Livraison gratuite</span> : null}
+                  {promo.freeDelivery ? (
+                    <span className="shop-dash-tag">Livraison gratuite</span>
+                  ) : Number(p.deliveryFee) > 0 ? (
+                    <span className="shop-dash-tag">Livraison {formatPriceXof(p.deliveryFee)}</span>
+                  ) : null}
                   <a className="shop-dash-link" href={pubUrl} target="_blank" rel="noopener noreferrer">
                     <FaExternalLinkAlt size={11} /> Voir la page
                   </a>

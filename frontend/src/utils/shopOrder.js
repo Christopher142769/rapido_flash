@@ -1,4 +1,4 @@
-import { formatPriceXof } from './shopPromo';
+import { computeShopOrderTotals, formatPriceXof, getShopDeliveryFee } from './shopPromo';
 import { isValidShopCity } from './shopDelivery';
 import {
   deliveryDateKeyToIso,
@@ -51,10 +51,11 @@ export function emptyCustomerForm() {
 
 export function buildShopOrderPayload(product, promoState, quantity, customer) {
   const unitPrice = promoState?.isPromoLive ? promoState.promoPrice : product.basePrice;
-  const total = unitPrice * quantity;
   const quantityUnit = normalizeShopQuantityUnit(product.quantityUnit);
   const deliveryDate = customer.deliveryDate || getDefaultDeliveryDateKey();
   const requestedDeliveryAt = deliveryDateKeyToIso(deliveryDate);
+  const deliveryFee = getShopDeliveryFee(product, promoState);
+  const { subtotalPrice, totalPrice } = computeShopOrderTotals(unitPrice, quantity, deliveryFee);
   return {
     slug: product.slug,
     productName: product.name,
@@ -62,7 +63,9 @@ export function buildShopOrderPayload(product, promoState, quantity, customer) {
     quantityUnit,
     quantityLabel: formatQuantityWithUnit(quantity, quantityUnit),
     unitPrice,
-    totalPrice: total,
+    subtotalPrice,
+    deliveryFee,
+    totalPrice,
     basePrice: product.basePrice,
     isPromoLive: !!promoState?.isPromoLive,
     discountPercent: promoState?.discountPercent || 0,
@@ -131,12 +134,17 @@ export function buildWhatsAppOrderMessage(order) {
     `*Produit :* ${order.productName}`,
     `*Quantité :* ${order.quantityLabel || order.quantity}`,
     `*Prix unitaire :* ${formatPriceXof(order.unitPrice)}${getPriceUnitSuffix(order.quantityUnit)}`,
-    `*Total :* ${formatPriceXof(order.totalPrice)}`,
+    `*Sous-total :* ${formatPriceXof(order.subtotalPrice ?? order.unitPrice * order.quantity)}`,
   ];
   if (order.isPromoLive && order.discountPercent) {
     lines.push(`*Promo :* -${order.discountPercent}%`);
   }
-  if (order.freeDelivery) lines.push('*Livraison gratuite* (offre en cours)');
+  if (order.freeDelivery) {
+    lines.push('*Livraison gratuite* (offre en cours)');
+  } else if (Number(order.deliveryFee) > 0) {
+    lines.push(`*Frais de livraison :* ${formatPriceXof(order.deliveryFee)}`);
+  }
+  lines.push(`*Total à payer :* ${formatPriceXof(order.totalPrice)}`);
   lines.push(
     '',
     '*Mes coordonnées :*',

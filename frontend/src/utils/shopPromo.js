@@ -4,6 +4,17 @@
  */
 export const DEFAULT_BOOST_HOURS = 72;
 
+export function getShopDeliveryFee(product, promoState) {
+  if (promoState?.freeDelivery) return 0;
+  return Math.max(0, Math.round(Number(product?.deliveryFee || 0)));
+}
+
+export function computeShopOrderTotals(unitPrice, quantity, deliveryFee) {
+  const subtotalPrice = Math.round(Number(unitPrice || 0) * Number(quantity || 0));
+  const fee = Math.max(0, Math.round(Number(deliveryFee || 0)));
+  return { subtotalPrice, deliveryFee: fee, totalPrice: subtotalPrice + fee };
+}
+
 export function getShopPromoState(product, now = new Date()) {
   const promo = product?.promo || {};
   const published = !!product?.published;
@@ -57,13 +68,18 @@ export function getShopPromoState(product, now = new Date()) {
   const timeRemainingMs =
     isPromoLive && countdownEndsAt ? Math.max(0, countdownEndsAt.getTime() - t) : 0;
 
+  const freeDelivery = isPromoLive && !!promo.freeDelivery;
+  const effectiveDeliveryFee = getShopDeliveryFee(product, { freeDelivery });
+
   return {
     basePrice,
     promoPrice,
     priceMode: isPromoLive ? priceMode : 'percent',
     manualPrice: hasManualPromo ? Math.round(manualPrice) : null,
     discountPercent: effectiveDiscount,
-    freeDelivery: isPromoLive && !!promo.freeDelivery,
+    freeDelivery,
+    deliveryFee: Number(product?.deliveryFee || 0),
+    effectiveDeliveryFee,
     isPromoLive,
     runUntilStopped,
     promoEndsAt: countdownEndsAt ? countdownEndsAt.toISOString() : null,
@@ -128,15 +144,21 @@ export function buildWhatsAppOrderUrl(product, promoState, quantity = 1) {
   const raw = String(product?.whatsappNumber || '').replace(/\D/g, '');
   if (!raw) return null;
   const price = promoState?.isPromoLive ? promoState.promoPrice : product.basePrice;
-  const total = price * quantity;
+  const deliveryFee = getShopDeliveryFee(product, promoState);
+  const { subtotalPrice, totalPrice } = computeShopOrderTotals(price, quantity, deliveryFee);
   const lines = [
     `Bonjour Rapido, je souhaite commander :`,
     `*${product.name}*`,
     `Quantité : ${quantity}`,
     `Prix unitaire : ${formatPriceXof(price)}`,
-    `Total : ${formatPriceXof(total)}`,
+    `Sous-total : ${formatPriceXof(subtotalPrice)}`,
   ];
-  if (promoState?.freeDelivery) lines.push('Livraison gratuite (offre en cours)');
+  if (promoState?.freeDelivery) {
+    lines.push('Livraison gratuite (offre en cours)');
+  } else if (deliveryFee > 0) {
+    lines.push(`Frais de livraison : ${formatPriceXof(deliveryFee)}`);
+  }
+  lines.push(`*Total à payer : ${formatPriceXof(totalPrice)}*`);
   const text = encodeURIComponent(lines.join('\n'));
   return `https://wa.me/${raw}?text=${text}`;
 }

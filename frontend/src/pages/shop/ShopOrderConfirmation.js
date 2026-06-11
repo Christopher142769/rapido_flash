@@ -65,16 +65,29 @@ export default function ShopOrderConfirmation() {
                 {getPriceUnitSuffix(order.quantityUnit)}
               </dd>
             </div>
-            <div className="shop-confirm-total">
-              <dt>Total</dt>
-              <dd>{formatPriceXof(order.totalPrice)}</dd>
+            <div>
+              <dt>Sous-total</dt>
+              <dd>
+                {formatPriceXof(
+                  order.subtotalPrice ?? Number(order.unitPrice || 0) * Number(order.quantity || 0)
+                )}
+              </dd>
             </div>
             {order.freeDelivery ? (
               <div>
                 <dt>Livraison</dt>
                 <dd className="shop-confirm-highlight">Gratuite (offre en cours)</dd>
               </div>
+            ) : Number(order.deliveryFee) > 0 ? (
+              <div>
+                <dt>Frais de livraison</dt>
+                <dd>{formatPriceXof(order.deliveryFee)}</dd>
+              </div>
             ) : null}
+            <div className="shop-confirm-total">
+              <dt>Total à payer</dt>
+              <dd>{formatPriceXof(order.totalPrice)}</dd>
+            </div>
             {order.deliveryDateLabel || order.requestedDeliveryAt ? (
               <div>
                 <dt>Date de livraison souhaitée</dt>

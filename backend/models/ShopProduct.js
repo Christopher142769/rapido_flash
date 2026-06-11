@@ -33,6 +33,8 @@ const shopProductSchema = new mongoose.Schema(
     images: { type: [String], default: [] },
     mainImage: { type: String, default: null },
     basePrice: { type: Number, required: true, min: 0 },
+    /** Frais de livraison (FCFA) si la promo « livraison gratuite » n’est pas active. */
+    deliveryFee: { type: Number, default: 0, min: 0 },
     quantityUnit: {
       type: String,
       enum: ['unit', 'kg', 'g', 'litre', 'tonne', 'm3'],

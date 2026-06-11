@@ -15,7 +15,7 @@ import {
   submitShopOrderToApi,
   validateCustomerForm,
 } from '../../utils/shopOrder';
-import { getShopPromoState, formatPriceXof } from '../../utils/shopPromo';
+import { getShopPromoState, formatPriceXof, getShopDeliveryFee } from '../../utils/shopPromo';
 import {
   formatQuantityWithUnit,
   getPriceUnitSuffix,
@@ -114,7 +114,9 @@ export default function ShopProductLanding() {
   const quantityDisplay = formatQuantityWithUnit(quantity, quantityUnit);
   const priceUnitSuffix = getPriceUnitSuffix(quantityUnit);
   const hasQuantity = quantity >= 1;
-  const totalPrice = hasQuantity ? (unitPrice || 0) * quantity : 0;
+  const deliveryFee = promoState ? getShopDeliveryFee(product, promoState) : 0;
+  const subtotalPrice = hasQuantity ? (unitPrice || 0) * quantity : 0;
+  const totalPrice = hasQuantity ? subtotalPrice + deliveryFee : 0;
   const totalBasePrice = hasQuantity ? unitBasePrice * quantity : 0;
   const totalLabel = hasQuantity ? formatPriceXof(totalPrice) : null;
 
@@ -286,6 +288,11 @@ export default function ShopProductLanding() {
                       {quantityDisplay}
                     </span>
                   ) : null}
+                  {deliveryFee > 0 ? (
+                    <span className="shop-pdp-buybox-price-unit-line">
+                      + livraison {formatPriceXof(deliveryFee)}
+                    </span>
+                  ) : null}
                 </>
               ) : (
                 <>
@@ -310,6 +317,10 @@ export default function ShopProductLanding() {
               ) : null}
               {promoState?.freeDelivery ? (
                 <span className="shop-pdp-tag shop-pdp-tag--ship">Livraison gratuite</span>
+              ) : deliveryFee > 0 ? (
+                <span className="shop-pdp-tag shop-pdp-tag--ship">
+                  Livraison {formatPriceXof(deliveryFee)}
+                </span>
               ) : null}
             </div>
 
@@ -364,6 +375,8 @@ export default function ShopProductLanding() {
         quantityLabel={quantityLabel}
         unitPrice={unitPrice}
         unitBasePrice={unitBasePrice}
+        deliveryFee={deliveryFee}
+        freeDelivery={!!promoState?.freeDelivery}
         isPromoLive={!!promoState?.isPromoLive}
         initialQuantity={quantity}
         ctaLabel={product.ctaLabel || 'Commander maintenant'}
