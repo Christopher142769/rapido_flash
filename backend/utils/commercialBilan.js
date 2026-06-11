@@ -137,6 +137,7 @@ function pointsOrderDetail(order) {
     scheduledDeliveryAt: order.scheduledDeliveryAt || null,
     commercialStatus: resolveCommercialStatus(order),
     statutLabel: order.statut,
+    clientSpecifications: String(order.clientSpecifications || '').trim(),
   };
 }
 

@@ -69,6 +69,8 @@ const shopOrderSchema = new mongoose.Schema(
     confirmedAt: { type: Date },
     deliveredAt: { type: Date },
     relanceNotifiedAt: { type: Date },
+    /** Instructions / spécifications saisies par l’équipe pour le livreur. */
+    clientSpecifications: { type: String, default: '', trim: true },
   },
   { timestamps: true }
 );

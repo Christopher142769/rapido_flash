@@ -53,7 +53,9 @@ function prepareSummary(summary) {
   };
 }
 
-function rowCells(r, summary) {
+const SIGNATURE_PLACEHOLDER = '';
+
+function rowCells(r) {
   return [
     fmtDateShort(r.date),
     r.orderNumber || '—',
@@ -66,6 +68,8 @@ function rowCells(r, summary) {
     r.quantityLabel || r.quantity,
     formatCommercialStatus(r.commercialStatus),
     r.amount,
+    r.clientSpecifications || '—',
+    SIGNATURE_PLACEHOLDER,
     fmtDate(r.requestedDeliveryAt),
     fmtDate(r.scheduledDeliveryAt),
     r.isOffPlatform ? 'Oui' : 'Non',
@@ -84,10 +88,14 @@ const TABLE_HEADERS = [
   'Quantité',
   'Statut',
   'Montant (FCFA)',
+  'Spécifications client',
+  'Signature client',
   'Livraison demandée',
   'Livraison planifiée',
   'Hors plateforme',
 ];
+
+const TABLE_COL_COUNT = TABLE_HEADERS.length;
 
 /** Export Excel stylé (.xls HTML) — groupé par ville avec totaux. */
 export function exportPointsToCsv(summary) {
@@ -107,15 +115,21 @@ export function exportPointsToExcel(summary) {
         .map(
           (r) => `
         <tr>
-          ${rowCells(r, data)
-            .map((c) => `<td>${String(c ?? '').replace(/</g, '&lt;')}</td>`)
+          ${rowCells(r)
+            .map((c, i) => {
+              const isSignature = TABLE_HEADERS[i] === 'Signature client';
+              const cell = isSignature
+                ? '<td class="signature-cell">&nbsp;</td>'
+                : `<td>${String(c ?? '').replace(/</g, '&lt;')}</td>`;
+              return cell;
+            })
             .join('')}
         </tr>`
         )
         .join('');
 
       return `
-      <tr><td colspan="14" class="city-header">${group.city}</td></tr>
+      <tr><td colspan="${TABLE_COL_COUNT}" class="city-header">${group.city}</td></tr>
       <tr class="col-header">
         ${TABLE_HEADERS.map((h) => `<th>${h}</th>`).join('')}
       </tr>
@@ -123,10 +137,10 @@ export function exportPointsToExcel(summary) {
       <tr class="city-total">
         <td colspan="8"><strong>Sous-total ${group.city}</strong></td>
         <td><strong>${group.totalQuantityLabel || formatQuantityWithUnit(group.totalQuantity, data.quantityUnit)}</strong></td>
-        <td colspan="2"><strong>${group.orderCount} commande(s)</strong></td>
-        <td colspan="3"><strong>${fmtMoney(group.totalAmount)}</strong></td>
+        <td colspan="3"><strong>${group.orderCount} commande(s)</strong></td>
+        <td colspan="5"><strong>${fmtMoney(group.totalAmount)}</strong></td>
       </tr>
-      <tr class="spacer"><td colspan="14"></td></tr>`;
+      <tr class="spacer"><td colspan="${TABLE_COL_COUNT}"></td></tr>`;
     })
     .join('');
 
@@ -154,6 +168,7 @@ export function exportPointsToExcel(summary) {
   .city-header { background: #8B4513; color: #fff; font-weight: bold; font-size: 14px; padding: 10px 12px !important; }
   .col-header th { background: #f5efe8; font-weight: bold; color: #555; font-size: 10px; text-transform: uppercase; }
   .city-total td { background: #fff8e8; font-weight: bold; border-top: 2px solid #c8860a; }
+  .signature-cell { min-width: 90px; height: 28px; background: #fff; }
   .spacer td { border: none; height: 10px; background: #fff; }
   .grand-total td { background: #8B4513; color: #fff; font-weight: bold; font-size: 13px; padding: 12px; }
   .footer { padding: 12px 20px; font-size: 11px; color: #888; border-top: 1px solid #eee; }
@@ -186,8 +201,8 @@ export function exportPointsToExcel(summary) {
       <tr class="grand-total">
         <td colspan="8">TOTAL GÉNÉRAL</td>
         <td>${formatQuantityWithUnit(data.totalQuantity, data.quantityUnit)}</td>
-        <td colspan="2">${data.orderCount} commande(s)</td>
-        <td colspan="3">${fmtMoney(data.totalAmount)}</td>
+        <td colspan="3">${data.orderCount} commande(s)</td>
+        <td colspan="5">${fmtMoney(data.totalAmount)}</td>
       </tr>
     </tbody>
   </table>
@@ -325,8 +340,11 @@ export function exportPointsToPdf(summary) {
   };
 
   const drawOrderCard = (r, idx) => {
-    addPageIfNeeded(22);
-    const cardH = 20;
+    const specs = String(r.clientSpecifications || '').trim();
+    const specsLines = specs ? pdf.splitTextToSize(`Spécifications : ${specs}`, contentW - 12) : [];
+    const extraH = specsLines.length * 3.5 + 5;
+    const cardH = 20 + extraH;
+    addPageIfNeeded(cardH + 4);
     setFill(BRAND.white);
     setDraw(BRAND.goldLight);
     pdf.setLineWidth(0.15);
@@ -363,6 +381,7 @@ export function exportPointsToPdf(summary) {
     const lieu = pdf.splitTextToSize(`Lieu : ${r.location || '—'}`, contentW * 0.35);
     pdf.text(lieu[0], margin + contentW * 0.58, y + 14.5);
 
+    let lineY = y + 18;
     if (r.scheduledDeliveryAt || r.requestedDeliveryAt) {
       const del = [
         r.scheduledDeliveryAt ? `Planifiée : ${fmtDateShort(r.scheduledDeliveryAt)}` : null,
@@ -370,8 +389,22 @@ export function exportPointsToPdf(summary) {
       ]
         .filter(Boolean)
         .join('  ·  ');
-      pdf.text(del, margin + 6, y + 18);
+      pdf.text(del, margin + 6, lineY);
+      lineY += 3.5;
     }
+
+    if (specsLines.length) {
+      pdf.setFontSize(7);
+      setText(BRAND.text);
+      specsLines.forEach((line) => {
+        pdf.text(line, margin + 6, lineY);
+        lineY += 3.5;
+      });
+    }
+
+    pdf.setFontSize(7);
+    setText(BRAND.muted);
+    pdf.text('Signature client : ________________________________', margin + 6, y + cardH - 2);
 
     y += cardH + 2.5;
   };

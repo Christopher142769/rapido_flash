@@ -227,6 +227,7 @@ export default function CommercialPointsPage() {
                             <th>Nom</th>
                             <th>Téléphone</th>
                             <th>Adresse</th>
+                            <th>Spécifications</th>
                             <th>Qté</th>
                             <th>Statut</th>
                             <th>Montant</th>
@@ -241,6 +242,7 @@ export default function CommercialPointsPage() {
                               <td>{row.lastName}</td>
                               <td>{row.phone}</td>
                               <td style={{ maxWidth: 180 }}>{row.address}</td>
+                              <td style={{ maxWidth: 160 }}>{row.clientSpecifications || '—'}</td>
                               <td>{row.quantityLabel || row.quantity}</td>
                               <td>
                                 <span className={`commercial-badge commercial-badge--${row.commercialStatus}`}>

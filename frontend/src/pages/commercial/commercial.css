@@ -198,6 +198,73 @@
   color: #7b1fa2;
 }
 
+.commercial-badge--annulee {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.commercial-btn--danger {
+  background: #c62828;
+  color: #fff;
+}
+
+.commercial-order-specs {
+  margin-top: 6px;
+  padding: 0.5rem 0.65rem;
+  background: #fff8e8;
+  border-left: 3px solid var(--rf-amber, #c8860a);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #444;
+}
+
+.commercial-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  padding: 1rem;
+}
+
+.commercial-modal {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.25rem 1.35rem;
+  width: min(480px, 100%);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+
+.commercial-modal h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+}
+
+.commercial-modal-lead {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.commercial-modal .commercial-form-field textarea {
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.commercial-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
 .commercial-order-card {
   border: 1px solid #eee;
   border-radius: 12px;

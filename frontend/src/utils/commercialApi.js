@@ -59,6 +59,20 @@ export async function setOrderRelance(id, scheduledDeliveryAt) {
   return res.data;
 }
 
+export async function updateOrderSpecifications(id, clientSpecifications) {
+  const res = await axios.put(
+    `${API_URL}/commercial/orders/${id}/specifications`,
+    { clientSpecifications },
+    authHeaders()
+  );
+  return res.data;
+}
+
+export async function cancelCommercialOrder(id) {
+  const res = await axios.put(`${API_URL}/commercial/orders/${id}/cancel`, {}, authHeaders());
+  return res.data;
+}
+
 export async function createOffPlatformOrder(payload) {
   const res = await axios.post(`${API_URL}/commercial/bilan/off-platform`, payload, authHeaders());
   return res.data;

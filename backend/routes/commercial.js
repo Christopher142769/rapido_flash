@@ -365,6 +365,46 @@ router.put('/orders/:id/deliver', auth, isCommercialStaff, async (req, res) => {
   }
 });
 
+router.put('/orders/:id/specifications', auth, isCommercialStaff, async (req, res) => {
+  try {
+    const order = await ShopOrder.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
+
+    order.clientSpecifications = String(req.body?.clientSpecifications ?? '').trim().slice(0, 2000);
+    await order.save();
+    res.json(order);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.put('/orders/:id/cancel', auth, isCommercialStaff, async (req, res) => {
+  try {
+    const order = await ShopOrder.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
+
+    const status = resolveCommercialStatus(order);
+    if (status === 'livree') {
+      return res.status(400).json({ message: 'Une commande livrée ne peut pas être annulée' });
+    }
+    if (status === 'annulee') {
+      return res.status(400).json({ message: 'Cette commande est déjà annulée' });
+    }
+    if (status !== 'confirme' && status !== 'relance') {
+      return res.status(400).json({
+        message: 'Seules les commandes confirmées ou en relance peuvent être annulées',
+      });
+    }
+
+    order.commercialStatus = 'annulee';
+    order.statut = 'annulee';
+    await order.save();
+    res.json(order);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
 router.put('/orders/:id/relance', auth, isCommercialStaff, async (req, res) => {
   try {
     const scheduledDeliveryAt = parseDateInput(req.body?.scheduledDeliveryAt);

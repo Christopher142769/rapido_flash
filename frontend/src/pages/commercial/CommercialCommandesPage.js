@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import PageLoader from '../../components/PageLoader';
 import { useModal } from '../../context/ModalContext';
 import {
+  cancelCommercialOrder,
   confirmCommercialOrder,
   deliverCommercialOrder,
   fetchCommercialOrders,
@@ -9,6 +10,7 @@ import {
   formatPrice,
   resolveCommercialStatus,
   setOrderRelance,
+  updateOrderSpecifications,
 } from '../../utils/commercialApi';
 import './commercial.css';
 
@@ -19,6 +21,8 @@ export default function CommercialCommandesPage() {
   const [filter, setFilter] = useState('');
   const [relanceId, setRelanceId] = useState(null);
   const [relanceDate, setRelanceDate] = useState('');
+  const [specsOrder, setSpecsOrder] = useState(null);
+  const [specsText, setSpecsText] = useState('');
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -48,6 +52,7 @@ export default function CommercialCommandesPage() {
     } finally {
       setBusy(false);
       setRelanceId(null);
+      setSpecsOrder(null);
     }
   };
 
@@ -59,13 +64,27 @@ export default function CommercialCommandesPage() {
     run(() => setOrderRelance(id, new Date(relanceDate).toISOString()), 'Relance planifiée');
   };
 
+  const openSpecs = (order) => {
+    setSpecsOrder(order);
+    setSpecsText(order.clientSpecifications || '');
+  };
+
+  const submitSpecs = () => {
+    if (!specsOrder) return;
+    run(
+      () => updateOrderSpecifications(specsOrder._id, specsText),
+      'Spécifications enregistrées'
+    );
+  };
+
   if (loading) return <PageLoader />;
 
   return (
     <div className="commercial-page">
       <h1>Commandes Shop</h1>
       <p className="commercial-lead">
-        Confirmez les commandes, planifiez une relance ou marquez comme livré.
+        Confirmez les commandes, ajoutez des spécifications client, planifiez une relance, annulez ou
+        marquez comme livré.
       </p>
 
       <div className="commercial-filters">
@@ -77,6 +96,7 @@ export default function CommercialCommandesPage() {
             <option value="confirme">Confirmé</option>
             <option value="relance">Relance</option>
             <option value="livree">Livré</option>
+            <option value="annulee">Annulée</option>
           </select>
         </label>
         <button type="button" className="commercial-btn commercial-btn--outline" onClick={load}>
@@ -93,6 +113,7 @@ export default function CommercialCommandesPage() {
           const lieu = o.isOffPlatform
             ? o.offPlatformLocation
             : [o.customer?.city, o.customer?.addressDescription].filter(Boolean).join(' — ');
+          const specs = String(o.clientSpecifications || '').trim();
           return (
             <div key={o._id} className="commercial-order-card">
               <h3>
@@ -112,6 +133,11 @@ export default function CommercialCommandesPage() {
                   {name || 'Client'} · {o.customer?.phone || '—'}
                 </div>
                 <div>{lieu}</div>
+                {specs ? (
+                  <div className="commercial-order-specs">
+                    <strong>Spécifications :</strong> {specs}
+                  </div>
+                ) : null}
                 {o.requestedDeliveryAt ? (
                   <div>
                     Livraison demandée : {new Date(o.requestedDeliveryAt).toLocaleString('fr-FR')}
@@ -131,7 +157,9 @@ export default function CommercialCommandesPage() {
                     className={
                       status === 'livree'
                         ? 'commercial-amount--received'
-                        : 'commercial-amount--pending'
+                        : status === 'annulee'
+                          ? 'commercial-amount--pending'
+                          : 'commercial-amount--pending'
                     }
                   >
                     {formatPrice(o.totalPrice)}
@@ -163,13 +191,21 @@ export default function CommercialCommandesPage() {
                       className="commercial-btn commercial-btn--outline commercial-btn--sm"
                       onClick={() => setRelanceId(null)}
                     >
-                      Annuler
+                      Fermer
                     </button>
                   </div>
                 </div>
               ) : null}
 
               <div className="commercial-order-actions">
+                <button
+                  type="button"
+                  className="commercial-btn commercial-btn--outline commercial-btn--sm"
+                  disabled={busy}
+                  onClick={() => openSpecs(o)}
+                >
+                  Spécifications
+                </button>
                 {status === 'commande' ? (
                   <button
                     type="button"
@@ -193,6 +229,18 @@ export default function CommercialCommandesPage() {
                     >
                       Relance livraison
                     </button>
+                    {(status === 'confirme' || status === 'relance') ? (
+                      <button
+                        type="button"
+                        className="commercial-btn commercial-btn--danger commercial-btn--sm"
+                        disabled={busy}
+                        onClick={() =>
+                          run(() => cancelCommercialOrder(o._id), 'Commande annulée')
+                        }
+                      >
+                        Annuler
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       className="commercial-btn commercial-btn--success commercial-btn--sm"
@@ -208,6 +256,51 @@ export default function CommercialCommandesPage() {
           );
         })
       )}
+
+      {specsOrder ? (
+        <div className="commercial-modal-backdrop" role="presentation" onClick={() => setSpecsOrder(null)}>
+          <div
+            className="commercial-modal"
+            role="dialog"
+            aria-labelledby="specs-modal-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="specs-modal-title">Spécifications client</h3>
+            <p className="commercial-modal-lead">
+              N° {specsOrder.orderNumber || '—'} · {specsOrder.productName}
+            </p>
+            <div className="commercial-form-field">
+              <label htmlFor="client-specs">Instructions pour le livreur</label>
+              <textarea
+                id="client-specs"
+                rows={5}
+                value={specsText}
+                onChange={(e) => setSpecsText(e.target.value)}
+                placeholder="Ex. appeler avant livraison, livrer au gardien, produit fragile…"
+                maxLength={2000}
+              />
+            </div>
+            <div className="commercial-modal-actions">
+              <button
+                type="button"
+                className="commercial-btn commercial-btn--outline"
+                disabled={busy}
+                onClick={() => setSpecsOrder(null)}
+              >
+                Fermer
+              </button>
+              <button
+                type="button"
+                className="commercial-btn commercial-btn--primary"
+                disabled={busy}
+                onClick={submitSpecs}
+              >
+                Enregistrer
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
