@@ -169,6 +169,7 @@ const fixStaleUserIndexes = require('./utils/fixUserIndexes');
 const ensureDefaultCategoriesDomaine = require('./utils/ensureDefaultCategoriesDomaine');
 const ensureAppSettings = require('./utils/ensureAppSettings');
 const ensurePlatformLineCodes = require('./utils/ensurePlatformLineCodes');
+const ensureShopOrderDates = require('./utils/ensureShopOrderDates');
 
 // MongoDB : par défaut instance locale (voir backend/.env ou .env racine pour Atlas)
 const DEFAULT_LOCAL_MONGODB = 'mongodb://127.0.0.1:27017/rapido_flash';
@@ -196,6 +197,7 @@ async function connectMongoWithRetry() {
       await ensureDefaultCategoriesDomaine();
       await ensureAppSettings();
       await ensurePlatformLineCodes();
+      await ensureShopOrderDates();
 
       // Initialiser l'admin par défaut après la connexion MongoDB (plus de plats par défaut)
       setTimeout(async () => {

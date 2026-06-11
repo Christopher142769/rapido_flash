@@ -15,31 +15,39 @@ function parseDateInput(value) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-/** Filtre MongoDB sur orderDate (ou createdAt si orderDate absent). */
+/** Date métier d’une commande Shop (jour de la commande, jamais le jour de confirmation). */
+function effectiveShopOrderDate(order) {
+  if (!order) return null;
+  const raw = order.orderDate || order.createdAt;
+  if (!raw) return null;
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function endOfDay(date) {
+  const end = new Date(date);
+  end.setHours(23, 59, 59, 999);
+  return end;
+}
+
+/**
+ * Filtre MongoDB sur la date de commande (orderDate, sinon createdAt).
+ * N’utilise jamais confirmedAt — une commande d’hier confirmée aujourd’hui reste sur hier.
+ */
 function buildPeriodFilter(dateFrom, dateTo) {
   const from = parseDateInput(dateFrom);
   const to = parseDateInput(dateTo);
   if (!from && !to) return null;
 
-  const range = {};
-  if (from) range.$gte = from;
+  const exprClauses = [];
+  if (from) {
+    exprClauses.push({ $gte: [{ $ifNull: ['$orderDate', '$createdAt'] }, from] });
+  }
   if (to) {
-    const end = new Date(to);
-    end.setHours(23, 59, 59, 999);
-    range.$lte = end;
+    exprClauses.push({ $lte: [{ $ifNull: ['$orderDate', '$createdAt'] }, endOfDay(to)] });
   }
 
-  return {
-    $or: [
-      { orderDate: range },
-      {
-        $and: [
-          { $or: [{ orderDate: null }, { orderDate: { $exists: false } }] },
-          { createdAt: range },
-        ],
-      },
-    ],
-  };
+  return { $expr: { $and: exprClauses } };
 }
 
 /** Commandes confirmées (hors en attente / annulées). */
@@ -125,8 +133,10 @@ function pointsOrderDetail(order) {
   const base = bilanRowFromOrder(order);
   const c = order.customer || {};
   const city = inferOrderCity(order);
+  const orderDay = effectiveShopOrderDate(order);
   return {
     ...base,
+    date: orderDay || base.date,
     firstName: order.isOffPlatform ? '—' : c.firstName || '—',
     lastName: order.isOffPlatform ? '—' : c.lastName || '—',
     phone: c.phone || '—',
@@ -144,7 +154,7 @@ function pointsOrderDetail(order) {
 function bilanRowFromOrder(order) {
   return {
     id: String(order._id),
-    date: order.orderDate || order.createdAt,
+    date: effectiveShopOrderDate(order) || order.createdAt,
     productName: order.productName,
     quantity: order.quantity,
     quantityLabel: order.quantityLabel || String(order.quantity),
@@ -168,6 +178,7 @@ module.exports = {
   BILAN_START_DATE,
   bilanBaseQuery,
   buildPeriodFilter,
+  effectiveShopOrderDate,
   confirmedOrdersQuery,
   pointsConfirmedOnlyQuery,
   CONFIRMED_STATUTS,

@@ -80,8 +80,8 @@ export default function CommercialPointsPage() {
       <h1>Points</h1>
       <p className="commercial-lead">
         Quantité totale des commandes au statut <strong>Confirmé</strong> uniquement (hors relance et
-        hors livré) pour un produit sur une période. Filtrez par ville (Cotonou ou Calavi) et exportez
-        la synthèse classée par ville pour vos livreurs.
+        hors livré) pour un produit sur une période. Le tri utilise la <strong>date de commande</strong>{' '}
+        (pas la date de confirmation). Filtrez par ville et exportez la synthèse pour vos livreurs.
       </p>
 
       <div className="commercial-card">

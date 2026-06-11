@@ -53,25 +53,9 @@ function buildBilanFilter(query) {
   }
   if (query.offPlatform === 'true') filter.isOffPlatform = true;
   if (query.offPlatform === 'false') filter.isOffPlatform = { $ne: true };
-  const from = parseDateInput(query.dateFrom);
-  const to = parseDateInput(query.dateTo);
-  if (from || to) {
-    const range = {};
-    if (from) range.$gte = from;
-    if (to) {
-      const end = new Date(to);
-      end.setHours(23, 59, 59, 999);
-      range.$lte = end;
-    }
-    filter.$and = [
-      ...(filter.$and || []),
-      {
-        $or: [
-          { orderDate: range },
-          { $and: [{ $or: [{ orderDate: null }, { orderDate: { $exists: false } }] }, { createdAt: range }] },
-        ],
-      },
-    ];
+  const periodClause = buildPeriodFilter(query.dateFrom, query.dateTo);
+  if (periodClause) {
+    filter.$and = [...(filter.$and || []), periodClause];
   }
   return filter;
 }
@@ -339,6 +323,9 @@ router.put('/orders/:id/confirm', auth, isCommercialStaff, async (req, res) => {
     const order = await ShopOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
 
+    if (!order.orderDate) {
+      order.orderDate = order.createdAt || new Date();
+    }
     order.statut = 'confirmee';
     order.commercialStatus = 'confirme';
     order.confirmedAt = new Date();

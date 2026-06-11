@@ -161,6 +161,9 @@ router.put('/:id/statut', auth, isCommercialStaff, async (req, res) => {
       order.commercialStatus = 'annulee';
     }
     if (statut === 'confirmee') {
+      if (!order.orderDate) {
+        order.orderDate = order.createdAt || new Date();
+      }
       if (!order.confirmedAt) order.confirmedAt = new Date();
       if (order.commercialStatus === 'commande') order.commercialStatus = 'confirme';
     }
