@@ -69,25 +69,6 @@ export default function ShopOrderForm({ customer, errors, onFieldChange, idPrefi
       </div>
 
       <div className="shop-order-form-field">
-        <label htmlFor={`${idPrefix}-requestedDelivery`}>
-          Date de livraison souhaitée (optionnel)
-        </label>
-        <input
-          id={`${idPrefix}-requestedDelivery`}
-          type="datetime-local"
-          className={errors.requestedDeliveryAt ? 'has-error' : ''}
-          value={customer.requestedDeliveryAt || ''}
-          onChange={(e) => setField('requestedDeliveryAt', e.target.value)}
-        />
-        <p className="shop-order-form-hint" style={{ fontSize: '0.78rem', color: '#666', margin: '0.25rem 0 0' }}>
-          Si vous souhaitez être livré plus tard, indiquez la date et l&apos;heure.
-        </p>
-        {errors.requestedDeliveryAt ? (
-          <span className="shop-order-form-error">{errors.requestedDeliveryAt}</span>
-        ) : null}
-      </div>
-
-      <div className="shop-order-form-field">
         <label htmlFor={`${idPrefix}-addressDesc`}>Adresse complète *</label>
         <textarea
           id={`${idPrefix}-addressDesc`}
