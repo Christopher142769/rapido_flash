@@ -25,9 +25,21 @@ export async function fetchCommercialOverview() {
   return res.data;
 }
 
+/** Liste Shop — même source que l’admin (GET /shop-orders). */
+export async function fetchShopOrders(params = {}) {
+  const res = await axios.get(`${API_URL}/shop-orders`, authHeaders());
+  let orders = Array.isArray(res.data) ? res.data : [];
+  const status = params.status;
+  if (status === 'confirme') {
+    orders = orders.filter((o) => resolveCommercialStatus(o) === 'confirme');
+  } else if (status) {
+    orders = orders.filter((o) => resolveCommercialStatus(o) === status);
+  }
+  return orders;
+}
+
 export async function fetchCommercialOrders(params = {}) {
-  const res = await axios.get(`${API_URL}/commercial/orders`, { ...authHeaders(), params });
-  return res.data;
+  return fetchShopOrders(params);
 }
 
 export async function fetchCommercialBilan(params = {}) {

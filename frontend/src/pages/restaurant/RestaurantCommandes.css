@@ -30,6 +30,18 @@
   color: #666;
 }
 
+.commandes-shop-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #8b4513;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
+}
+
 .commande-shop-badge {
   display: inline-block;
   margin-left: 8px;

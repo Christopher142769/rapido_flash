@@ -218,6 +218,7 @@ module.exports = {
   effectiveShopOrderDate,
   orderDateKey,
   isOrderInPeriod,
+  normalizeDateKey,
   buildPointsStatusFilter,
   confirmedOrdersQuery,
   pointsConfirmedOnlyQuery,

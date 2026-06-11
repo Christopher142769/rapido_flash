@@ -12,8 +12,8 @@ const {
   groupPointsByCity,
   resolveCommercialStatus,
   buildPeriodFilter,
-  buildPointsStatusFilter,
   isOrderInPeriod,
+  normalizeDateKey,
   confirmedOrdersQuery,
   pointsConfirmedOnlyQuery,
   BILAN_START_DATE,
@@ -130,7 +130,6 @@ router.get('/points/products', auth, isCommercialStaff, async (req, res) => {
       .lean();
 
     const orderNames = await ShopOrder.distinct('productName', {
-      createdAt: { $gte: BILAN_START_DATE },
       productName: { $exists: true, $ne: '' },
     });
 
@@ -161,19 +160,14 @@ router.get('/points/summary', auth, isCommercialStaff, async (req, res) => {
       return res.status(400).json({ message: 'Sélectionnez un produit' });
     }
 
-    const periodClause = buildPeriodFilter(dateFrom, dateTo);
-    if (!periodClause) {
+    if (!normalizeDateKey(dateFrom) && !normalizeDateKey(dateTo)) {
       return res.status(400).json({ message: 'Période invalide' });
     }
 
     let resolvedName = productName;
     let resolvedUnit = 'unit';
 
-    const andClauses = [
-      { createdAt: { $gte: BILAN_START_DATE } },
-      buildPointsStatusFilter(),
-      periodClause,
-    ];
+    const mongoFilter = {};
 
     if (productId && mongoose.Types.ObjectId.isValid(productId)) {
       const product = await ShopProduct.findById(productId).select('name quantityUnit').lean();
@@ -181,29 +175,31 @@ router.get('/points/summary', auth, isCommercialStaff, async (req, res) => {
       resolvedName = product.name;
       resolvedUnit = product.quantityUnit || 'unit';
       const nameRx = new RegExp(`^${product.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
-      andClauses.push({
-        $or: [{ shopProduct: product._id }, { isOffPlatform: true, productName: nameRx }],
-      });
+      mongoFilter.$or = [
+        { shopProduct: product._id },
+        { isOffPlatform: true, productName: nameRx },
+      ];
     } else if (resolvedName) {
       const escaped = resolvedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      andClauses.push({ productName: new RegExp(`^${escaped}$`, 'i') });
+      mongoFilter.productName = new RegExp(`^${escaped}$`, 'i');
     }
 
     if (cityFilter === 'Cotonou' || cityFilter === 'Calavi') {
-      andClauses.push({
-        $or: [
-          { 'customer.city': cityFilter },
-          {
-            isOffPlatform: true,
-            offPlatformLocation: new RegExp(cityFilter, 'i'),
-          },
-        ],
-      });
+      mongoFilter.$and = [
+        ...(mongoFilter.$and || []),
+        {
+          $or: [
+            { 'customer.city': cityFilter },
+            {
+              isOffPlatform: true,
+              offPlatformLocation: new RegExp(cityFilter, 'i'),
+            },
+          ],
+        },
+      ];
     }
 
-    let orders = await ShopOrder.find({ $and: andClauses })
-      .sort({ orderDate: -1, createdAt: -1 })
-      .lean();
+    let orders = await ShopOrder.find(mongoFilter).sort({ orderDate: -1, createdAt: -1 }).lean();
     orders = orders.filter((o) => resolveCommercialStatus(o) === 'confirme');
     orders = orders.filter((o) => isOrderInPeriod(o, dateFrom, dateTo));
 
@@ -295,24 +291,18 @@ router.get('/overview', auth, isCommercialStaff, async (req, res) => {
 
 router.get('/orders', auth, isCommercialStaff, async (req, res) => {
   try {
-    const filter = { createdAt: { $gte: BILAN_START_DATE } };
+    let orders = await ShopOrder.find()
+      .populate('shopProduct', 'name slug mainImage')
+      .sort({ orderDate: -1, createdAt: -1 })
+      .lean();
+
     const status = req.query.status;
     if (status === 'confirme') {
-      filter.$or = [
-        { commercialStatus: 'confirme' },
-        {
-          commercialStatus: 'commande',
-          confirmedAt: { $ne: null },
-          statut: { $in: ['confirmee', 'en_preparation', 'en_livraison'] },
-        },
-      ];
+      orders = orders.filter((o) => resolveCommercialStatus(o) === 'confirme');
     } else if (status && COMMERCIAL_STATUSES.includes(status)) {
-      filter.commercialStatus = status;
+      orders = orders.filter((o) => resolveCommercialStatus(o) === status);
     }
-    const orders = await ShopOrder.find(filter)
-      .populate('shopProduct', 'name slug mainImage')
-      .sort({ createdAt: -1 })
-      .lean();
+
     res.json(
       orders.map((o) => ({
         ...o,

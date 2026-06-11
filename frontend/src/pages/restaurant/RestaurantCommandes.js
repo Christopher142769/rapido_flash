@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import LanguageContext from '../../context/LanguageContext';
 import { useModal } from '../../context/ModalContext';
 import PageLoader from '../../components/PageLoader';
@@ -8,39 +8,11 @@ import './RestaurantCommandes.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-function normalizeShopOrderForList(order) {
-  const name = [order.customer?.firstName, order.customer?.lastName].filter(Boolean).join(' ').trim();
-  const city = order.customer?.city || '';
-  const addr = order.customer?.addressDescription || '';
-  return {
-    ...order,
-    source: 'shop',
-    total: Number(order.totalPrice || 0),
-    client: {
-      nom: name || 'Client Shop',
-      telephone: order.customer?.phone || '',
-    },
-    adresseLivraison: {
-      adresse: [city, addr].filter(Boolean).join(' — '),
-      telephoneContact: order.customer?.phone || '',
-      instruction: addr,
-    },
-    shopLine: {
-      productName: order.productName,
-      quantityLabel: order.quantityLabel,
-      quantity: order.quantity,
-      unitPrice: order.unitPrice,
-      freeDelivery: order.freeDelivery,
-      slug: order.slug,
-    },
-  };
-}
-
 const RestaurantCommandes = () => {
   const { t } = React.useContext(LanguageContext);
   const { showSuccess, showError } = useModal();
+  const navigate = useNavigate();
   const [allCommandes, setAllCommandes] = useState([]);
-  const [shopOrders, setShopOrders] = useState([]);
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
   /** '' = toutes les entreprises */
@@ -52,14 +24,12 @@ const RestaurantCommandes = () => {
 
   const fetchData = async () => {
     try {
-      const [restaurantsRes, commandesRes, shopRes] = await Promise.all([
+      const [restaurantsRes, commandesRes] = await Promise.all([
         axios.get(`${API_URL}/restaurants/my/restaurants`),
         axios.get(`${API_URL}/commandes/for-my-restaurants`),
-        axios.get(`${API_URL}/shop-orders`).catch(() => ({ data: [] })),
       ]);
       setRestaurants(restaurantsRes.data || []);
       setAllCommandes(commandesRes.data || []);
-      setShopOrders(Array.isArray(shopRes.data) ? shopRes.data : []);
     } catch (error) {
       console.error('Erreur:', error);
     } finally {
@@ -75,14 +45,10 @@ const RestaurantCommandes = () => {
         })
       : allCommandes;
 
-    const shopNormalized = selectedRestaurant
-      ? []
-      : shopOrders.map(normalizeShopOrderForList);
-
-    return [...appOrders, ...shopNormalized].sort(
+    return [...appOrders].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
-  }, [allCommandes, shopOrders, selectedRestaurant]);
+  }, [allCommandes, selectedRestaurant]);
 
   const updateStatut = async (commande, nouveauStatut) => {
     try {
@@ -162,10 +128,17 @@ const RestaurantCommandes = () => {
           )}
         </div>
 
-        {!selectedRestaurant && shopOrders.length > 0 ? (
+        {!selectedRestaurant ? (
           <p className="commandes-shop-hint">
-            Les commandes passées via les liens Shop express apparaissent ici avec le badge{' '}
-            <span className="commande-shop-badge">Shop</span>.
+            Les commandes <strong>Shop express</strong> sont gérées dans{' '}
+            <button
+              type="button"
+              className="commandes-shop-link"
+              onClick={() => navigate('/dashboard/commercial-commandes')}
+            >
+              Commandes Shop
+            </button>{' '}
+            (même vue admin et commercial, statuts synchronisés).
           </p>
         ) : null}
 
