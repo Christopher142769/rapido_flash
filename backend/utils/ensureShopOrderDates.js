@@ -1,14 +1,15 @@
 const ShopOrder = require('../models/ShopOrder');
 
-function startOfDay(d) {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
+const SHOP_ORDER_TZ = 'Africa/Porto-Novo';
+
+function dateKey(d) {
+  if (!d) return null;
+  return new Intl.DateTimeFormat('en-CA', { timeZone: SHOP_ORDER_TZ }).format(new Date(d));
 }
 
 function sameCalendarDay(a, b) {
   if (!a || !b) return false;
-  return startOfDay(a).getTime() === startOfDay(b).getTime();
+  return dateKey(a) === dateKey(b);
 }
 
 /**
@@ -41,11 +42,17 @@ async function ensureShopOrderDates() {
       const confirmed = new Date(o.confirmedAt);
       if (Number.isNaN(created.getTime()) || Number.isNaN(orderD.getTime())) continue;
 
-      const orderAfterCreation = orderD.getTime() > created.getTime() + 60_000;
-      const orderOnConfirmDay = sameCalendarDay(orderD, confirmed);
-      const createdOnOtherDay = !sameCalendarDay(created, orderD);
+      const createdKey = dateKey(created);
+      const orderKey = dateKey(orderD);
+      const confirmedKey = dateKey(confirmed);
 
-      if (orderAfterCreation && orderOnConfirmDay && createdOnOtherDay) {
+      if (
+        createdKey &&
+        orderKey &&
+        confirmedKey &&
+        orderKey !== createdKey &&
+        orderKey === confirmedKey
+      ) {
         await ShopOrder.updateOne({ _id: o._id }, { $set: { orderDate: created } });
         fixed += 1;
       }

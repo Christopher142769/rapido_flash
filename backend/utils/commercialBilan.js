@@ -9,10 +9,18 @@ function bilanBaseQuery(extra = {}) {
   };
 }
 
+const SHOP_ORDER_TZ = 'Africa/Porto-Novo';
+
 function parseDateInput(value) {
   if (!value) return null;
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function normalizeDateKey(value) {
+  if (!value) return null;
+  const s = String(value).trim().slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;
 }
 
 /** Date métier d’une commande Shop (jour de la commande, jamais le jour de confirmation). */
@@ -24,30 +32,59 @@ function effectiveShopOrderDate(order) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-function endOfDay(date) {
-  const end = new Date(date);
-  end.setHours(23, 59, 59, 999);
-  return end;
+/** Clé YYYY-MM-DD du jour de commande (fuseau Bénin). */
+function orderDateKey(order) {
+  const d = effectiveShopOrderDate(order);
+  if (!d) return null;
+  return new Intl.DateTimeFormat('en-CA', { timeZone: SHOP_ORDER_TZ }).format(d);
+}
+
+function isOrderInPeriod(order, dateFrom, dateTo) {
+  const key = orderDateKey(order);
+  if (!key) return false;
+  const fromKey = normalizeDateKey(dateFrom);
+  const toKey = normalizeDateKey(dateTo);
+  if (fromKey && key < fromKey) return false;
+  if (toKey && key > toKey) return false;
+  return true;
 }
 
 /**
- * Filtre MongoDB sur la date de commande (orderDate, sinon createdAt).
- * N’utilise jamais confirmedAt — une commande d’hier confirmée aujourd’hui reste sur hier.
+ * Filtre MongoDB sur le jour de commande (orderDate ou createdAt), fuseau Africa/Porto-Novo.
+ * Compare des chaînes YYYY-MM-DD — évite les décalages UTC.
  */
 function buildPeriodFilter(dateFrom, dateTo) {
-  const from = parseDateInput(dateFrom);
-  const to = parseDateInput(dateTo);
-  if (!from && !to) return null;
+  const fromKey = normalizeDateKey(dateFrom);
+  const toKey = normalizeDateKey(dateTo);
+  if (!fromKey && !toKey) return null;
+
+  const dayStr = {
+    $dateToString: {
+      format: '%Y-%m-%d',
+      date: { $ifNull: ['$orderDate', '$createdAt'] },
+      timezone: SHOP_ORDER_TZ,
+    },
+  };
 
   const exprClauses = [];
-  if (from) {
-    exprClauses.push({ $gte: [{ $ifNull: ['$orderDate', '$createdAt'] }, from] });
-  }
-  if (to) {
-    exprClauses.push({ $lte: [{ $ifNull: ['$orderDate', '$createdAt'] }, endOfDay(to)] });
-  }
+  if (fromKey) exprClauses.push({ $gte: [dayStr, fromKey] });
+  if (toKey) exprClauses.push({ $lte: [dayStr, toKey] });
 
   return { $expr: { $and: exprClauses } };
+}
+
+function buildPointsStatusFilter() {
+  return {
+    $or: [
+      { commercialStatus: 'confirme' },
+      {
+        commercialStatus: 'commande',
+        confirmedAt: { $ne: null },
+        statut: { $in: ['confirmee', 'en_preparation', 'en_livraison'] },
+        $or: [{ scheduledDeliveryAt: null }, { scheduledDeliveryAt: { $exists: false } }],
+      },
+    ],
+  };
 }
 
 /** Commandes confirmées (hors en attente / annulées). */
@@ -179,6 +216,9 @@ module.exports = {
   bilanBaseQuery,
   buildPeriodFilter,
   effectiveShopOrderDate,
+  orderDateKey,
+  isOrderInPeriod,
+  buildPointsStatusFilter,
   confirmedOrdersQuery,
   pointsConfirmedOnlyQuery,
   CONFIRMED_STATUTS,

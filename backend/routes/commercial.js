@@ -12,6 +12,8 @@ const {
   groupPointsByCity,
   resolveCommercialStatus,
   buildPeriodFilter,
+  buildPointsStatusFilter,
+  isOrderInPeriod,
   confirmedOrdersQuery,
   pointsConfirmedOnlyQuery,
   BILAN_START_DATE,
@@ -167,8 +169,11 @@ router.get('/points/summary', auth, isCommercialStaff, async (req, res) => {
     let resolvedName = productName;
     let resolvedUnit = 'unit';
 
-    const filter = pointsConfirmedOnlyQuery();
-    const andClauses = [periodClause];
+    const andClauses = [
+      { createdAt: { $gte: BILAN_START_DATE } },
+      buildPointsStatusFilter(),
+      periodClause,
+    ];
 
     if (productId && mongoose.Types.ObjectId.isValid(productId)) {
       const product = await ShopProduct.findById(productId).select('name quantityUnit').lean();
@@ -196,10 +201,11 @@ router.get('/points/summary', auth, isCommercialStaff, async (req, res) => {
       });
     }
 
-    filter.$and = andClauses;
-
-    let orders = await ShopOrder.find(filter).sort({ orderDate: -1, createdAt: -1 }).lean();
+    let orders = await ShopOrder.find({ $and: andClauses })
+      .sort({ orderDate: -1, createdAt: -1 })
+      .lean();
     orders = orders.filter((o) => resolveCommercialStatus(o) === 'confirme');
+    orders = orders.filter((o) => isOrderInPeriod(o, dateFrom, dateTo));
 
     if (orders.length && !resolvedName) {
       resolvedName = orders[0].productName;
