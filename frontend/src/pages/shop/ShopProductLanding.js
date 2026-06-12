@@ -116,9 +116,8 @@ export default function ShopProductLanding() {
   const hasQuantity = quantity >= 1;
   const deliveryFee = promoState ? getShopDeliveryFee(product, promoState) : 0;
   const subtotalPrice = hasQuantity ? (unitPrice || 0) * quantity : 0;
-  const totalPrice = hasQuantity ? subtotalPrice + deliveryFee : 0;
   const totalBasePrice = hasQuantity ? unitBasePrice * quantity : 0;
-  const totalLabel = hasQuantity ? formatPriceXof(totalPrice) : null;
+  const subtotalLabel = hasQuantity ? formatPriceXof(subtotalPrice) : null;
 
   const navSections = useMemo(() => {
     const items = [
@@ -272,7 +271,7 @@ export default function ShopProductLanding() {
               {hasQuantity ? (
                 <>
                   <span className="shop-pdp-buybox-price-current">
-                    {totalLabel}
+                    {subtotalLabel}
                     {quantity === 1 && priceUnitSuffix ? (
                       <span className="shop-pdp-price-unit">{priceUnitSuffix}</span>
                     ) : null}
@@ -288,9 +287,13 @@ export default function ShopProductLanding() {
                       {quantityDisplay}
                     </span>
                   ) : null}
-                  {deliveryFee > 0 ? (
-                    <span className="shop-pdp-buybox-price-unit-line">
-                      + livraison {formatPriceXof(deliveryFee)}
+                  {promoState?.freeDelivery ? (
+                    <span className="shop-pdp-buybox-delivery-info shop-pdp-buybox-delivery-info--free">
+                      Livraison gratuite
+                    </span>
+                  ) : deliveryFee > 0 ? (
+                    <span className="shop-pdp-buybox-delivery-info">
+                      Frais de livraison : {formatPriceXof(deliveryFee)} (ajoutés au récapitulatif)
                     </span>
                   ) : null}
                 </>
@@ -387,7 +390,7 @@ export default function ShopProductLanding() {
       <div className="shop-pdp-sticky">
         <div className="shop-pdp-sticky-inner">
           <span className="shop-pdp-sticky-price">
-            {hasQuantity ? totalLabel : formatPriceXof(unitPrice) + (priceUnitSuffix || '')}
+            {hasQuantity ? subtotalLabel : formatPriceXof(unitPrice) + (priceUnitSuffix || '')}
           </span>
           {canOrder ? (
             <button

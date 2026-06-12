@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import PageLoader from '../../components/PageLoader';
 import { useModal } from '../../context/ModalContext';
@@ -82,17 +83,17 @@ export default function ShopCommandesPage() {
     );
   }, [orders, filter]);
 
-  const run = async (fn, msg) => {
+  const run = async (fn, msg, { closeSpecs = false } = {}) => {
     setBusy(true);
     try {
       await fn();
       showSuccess(msg);
       await load();
+      if (closeSpecs) setSpecsOrder(null);
     } catch (e) {
       showError(e.response?.data?.message || e.message);
     } finally {
       setBusy(false);
-      setSpecsOrder(null);
     }
   };
 
@@ -107,10 +108,82 @@ export default function ShopCommandesPage() {
 
   const submitSpecs = () => {
     if (!specsOrder) return;
-    run(() => updateOrderSpecifications(specsOrder._id, specsText), 'Spécifications enregistrées');
+    run(
+      () => updateOrderSpecifications(specsOrder._id, specsText),
+      'Spécifications enregistrées',
+      { closeSpecs: true }
+    );
   };
 
+  useEffect(() => {
+    if (!specsOrder) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e) => {
+      if (e.key === 'Escape' && !busy) setSpecsOrder(null);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [specsOrder, busy]);
+
   if (loading) return <PageLoader message="Chargement des commandes Shop..." />;
+
+  const specsModal =
+    specsOrder &&
+    createPortal(
+      <div
+        className="commercial-modal-backdrop"
+        role="presentation"
+        onClick={() => !busy && setSpecsOrder(null)}
+      >
+        <div
+          className="commercial-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="specs-modal-title"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h3 id="specs-modal-title">Spécifications client</h3>
+          <p className="commercial-modal-lead">
+            N° {specsOrder.orderNumber || '—'} · {specsOrder.productName}
+          </p>
+          <div className="commercial-form-field">
+            <label htmlFor="client-specs">Instructions pour le livreur</label>
+            <textarea
+              id="client-specs"
+              rows={5}
+              value={specsText}
+              onChange={(e) => setSpecsText(e.target.value)}
+              placeholder="Ex. appeler avant livraison, livrer au gardien, produit fragile…"
+              maxLength={2000}
+              autoFocus
+            />
+          </div>
+          <div className="commercial-modal-actions">
+            <button
+              type="button"
+              className="commercial-btn commercial-btn--outline"
+              disabled={busy}
+              onClick={() => setSpecsOrder(null)}
+            >
+              Fermer
+            </button>
+            <button
+              type="button"
+              className="commercial-btn commercial-btn--primary"
+              disabled={busy}
+              onClick={submitSpecs}
+            >
+              {busy ? 'Enregistrement…' : 'Enregistrer'}
+            </button>
+          </div>
+        </div>
+      </div>,
+      document.body
+    );
 
   return (
     <div className="commandes-page">
@@ -328,50 +401,7 @@ export default function ShopCommandesPage() {
         )}
       </div>
 
-      {specsOrder ? (
-        <div className="commercial-modal-backdrop" role="presentation" onClick={() => setSpecsOrder(null)}>
-          <div
-            className="commercial-modal"
-            role="dialog"
-            aria-labelledby="specs-modal-title"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 id="specs-modal-title">Spécifications client</h3>
-            <p className="commercial-modal-lead">
-              N° {specsOrder.orderNumber || '—'} · {specsOrder.productName}
-            </p>
-            <div className="commercial-form-field">
-              <label htmlFor="client-specs">Instructions pour le livreur</label>
-              <textarea
-                id="client-specs"
-                rows={5}
-                value={specsText}
-                onChange={(e) => setSpecsText(e.target.value)}
-                placeholder="Ex. appeler avant livraison, livrer au gardien, produit fragile…"
-                maxLength={2000}
-              />
-            </div>
-            <div className="commercial-modal-actions">
-              <button
-                type="button"
-                className="commercial-btn commercial-btn--outline"
-                disabled={busy}
-                onClick={() => setSpecsOrder(null)}
-              >
-                Fermer
-              </button>
-              <button
-                type="button"
-                className="commercial-btn commercial-btn--primary"
-                disabled={busy}
-                onClick={submitSpecs}
-              >
-                Enregistrer
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {specsModal}
     </div>
   );
 }

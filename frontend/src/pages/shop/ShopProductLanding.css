@@ -209,6 +209,23 @@
   margin-top: 4px;
 }
 
+.shop-pdp-buybox-delivery-info {
+  flex: 0 0 100%;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(199, 109, 46, 0.08);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--rf-text-muted);
+  line-height: 1.4;
+}
+
+.shop-pdp-buybox-delivery-info--free {
+  background: rgba(46, 125, 50, 0.08);
+  color: #2e7d32;
+}
+
 .shop-pdp-qty-value {
   min-width: 48px;
   text-align: center;

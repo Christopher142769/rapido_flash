@@ -50,11 +50,10 @@ export default function ShopQuantityModal({
   const hasQty = draftQty >= 1;
   const subtotal = (unitPrice || 0) * draftQty;
   const fee = freeDelivery ? 0 : Math.max(0, Number(deliveryFee) || 0);
-  const total = subtotal + fee;
   const totalBase = (unitBasePrice || 0) * draftQty;
   const qtyDisplay = formatQuantityWithUnit(draftQty, quantityUnit);
   const showPromoStrike = isPromoLive && unitBasePrice > unitPrice;
-  const mainPrice = hasQty ? total : unitPrice;
+  const mainPrice = hasQty ? subtotal : unitPrice;
   const strikePrice = hasQty ? totalBase : unitBasePrice;
 
   const handleConfirm = () => {
@@ -95,7 +94,7 @@ export default function ShopQuantityModal({
         />
 
         <div className="shop-qty-modal-price">
-          <span className="shop-qty-modal-price-label">{hasQty ? 'Total' : 'Prix unitaire'}</span>
+          <span className="shop-qty-modal-price-label">{hasQty ? 'Sous-total' : 'Prix unitaire'}</span>
           <span className="shop-qty-modal-price-main">
             {formatPriceXof(mainPrice)}
             {!hasQty && priceUnitSuffix ? (
@@ -117,9 +116,11 @@ export default function ShopQuantityModal({
                 {qtyDisplay}
               </p>
               {freeDelivery ? (
-                <p className="shop-qty-modal-hint">Livraison gratuite</p>
+                <p className="shop-qty-modal-hint shop-qty-modal-hint--delivery">Livraison gratuite</p>
               ) : fee > 0 ? (
-                <p className="shop-qty-modal-hint">+ livraison {formatPriceXof(fee)}</p>
+                <p className="shop-qty-modal-hint shop-qty-modal-hint--delivery">
+                  Frais de livraison : {formatPriceXof(fee)} (total au récapitulatif)
+                </p>
               ) : null}
             </>
           ) : (
