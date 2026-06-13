@@ -1,0 +1,114 @@
+.shop-specs-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.shop-specs-modal {
+  position: relative;
+  width: min(520px, 100%);
+  max-height: min(90vh, 640px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 16px;
+  padding: 1.5rem 1.35rem 1.25rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+.shop-specs-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: #f3f3f3;
+  color: #444;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.shop-specs-modal-close:hover:not(:disabled) {
+  background: #e8e8e8;
+}
+
+.shop-specs-modal h3 {
+  margin: 0 2rem 0.35rem 0;
+  font-size: 1.15rem;
+  color: #3d2914;
+}
+
+.shop-specs-modal-lead {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  color: #666;
+}
+
+.shop-specs-modal-label {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #8b4513;
+}
+
+.shop-specs-modal-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 140px;
+}
+
+.shop-specs-modal-textarea:focus {
+  outline: none;
+  border-color: #c8860a;
+  box-shadow: 0 0 0 3px rgba(200, 134, 10, 0.15);
+}
+
+.shop-specs-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.shop-specs-modal-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 0.65rem 1.1rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.shop-specs-modal-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.shop-specs-modal-btn--outline {
+  background: #fff;
+  border: 1px solid #ccc;
+  color: #444;
+}
+
+.shop-specs-modal-btn--primary {
+  background: #8b4513;
+  color: #fff;
+}
+
+.shop-specs-modal-btn--primary:hover:not(:disabled) {
+  background: #6d3610;
+}

@@ -1,10 +1,8 @@
 import { computeShopOrderTotals, formatPriceXof, getShopDeliveryFee } from './shopPromo';
 import { isValidShopCity } from './shopDelivery';
 import {
-  deliveryDateKeyToIso,
   formatDeliveryDateShort,
   getDefaultDeliveryDateKey,
-  isAllowedDeliveryDateKey,
 } from './shopDeliveryDate';
 import {
   formatQuantityWithUnit,
@@ -25,7 +23,7 @@ export async function submitShopOrderToApi(order) {
       slug: order.slug,
       quantity: order.quantity,
       customer: order.customer,
-      requestedDeliveryAt: order.requestedDeliveryAt || undefined,
+      // requestedDeliveryAt: order.requestedDeliveryAt || undefined,
     }),
   });
   const data = await res.json().catch(() => ({}));
@@ -36,7 +34,7 @@ export async function submitShopOrderToApi(order) {
 }
 
 export const SHOP_DELIVERY_NOTE =
-  'Par défaut, votre commande est livrée le lendemain. Vous pouvez choisir une autre date parmi les 7 prochains jours.';
+  "Note : Assurez-vous d'être prêt à vous faire livrer dans les 24h qui suivent la commande avant de passer commande.";
 
 export function emptyCustomerForm() {
   return {
@@ -52,8 +50,6 @@ export function emptyCustomerForm() {
 export function buildShopOrderPayload(product, promoState, quantity, customer) {
   const unitPrice = promoState?.isPromoLive ? promoState.promoPrice : product.basePrice;
   const quantityUnit = normalizeShopQuantityUnit(product.quantityUnit);
-  const deliveryDate = customer.deliveryDate || getDefaultDeliveryDateKey();
-  const requestedDeliveryAt = deliveryDateKeyToIso(deliveryDate);
   const deliveryFee = getShopDeliveryFee(product, promoState);
   const { subtotalPrice, totalPrice } = computeShopOrderTotals(unitPrice, quantity, deliveryFee);
   return {
@@ -78,10 +74,9 @@ export function buildShopOrderPayload(product, promoState, quantity, customer) {
       phone: String(customer.phone || '').trim(),
       city: String(customer.city || '').trim(),
       addressDescription: String(customer.addressDescription || '').trim(),
-      deliveryDate,
     },
-    requestedDeliveryAt,
-    deliveryDateLabel: formatDeliveryDateShort(deliveryDate),
+    // requestedDeliveryAt,
+    // deliveryDateLabel: formatDeliveryDateShort(deliveryDate),
     createdAt: new Date().toISOString(),
   };
 }
@@ -178,9 +173,10 @@ export function validateCustomerForm(customer) {
   if (!customer.addressDescription?.trim()) {
     errors.addressDescription = 'Indiquez votre adresse complète de livraison';
   }
-  const deliveryDate = customer.deliveryDate || getDefaultDeliveryDateKey();
-  if (!isAllowedDeliveryDateKey(deliveryDate)) {
-    errors.deliveryDate = 'Choisissez une date de livraison parmi les 7 prochains jours';
-  }
+  // Champ date masqué — validation désactivée
+  // const deliveryDate = customer.deliveryDate || getDefaultDeliveryDateKey();
+  // if (!isAllowedDeliveryDateKey(deliveryDate)) {
+  //   errors.deliveryDate = 'Choisissez une date de livraison parmi les 7 prochains jours';
+  // }
   return errors;
 }

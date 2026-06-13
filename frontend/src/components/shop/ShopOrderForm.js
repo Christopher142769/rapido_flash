@@ -1,13 +1,13 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { SHOP_DELIVERY_CITIES } from '../../utils/shopDelivery';
-import { getDefaultDeliveryDateKey, getShopDeliveryDateOptions } from '../../utils/shopDeliveryDate';
+// import { getDefaultDeliveryDateKey, getShopDeliveryDateOptions } from '../../utils/shopDeliveryDate';
 import './ShopOrderForm.css';
 
 export default function ShopOrderForm({ customer, errors, onFieldChange, idPrefix = 'shop' }) {
   const setField = (field, value) => onFieldChange(field, value);
-  const defaultDeliveryDate = useMemo(() => getDefaultDeliveryDateKey(), []);
-  const deliveryOptions = useMemo(() => getShopDeliveryDateOptions(), []);
-  const isDefaultDate = customer.deliveryDate === defaultDeliveryDate;
+  // const defaultDeliveryDate = useMemo(() => getDefaultDeliveryDateKey(), []);
+  // const deliveryOptions = useMemo(() => getShopDeliveryDateOptions(), []);
+  // const isDefaultDate = customer.deliveryDate === defaultDeliveryDate;
 
   return (
     <div className="shop-order-form">
@@ -54,6 +54,7 @@ export default function ShopOrderForm({ customer, errors, onFieldChange, idPrefi
         {errors.phone ? <span className="shop-order-form-error">{errors.phone}</span> : null}
       </div>
 
+      {/* Date de livraison — désactivée temporairement pour conversion rapide
       <div
         className={`shop-order-form-field shop-order-form-field--delivery${
           isDefaultDate ? ' shop-order-form-field--delivery-default' : ''
@@ -83,6 +84,7 @@ export default function ShopOrderForm({ customer, errors, onFieldChange, idPrefi
           <span className="shop-order-form-error">{errors.deliveryDate}</span>
         ) : null}
       </div>
+      */}
 
       <div className="shop-order-form-field">
         <label htmlFor={`${idPrefix}-city`}>Ville *</label>
