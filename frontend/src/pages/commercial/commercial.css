@@ -265,6 +265,32 @@
   margin-top: 1rem;
 }
 
+.shop-commandes-filters {
+  margin-bottom: 1rem;
+}
+
+.shop-commandes-export-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--rf-border, #e8e0d8);
+}
+
+.shop-commandes-export-summary {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--rf-text-muted, #666);
+}
+
+.shop-commandes-export-summary strong {
+  color: var(--rf-amber, #c8860a);
+  font-size: 1.05rem;
+}
+
 .commercial-order-card {
   border: 1px solid #eee;
   border-radius: 12px;

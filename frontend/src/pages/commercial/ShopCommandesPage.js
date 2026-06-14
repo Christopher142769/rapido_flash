@@ -6,21 +6,22 @@ import { useModal } from '../../context/ModalContext';
 import {
   confirmCommercialOrder,
   fetchShopOrders,
+  formatPrice,
   updateOrderSpecifications,
   updateShopOrderStatut,
 } from '../../utils/commercialApi';
+import {
+  exportShopOrdersToExcel,
+  exportShopOrdersToPdf,
+  filterShopOrders,
+  prepareShopOrdersExport,
+  SHOP_STATUT_LABELS,
+} from '../../utils/exportShopOrders';
 import { formatDeliveryDateShort } from '../../utils/shopDeliveryDate';
 import '../restaurant/RestaurantCommandes.css';
 import './commercial.css';
 
-const STATUT_LABELS = {
-  en_attente: 'En attente',
-  confirmee: 'Confirmée',
-  en_preparation: 'En préparation',
-  en_livraison: 'En livraison',
-  livree: 'Livrée',
-  annulee: 'Annulée',
-};
+const STATUT_LABELS = SHOP_STATUT_LABELS;
 
 const STATUT_COLORS = {
   en_attente: '#FFA500',
@@ -30,6 +31,16 @@ const STATUT_COLORS = {
   livree: '#4CAF50',
   annulee: '#F44336',
 };
+
+function defaultDateRange() {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - 30);
+  return {
+    dateFrom: start.toISOString().slice(0, 10),
+    dateTo: end.toISOString().slice(0, 10),
+  };
+}
 
 function formatOrderDate(order) {
   const raw = order.orderDate || order.createdAt;
@@ -57,6 +68,8 @@ export default function ShopCommandesPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
+  const [dateFrom, setDateFrom] = useState(() => defaultDateRange().dateFrom);
+  const [dateTo, setDateTo] = useState(() => defaultDateRange().dateTo);
   const [specsOrder, setSpecsOrder] = useState(null);
   const [busy, setBusy] = useState(false);
 
@@ -76,11 +89,38 @@ export default function ShopCommandesPage() {
   }, [load]);
 
   const filteredOrders = useMemo(() => {
-    const list = filter ? orders.filter((o) => o.statut === filter) : orders;
+    const list = filterShopOrders(orders, { dateFrom, dateTo, statut: filter || undefined });
     return [...list].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
-  }, [orders, filter]);
+  }, [orders, filter, dateFrom, dateTo]);
+
+  const exportData = useMemo(
+    () =>
+      prepareShopOrdersExport(filteredOrders, {
+        dateFrom,
+        dateTo,
+        statutFilter: filter,
+        statutLabel: filter ? STATUT_LABELS[filter] || filter : 'Tous les statuts',
+      }),
+    [filteredOrders, dateFrom, dateTo, filter]
+  );
+
+  const handleExportExcel = () => {
+    if (!exportData.orders.length) {
+      showError('Aucune commande à exporter pour cette période et ce filtre.');
+      return;
+    }
+    exportShopOrdersToExcel(exportData);
+  };
+
+  const handleExportPdf = () => {
+    if (!exportData.orders.length) {
+      showError('Aucune commande à exporter pour cette période et ce filtre.');
+      return;
+    }
+    exportShopOrdersToPdf(exportData);
+  };
 
   const run = async (fn, msg) => {
     setBusy(true);
@@ -130,30 +170,82 @@ export default function ShopCommandesPage() {
         <div className="commandes-content">
           <div className="commandes-header">
             <h1>Commandes Shop</h1>
-            <select
-              className="restaurant-select"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-            >
-              <option value="">Tous les statuts</option>
-              <option value="en_attente">En attente</option>
-              <option value="confirmee">Confirmée</option>
-              <option value="en_preparation">En préparation</option>
-              <option value="en_livraison">En livraison</option>
-              <option value="livree">Livrée</option>
-              <option value="annulee">Annulée</option>
-            </select>
+          </div>
+
+          <div className="commercial-card shop-commandes-filters">
+            <div className="commercial-filters">
+              <label>
+                Du
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                />
+              </label>
+              <label>
+                Au
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                />
+              </label>
+              <label>
+                Statut
+                <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+                  <option value="">Tous les statuts</option>
+                  <option value="en_attente">En attente</option>
+                  <option value="confirmee">Confirmée</option>
+                  <option value="en_preparation">En préparation</option>
+                  <option value="en_livraison">En livraison</option>
+                  <option value="livree">Livrée</option>
+                  <option value="annulee">Annulée</option>
+                </select>
+              </label>
+              <button
+                type="button"
+                className="commercial-btn commercial-btn--outline"
+                onClick={load}
+                disabled={busy}
+              >
+                Actualiser
+              </button>
+            </div>
+
+            <div className="shop-commandes-export-bar">
+              <p className="shop-commandes-export-summary">
+                <strong>{exportData.orderCount}</strong> commande{exportData.orderCount > 1 ? 's' : ''}{' '}
+                · Total {formatPrice(exportData.totalAmount)}
+              </p>
+              <div className="commercial-filters" style={{ marginBottom: 0 }}>
+                <button
+                  type="button"
+                  className="commercial-btn commercial-btn--primary"
+                  onClick={handleExportExcel}
+                  disabled={!exportData.orders.length}
+                >
+                  Exporter Excel
+                </button>
+                <button
+                  type="button"
+                  className="commercial-btn commercial-btn--outline"
+                  onClick={handleExportPdf}
+                  disabled={!exportData.orders.length}
+                >
+                  Exporter PDF
+                </button>
+              </div>
+            </div>
           </div>
 
           <p className="commandes-shop-hint">
-            Même processus que la section <strong>Commandes</strong> : confirmer, mettre en préparation,
-            envoyer en livraison, marquer comme livrée. Ajoutez des spécifications pour le livreur via le
-            bouton dédié sur chaque carte.
+            Filtrez par <strong>date de commande</strong> et statut, puis exportez le détail complet en
+            PDF ou Excel. Même processus opérationnel : confirmer, préparation, livraison, livrée.
           </p>
 
           {filteredOrders.length === 0 ? (
             <div className="no-commandes">
-              <p>Aucune commande Shop{filter ? ' pour ce filtre' : ''}.</p>
+              <p>Aucune commande Shop pour cette période{filter ? ' et ce statut' : ''}.</p>
             </div>
           ) : (
             <div className="commandes-list">
