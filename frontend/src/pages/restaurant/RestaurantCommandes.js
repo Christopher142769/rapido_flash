@@ -1,12 +1,32 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import LanguageContext from '../../context/LanguageContext';
 import { useModal } from '../../context/ModalContext';
 import PageLoader from '../../components/PageLoader';
+import { formatPrice } from '../../utils/commercialApi';
+import {
+  COMMANDE_STATUT_LABELS,
+  defaultCommandeDateRange,
+  exportRestaurantCommandesToExcel,
+  exportRestaurantCommandesToPdf,
+  filterRestaurantCommandes,
+  getCommandeProductOptions,
+  prepareRestaurantCommandesExport,
+} from '../../utils/exportRestaurantCommandes';
+import '../commercial/commercial.css';
 import './RestaurantCommandes.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+const STATUT_COLORS = {
+  en_attente: '#FFA500',
+  confirmee: '#2196F3',
+  en_preparation: '#9C27B0',
+  en_livraison: '#00BCD4',
+  livree: '#4CAF50',
+  annulee: '#F44336',
+};
 
 const RestaurantCommandes = () => {
   const { t } = React.useContext(LanguageContext);
@@ -15,15 +35,16 @@ const RestaurantCommandes = () => {
   const [allCommandes, setAllCommandes] = useState([]);
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
-  /** '' = toutes les entreprises */
+  const [busy, setBusy] = useState(false);
   const [selectedRestaurant, setSelectedRestaurant] = useState('');
+  const [filter, setFilter] = useState('');
+  const [productFilter, setProductFilter] = useState('');
+  const [dateFrom, setDateFrom] = useState(() => defaultCommandeDateRange().dateFrom);
+  const [dateTo, setDateTo] = useState(() => defaultCommandeDateRange().dateTo);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
+      setLoading(true);
       const [restaurantsRes, commandesRes] = await Promise.all([
         axios.get(`${API_URL}/restaurants/my/restaurants`),
         axios.get(`${API_URL}/commandes/for-my-restaurants`),
@@ -35,22 +56,76 @@ const RestaurantCommandes = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const productOptions = useMemo(() => getCommandeProductOptions(allCommandes), [allCommandes]);
 
   const filteredCommandes = useMemo(() => {
-    const appOrders = selectedRestaurant
-      ? allCommandes.filter((c) => {
-          const rid = c.restaurant?._id || c.restaurant;
-          return rid && String(rid) === String(selectedRestaurant);
-        })
-      : allCommandes;
-
-    return [...appOrders].sort(
+    const list = filterRestaurantCommandes(allCommandes, {
+      dateFrom,
+      dateTo,
+      statut: filter || undefined,
+      productKey: productFilter || undefined,
+      restaurantId: selectedRestaurant || undefined,
+    });
+    return [...list].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
-  }, [allCommandes, selectedRestaurant]);
+  }, [allCommandes, selectedRestaurant, filter, productFilter, dateFrom, dateTo]);
+
+  const selectedRestaurantLabel =
+    restaurants.find((r) => String(r._id) === String(selectedRestaurant))?.nom ||
+    t('commandesPage', 'allStructures');
+
+  const selectedProductLabel =
+    productOptions.find((p) => p.key === productFilter)?.label || 'Tous les articles';
+
+  const exportData = useMemo(
+    () =>
+      prepareRestaurantCommandesExport(filteredCommandes, {
+        dateFrom,
+        dateTo,
+        statutFilter: filter,
+        statutLabel: filter ? COMMANDE_STATUT_LABELS[filter] || filter : 'Tous les statuts',
+        productFilter,
+        productLabel: selectedProductLabel,
+        restaurantFilter: selectedRestaurant,
+        restaurantLabel: selectedRestaurantLabel,
+      }),
+    [
+      filteredCommandes,
+      dateFrom,
+      dateTo,
+      filter,
+      productFilter,
+      selectedProductLabel,
+      selectedRestaurant,
+      selectedRestaurantLabel,
+    ]
+  );
+
+  const handleExportExcel = () => {
+    if (!exportData.orders.length) {
+      showError('Aucune commande à exporter pour cette période et ces filtres.');
+      return;
+    }
+    exportRestaurantCommandesToExcel(exportData);
+  };
+
+  const handleExportPdf = () => {
+    if (!exportData.orders.length) {
+      showError('Aucune commande à exporter pour cette période et ces filtres.');
+      return;
+    }
+    exportRestaurantCommandesToPdf(exportData);
+  };
 
   const updateStatut = async (commande, nouveauStatut) => {
+    setBusy(true);
     try {
       const isShop = commande.source === 'shop';
       const url = isShop
@@ -62,32 +137,14 @@ const RestaurantCommandes = () => {
     } catch (error) {
       console.error('Erreur:', error);
       showError(t('commandesPage', 'statusUpdateError'));
+    } finally {
+      setBusy(false);
     }
   };
 
-  const getStatutColor = (statut) => {
-    const colors = {
-      en_attente: '#FFA500',
-      confirmee: '#2196F3',
-      en_preparation: '#9C27B0',
-      en_livraison: '#00BCD4',
-      livree: '#4CAF50',
-      annulee: '#F44336',
-    };
-    return colors[statut] || '#666';
-  };
+  const getStatutColor = (statut) => STATUT_COLORS[statut] || '#666';
 
-  const getStatutLabel = (statut) => {
-    const labels = {
-      en_attente: 'En attente',
-      confirmee: 'Confirmée',
-      en_preparation: 'En préparation',
-      en_livraison: 'En livraison',
-      livree: 'Livrée',
-      annulee: 'Annulée',
-    };
-    return labels[statut] || statut;
-  };
+  const getStatutLabel = (statut) => COMMANDE_STATUT_LABELS[statut] || statut;
 
   const renderPhoneLink = (phone) => {
     const trimmed = typeof phone === 'string' ? phone.trim() : '';
@@ -112,43 +169,117 @@ const RestaurantCommandes = () => {
       <div className="commandes-content">
         <div className="commandes-header">
           <h1>Commandes</h1>
-          {restaurants.length > 0 && (
-            <select
-              className="restaurant-select"
-              value={selectedRestaurant}
-              onChange={(e) => setSelectedRestaurant(e.target.value)}
-            >
-              <option value="">{t('commandesPage', 'allStructures')}</option>
-              {restaurants.map((resto) => (
-                <option key={resto._id} value={resto._id}>
-                  {resto.nom}
-                </option>
-              ))}
-            </select>
-          )}
         </div>
 
-        {!selectedRestaurant ? (
-          <p className="commandes-shop-hint">
-            Les commandes <strong>Shop express</strong> sont gérées dans{' '}
+        <div className="commercial-card shop-commandes-filters">
+          <div className="commercial-filters">
+            <label>
+              Du
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+              />
+            </label>
+            <label>
+              Au
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+              />
+            </label>
+            {restaurants.length > 0 ? (
+              <label>
+                {t('commandesPage', 'structureLabel')}
+                <select
+                  value={selectedRestaurant}
+                  onChange={(e) => setSelectedRestaurant(e.target.value)}
+                >
+                  <option value="">{t('commandesPage', 'allStructures')}</option>
+                  {restaurants.map((resto) => (
+                    <option key={resto._id} value={resto._id}>
+                      {resto.nom}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            <label>
+              Statut
+              <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+                <option value="">Tous les statuts</option>
+                <option value="en_attente">En attente</option>
+                <option value="confirmee">Confirmée</option>
+                <option value="en_preparation">En préparation</option>
+                <option value="en_livraison">En livraison</option>
+                <option value="livree">Livrée</option>
+                <option value="annulee">Annulée</option>
+              </select>
+            </label>
+            <label>
+              Article
+              <select value={productFilter} onChange={(e) => setProductFilter(e.target.value)}>
+                <option value="">Tous les articles</option>
+                {productOptions.map((p) => (
+                  <option key={p.key} value={p.key}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <button
               type="button"
-              className="commandes-shop-link"
-              onClick={() => navigate('/dashboard/commercial-commandes')}
+              className="commercial-btn commercial-btn--outline"
+              onClick={fetchData}
+              disabled={busy}
             >
-              Commandes Shop
-            </button>{' '}
-            (même vue admin et commercial, statuts synchronisés).
-          </p>
-        ) : null}
+              Actualiser
+            </button>
+          </div>
+
+          <div className="shop-commandes-export-bar">
+            <p className="shop-commandes-export-summary">
+              <strong>{exportData.orderCount}</strong> commande{exportData.orderCount > 1 ? 's' : ''}{' '}
+              · Total {formatPrice(exportData.totalAmount)}
+            </p>
+            <div className="commercial-filters" style={{ marginBottom: 0 }}>
+              <button
+                type="button"
+                className="commercial-btn commercial-btn--primary"
+                onClick={handleExportExcel}
+                disabled={!exportData.orders.length}
+              >
+                Exporter Excel
+              </button>
+              <button
+                type="button"
+                className="commercial-btn commercial-btn--outline"
+                onClick={handleExportPdf}
+                disabled={!exportData.orders.length}
+              >
+                Exporter PDF
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <p className="commandes-shop-hint">
+          Filtrez par <strong>date de commande</strong>, entreprise, statut et article, puis exportez le
+          détail en PDF ou Excel. Les commandes <strong>Shop express</strong> sont gérées dans{' '}
+          <button
+            type="button"
+            className="commandes-shop-link"
+            onClick={() => navigate('/dashboard/commercial-commandes')}
+          >
+            Commandes Shop
+          </button>{' '}
+          (même filtres et exports).
+        </p>
 
         {filteredCommandes.length === 0 ? (
           <div className="no-commandes">
-            <p>
-              {selectedRestaurant
-                ? t('commandesPage', 'noOrdersFiltered')
-                : t('commandesPage', 'noOrders')}
-            </p>
+            <p>Aucune commande pour cette période avec ces filtres.</p>
           </div>
         ) : (
           <div className="commandes-list">
@@ -172,7 +303,11 @@ const RestaurantCommandes = () => {
                             <>
                               {' '}
                               ·{' '}
-                              <Link to={`/shop/${commande.shopLine.slug}`} target="_blank" rel="noopener noreferrer">
+                              <Link
+                                to={`/shop/${commande.shopLine.slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
                                 Voir la fiche
                               </Link>
                             </>
@@ -324,6 +459,7 @@ const RestaurantCommandes = () => {
                         <button
                           type="button"
                           className="btn btn-primary"
+                          disabled={busy}
                           onClick={() => updateStatut(commande, 'confirmee')}
                         >
                           Confirmer
@@ -331,6 +467,7 @@ const RestaurantCommandes = () => {
                         <button
                           type="button"
                           className="btn btn-outline"
+                          disabled={busy}
                           onClick={() => updateStatut(commande, 'annulee')}
                         >
                           Annuler
@@ -341,6 +478,7 @@ const RestaurantCommandes = () => {
                       <button
                         type="button"
                         className="btn btn-primary"
+                        disabled={busy}
                         onClick={() => updateStatut(commande, 'en_preparation')}
                       >
                         En préparation
@@ -350,6 +488,7 @@ const RestaurantCommandes = () => {
                       <button
                         type="button"
                         className="btn btn-primary"
+                        disabled={busy}
                         onClick={() => updateStatut(commande, 'en_livraison')}
                       >
                         En livraison
@@ -359,6 +498,7 @@ const RestaurantCommandes = () => {
                       <button
                         type="button"
                         className="btn btn-primary"
+                        disabled={busy}
                         onClick={() => updateStatut(commande, 'livree')}
                       >
                         Marquer comme livrée

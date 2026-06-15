@@ -61,9 +61,71 @@ function orderDayKey(order) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: SHOP_ORDER_TZ }).format(d);
 }
 
-export function filterShopOrders(orders, { dateFrom, dateTo, statut } = {}) {
+export function shopProductKey(order) {
+  const id = order?.shopProduct?._id || order?.shopProduct;
+  if (id) return String(id);
+  if (order?.slug) return `slug:${order.slug}`;
+  if (order?.productName) return `name:${order.productName}`;
+  return '';
+}
+
+export function catalogProductKey(product) {
+  if (product?._id) return String(product._id);
+  if (product?.name) return `name:${product.name}`;
+  return '';
+}
+
+/** Options filtre produit : catalogue Shop + produits vus uniquement dans les commandes. */
+export function getShopProductFilterOptions(catalogProducts, orders) {
+  const map = new Map();
+  const catalogNames = new Set();
+
+  for (const product of catalogProducts || []) {
+    const key = catalogProductKey(product);
+    if (!key) continue;
+    const label = product.name || 'Produit';
+    map.set(key, { key, label, fromOrders: !!product.fromOrders });
+    catalogNames.add(label.toLowerCase());
+  }
+
+  for (const order of orders || []) {
+    const name = String(order.productName || '').trim();
+    if (name && catalogNames.has(name.toLowerCase())) continue;
+    const key = shopProductKey(order);
+    if (!key || map.has(key)) continue;
+    map.set(key, {
+      key,
+      label: name || order.slug || 'Produit',
+      fromOrders: true,
+    });
+  }
+
+  return [...map.values()].sort((a, b) => a.label.localeCompare(b.label, 'fr'));
+}
+
+/** @deprecated Préférer getShopProductFilterOptions */
+export function getShopProductOptions(orders) {
+  return getShopProductFilterOptions([], orders);
+}
+
+function matchesShopProduct(order, productKey) {
+  if (!productKey) return true;
+  if (productKey.startsWith('name:')) {
+    const name = productKey.slice(5);
+    return String(order.productName || '').toLowerCase() === name.toLowerCase();
+  }
+  if (productKey.startsWith('slug:')) {
+    return String(order.slug || '').toLowerCase() === productKey.slice(5).toLowerCase();
+  }
+  const productId = order?.shopProduct?._id || order?.shopProduct;
+  if (productId && String(productId) === productKey) return true;
+  return shopProductKey(order) === productKey;
+}
+
+export function filterShopOrders(orders, { dateFrom, dateTo, statut, productKey } = {}) {
   return (orders || []).filter((o) => {
     if (statut && o.statut !== statut) return false;
+    if (!matchesShopProduct(o, productKey)) return false;
     const key = orderDayKey(o);
     if (!key) return false;
     if (dateFrom && key < dateFrom) return false;
@@ -125,6 +187,8 @@ export function prepareShopOrdersExport(orders, meta = {}) {
     dateTo: meta.dateTo || '',
     statutFilter: meta.statutFilter || '',
     statutLabel: meta.statutLabel || 'Tous les statuts',
+    productFilter: meta.productFilter || '',
+    productLabel: meta.productLabel || 'Tous les produits',
     orders: rows,
     orderCount: rows.length,
     totalSubtotal,
@@ -220,7 +284,7 @@ export function exportShopOrdersToExcel(exportData) {
 </head>
 <body>
   <h1>RAPIDO — Commandes Shop</h1>
-  <p class="meta">Période : ${period} · Statut : ${escapeCsv(exportData.statutLabel)} · ${exportData.orderCount} commande(s)</p>
+  <p class="meta">Période : ${period} · Statut : ${escapeCsv(exportData.statutLabel)} · Produit : ${escapeCsv(exportData.productLabel)} · ${exportData.orderCount} commande(s)</p>
   <table>
     <thead><tr>${EXCEL_HEADERS.map((h) => `<th>${h}</th>`).join('')}</tr></thead>
     <tbody>
@@ -294,7 +358,7 @@ export function exportShopOrdersToPdf(exportData) {
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(9);
   setText(BRAND.goldLight);
-  pdf.text(`Export détaillé · ${exportData.statutLabel}`, margin, 19);
+  pdf.text(`Export détaillé · ${exportData.statutLabel} · ${exportData.productLabel}`, margin, 19);
 
   pdf.setFontSize(8);
   pdf.text(

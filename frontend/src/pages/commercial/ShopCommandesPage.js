@@ -5,6 +5,7 @@ import ShopOrderSpecsModal from '../../components/commercial/ShopOrderSpecsModal
 import { useModal } from '../../context/ModalContext';
 import {
   confirmCommercialOrder,
+  fetchPointsProducts,
   fetchShopOrders,
   formatPrice,
   updateOrderSpecifications,
@@ -14,6 +15,7 @@ import {
   exportShopOrdersToExcel,
   exportShopOrdersToPdf,
   filterShopOrders,
+  getShopProductFilterOptions,
   prepareShopOrdersExport,
   SHOP_STATUT_LABELS,
 } from '../../utils/exportShopOrders';
@@ -66,8 +68,10 @@ function renderPhoneLink(phone) {
 export default function ShopCommandesPage() {
   const { showSuccess, showError } = useModal();
   const [orders, setOrders] = useState([]);
+  const [catalogProducts, setCatalogProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
+  const [productFilter, setProductFilter] = useState('');
   const [dateFrom, setDateFrom] = useState(() => defaultDateRange().dateFrom);
   const [dateTo, setDateTo] = useState(() => defaultDateRange().dateTo);
   const [specsOrder, setSpecsOrder] = useState(null);
@@ -76,7 +80,12 @@ export default function ShopCommandesPage() {
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      setOrders(await fetchShopOrders());
+      const [ordersList, productsList] = await Promise.all([
+        fetchShopOrders(),
+        fetchPointsProducts().catch(() => []),
+      ]);
+      setOrders(ordersList);
+      setCatalogProducts(Array.isArray(productsList) ? productsList : []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -88,12 +97,25 @@ export default function ShopCommandesPage() {
     load();
   }, [load]);
 
+  const productOptions = useMemo(
+    () => getShopProductFilterOptions(catalogProducts, orders),
+    [catalogProducts, orders]
+  );
+
   const filteredOrders = useMemo(() => {
-    const list = filterShopOrders(orders, { dateFrom, dateTo, statut: filter || undefined });
+    const list = filterShopOrders(orders, {
+      dateFrom,
+      dateTo,
+      statut: filter || undefined,
+      productKey: productFilter || undefined,
+    });
     return [...list].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
-  }, [orders, filter, dateFrom, dateTo]);
+  }, [orders, filter, productFilter, dateFrom, dateTo]);
+
+  const selectedProductLabel =
+    productOptions.find((p) => p.key === productFilter)?.label || 'Tous les produits';
 
   const exportData = useMemo(
     () =>
@@ -102,8 +124,10 @@ export default function ShopCommandesPage() {
         dateTo,
         statutFilter: filter,
         statutLabel: filter ? STATUT_LABELS[filter] || filter : 'Tous les statuts',
+        productFilter,
+        productLabel: selectedProductLabel,
       }),
-    [filteredOrders, dateFrom, dateTo, filter]
+    [filteredOrders, dateFrom, dateTo, filter, productFilter, selectedProductLabel]
   );
 
   const handleExportExcel = () => {
@@ -202,6 +226,18 @@ export default function ShopCommandesPage() {
                   <option value="annulee">Annulée</option>
                 </select>
               </label>
+              <label>
+                Produit
+                <select value={productFilter} onChange={(e) => setProductFilter(e.target.value)}>
+                  <option value="">Tous les produits</option>
+                  {productOptions.map((p) => (
+                    <option key={p.key} value={p.key}>
+                      {p.label}
+                      {p.fromOrders ? ' (hors catalogue)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <button
                 type="button"
                 className="commercial-btn commercial-btn--outline"
@@ -239,13 +275,16 @@ export default function ShopCommandesPage() {
           </div>
 
           <p className="commandes-shop-hint">
-            Filtrez par <strong>date de commande</strong> et statut, puis exportez le détail complet en
+            Filtrez par <strong>date de commande</strong>, statut et produit, puis exportez le détail complet en
             PDF ou Excel. Même processus opérationnel : confirmer, préparation, livraison, livrée.
           </p>
 
           {filteredOrders.length === 0 ? (
             <div className="no-commandes">
-              <p>Aucune commande Shop pour cette période{filter ? ' et ce statut' : ''}.</p>
+              <p>
+                Aucune commande Shop pour cette période
+                {filter || productFilter ? ' avec ces filtres' : ''}.
+              </p>
             </div>
           ) : (
             <div className="commandes-list">
