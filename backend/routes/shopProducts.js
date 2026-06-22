@@ -246,6 +246,36 @@ router.patch('/:id/closure', auth, isRestaurant, async (req, res) => {
   try {
     const product = await ShopProduct.findById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Produit introuvable' });
+
+    if (req.body.openNow === true || req.body.openNow === 'true') {
+      product.shopClosure = {
+        enabled: false,
+        closedFrom: null,
+        closedUntil: null,
+        message: String(product.shopClosure?.message || '').trim().slice(0, 500),
+      };
+      await product.save();
+      return res.json(serializeShopProduct(product));
+    }
+
+    if (req.body.closeNow === true || req.body.closeNow === 'true') {
+      const until = req.body.closedUntil ? new Date(req.body.closedUntil) : null;
+      if (!until || Number.isNaN(until.getTime())) {
+        return res.status(400).json({ message: 'Indiquez l’heure de réouverture' });
+      }
+      if (until.getTime() <= Date.now()) {
+        return res.status(400).json({ message: 'La réouverture doit être dans le futur' });
+      }
+      product.shopClosure = {
+        enabled: true,
+        closedFrom: new Date(),
+        closedUntil: until,
+        message: String(req.body.message ?? product.shopClosure?.message ?? '').trim().slice(0, 500),
+      };
+      await product.save();
+      return res.json(serializeShopProduct(product));
+    }
+
     const closureErr = applyShopClosureFromBody(product, req.body);
     if (closureErr) return res.status(400).json({ message: closureErr });
     await product.save();

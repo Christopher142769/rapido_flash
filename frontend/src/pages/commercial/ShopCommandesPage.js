@@ -20,6 +20,8 @@ import {
   SHOP_STATUT_LABELS,
 } from '../../utils/exportShopOrders';
 import { formatDeliveryDateShort } from '../../utils/shopDeliveryDate';
+import CommandesFilterStats from '../../components/commercial/CommandesFilterStats';
+import { sumShopOrdersQuantity } from '../../utils/commandesFilterStats';
 import '../restaurant/RestaurantCommandes.css';
 import './commercial.css';
 
@@ -117,6 +119,8 @@ export default function ShopCommandesPage() {
   const selectedProductLabel =
     productOptions.find((p) => p.key === productFilter)?.label || 'Tous les produits';
 
+  const selectedStatutLabel = filter ? STATUT_LABELS[filter] || filter : 'Tous les statuts';
+
   const exportData = useMemo(
     () =>
       prepareShopOrdersExport(filteredOrders, {
@@ -128,6 +132,15 @@ export default function ShopCommandesPage() {
         productLabel: selectedProductLabel,
       }),
     [filteredOrders, dateFrom, dateTo, filter, productFilter, selectedProductLabel]
+  );
+
+  const filterStats = useMemo(
+    () => ({
+      orderCount: filteredOrders.length,
+      totalQuantity: sumShopOrdersQuantity(filteredOrders),
+      totalAmount: exportData.totalAmount,
+    }),
+    [filteredOrders, exportData.totalAmount]
   );
 
   const handleExportExcel = () => {
@@ -247,6 +260,16 @@ export default function ShopCommandesPage() {
                 Actualiser
               </button>
             </div>
+
+            <CommandesFilterStats
+              orderCount={filterStats.orderCount}
+              totalQuantity={filterStats.totalQuantity}
+              totalAmount={filterStats.totalAmount}
+              statutLabel={selectedStatutLabel}
+              productLabel={selectedProductLabel}
+              formatPrice={formatPrice}
+              quantityLabel="Quantité produits"
+            />
 
             <div className="shop-commandes-export-bar">
               <p className="shop-commandes-export-summary">

@@ -449,6 +449,20 @@
   margin-top: 14px;
 }
 
+.shop-dash-btn--open {
+  background: linear-gradient(135deg, #2e7d32, #43a047);
+  border-color: #2e7d32;
+}
+
+.shop-dash-btn--open:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.shop-dash-btn--close {
+  border-color: rgba(244, 67, 54, 0.35);
+  color: #c62828;
+}
+
 .shop-dash-list-title {
   margin: 0 0 18px;
   font-family: var(--font-display), sans-serif;

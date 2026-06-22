@@ -40,6 +40,8 @@ import {
   FaShoppingBag,
   FaEye,
   FaStore,
+  FaDoorOpen,
+  FaLock,
 } from 'react-icons/fa';
 import '../../components/shop/ShopImageUploadZone.css';
 import './ShopDashboard.css';
@@ -377,6 +379,58 @@ export default function ShopDashboard() {
       }));
     } catch (err) {
       alert(err.response?.data?.message || 'Erreur');
+    } finally {
+      setSchedulingClosure(false);
+    }
+  };
+
+  const openShopNow = async () => {
+    if (!editingId) {
+      alert('Enregistrez d’abord le produit.');
+      return;
+    }
+    setSchedulingClosure(true);
+    try {
+      await patchClosureAndRefresh(editingId, { openNow: true });
+      setForm((f) => ({
+        ...f,
+        shopClosure: { ...f.shopClosure, enabled: false, closedFrom: '', closedUntil: '' },
+      }));
+      alert('Boutique ouverte. Les clients peuvent commander.');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Impossible d’ouvrir la boutique.');
+    } finally {
+      setSchedulingClosure(false);
+    }
+  };
+
+  const closeShopNow = async () => {
+    if (!form.shopClosure.closedUntil) {
+      alert('Indiquez l’heure de réouverture avant de fermer la boutique.');
+      return;
+    }
+    const until = new Date(form.shopClosure.closedUntil);
+    if (Number.isNaN(until.getTime()) || until.getTime() <= Date.now()) {
+      alert('L’heure de réouverture doit être dans le futur.');
+      return;
+    }
+    if (!editingId) {
+      alert('Enregistrez d’abord le produit.');
+      return;
+    }
+    setSchedulingClosure(true);
+    try {
+      const payload = closurePayloadFromForm({ ...form.shopClosure, enabled: true });
+      await patchClosureAndRefresh(editingId, {
+        closeNow: true,
+        closedUntil: payload.closedUntil,
+        message: payload.message,
+      });
+      const res = await axios.get(`${API_URL}/shop-products/${editingId}`, authHeaders);
+      if (res.data) fillFormFromProduct(res.data);
+      alert('Boutique fermée. Réouverture automatique à l’heure prévue.');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Impossible de fermer la boutique.');
     } finally {
       setSchedulingClosure(false);
     }
@@ -1193,6 +1247,25 @@ export default function ShopDashboard() {
                 >
                   {schedulingClosure ? 'Enregistrement…' : 'Programmer la fermeture'}
                 </button>
+                {formClosurePreview.isShopClosed ? (
+                  <button
+                    type="button"
+                    className="shop-dash-btn primary shop-dash-btn--open"
+                    disabled={schedulingClosure || saving || !editingId}
+                    onClick={() => void openShopNow()}
+                  >
+                    <FaDoorOpen aria-hidden /> Ouvrir la boutique maintenant
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="shop-dash-btn secondary shop-dash-btn--close"
+                    disabled={schedulingClosure || saving || !editingId}
+                    onClick={() => void closeShopNow()}
+                  >
+                    <FaLock aria-hidden /> Fermer la boutique maintenant
+                  </button>
+                )}
                 {form.shopClosure.enabled ? (
                   <button
                     type="button"
@@ -1200,7 +1273,7 @@ export default function ShopDashboard() {
                     disabled={schedulingClosure || saving}
                     onClick={() => void cancelClosure()}
                   >
-                    Annuler la fermeture
+                    Annuler la programmation
                   </button>
                 ) : null}
               </div>

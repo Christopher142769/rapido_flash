@@ -291,6 +291,17 @@
   font-size: 1.05rem;
 }
 
+.commandes-filter-stats {
+  margin: 1rem 0 0;
+}
+
+.commandes-filter-stats-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: var(--rf-text-muted, #888);
+  line-height: 1.3;
+}
+
 .commercial-order-card {
   border: 1px solid #eee;
   border-radius: 12px;

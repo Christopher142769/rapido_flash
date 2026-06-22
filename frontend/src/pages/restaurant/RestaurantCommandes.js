@@ -16,6 +16,8 @@ import {
 } from '../../utils/exportRestaurantCommandes';
 import '../commercial/commercial.css';
 import './RestaurantCommandes.css';
+import CommandesFilterStats from '../../components/commercial/CommandesFilterStats';
+import { sumRestaurantCommandesQuantity } from '../../utils/commandesFilterStats';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -84,6 +86,8 @@ const RestaurantCommandes = () => {
   const selectedProductLabel =
     productOptions.find((p) => p.key === productFilter)?.label || 'Tous les articles';
 
+  const selectedStatutLabel = filter ? COMMANDE_STATUT_LABELS[filter] || filter : 'Tous les statuts';
+
   const exportData = useMemo(
     () =>
       prepareRestaurantCommandesExport(filteredCommandes, {
@@ -106,6 +110,15 @@ const RestaurantCommandes = () => {
       selectedRestaurant,
       selectedRestaurantLabel,
     ]
+  );
+
+  const filterStats = useMemo(
+    () => ({
+      orderCount: filteredCommandes.length,
+      totalQuantity: sumRestaurantCommandesQuantity(filteredCommandes),
+      totalAmount: exportData.totalAmount,
+    }),
+    [filteredCommandes, exportData.totalAmount]
   );
 
   const handleExportExcel = () => {
@@ -237,6 +250,16 @@ const RestaurantCommandes = () => {
               Actualiser
             </button>
           </div>
+
+          <CommandesFilterStats
+            orderCount={filterStats.orderCount}
+            totalQuantity={filterStats.totalQuantity}
+            totalAmount={filterStats.totalAmount}
+            statutLabel={selectedStatutLabel}
+            productLabel={selectedProductLabel}
+            formatPrice={formatPrice}
+            quantityLabel="Quantité articles"
+          />
 
           <div className="shop-commandes-export-bar">
             <p className="shop-commandes-export-summary">
