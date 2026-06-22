@@ -5,6 +5,7 @@ const upload = require('../middleware/uploadShopProduct');
 const { uniqueSlug } = require('../utils/slugify');
 const { serializeShopProduct } = require('../utils/shopPromo');
 const { buildShopClosureFromBody } = require('../utils/shopClosure');
+const { buildDailyOrderLimitFromBody } = require('../utils/shopOrderLimit');
 const { normalizeCopySections, normalizeGalleryImages } = require('../utils/normalizeShopCopySections');
 const { normalizeShopQuantityUnit } = require('../utils/shopQuantityUnit');
 
@@ -51,6 +52,14 @@ function buildPromoFromBody(body) {
   };
 }
 
+function applyDailyOrderLimitFromBody(product, body) {
+  if (body.dailyOrderLimit == null) return null;
+  const raw = parseJsonField(body.dailyOrderLimit, body.dailyOrderLimit);
+  const built = buildDailyOrderLimitFromBody({ dailyOrderLimit: raw });
+  if (built.error) return built.error;
+  product.dailyOrderLimit = built.value;
+  return null;
+}
 function applyShopClosureFromBody(product, body) {
   if (body.shopClosure == null) return null;
   const raw = parseJsonField(body.shopClosure, body.shopClosure);
@@ -67,7 +76,7 @@ router.get('/public/:slug', async (req, res) => {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     const product = await ShopProduct.findOne({ slug: req.params.slug.toLowerCase() });
     if (!product) return res.status(404).json({ message: 'Produit introuvable' });
-    const data = serializeShopProduct(product, { publicView: true });
+    const data = await serializeShopProduct(product, { publicView: true });
     if (!data) return res.status(404).json({ message: 'Produit non publié' });
     res.json(data);
   } catch (err) {
@@ -80,7 +89,8 @@ router.get('/public/:slug', async (req, res) => {
 router.get('/', auth, isRestaurant, async (req, res) => {
   try {
     const products = await ShopProduct.find().sort({ sortOrder: 1, createdAt: -1 });
-    res.json(products.map((p) => serializeShopProduct(p)));
+    const serialized = await Promise.all(products.map((p) => serializeShopProduct(p)));
+    res.json(serialized);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -103,7 +113,7 @@ router.get('/:id', auth, isRestaurant, async (req, res) => {
   try {
     const product = await ShopProduct.findById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Produit introuvable' });
-    res.json(serializeShopProduct(product));
+    res.json(await serializeShopProduct(product));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -152,9 +162,11 @@ router.post('/', auth, isRestaurant, upload.fields(upload.uploadShopFields), asy
 
     const closureErr = applyShopClosureFromBody(product, req.body);
     if (closureErr) return res.status(400).json({ message: closureErr });
+    const limitErr = applyDailyOrderLimitFromBody(product, req.body);
+    if (limitErr) return res.status(400).json({ message: limitErr });
 
     await product.save();
-    res.status(201).json(serializeShopProduct(product));
+    res.status(201).json(await serializeShopProduct(product));
   } catch (err) {
     if (err.code === 11000) return res.status(400).json({ message: 'Ce slug existe déjà' });
     res.status(500).json({ message: err.message });
@@ -198,6 +210,8 @@ router.put('/:id', auth, isRestaurant, upload.fields(upload.uploadShopFields), a
     if (req.body.promo != null) product.promo = buildPromoFromBody(req.body);
     const closureErr = applyShopClosureFromBody(product, req.body);
     if (closureErr) return res.status(400).json({ message: closureErr });
+    const limitErr = applyDailyOrderLimitFromBody(product, req.body);
+    if (limitErr) return res.status(400).json({ message: limitErr });
     if (req.body.whatsappNumber != null) product.whatsappNumber = req.body.whatsappNumber;
     if (req.body.contactPhone != null) product.contactPhone = req.body.contactPhone;
     if (req.body.ctaLabel != null) product.ctaLabel = req.body.ctaLabel;
@@ -220,7 +234,7 @@ router.put('/:id', auth, isRestaurant, upload.fields(upload.uploadShopFields), a
     product.mainImage = gallery.mainImage;
 
     await product.save();
-    res.json(serializeShopProduct(product));
+    res.json(await serializeShopProduct(product));
   } catch (err) {
     if (err.code === 11000) return res.status(400).json({ message: 'Ce slug existe déjà' });
     res.status(500).json({ message: err.message });
@@ -236,7 +250,7 @@ router.patch('/:id/promo', auth, isRestaurant, async (req, res) => {
       product.published = !!req.body.published;
     }
     await product.save();
-    res.json(serializeShopProduct(product));
+    res.json(await serializeShopProduct(product));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -252,7 +266,7 @@ router.patch('/:id/closure', auth, isRestaurant, async (req, res) => {
       product.shopClosure.manualOverride = 'open';
       product.shopClosure.message = String(product.shopClosure.message || '').trim().slice(0, 500);
       await product.save();
-      return res.json(serializeShopProduct(product));
+      return res.json(await serializeShopProduct(product));
     }
 
     if (req.body.closeNow === true || req.body.closeNow === 'true') {
@@ -264,20 +278,20 @@ router.patch('/:id/closure', auth, isRestaurant, async (req, res) => {
         .trim()
         .slice(0, 500);
       await product.save();
-      return res.json(serializeShopProduct(product));
+      return res.json(await serializeShopProduct(product));
     }
 
     if (req.body.clearOverride === true || req.body.clearOverride === 'true') {
       product.shopClosure = product.shopClosure || {};
       product.shopClosure.manualOverride = null;
       await product.save();
-      return res.json(serializeShopProduct(product));
+      return res.json(await serializeShopProduct(product));
     }
 
     const closureErr = applyShopClosureFromBody(product, req.body);
     if (closureErr) return res.status(400).json({ message: closureErr });
     await product.save();
-    res.json(serializeShopProduct(product));
+    res.json(await serializeShopProduct(product));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

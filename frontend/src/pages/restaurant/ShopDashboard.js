@@ -14,9 +14,12 @@ import {
   closurePayloadFromForm,
   formatClosureDateTime,
   formatDailyTime,
-  getShopClosureState,
   isoToDailyTime,
 } from '../../utils/shopClosure';
+import {
+  dailyOrderLimitPayloadFromForm,
+  getShopAvailabilityState,
+} from '../../utils/shopOrderLimit';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
 import ShopCopyBlockEditor from '../../components/shop/ShopCopyBlockEditor';
 import ShopFormSectionHead from '../../components/shop/ShopFormSectionHead';
@@ -80,6 +83,11 @@ const emptyForm = () => ({
     message: '',
     manualOverride: null,
   },
+  dailyOrderLimit: {
+    enabled: false,
+    maxOrders: 50,
+  },
+  ordersTodayPreview: 0,
   whatsappNumber: '',
   contactPhone: '',
   ctaLabel: 'Commander maintenant',
@@ -151,6 +159,7 @@ function buildProductPayload(f, galleryList) {
       promoPayloadFromForm(f.promo.active ? applyBoostDefaults(f.promo, f.promo.boostHours) : f.promo)
     ),
     shopClosure: JSON.stringify(closurePayloadFromForm(f.shopClosure)),
+    dailyOrderLimit: JSON.stringify(dailyOrderLimitPayloadFromForm(f.dailyOrderLimit)),
     whatsappNumber: f.whatsappNumber,
     contactPhone: f.contactPhone,
     ctaLabel: f.ctaLabel,
@@ -255,6 +264,11 @@ export default function ShopDashboard() {
         message: p.shopClosure?.message || '',
         manualOverride: p.shopClosure?.manualOverride || null,
       },
+      dailyOrderLimit: {
+        enabled: !!p.dailyOrderLimit?.enabled,
+        maxOrders: p.dailyOrderLimit?.maxOrders ?? 50,
+      },
+      ordersTodayPreview: p.ordersToday ?? 0,
       whatsappNumber: p.whatsappNumber || '',
       contactPhone: p.contactPhone || '',
       ctaLabel: p.ctaLabel || 'Commander maintenant',
@@ -310,9 +324,9 @@ export default function ShopDashboard() {
     [form.basePrice, form.published, form.promo]
   );
 
-  const formClosurePreview = useMemo(
+  const formAvailabilityPreview = useMemo(
     () =>
-      getShopClosureState({
+      getShopAvailabilityState({
         shopClosure: {
           enabled: form.shopClosure.enabled,
           dailyCloseTime: form.shopClosure.dailyCloseTime,
@@ -320,8 +334,10 @@ export default function ShopDashboard() {
           message: form.shopClosure.message,
           manualOverride: form.shopClosure.manualOverride,
         },
+        dailyOrderLimit: form.dailyOrderLimit,
+        ordersToday: form.ordersTodayPreview,
       }),
-    [form.shopClosure]
+    [form.shopClosure, form.dailyOrderLimit, form.ordersTodayPreview]
   );
 
   const patchClosureAndRefresh = useCallback(
@@ -1213,23 +1229,23 @@ export default function ShopDashboard() {
                 Les boutons manuels servent uniquement aux cas exceptionnels.
               </p>
 
-              {formClosurePreview.manualOverride === 'open' ? (
+              {formAvailabilityPreview.manualOverride === 'open' ? (
                 <p className="shop-dash-closure-status shop-dash-closure-status--pending">
                   Ouverture <strong>exceptionnelle</strong> — l’horaire automatique reprendra à la
-                  prochaine fermeture ({formatDailyTime(formClosurePreview.dailyCloseTime)}).
+                  prochaine fermeture ({formatDailyTime(formAvailabilityPreview.dailyCloseTime)}).
                 </p>
-              ) : formClosurePreview.isShopClosed ? (
+              ) : formAvailabilityPreview.isShopClosed ? (
                 <p className="shop-dash-closure-status shop-dash-closure-status--closed">
                   Boutique <strong>fermée</strong> — réouverture{' '}
-                  {formClosurePreview.closureReopensAt
-                    ? formatClosureDateTime(formClosurePreview.closureReopensAt)
-                    : formatDailyTime(formClosurePreview.dailyOpenTime)}
+                  {formAvailabilityPreview.closureReopensAt
+                    ? formatClosureDateTime(formAvailabilityPreview.closureReopensAt)
+                    : formatDailyTime(formAvailabilityPreview.dailyOpenTime)}
                 </p>
               ) : form.shopClosure.enabled ? (
                 <p className="shop-dash-closure-status shop-dash-closure-status--pending">
                   Boutique <strong>ouverte</strong> — fermeture automatique à{' '}
-                  {formatDailyTime(formClosurePreview.dailyCloseTime)} · réouverture à{' '}
-                  {formatDailyTime(formClosurePreview.dailyOpenTime)}
+                  {formatDailyTime(formAvailabilityPreview.dailyCloseTime)} · réouverture à{' '}
+                  {formatDailyTime(formAvailabilityPreview.dailyOpenTime)}
                 </p>
               ) : null}
 
@@ -1288,7 +1304,7 @@ export default function ShopDashboard() {
                 >
                   {schedulingClosure ? 'Enregistrement…' : 'Enregistrer les horaires quotidiens'}
                 </button>
-                {formClosurePreview.isShopClosed ? (
+                {formAvailabilityPreview.isShopClosed ? (
                   <button
                     type="button"
                     className="shop-dash-btn primary shop-dash-btn--open"
@@ -1307,7 +1323,7 @@ export default function ShopDashboard() {
                     <FaLock aria-hidden /> Fermer la boutique maintenant
                   </button>
                 )}
-                {formClosurePreview.manualOverride ? (
+                {formAvailabilityPreview.manualOverride ? (
                   <button
                     type="button"
                     className="shop-dash-btn secondary"
@@ -1328,6 +1344,73 @@ export default function ShopDashboard() {
                   </button>
                 ) : null}
               </div>
+            </div>
+
+            <div className="shop-dash-closure-box shop-dash-order-limit-box">
+              <h3 className="shop-dash-closure-title">
+                <FaShoppingBag aria-hidden /> Quota de commandes journalier
+              </h3>
+              <p className="shop-dash-hint">
+                Définissez le nombre maximum de commandes acceptées chaque jour. Quand le quota est
+                atteint, la boutique se ferme automatiquement (même avant l’heure de fermeture) et
+                rouvre à l’heure habituelle le lendemain. Le décompte s’affiche en temps réel sur la
+                page boutique.
+              </p>
+
+              {form.dailyOrderLimit.enabled ? (
+                <p className="shop-dash-closure-status shop-dash-closure-status--pending">
+                  Aujourd’hui :{' '}
+                  <strong>
+                    {form.ordersTodayPreview} / {form.dailyOrderLimit.maxOrders}
+                  </strong>{' '}
+                  commandes
+                  {formAvailabilityPreview.isOrderLimitReached ? (
+                    <> — <strong>quota atteint</strong></>
+                  ) : (
+                    <> — il reste <strong>{formAvailabilityPreview.ordersRemaining}</strong></>
+                  )}
+                </p>
+              ) : null}
+
+              <label className="shop-dash-check shop-dash-check--wide">
+                <input
+                  type="checkbox"
+                  checked={form.dailyOrderLimit.enabled}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      dailyOrderLimit: { ...f.dailyOrderLimit, enabled: e.target.checked },
+                    }))
+                  }
+                />
+                Activer le quota journalier de commandes
+              </label>
+
+              {form.dailyOrderLimit.enabled ? (
+                <div className="shop-dash-grid shop-dash-grid--limit">
+                  <div>
+                    <label>Nombre de commandes max / jour</label>
+                    <input
+                      className="shop-dash-input"
+                      type="number"
+                      min="1"
+                      max="9999"
+                      value={form.dailyOrderLimit.maxOrders}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          dailyOrderLimit: { ...f.dailyOrderLimit, maxOrders: e.target.value },
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
+              ) : null}
+
+              <p className="shop-dash-hint shop-dash-hint--inline">
+                Enregistrez la fiche produit pour appliquer le quota. Le compteur repart chaque jour
+                à minuit (fuseau Bénin).
+              </p>
             </div>
           </div>
           </section>

@@ -33,8 +33,9 @@ export async function submitShopOrderToApi(order) {
   return data;
 }
 
+/** Texte court (WhatsApp, exports) — livraison J+1. */
 export const SHOP_DELIVERY_NOTE =
-  "Note : Assurez-vous d'être prêt à vous faire livrer dans les 24h qui suivent la commande avant de passer commande.";
+  'NB : commande aujourd’hui, livraison demain sous 24 h. Soyez disponible à l’adresse indiquée.';
 
 export function emptyCustomerForm() {
   return {

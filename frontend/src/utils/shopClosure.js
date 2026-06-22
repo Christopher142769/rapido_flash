@@ -51,7 +51,7 @@ function msUntilNextDailyTime(now, timeHHmm) {
   return diffMin * 60 * 1000;
 }
 
-function nextDailyTimeIso(now, timeHHmm) {
+export function nextDailyTimeIso(now, timeHHmm) {
   const ms = msUntilNextDailyTime(now, timeHHmm);
   if (!ms) return null;
   return new Date(now.getTime() + ms).toISOString();

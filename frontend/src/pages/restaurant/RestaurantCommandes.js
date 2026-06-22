@@ -498,14 +498,35 @@ const RestaurantCommandes = () => {
                       </>
                     )}
                     {commande.statut === 'confirmee' && (
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        disabled={busy}
-                        onClick={() => updateStatut(commande, 'en_preparation')}
-                      >
-                        En préparation
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          disabled={busy}
+                          onClick={() => updateStatut(commande, 'en_preparation')}
+                        >
+                          En préparation
+                        </button>
+                        {isShop ? (
+                          <button
+                            type="button"
+                            className="btn btn-outline"
+                            disabled={busy}
+                            onClick={() => {
+                              if (
+                                !window.confirm(
+                                  'Annuler la confirmation de cette commande ? Elle repassera en attente.'
+                                )
+                              ) {
+                                return;
+                              }
+                              updateStatut(commande, 'en_attente');
+                            }}
+                          >
+                            Annuler la confirmation
+                          </button>
+                        ) : null}
+                      </>
                     )}
                     {commande.statut === 'en_preparation' && (
                       <button

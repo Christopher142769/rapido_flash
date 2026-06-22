@@ -1,4 +1,9 @@
 const { getShopClosureState } = require('./shopClosure');
+const {
+  countTodayOrdersForProduct,
+  getShopOrderLimitState,
+  mergeClosureWithOrderLimit,
+} = require('./shopOrderLimit');
 
 function getShopDeliveryFee(product, promoState) {
   if (promoState?.freeDelivery) return 0;
@@ -89,14 +94,25 @@ function getShopPromoState(product, now = new Date()) {
   };
 }
 
-function serializeShopProduct(product, { publicView = false } = {}) {
+async function serializeShopProduct(product, { publicView = false, includeOrderCount = true } = {}) {
   const doc = product.toObject ? product.toObject() : { ...product };
   const promoState = getShopPromoState(doc);
   const closureState = getShopClosureState(doc);
+  const now = new Date();
+
+  let ordersToday = 0;
+  const productId = doc._id || product._id;
+  if (includeOrderCount && productId) {
+    ordersToday = await countTodayOrdersForProduct(productId);
+  }
+
+  const limitState = getShopOrderLimitState(doc, ordersToday);
+  const availability = mergeClosureWithOrderLimit(closureState, limitState, now);
+
   const payload = {
     ...doc,
     ...promoState,
-    ...closureState,
+    ...availability,
   };
   if (publicView && !doc.published) {
     return null;

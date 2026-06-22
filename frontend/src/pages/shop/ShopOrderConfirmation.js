@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
+import ShopDeliveryNotice from '../../components/shop/ShopDeliveryNotice';
 import {
   buildWhatsAppOrderUrl,
   formatCustomerAddress,
   formatCustomerFullName,
   loadShopOrder,
-  SHOP_DELIVERY_NOTE,
 } from '../../utils/shopOrder';
 import { formatPriceXof } from '../../utils/shopPromo';
 import { getPriceUnitSuffix } from '../../utils/shopQuantityUnit';
@@ -43,9 +43,7 @@ export default function ShopOrderConfirmation() {
           Vérifiez vos informations puis contactez Rapido sur WhatsApp pour finaliser et suivre votre commande.
         </p>
 
-        <aside className="shop-confirm-note" role="note">
-          {SHOP_DELIVERY_NOTE}
-        </aside>
+        <ShopDeliveryNotice variant="confirm" />
 
         <section className="shop-confirm-section">
           <h2>Commande</h2>

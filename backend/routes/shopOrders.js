@@ -5,12 +5,13 @@ const ShopOrder = require('../models/ShopOrder');
 const { auth, isRestaurant, isCommercialStaff } = require('../middleware/auth');
 const { generateShopOrderNumber } = require('../utils/shopOrderNumber');
 const { getShopPromoState, getShopDeliveryFee, computeShopOrderTotals } = require('../utils/shopPromo');
-const { getShopClosureState } = require('../utils/shopClosure');
+const { getShopAvailabilityState } = require('../utils/shopOrderLimit');
 const { normalizeShopQuantityUnit } = require('../utils/shopQuantityUnit');
 const { formatQuantityWithUnit } = require('../utils/shopQuantityLabel');
 const { sendToUserIds } = require('../services/pushNotifications');
 const { notifyShopOrderCreated } = require('../services/orderNotificationMailer');
 const { isAllowedDeliveryDate, getDefaultDeliveryDateKey, deliveryDateKeyToDate } = require('../utils/shopDeliveryDate');
+const { unconfirmShopOrder } = require('../utils/shopOrderStatus');
 
 const router = express.Router();
 
@@ -66,11 +67,13 @@ router.post('/', async (req, res) => {
       return res.status(404).json({ message: 'Produit indisponible' });
     }
 
-    const closureState = getShopClosureState(product);
-    if (closureState.isShopClosed) {
-      return res.status(403).json({
-        message: 'La boutique est temporairement fermée. Revenez à l’heure de réouverture indiquée sur la fiche.',
-      });
+    const availability = await getShopAvailabilityState(product);
+    if (availability.isShopClosed) {
+      const msg =
+        availability.closureReason === 'orderLimit'
+          ? 'Le quota de commandes du jour est atteint. La boutique rouvrira à l’heure habituelle.'
+          : 'La boutique est temporairement fermée. Revenez à l’heure de réouverture indiquée sur la fiche.';
+      return res.status(403).json({ message: msg });
     }
 
     const promoState = getShopPromoState(product);
@@ -165,6 +168,13 @@ router.put('/:id/statut', auth, isCommercialStaff, async (req, res) => {
 
     const order = await ShopOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
+
+    if (statut === 'en_attente') {
+      const unconfirmErr = unconfirmShopOrder(order);
+      if (unconfirmErr) return res.status(400).json({ message: unconfirmErr });
+      await order.save();
+      return res.json(order);
+    }
 
     order.statut = statut;
     if (statut === 'livree') {

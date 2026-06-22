@@ -11,10 +11,10 @@ import {
   buildShopOrderPayload,
   emptyCustomerForm,
   saveShopOrder,
-  SHOP_DELIVERY_NOTE,
   submitShopOrderToApi,
   validateCustomerForm,
 } from '../../utils/shopOrder';
+import ShopDeliveryNotice from '../../components/shop/ShopDeliveryNotice';
 import { getShopPromoState, formatPriceXof, getShopDeliveryFee } from '../../utils/shopPromo';
 import {
   formatQuantityWithUnit,
@@ -27,8 +27,8 @@ import ShopClosedPage from '../../components/shop/ShopClosedPage';
 import ShopQuantityModal from '../../components/shop/ShopQuantityModal';
 import ShopQuantityPicker from '../../components/shop/ShopQuantityPicker';
 import ShopTrustCards from '../../components/shop/ShopTrustCards';
-import { getShopClosureState } from '../../utils/shopClosure';
-import { FaClock } from 'react-icons/fa';
+import ShopOrderLimitBanner from '../../components/shop/ShopOrderLimitBanner';
+import { getShopAvailabilityState } from '../../utils/shopOrderLimit';
 import './shopTypography.css';
 import './ShopProductLanding.css';
 
@@ -106,23 +106,37 @@ export default function ShopProductLanding() {
   }, [product]);
 
   const promoState = useMemo(() => (product ? getShopPromoState(product) : null), [product]);
-  const closureState = useMemo(
-    () => (product ? getShopClosureState(product, new Date(closureTick)) : null),
+  const availabilityState = useMemo(
+    () => (product ? getShopAvailabilityState(product, new Date(closureTick)) : null),
     [product, closureTick]
   );
 
-  /** Bascule auto fermeture / réouverture (horaire quotidien ou override manuel). */
+  const showOrderLimitBanner =
+    availabilityState?.dailyOrderLimitEnabled &&
+    !availabilityState?.isShopClosed &&
+    availabilityState.ordersRemaining > 0;
+
+  /** Bascule auto fermeture / quota commandes. */
   useEffect(() => {
     const sc = product?.shopClosure;
-    if (!sc) return undefined;
-    const hasDaily = sc.dailyCloseTime && sc.dailyOpenTime;
-    const hasLegacy = sc.enabled && sc.closedFrom && sc.closedUntil;
-    const hasOverride = sc.manualOverride === 'open' || sc.manualOverride === 'closed';
-    if (!hasDaily && !hasLegacy && !hasOverride) return undefined;
-    if (!sc.enabled && !hasOverride && !hasLegacy) return undefined;
+    const limitOn = product?.dailyOrderLimitEnabled || product?.dailyOrderLimit?.enabled;
+    if (!sc && !limitOn) return undefined;
+    const hasDaily = sc?.dailyCloseTime && sc?.dailyOpenTime;
+    const hasLegacy = sc?.enabled && sc?.closedFrom && sc?.closedUntil;
+    const hasOverride = sc?.manualOverride === 'open' || sc?.manualOverride === 'closed';
+    const needsTick =
+      limitOn || hasDaily || hasLegacy || hasOverride || (sc?.enabled && hasDaily);
+    if (!needsTick) return undefined;
     const id = setInterval(() => setClosureTick(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [product?.shopClosure]);
+  }, [product?.shopClosure, product?.dailyOrderLimit, product?.dailyOrderLimitEnabled]);
+
+  /** Rafraîchir le quota commandes en temps réel. */
+  useEffect(() => {
+    if (!product?.dailyOrderLimitEnabled && !product?.dailyOrderLimit?.enabled) return undefined;
+    const id = setInterval(() => void fetchProduct(), 20 * 1000);
+    return () => clearInterval(id);
+  }, [fetchProduct, product?.dailyOrderLimit, product?.dailyOrderLimitEnabled]);
   const gallery = useMemo(() => (product ? getProductGallery(product) : []), [product]);
   const canOrder = !!product?.whatsappNumber;
   const countdownEndsAt = promoState?.promoEndsAt || product?.promo?.endsAt || null;
@@ -241,11 +255,11 @@ export default function ShopProductLanding() {
     );
   }
 
-  if (closureState?.isShopClosed) {
+  if (availabilityState?.isShopClosed) {
     return (
       <ShopClosedPage
         product={product}
-        closureState={closureState}
+        closureState={availabilityState}
         onReopen={() => {
           setClosureTick(Date.now());
           void fetchProduct();
@@ -295,10 +309,16 @@ export default function ShopProductLanding() {
             <h1 className="shop-pdp-buybox-title">{product.name}</h1>
             {product.shortDescription ? <p className="shop-pdp-buybox-sub">{product.shortDescription}</p> : null}
 
-            <aside className="shop-pdp-delivery-note" role="note">
-              <FaClock className="shop-pdp-delivery-note-icon" aria-hidden />
-              <span>{SHOP_DELIVERY_NOTE}</span>
-            </aside>
+            <ShopDeliveryNotice />
+
+            {showOrderLimitBanner ? (
+              <ShopOrderLimitBanner
+                ordersToday={availabilityState.ordersToday}
+                ordersRemaining={availabilityState.ordersRemaining}
+                maxOrders={availabilityState.dailyOrderLimitMax}
+                progressPct={availabilityState.orderLimitProgressPct}
+              />
+            ) : null}
 
             <div className={`shop-pdp-buybox-price${!hasQuantity ? ' shop-pdp-buybox-price--empty' : ''}`}>
               {hasQuantity ? (

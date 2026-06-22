@@ -5,6 +5,7 @@ const ShopOrder = require('../models/ShopOrder');
 const ShopProduct = require('../models/ShopProduct');
 const { auth, isCommercialStaff, isRestaurantAdmin } = require('../middleware/auth');
 const { generateShopOrderNumber, startOfDay, endOfDay } = require('../utils/shopOrderNumber');
+const { unconfirmShopOrder } = require('../utils/shopOrderStatus');
 const {
   bilanBaseQuery,
   bilanRowFromOrder,
@@ -328,6 +329,21 @@ router.put('/orders/:id/confirm', auth, isCommercialStaff, async (req, res) => {
     order.statut = 'confirmee';
     order.commercialStatus = 'confirme';
     order.confirmedAt = new Date();
+    await order.save();
+    res.json(order);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.put('/orders/:id/unconfirm', auth, isCommercialStaff, async (req, res) => {
+  try {
+    const order = await ShopOrder.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
+
+    const unconfirmErr = unconfirmShopOrder(order);
+    if (unconfirmErr) return res.status(400).json({ message: unconfirmErr });
+
     await order.save();
     res.json(order);
   } catch (e) {

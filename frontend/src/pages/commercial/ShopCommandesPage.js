@@ -8,6 +8,7 @@ import {
   fetchPointsProducts,
   fetchShopOrders,
   formatPrice,
+  unconfirmCommercialOrder,
   updateOrderSpecifications,
   updateShopOrderStatut,
 } from '../../utils/commercialApi';
@@ -468,14 +469,36 @@ export default function ShopCommandesPage() {
                         </>
                       ) : null}
                       {order.statut === 'confirmee' ? (
-                        <button
-                          type="button"
-                          className="btn btn-primary"
-                          disabled={busy}
-                          onClick={() => updateStatut(order, 'en_preparation')}
-                        >
-                          En préparation
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            className="btn btn-primary"
+                            disabled={busy}
+                            onClick={() => updateStatut(order, 'en_preparation')}
+                          >
+                            En préparation
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-outline"
+                            disabled={busy}
+                            onClick={() => {
+                              if (
+                                !window.confirm(
+                                  'Annuler la confirmation de cette commande ? Elle repassera en attente.'
+                                )
+                              ) {
+                                return;
+                              }
+                              run(
+                                () => unconfirmCommercialOrder(order._id),
+                                'Confirmation annulée — commande en attente'
+                              );
+                            }}
+                          >
+                            Annuler la confirmation
+                          </button>
+                        </>
                       ) : null}
                       {order.statut === 'en_preparation' ? (
                         <button

@@ -57,6 +57,11 @@ export async function confirmCommercialOrder(id) {
   return res.data;
 }
 
+export async function unconfirmCommercialOrder(id) {
+  const res = await axios.put(`${API_URL}/commercial/orders/${id}/unconfirm`, {}, authHeaders());
+  return res.data;
+}
+
 export async function deliverCommercialOrder(id) {
   const res = await axios.put(`${API_URL}/commercial/orders/${id}/deliver`, {}, authHeaders());
   return res.data;

@@ -2,13 +2,16 @@ import React from 'react';
 import ShopBrandHeader from './ShopBrandHeader';
 import ShopCountdown from './ShopCountdown';
 import { formatClosureDateTime, formatDailyTime } from '../../utils/shopClosure';
-import { FaStore, FaClock } from 'react-icons/fa';
+import { FaStore, FaClock, FaShoppingBag } from 'react-icons/fa';
 import './ShopClosedPage.css';
 
 export default function ShopClosedPage({ product, closureState, onReopen }) {
-  const message =
-    closureState.closureMessage ||
-    'Nous préparons de nouvelles commandes pour vous. Merci de votre patience !';
+  const isOrderLimit = closureState.closureReason === 'orderLimit';
+  const message = isOrderLimit
+    ? closureState.closureMessage ||
+      `Le quota de ${closureState.dailyOrderLimitMax} commandes pour aujourd’hui est atteint. Merci pour votre enthousiasme !`
+    : closureState.closureMessage ||
+      'Nous préparons de nouvelles commandes pour vous. Merci de votre patience !';
 
   const closeLabel = formatDailyTime(closureState.dailyCloseTime);
   const openLabel = formatDailyTime(closureState.dailyOpenTime);
@@ -21,10 +24,16 @@ export default function ShopClosedPage({ product, closureState, onReopen }) {
       <main className="shop-closed-main">
         <div className="shop-closed-card">
           <div className="shop-closed-icon-wrap" aria-hidden>
-            <FaStore className="shop-closed-icon" />
+            {isOrderLimit ? (
+              <FaShoppingBag className="shop-closed-icon" />
+            ) : (
+              <FaStore className="shop-closed-icon" />
+            )}
           </div>
 
-          <p className="shop-closed-badge">Boutique temporairement fermée</p>
+          <p className="shop-closed-badge">
+            {isOrderLimit ? 'Quota journalier atteint' : 'Boutique temporairement fermée'}
+          </p>
           <h1 className="shop-closed-title">{product.name}</h1>
           <p className="shop-closed-lead">{message}</p>
 
@@ -61,8 +70,9 @@ export default function ShopClosedPage({ product, closureState, onReopen }) {
           ) : null}
 
           <p className="shop-closed-foot">
-            Rapido Flash · Horaires automatiques chaque jour · La boutique se rouvrira à l’heure
-            indiquée.
+            {isOrderLimit
+              ? 'Rapido Flash · Le compteur repart demain · Réouverture à l’heure habituelle.'
+              : 'Rapido Flash · Horaires automatiques chaque jour · La boutique se rouvrira à l’heure indiquée.'}
           </p>
         </div>
       </main>

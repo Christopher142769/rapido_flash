@@ -413,6 +413,20 @@
   border-top: 1px dashed rgba(199, 109, 46, 0.25);
 }
 
+.shop-dash-order-limit-box {
+  margin-top: 20px;
+}
+
+.shop-dash-hint--inline {
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
+.shop-dash-grid--limit {
+  margin-top: 12px;
+  max-width: 280px;
+}
+
 .shop-dash-closure-title {
   margin: 0 0 8px;
   font-size: 1rem;

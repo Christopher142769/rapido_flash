@@ -72,6 +72,11 @@ const shopProductSchema = new mongoose.Schema(
       closedFrom: { type: Date, default: null },
       closedUntil: { type: Date, default: null },
     },
+    /** Quota de commandes par jour — fermeture auto si atteint avant l’heure de fermeture. */
+    dailyOrderLimit: {
+      enabled: { type: Boolean, default: false },
+      maxOrders: { type: Number, default: 0, min: 0 },
+    },
   },
   { timestamps: true }
 );
