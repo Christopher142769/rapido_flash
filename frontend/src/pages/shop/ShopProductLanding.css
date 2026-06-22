@@ -24,8 +24,16 @@
   color: var(--rf-text-muted);
 }
 
-/* Bandeau fixe : décompte + navbar empilés (jamais superposés) */
-.shop-pdp--promo {
+/* Bandeau fixe : quota commandes + décompte promo + navbar */
+.shop-pdp--top-bar {
+  --shop-top-fixed-h: 120px;
+}
+
+.shop-pdp--promo.shop-pdp--top-bar {
+  --shop-top-fixed-h: 168px;
+}
+
+.shop-pdp--promo:not(.shop-pdp--top-bar) {
   --shop-top-fixed-h: 168px;
 }
 

@@ -1,202 +1,40 @@
-.shop-limit-banner {
-  position: relative;
-  margin: 0 0 20px;
-  border-radius: 16px;
-  overflow: hidden;
-  background: linear-gradient(135deg, #fff8ee 0%, #fff 48%, #f0f7ff 100%);
-  border: 1px solid rgba(200, 134, 10, 0.22);
-  box-shadow:
-    0 8px 32px rgba(200, 134, 10, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+/* Bandeau fixe haut — aligné sur le décompte promo */
+.shop-pdp-limit-strip {
+  text-align: center;
+  padding: 10px 16px 12px;
+  border-bottom: 1px solid var(--rf-border);
+  background: #fff;
 }
 
-.shop-limit-banner-glow {
-  position: absolute;
-  inset: -40% -20% auto auto;
-  width: 55%;
-  height: 120%;
-  background: radial-gradient(circle, rgba(255, 183, 77, 0.35) 0%, transparent 68%);
-  pointer-events: none;
+.shop-pdp-limit-strip-headline {
+  margin: 0 0 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--rf-text-muted);
 }
 
-.shop-limit-banner-inner {
-  position: relative;
-  padding: 16px 18px 14px;
-}
-
-.shop-limit-banner-head {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 14px;
-}
-
-.shop-limit-banner-icon {
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: linear-gradient(145deg, #ffb74d, #e65100);
-  color: #fff;
-  font-size: 1.1rem;
-  box-shadow: 0 6px 18px rgba(230, 81, 0, 0.28);
-}
-
-.shop-limit-banner-copy {
-  flex: 1;
-  min-width: 0;
-}
-
-.shop-limit-banner-kicker {
-  margin: 0 0 2px;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #c8860a;
-}
-
-.shop-limit-banner-title {
-  margin: 0;
-  font-size: 1.02rem;
-  font-weight: 700;
-  line-height: 1.25;
-  color: var(--rf-text-dark, #1a1410);
-}
-
-.shop-limit-banner-accent {
-  font-size: 1.35rem;
+.shop-pdp-limit-strip-accent {
   font-weight: 900;
-  color: #e65100;
-  letter-spacing: -0.03em;
-}
-
-.shop-limit-slots {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.shop-limit-slot {
-  display: grid;
-  place-items: center;
-  min-width: 34px;
-  height: 42px;
-  padding: 0 6px;
-  border-radius: 10px;
-  background: #1a1410;
-  color: #fff;
-  box-shadow: inset 0 -2px 0 rgba(255, 255, 255, 0.08);
-}
-
-.shop-limit-slot strong {
-  font-size: 1.15rem;
-  font-weight: 800;
+  color: var(--rf-amber);
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
-.shop-limit-slot--max {
-  background: rgba(26, 20, 16, 0.12);
-  color: #1a1410;
-  box-shadow: none;
-}
-
-.shop-limit-slots-sep {
-  font-weight: 800;
-  color: rgba(26, 20, 16, 0.35);
-  margin: 0 2px;
-}
-
-.shop-limit-banner-track {
-  position: relative;
-  height: 10px;
+.shop-pdp-limit-strip-track {
+  max-width: 360px;
+  margin: 0 auto;
+  height: 3px;
   border-radius: 999px;
-  background: rgba(26, 20, 16, 0.08);
+  background: var(--rf-border);
   overflow: hidden;
 }
 
-.shop-limit-banner-fill {
+.shop-pdp-limit-strip-fill {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #ffb74d, #e65100);
-  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-  box-shadow: 0 0 12px rgba(230, 81, 0, 0.45);
-}
-
-.shop-limit-banner-track-label {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.62rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(26, 20, 16, 0.72);
-  pointer-events: none;
-}
-
-.shop-limit-banner--urgent {
-  border-color: rgba(230, 81, 0, 0.45);
-  animation: shop-limit-pulse 2.2s ease-in-out infinite;
-}
-
-.shop-limit-banner--urgent .shop-limit-banner-icon {
-  animation: shop-limit-shake 0.8s ease-in-out infinite;
-}
-
-.shop-limit-banner--soldout {
-  background: linear-gradient(135deg, #fff0f0 0%, #fff 50%, #fafafa 100%);
-  border-color: rgba(198, 40, 40, 0.25);
-}
-
-.shop-limit-banner--soldout .shop-limit-banner-icon {
-  background: linear-gradient(145deg, #ef5350, #c62828);
-}
-
-.shop-limit-banner--soldout .shop-limit-banner-kicker {
-  color: #c62828;
-}
-
-@keyframes shop-limit-pulse {
-  0%,
-  100% {
-    box-shadow:
-      0 8px 32px rgba(230, 81, 0, 0.14),
-      inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  }
-  50% {
-    box-shadow:
-      0 12px 40px rgba(230, 81, 0, 0.28),
-      inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  }
-}
-
-@keyframes shop-limit-shake {
-  0%,
-  100% {
-    transform: rotate(0deg);
-  }
-  25% {
-    transform: rotate(-8deg);
-  }
-  75% {
-    transform: rotate(8deg);
-  }
-}
-
-@media (max-width: 420px) {
-  .shop-limit-banner-head {
-    flex-wrap: wrap;
-  }
-
-  .shop-limit-slots {
-    width: 100%;
-    justify-content: flex-end;
-  }
+  background: var(--rf-amber);
+  opacity: 0.5;
+  transition: width 0.4s ease;
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaTruck } from 'react-icons/fa';
+import { FaClock } from 'react-icons/fa';
 import { formatDeliveryDateShort, getDefaultDeliveryDateKey } from '../../utils/shopDeliveryDate';
 import './ShopDeliveryNotice.css';
 
@@ -8,27 +8,14 @@ export default function ShopDeliveryNotice({ variant = 'landing' }) {
 
   return (
     <aside
-      className={`shop-delivery-notice shop-delivery-notice--${variant}`}
+      className={`shop-inline-note shop-inline-note--delivery${variant === 'confirm' ? ' shop-inline-note--confirm' : ''}`}
       role="note"
-      aria-label="Information livraison sous 24 heures"
     >
-      <div className="shop-delivery-notice-icon-wrap" aria-hidden>
-        <FaTruck />
-      </div>
-      <div className="shop-delivery-notice-content">
-        <p className="shop-delivery-notice-kicker">
-          <span className="shop-delivery-notice-badge">NB</span>
-          Livraison le lendemain
-        </p>
-        <p className="shop-delivery-notice-title">
-          Commandez <strong>aujourd’hui</strong>, recevez <strong>demain</strong>
-        </p>
-        <p className="shop-delivery-notice-body">
-          Votre commande est livrée sous <strong>24 h</strong>, le{' '}
-          <strong>{deliveryDateLabel}</strong>. Assurez-vous d’être joignable et disponible à
-          l’adresse indiquée avant de valider.
-        </p>
-      </div>
+      <FaClock className="shop-inline-note-icon" aria-hidden />
+      <span>
+        <strong>NB</strong> — Commandez aujourd’hui, livraison demain sous 24 h ({deliveryDateLabel}
+        ). Soyez joignable à l’adresse indiquée.
+      </span>
     </aside>
   );
 }

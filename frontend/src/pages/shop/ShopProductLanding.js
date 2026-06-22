@@ -116,6 +116,8 @@ export default function ShopProductLanding() {
     !availabilityState?.isShopClosed &&
     availabilityState.ordersRemaining > 0;
 
+  const hasTopFixedBar = showCountdown || showOrderLimitBanner;
+
   /** Bascule auto fermeture / quota commandes. */
   useEffect(() => {
     const sc = product?.shopClosure;
@@ -166,7 +168,7 @@ export default function ShopProductLanding() {
   }, [product?.copySections?.length]);
 
   useEffect(() => {
-    if (!showCountdown || !topBarRef.current) return undefined;
+    if (!hasTopFixedBar || !topBarRef.current) return undefined;
     const el = topBarRef.current;
     const syncHeight = () => {
       const root = el.closest('.shop-pdp');
@@ -181,7 +183,7 @@ export default function ShopProductLanding() {
       ro.disconnect();
       window.removeEventListener('resize', syncHeight);
     };
-  }, [showCountdown, countdownEndsAt]);
+  }, [hasTopFixedBar, showCountdown, showOrderLimitBanner, countdownEndsAt]);
 
   const handleFieldChange = (field, value) => {
     setCustomer((c) => ({ ...c, [field]: value }));
@@ -269,22 +271,32 @@ export default function ShopProductLanding() {
   }
 
   return (
-    <div className={`shop-pdp${showCountdown ? ' shop-pdp--promo' : ''}`}>
-      {showCountdown ? (
+    <div className={`shop-pdp${hasTopFixedBar ? ' shop-pdp--top-bar' : ''}${showCountdown ? ' shop-pdp--promo' : ''}`}>
+      {hasTopFixedBar ? (
         <>
           <div ref={topBarRef} className="shop-pdp-top-fixed">
-            <div
-              className="shop-pdp-countdown-strip"
-              role="region"
-              aria-live="polite"
-              aria-label="Compte à rebours de l'offre"
-            >
-              <p className="shop-pdp-countdown-headline">
-                Cette offre est limitée et{' '}
-                <span className="shop-pdp-countdown-headline-accent">se termine dans</span>
-              </p>
-              <ShopCountdown endsAt={countdownEndsAt} variant="urgent" />
-            </div>
+            {showOrderLimitBanner ? (
+              <ShopOrderLimitBanner
+                ordersToday={availabilityState.ordersToday}
+                ordersRemaining={availabilityState.ordersRemaining}
+                maxOrders={availabilityState.dailyOrderLimitMax}
+                progressPct={availabilityState.orderLimitProgressPct}
+              />
+            ) : null}
+            {showCountdown ? (
+              <div
+                className="shop-pdp-countdown-strip"
+                role="region"
+                aria-live="polite"
+                aria-label="Compte à rebours de l'offre"
+              >
+                <p className="shop-pdp-countdown-headline">
+                  Cette offre est limitée et{' '}
+                  <span className="shop-pdp-countdown-headline-accent">se termine dans</span>
+                </p>
+                <ShopCountdown endsAt={countdownEndsAt} variant="urgent" />
+              </div>
+            ) : null}
             <ShopBrandHeader sections={navSections} inTopBar />
           </div>
           <div className="shop-pdp-top-spacer" aria-hidden />
@@ -310,15 +322,6 @@ export default function ShopProductLanding() {
             {product.shortDescription ? <p className="shop-pdp-buybox-sub">{product.shortDescription}</p> : null}
 
             <ShopDeliveryNotice />
-
-            {showOrderLimitBanner ? (
-              <ShopOrderLimitBanner
-                ordersToday={availabilityState.ordersToday}
-                ordersRemaining={availabilityState.ordersRemaining}
-                maxOrders={availabilityState.dailyOrderLimitMax}
-                progressPct={availabilityState.orderLimitProgressPct}
-              />
-            ) : null}
 
             <div className={`shop-pdp-buybox-price${!hasQuantity ? ' shop-pdp-buybox-price--empty' : ''}`}>
               {hasQuantity ? (

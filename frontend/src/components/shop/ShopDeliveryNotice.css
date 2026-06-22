@@ -1,112 +1,29 @@
-.shop-delivery-notice {
-  position: relative;
+.shop-inline-note {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
-  margin: 0 0 20px;
-  padding: 16px 16px 16px 14px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #fff8ee 0%, #fff 55%, #fff5eb 100%);
-  border: 1.5px solid rgba(200, 134, 10, 0.35);
-  box-shadow:
-    0 10px 28px rgba(200, 134, 10, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
-  overflow: hidden;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 12px 0;
+  border-top: 1px solid var(--rf-border);
+  border-bottom: 1px solid var(--rf-border);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  font-weight: 600;
+  color: var(--rf-text-dark);
 }
 
-.shop-delivery-notice::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: linear-gradient(180deg, #ffb74d, #e65100);
-  border-radius: 14px 0 0 14px;
-}
-
-.shop-delivery-notice-icon-wrap {
+.shop-inline-note-icon {
   flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: linear-gradient(145deg, #ffb74d, #e65100);
-  color: #fff;
-  font-size: 1.05rem;
-  box-shadow: 0 6px 16px rgba(230, 81, 0, 0.25);
+  color: var(--rf-amber);
+  margin-top: 2px;
+  font-size: 0.85rem;
 }
 
-.shop-delivery-notice-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.shop-delivery-notice-kicker {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0 0 6px;
-  font-size: 0.68rem;
+.shop-inline-note strong {
+  color: var(--rf-amber);
   font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #c8860a;
 }
 
-.shop-delivery-notice-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  padding: 3px 8px;
-  border-radius: 6px;
-  background: #1a1410;
-  color: #ffb74d;
-  font-size: 0.62rem;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-}
-
-.shop-delivery-notice-title {
-  margin: 0 0 6px;
-  font-size: 1.05rem;
-  font-weight: 800;
-  line-height: 1.3;
-  color: var(--rf-text-dark, #1a1410);
-  letter-spacing: -0.02em;
-}
-
-.shop-delivery-notice-title strong {
-  color: #e65100;
-}
-
-.shop-delivery-notice-body {
-  margin: 0;
-  font-size: 0.84rem;
-  line-height: 1.55;
-  font-weight: 500;
-  color: var(--rf-text-muted, #5c534a);
-}
-
-.shop-delivery-notice-body strong {
-  color: var(--rf-text-dark, #1a1410);
-  font-weight: 700;
-}
-
-.shop-delivery-notice--confirm {
+.shop-inline-note--confirm {
   margin-bottom: 24px;
-}
-
-@media (max-width: 420px) {
-  .shop-delivery-notice {
-    padding: 14px 14px 14px 12px;
-    gap: 12px;
-  }
-
-  .shop-delivery-notice-title {
-    font-size: 0.98rem;
-  }
 }
