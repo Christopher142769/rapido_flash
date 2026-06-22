@@ -1,0 +1,137 @@
+.shop-closed {
+  min-height: 100vh;
+  background: linear-gradient(165deg, #fff9f5 0%, #faf6f0 45%, #f5ebe3 100%);
+  color: var(--rf-text, #1a1410);
+}
+
+.shop-closed-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px 48px;
+}
+
+.shop-closed-card {
+  width: 100%;
+  max-width: 520px;
+  text-align: center;
+  background: #fff;
+  border-radius: 24px;
+  padding: 36px 28px 32px;
+  box-shadow:
+    0 24px 64px rgba(139, 69, 19, 0.12),
+    0 4px 16px rgba(26, 20, 16, 0.06);
+  border: 1px solid rgba(200, 134, 10, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.shop-closed-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #8b4513, #c8860a, #e8c468);
+}
+
+.shop-closed-icon-wrap {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, rgba(200, 134, 10, 0.15), rgba(139, 69, 19, 0.08));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shop-closed-icon {
+  font-size: 2rem;
+  color: var(--rf-amber, #c8860a);
+}
+
+.shop-closed-badge {
+  display: inline-block;
+  margin: 0 0 12px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(139, 69, 19, 0.08);
+  color: #8b4513;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.shop-closed-title {
+  margin: 0 0 12px;
+  font-size: clamp(1.35rem, 4vw, 1.75rem);
+  font-weight: 800;
+  line-height: 1.25;
+  color: #1a1410;
+}
+
+.shop-closed-lead {
+  margin: 0 0 24px;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--rf-text-muted, #666);
+}
+
+.shop-closed-hours {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 28px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #fff9f5;
+  border: 1px solid rgba(200, 134, 10, 0.12);
+  text-align: left;
+}
+
+.shop-closed-hours-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.88rem;
+  color: #444;
+}
+
+.shop-closed-hours-row svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--rf-amber, #c8860a);
+}
+
+.shop-closed-hours-row--reopen strong {
+  color: #8b4513;
+}
+
+.shop-closed-countdown-block {
+  margin-bottom: 20px;
+}
+
+.shop-closed-countdown-label {
+  margin: 0 0 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--rf-amber, #c8860a);
+}
+
+.shop-closed-foot {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #999;
+}
+
+@media (max-width: 480px) {
+  .shop-closed-card {
+    padding: 28px 20px 24px;
+    border-radius: 20px;
+  }
+}

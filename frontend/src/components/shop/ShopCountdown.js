@@ -28,9 +28,15 @@ function Separator() {
   );
 }
 
-export default function ShopCountdown({ endsAt, variant = 'default' }) {
+export default function ShopCountdown({ endsAt, variant = 'default', endedLabel, onComplete }) {
   const [remaining, setRemaining] = useState(0);
   const initialMsRef = useRef(null);
+  const completedRef = useRef(false);
+
+  useEffect(() => {
+    completedRef.current = false;
+    initialMsRef.current = null;
+  }, [endsAt]);
 
   useEffect(() => {
     const tick = () => {
@@ -40,11 +46,15 @@ export default function ShopCountdown({ endsAt, variant = 'default' }) {
         initialMsRef.current = left;
       }
       setRemaining(left);
+      if (left <= 0 && !completedRef.current) {
+        completedRef.current = true;
+        onComplete?.();
+      }
     };
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [endsAt]);
+  }, [endsAt, onComplete]);
 
   const { days, hours, minutes, seconds } = formatCountdown(remaining);
   const showDays = days > 0;
@@ -54,7 +64,7 @@ export default function ShopCountdown({ endsAt, variant = 'default' }) {
       : 100;
 
   if (remaining <= 0) {
-    return <p className="shop-countdown-ended">Offre terminée</p>;
+    return <p className="shop-countdown-ended">{endedLabel || 'Offre terminée'}</p>;
   }
 
   return (

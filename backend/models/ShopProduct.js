@@ -58,6 +58,13 @@ const shopProductSchema = new mongoose.Schema(
     contactPhone: { type: String, default: '', trim: true },
     ctaLabel: { type: String, default: 'Commander maintenant', trim: true },
     sortOrder: { type: Number, default: 0 },
+    /** Fermeture programée de la boutique (fiche boostée). */
+    shopClosure: {
+      enabled: { type: Boolean, default: false },
+      closedFrom: { type: Date, default: null },
+      closedUntil: { type: Date, default: null },
+      message: { type: String, default: '', trim: true, maxlength: 500 },
+    },
   },
   { timestamps: true }
 );

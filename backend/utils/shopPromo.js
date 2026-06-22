@@ -1,3 +1,5 @@
+const { getShopClosureState } = require('./shopClosure');
+
 function getShopDeliveryFee(product, promoState) {
   if (promoState?.freeDelivery) return 0;
   return Math.max(0, Math.round(Number(product?.deliveryFee || 0)));
@@ -90,9 +92,11 @@ function getShopPromoState(product, now = new Date()) {
 function serializeShopProduct(product, { publicView = false } = {}) {
   const doc = product.toObject ? product.toObject() : { ...product };
   const promoState = getShopPromoState(doc);
+  const closureState = getShopClosureState(doc);
   const payload = {
     ...doc,
     ...promoState,
+    ...closureState,
   };
   if (publicView && !doc.published) {
     return null;

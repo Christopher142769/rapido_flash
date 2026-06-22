@@ -5,6 +5,7 @@ const ShopOrder = require('../models/ShopOrder');
 const { auth, isRestaurant, isCommercialStaff } = require('../middleware/auth');
 const { generateShopOrderNumber } = require('../utils/shopOrderNumber');
 const { getShopPromoState, getShopDeliveryFee, computeShopOrderTotals } = require('../utils/shopPromo');
+const { getShopClosureState } = require('../utils/shopClosure');
 const { normalizeShopQuantityUnit } = require('../utils/shopQuantityUnit');
 const { formatQuantityWithUnit } = require('../utils/shopQuantityLabel');
 const { sendToUserIds } = require('../services/pushNotifications');
@@ -63,6 +64,13 @@ router.post('/', async (req, res) => {
     const product = await ShopProduct.findOne({ slug, published: true });
     if (!product) {
       return res.status(404).json({ message: 'Produit indisponible' });
+    }
+
+    const closureState = getShopClosureState(product);
+    if (closureState.isShopClosed) {
+      return res.status(403).json({
+        message: 'La boutique est temporairement fermée. Revenez à l’heure de réouverture indiquée sur la fiche.',
+      });
     }
 
     const promoState = getShopPromoState(product);

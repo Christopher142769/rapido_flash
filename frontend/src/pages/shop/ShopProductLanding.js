@@ -23,9 +23,11 @@ import {
   normalizeShopQuantityUnit,
 } from '../../utils/shopQuantityUnit';
 import ShopCountdown from '../../components/shop/ShopCountdown';
+import ShopClosedPage from '../../components/shop/ShopClosedPage';
 import ShopQuantityModal from '../../components/shop/ShopQuantityModal';
 import ShopQuantityPicker from '../../components/shop/ShopQuantityPicker';
 import ShopTrustCards from '../../components/shop/ShopTrustCards';
+import { getShopClosureState } from '../../utils/shopClosure';
 import { FaClock } from 'react-icons/fa';
 import './shopTypography.css';
 import './ShopProductLanding.css';
@@ -46,6 +48,7 @@ export default function ShopProductLanding() {
   const [submitting, setSubmitting] = useState(false);
   const [qtyModalOpen, setQtyModalOpen] = useState(false);
   const [highlightQty, setHighlightQty] = useState(false);
+  const [closureTick, setClosureTick] = useState(() => Date.now());
   const topBarRef = useRef(null);
 
   const fetchProduct = React.useCallback(() => {
@@ -103,6 +106,17 @@ export default function ShopProductLanding() {
   }, [product]);
 
   const promoState = useMemo(() => (product ? getShopPromoState(product) : null), [product]);
+  const closureState = useMemo(
+    () => (product ? getShopClosureState(product, new Date(closureTick)) : null),
+    [product, closureTick]
+  );
+
+  /** Bascule auto fermeture / réouverture à l’heure programmée. */
+  useEffect(() => {
+    if (!product?.shopClosure?.enabled) return undefined;
+    const id = setInterval(() => setClosureTick(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [product?.shopClosure?.enabled]);
   const gallery = useMemo(() => (product ? getProductGallery(product) : []), [product]);
   const canOrder = !!product?.whatsappNumber;
   const countdownEndsAt = promoState?.promoEndsAt || product?.promo?.endsAt || null;
@@ -218,6 +232,19 @@ export default function ShopProductLanding() {
           <p>{error || 'Ce lien n’est plus actif.'}</p>
         </div>
       </div>
+    );
+  }
+
+  if (closureState?.isShopClosed) {
+    return (
+      <ShopClosedPage
+        product={product}
+        closureState={closureState}
+        onReopen={() => {
+          setClosureTick(Date.now());
+          void fetchProduct();
+        }}
+      />
     );
   }
 

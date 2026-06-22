@@ -10,6 +10,11 @@ import {
   promoPayloadFromForm,
   DEFAULT_BOOST_HOURS,
 } from '../../utils/shopPromo';
+import {
+  closurePayloadFromForm,
+  formatClosureDateTime,
+  getShopClosureState,
+} from '../../utils/shopClosure';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
 import ShopCopyBlockEditor from '../../components/shop/ShopCopyBlockEditor';
 import ShopFormSectionHead from '../../components/shop/ShopFormSectionHead';
@@ -34,6 +39,7 @@ import {
   FaStar,
   FaShoppingBag,
   FaEye,
+  FaStore,
 } from 'react-icons/fa';
 import '../../components/shop/ShopImageUploadZone.css';
 import './ShopDashboard.css';
@@ -62,6 +68,12 @@ const emptyForm = () => ({
     endsAt: '',
     runUntilStopped: true,
     boostHours: DEFAULT_BOOST_HOURS,
+  },
+  shopClosure: {
+    enabled: false,
+    closedFrom: '',
+    closedUntil: '',
+    message: '',
   },
   whatsappNumber: '',
   contactPhone: '',
@@ -133,6 +145,7 @@ function buildProductPayload(f, galleryList) {
     promo: JSON.stringify(
       promoPayloadFromForm(f.promo.active ? applyBoostDefaults(f.promo, f.promo.boostHours) : f.promo)
     ),
+    shopClosure: JSON.stringify(closurePayloadFromForm(f.shopClosure)),
     whatsappNumber: f.whatsappNumber,
     contactPhone: f.contactPhone,
     ctaLabel: f.ctaLabel,
@@ -159,6 +172,7 @@ export default function ShopDashboard() {
   const [uploadingBlockIndex, setUploadingBlockIndex] = useState(null);
   const [refreshingPage, setRefreshingPage] = useState(false);
   const [boosting, setBoosting] = useState(false);
+  const [schedulingClosure, setSchedulingClosure] = useState(false);
 
   const formRef = useRef(form);
   const editingIdRef = useRef(editingId);
@@ -227,6 +241,12 @@ export default function ShopDashboard() {
         runUntilStopped: p.promo?.runUntilStopped !== false,
         boostHours: DEFAULT_BOOST_HOURS,
       },
+      shopClosure: {
+        enabled: !!p.shopClosure?.enabled,
+        closedFrom: toDatetimeLocal(p.shopClosure?.closedFrom),
+        closedUntil: toDatetimeLocal(p.shopClosure?.closedUntil),
+        message: p.shopClosure?.message || '',
+      },
       whatsappNumber: p.whatsappNumber || '',
       contactPhone: p.contactPhone || '',
       ctaLabel: p.ctaLabel || 'Commander maintenant',
@@ -281,6 +301,86 @@ export default function ShopDashboard() {
       }),
     [form.basePrice, form.published, form.promo]
   );
+
+  const formClosurePreview = useMemo(
+    () =>
+      getShopClosureState({
+        shopClosure: {
+          enabled: form.shopClosure.enabled,
+          closedFrom: form.shopClosure.closedFrom || null,
+          closedUntil: form.shopClosure.closedUntil || null,
+          message: form.shopClosure.message,
+        },
+      }),
+    [form.shopClosure]
+  );
+
+  const patchClosureAndRefresh = useCallback(
+    async (productId, closureBody) => {
+      await axios.patch(`${API_URL}/shop-products/${productId}/closure`, closureBody, authHeaders);
+      await loadProducts();
+      const res = await axios.get(`${API_URL}/shop-products/${productId}`, authHeaders);
+      if (res.data) fillFormFromProduct(res.data);
+    },
+    [authHeaders, fillFormFromProduct, loadProducts]
+  );
+
+  const scheduleClosure = async () => {
+    if (!form.shopClosure.closedFrom || !form.shopClosure.closedUntil) {
+      alert('Indiquez l’heure de fermeture et de réouverture.');
+      return;
+    }
+    const payload = closurePayloadFromForm({ ...form.shopClosure, enabled: true });
+    setSchedulingClosure(true);
+    try {
+      let id = editingId;
+      if (!id) {
+        const saved = await persistProduct({
+          formState: { ...form, shopClosure: { ...form.shopClosure, enabled: true } },
+        });
+        if (!saved.ok) {
+          alert('Enregistrez d’abord le nom et le prix du produit.');
+          return;
+        }
+        id = saved.id;
+      } else {
+        await patchClosureAndRefresh(id, payload);
+      }
+      setForm((f) => ({ ...f, shopClosure: { ...f.shopClosure, enabled: true } }));
+      alert('Fermeture programmée. La page boutique se mettra à jour automatiquement.');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Impossible de programmer la fermeture.');
+    } finally {
+      setSchedulingClosure(false);
+    }
+  };
+
+  const cancelClosure = async () => {
+    if (!editingId) {
+      setForm((f) => ({
+        ...f,
+        shopClosure: { enabled: false, closedFrom: '', closedUntil: '', message: '' },
+      }));
+      return;
+    }
+    setSchedulingClosure(true);
+    try {
+      await patchClosureAndRefresh(editingId, {
+        enabled: false,
+        closedFrom: null,
+        closedUntil: null,
+        message: '',
+      });
+      setForm((f) => ({
+        ...f,
+        shopClosure: { enabled: false, closedFrom: '', closedUntil: '', message: '' },
+      }));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Erreur');
+    } finally {
+      setSchedulingClosure(false);
+    }
+  };
 
   const persistProduct = useCallback(
     async ({ formState, galleryList, closeAfter = false } = {}) => {
@@ -1015,6 +1115,96 @@ export default function ShopDashboard() {
                 <span className="shop-dash-price-promo">{formatPriceXof(formPromoPreview.promoPrice)}</span>
               </p>
             ) : null}
+
+            <div className="shop-dash-closure-box">
+              <h3 className="shop-dash-closure-title">
+                <FaStore aria-hidden /> Fermeture programée de la boutique
+              </h3>
+              <p className="shop-dash-hint">
+                Pour une fiche boostée : définissez l’heure de fermeture et de réouverture. À l’heure
+                exacte, le lien affiche une page « boutique fermée » avec minuteur, puis la boutique
+                se rouvre automatiquement.
+              </p>
+
+              {formClosurePreview.isShopClosed ? (
+                <p className="shop-dash-closure-status shop-dash-closure-status--closed">
+                  Boutique <strong>fermée</strong> maintenant — réouverture{' '}
+                  {formatClosureDateTime(formClosurePreview.closureClosedUntil)}
+                </p>
+              ) : formClosurePreview.isClosurePending ? (
+                <p className="shop-dash-closure-status shop-dash-closure-status--pending">
+                  Fermeture programmée — ouverture jusqu’à{' '}
+                  {formatClosureDateTime(formClosurePreview.closureClosedFrom)}
+                </p>
+              ) : null}
+
+              <div className="shop-dash-grid">
+                <div>
+                  <label>Fermeture (début)</label>
+                  <input
+                    className="shop-dash-input"
+                    type="datetime-local"
+                    value={form.shopClosure.closedFrom}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        shopClosure: { ...f.shopClosure, closedFrom: e.target.value, enabled: true },
+                      }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label>Réouverture (fin)</label>
+                  <input
+                    className="shop-dash-input"
+                    type="datetime-local"
+                    value={form.shopClosure.closedUntil}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        shopClosure: { ...f.shopClosure, closedUntil: e.target.value, enabled: true },
+                      }))
+                    }
+                  />
+                </div>
+                <div className="shop-dash-field-full">
+                  <label>Message aux visiteurs (optionnel)</label>
+                  <textarea
+                    className="shop-dash-input shop-dash-textarea"
+                    rows={2}
+                    placeholder="Ex. : Nous préparons vos commandes et revenons très vite !"
+                    value={form.shopClosure.message}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        shopClosure: { ...f.shopClosure, message: e.target.value },
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="shop-dash-closure-actions">
+                <button
+                  type="button"
+                  className="shop-dash-btn primary"
+                  disabled={schedulingClosure || saving}
+                  onClick={() => void scheduleClosure()}
+                >
+                  {schedulingClosure ? 'Enregistrement…' : 'Programmer la fermeture'}
+                </button>
+                {form.shopClosure.enabled ? (
+                  <button
+                    type="button"
+                    className="shop-dash-btn secondary"
+                    disabled={schedulingClosure || saving}
+                    onClick={() => void cancelClosure()}
+                  >
+                    Annuler la fermeture
+                  </button>
+                ) : null}
+              </div>
+            </div>
           </div>
           </section>
 

@@ -4,6 +4,7 @@ const { auth, isRestaurant } = require('../middleware/auth');
 const upload = require('../middleware/uploadShopProduct');
 const { uniqueSlug } = require('../utils/slugify');
 const { serializeShopProduct } = require('../utils/shopPromo');
+const { buildShopClosureFromBody } = require('../utils/shopClosure');
 const { normalizeCopySections, normalizeGalleryImages } = require('../utils/normalizeShopCopySections');
 const { normalizeShopQuantityUnit } = require('../utils/shopQuantityUnit');
 
@@ -48,6 +49,15 @@ function buildPromoFromBody(body) {
     endsAt: promo.endsAt ? new Date(promo.endsAt) : null,
     runUntilStopped: promo.runUntilStopped === true || promo.runUntilStopped === 'true',
   };
+}
+
+function applyShopClosureFromBody(product, body) {
+  if (body.shopClosure == null) return null;
+  const raw = parseJsonField(body.shopClosure, body.shopClosure);
+  const built = buildShopClosureFromBody({ shopClosure: raw });
+  if (built.error) return built.error;
+  product.shopClosure = built.value;
+  return null;
 }
 
 // ——— Public ———
@@ -140,6 +150,9 @@ router.post('/', auth, isRestaurant, upload.fields(upload.uploadShopFields), asy
       sortOrder: Number(req.body.sortOrder || 0),
     });
 
+    const closureErr = applyShopClosureFromBody(product, req.body);
+    if (closureErr) return res.status(400).json({ message: closureErr });
+
     await product.save();
     res.status(201).json(serializeShopProduct(product));
   } catch (err) {
@@ -183,6 +196,8 @@ router.put('/:id', auth, isRestaurant, upload.fields(upload.uploadShopFields), a
       product.published = req.body.published === 'true' || req.body.published === true;
     }
     if (req.body.promo != null) product.promo = buildPromoFromBody(req.body);
+    const closureErr = applyShopClosureFromBody(product, req.body);
+    if (closureErr) return res.status(400).json({ message: closureErr });
     if (req.body.whatsappNumber != null) product.whatsappNumber = req.body.whatsappNumber;
     if (req.body.contactPhone != null) product.contactPhone = req.body.contactPhone;
     if (req.body.ctaLabel != null) product.ctaLabel = req.body.ctaLabel;
@@ -220,6 +235,19 @@ router.patch('/:id/promo', auth, isRestaurant, async (req, res) => {
     if (req.body.published != null) {
       product.published = !!req.body.published;
     }
+    await product.save();
+    res.json(serializeShopProduct(product));
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.patch('/:id/closure', auth, isRestaurant, async (req, res) => {
+  try {
+    const product = await ShopProduct.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: 'Produit introuvable' });
+    const closureErr = applyShopClosureFromBody(product, req.body);
+    if (closureErr) return res.status(400).json({ message: closureErr });
     await product.save();
     res.json(serializeShopProduct(product));
   } catch (err) {
