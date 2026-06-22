@@ -111,12 +111,18 @@ export default function ShopProductLanding() {
     [product, closureTick]
   );
 
-  /** Bascule auto fermeture / réouverture à l’heure programmée. */
+  /** Bascule auto fermeture / réouverture (horaire quotidien ou override manuel). */
   useEffect(() => {
-    if (!product?.shopClosure?.enabled) return undefined;
+    const sc = product?.shopClosure;
+    if (!sc) return undefined;
+    const hasDaily = sc.dailyCloseTime && sc.dailyOpenTime;
+    const hasLegacy = sc.enabled && sc.closedFrom && sc.closedUntil;
+    const hasOverride = sc.manualOverride === 'open' || sc.manualOverride === 'closed';
+    if (!hasDaily && !hasLegacy && !hasOverride) return undefined;
+    if (!sc.enabled && !hasOverride && !hasLegacy) return undefined;
     const id = setInterval(() => setClosureTick(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [product?.shopClosure?.enabled]);
+  }, [product?.shopClosure]);
   const gallery = useMemo(() => (product ? getProductGallery(product) : []), [product]);
   const canOrder = !!product?.whatsappNumber;
   const countdownEndsAt = promoState?.promoEndsAt || product?.promo?.endsAt || null;

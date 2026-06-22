@@ -58,12 +58,19 @@ const shopProductSchema = new mongoose.Schema(
     contactPhone: { type: String, default: '', trim: true },
     ctaLabel: { type: String, default: 'Commander maintenant', trim: true },
     sortOrder: { type: Number, default: 0 },
-    /** Fermeture programée de la boutique (fiche boostée). */
+    /** Fermeture quotidienne automatique (fiche boostée). */
     shopClosure: {
       enabled: { type: Boolean, default: false },
+      /** Heure de fermeture chaque jour (HH:mm, fuseau Bénin). */
+      dailyCloseTime: { type: String, default: '', trim: true },
+      /** Heure de réouverture chaque jour (HH:mm). */
+      dailyOpenTime: { type: String, default: '', trim: true },
+      message: { type: String, default: '', trim: true, maxlength: 500 },
+      /** open = vente exceptionnelle hors horaire ; closed = fermeture manuelle immédiate. */
+      manualOverride: { type: String, enum: [null, '', 'open', 'closed'], default: null },
+      /** @deprecated Ancien mode date unique — migré vers dailyCloseTime/dailyOpenTime */
       closedFrom: { type: Date, default: null },
       closedUntil: { type: Date, default: null },
-      message: { type: String, default: '', trim: true, maxlength: 500 },
     },
   },
   { timestamps: true }

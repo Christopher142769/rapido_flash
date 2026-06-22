@@ -13,7 +13,9 @@ import {
 import {
   closurePayloadFromForm,
   formatClosureDateTime,
+  formatDailyTime,
   getShopClosureState,
+  isoToDailyTime,
 } from '../../utils/shopClosure';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
 import ShopCopyBlockEditor from '../../components/shop/ShopCopyBlockEditor';
@@ -73,9 +75,10 @@ const emptyForm = () => ({
   },
   shopClosure: {
     enabled: false,
-    closedFrom: '',
-    closedUntil: '',
+    dailyCloseTime: '22:00',
+    dailyOpenTime: '08:00',
     message: '',
+    manualOverride: null,
   },
   whatsappNumber: '',
   contactPhone: '',
@@ -245,9 +248,12 @@ export default function ShopDashboard() {
       },
       shopClosure: {
         enabled: !!p.shopClosure?.enabled,
-        closedFrom: toDatetimeLocal(p.shopClosure?.closedFrom),
-        closedUntil: toDatetimeLocal(p.shopClosure?.closedUntil),
+        dailyCloseTime:
+          p.shopClosure?.dailyCloseTime || isoToDailyTime(p.shopClosure?.closedFrom) || '22:00',
+        dailyOpenTime:
+          p.shopClosure?.dailyOpenTime || isoToDailyTime(p.shopClosure?.closedUntil) || '08:00',
         message: p.shopClosure?.message || '',
+        manualOverride: p.shopClosure?.manualOverride || null,
       },
       whatsappNumber: p.whatsappNumber || '',
       contactPhone: p.contactPhone || '',
@@ -309,9 +315,10 @@ export default function ShopDashboard() {
       getShopClosureState({
         shopClosure: {
           enabled: form.shopClosure.enabled,
-          closedFrom: form.shopClosure.closedFrom || null,
-          closedUntil: form.shopClosure.closedUntil || null,
+          dailyCloseTime: form.shopClosure.dailyCloseTime,
+          dailyOpenTime: form.shopClosure.dailyOpenTime,
           message: form.shopClosure.message,
+          manualOverride: form.shopClosure.manualOverride,
         },
       }),
     [form.shopClosure]
@@ -327,9 +334,13 @@ export default function ShopDashboard() {
     [authHeaders, fillFormFromProduct, loadProducts]
   );
 
-  const scheduleClosure = async () => {
-    if (!form.shopClosure.closedFrom || !form.shopClosure.closedUntil) {
-      alert('Indiquez l’heure de fermeture et de réouverture.');
+  const saveDailySchedule = async () => {
+    if (!form.shopClosure.dailyCloseTime || !form.shopClosure.dailyOpenTime) {
+      alert('Indiquez l’heure de fermeture et de réouverture quotidiennes.');
+      return;
+    }
+    if (form.shopClosure.dailyCloseTime === form.shopClosure.dailyOpenTime) {
+      alert('Les horaires de fermeture et d’ouverture doivent être différents.');
       return;
     }
     const payload = closurePayloadFromForm({ ...form.shopClosure, enabled: true });
@@ -345,13 +356,19 @@ export default function ShopDashboard() {
           return;
         }
         id = saved.id;
+        await patchClosureAndRefresh(id, payload);
       } else {
         await patchClosureAndRefresh(id, payload);
       }
-      setForm((f) => ({ ...f, shopClosure: { ...f.shopClosure, enabled: true } }));
-      alert('Fermeture programmée. La page boutique se mettra à jour automatiquement.');
+      setForm((f) => ({
+        ...f,
+        shopClosure: { ...f.shopClosure, enabled: true, manualOverride: null },
+      }));
+      alert(
+        'Horaires enregistrés. La boutique se fermera et s’ouvrira automatiquement chaque jour — plus besoin de reprogrammer.'
+      );
     } catch (err) {
-      alert(err.response?.data?.message || 'Impossible de programmer la fermeture.');
+      alert(err.response?.data?.message || 'Impossible d’enregistrer les horaires.');
     } finally {
       setSchedulingClosure(false);
     }
@@ -361,7 +378,11 @@ export default function ShopDashboard() {
     if (!editingId) {
       setForm((f) => ({
         ...f,
-        shopClosure: { enabled: false, closedFrom: '', closedUntil: '', message: '' },
+        shopClosure: {
+          ...f.shopClosure,
+          enabled: false,
+          manualOverride: null,
+        },
       }));
       return;
     }
@@ -369,16 +390,33 @@ export default function ShopDashboard() {
     try {
       await patchClosureAndRefresh(editingId, {
         enabled: false,
-        closedFrom: null,
-        closedUntil: null,
-        message: '',
+        dailyCloseTime: form.shopClosure.dailyCloseTime,
+        dailyOpenTime: form.shopClosure.dailyOpenTime,
+        message: form.shopClosure.message,
+        manualOverride: null,
       });
       setForm((f) => ({
         ...f,
-        shopClosure: { enabled: false, closedFrom: '', closedUntil: '', message: '' },
+        shopClosure: { ...f.shopClosure, enabled: false, manualOverride: null },
       }));
     } catch (err) {
       alert(err.response?.data?.message || 'Erreur');
+    } finally {
+      setSchedulingClosure(false);
+    }
+  };
+
+  const clearClosureOverride = async () => {
+    if (!editingId) return;
+    setSchedulingClosure(true);
+    try {
+      await patchClosureAndRefresh(editingId, { clearOverride: true });
+      setForm((f) => ({
+        ...f,
+        shopClosure: { ...f.shopClosure, manualOverride: null },
+      }));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Impossible de réactiver l’horaire automatique.');
     } finally {
       setSchedulingClosure(false);
     }
@@ -394,9 +432,11 @@ export default function ShopDashboard() {
       await patchClosureAndRefresh(editingId, { openNow: true });
       setForm((f) => ({
         ...f,
-        shopClosure: { ...f.shopClosure, enabled: false, closedFrom: '', closedUntil: '' },
+        shopClosure: { ...f.shopClosure, manualOverride: 'open' },
       }));
-      alert('Boutique ouverte. Les clients peuvent commander.');
+      alert(
+        'Boutique ouverte en mode exceptionnel. L’horaire automatique reprendra à la prochaine fermeture programmée, ou cliquez « Réactiver l’horaire automatique ».'
+      );
     } catch (err) {
       alert(err.response?.data?.message || 'Impossible d’ouvrir la boutique.');
     } finally {
@@ -405,30 +445,23 @@ export default function ShopDashboard() {
   };
 
   const closeShopNow = async () => {
-    if (!form.shopClosure.closedUntil) {
-      alert('Indiquez l’heure de réouverture avant de fermer la boutique.');
-      return;
-    }
-    const until = new Date(form.shopClosure.closedUntil);
-    if (Number.isNaN(until.getTime()) || until.getTime() <= Date.now()) {
-      alert('L’heure de réouverture doit être dans le futur.');
-      return;
-    }
     if (!editingId) {
       alert('Enregistrez d’abord le produit.');
       return;
     }
     setSchedulingClosure(true);
     try {
-      const payload = closurePayloadFromForm({ ...form.shopClosure, enabled: true });
       await patchClosureAndRefresh(editingId, {
         closeNow: true,
-        closedUntil: payload.closedUntil,
-        message: payload.message,
+        message: form.shopClosure.message,
       });
-      const res = await axios.get(`${API_URL}/shop-products/${editingId}`, authHeaders);
-      if (res.data) fillFormFromProduct(res.data);
-      alert('Boutique fermée. Réouverture automatique à l’heure prévue.');
+      setForm((f) => ({
+        ...f,
+        shopClosure: { ...f.shopClosure, manualOverride: 'closed' },
+      }));
+      alert(
+        'Boutique fermée manuellement. Réouverture automatique à la prochaine heure d’ouverture quotidienne.'
+      );
     } catch (err) {
       alert(err.response?.data?.message || 'Impossible de fermer la boutique.');
     } finally {
@@ -459,7 +492,7 @@ export default function ShopDashboard() {
         }
         await loadProducts();
         if (closeAfter) resetForm();
-        return { ok: true };
+        return { ok: true, id };
       } catch (err) {
         alert(err.response?.data?.message || 'Erreur lors de l’enregistrement');
         return { ok: false };
@@ -1172,51 +1205,59 @@ export default function ShopDashboard() {
 
             <div className="shop-dash-closure-box">
               <h3 className="shop-dash-closure-title">
-                <FaStore aria-hidden /> Fermeture programée de la boutique
+                <FaStore aria-hidden /> Horaires quotidiens de la boutique
               </h3>
               <p className="shop-dash-hint">
-                Pour une fiche boostée : définissez l’heure de fermeture et de réouverture. À l’heure
-                exacte, le lien affiche une page « boutique fermée » avec minuteur, puis la boutique
-                se rouvre automatiquement.
+                Définissez une fois l’heure de fermeture et de réouverture : chaque jour la boutique
+                se ferme et s’ouvre automatiquement (fuseau Bénin). Plus besoin de reprogrammer.
+                Les boutons manuels servent uniquement aux cas exceptionnels.
               </p>
 
-              {formClosurePreview.isShopClosed ? (
-                <p className="shop-dash-closure-status shop-dash-closure-status--closed">
-                  Boutique <strong>fermée</strong> maintenant — réouverture{' '}
-                  {formatClosureDateTime(formClosurePreview.closureClosedUntil)}
-                </p>
-              ) : formClosurePreview.isClosurePending ? (
+              {formClosurePreview.manualOverride === 'open' ? (
                 <p className="shop-dash-closure-status shop-dash-closure-status--pending">
-                  Fermeture programmée — ouverture jusqu’à{' '}
-                  {formatClosureDateTime(formClosurePreview.closureClosedFrom)}
+                  Ouverture <strong>exceptionnelle</strong> — l’horaire automatique reprendra à la
+                  prochaine fermeture ({formatDailyTime(formClosurePreview.dailyCloseTime)}).
+                </p>
+              ) : formClosurePreview.isShopClosed ? (
+                <p className="shop-dash-closure-status shop-dash-closure-status--closed">
+                  Boutique <strong>fermée</strong> — réouverture{' '}
+                  {formClosurePreview.closureReopensAt
+                    ? formatClosureDateTime(formClosurePreview.closureReopensAt)
+                    : formatDailyTime(formClosurePreview.dailyOpenTime)}
+                </p>
+              ) : form.shopClosure.enabled ? (
+                <p className="shop-dash-closure-status shop-dash-closure-status--pending">
+                  Boutique <strong>ouverte</strong> — fermeture automatique à{' '}
+                  {formatDailyTime(formClosurePreview.dailyCloseTime)} · réouverture à{' '}
+                  {formatDailyTime(formClosurePreview.dailyOpenTime)}
                 </p>
               ) : null}
 
               <div className="shop-dash-grid">
                 <div>
-                  <label>Fermeture (début)</label>
+                  <label>Fermeture quotidienne</label>
                   <input
                     className="shop-dash-input"
-                    type="datetime-local"
-                    value={form.shopClosure.closedFrom}
+                    type="time"
+                    value={form.shopClosure.dailyCloseTime}
                     onChange={(e) =>
                       setForm((f) => ({
                         ...f,
-                        shopClosure: { ...f.shopClosure, closedFrom: e.target.value, enabled: true },
+                        shopClosure: { ...f.shopClosure, dailyCloseTime: e.target.value },
                       }))
                     }
                   />
                 </div>
                 <div>
-                  <label>Réouverture (fin)</label>
+                  <label>Réouverture quotidienne</label>
                   <input
                     className="shop-dash-input"
-                    type="datetime-local"
-                    value={form.shopClosure.closedUntil}
+                    type="time"
+                    value={form.shopClosure.dailyOpenTime}
                     onChange={(e) =>
                       setForm((f) => ({
                         ...f,
-                        shopClosure: { ...f.shopClosure, closedUntil: e.target.value, enabled: true },
+                        shopClosure: { ...f.shopClosure, dailyOpenTime: e.target.value },
                       }))
                     }
                   />
@@ -1243,9 +1284,9 @@ export default function ShopDashboard() {
                   type="button"
                   className="shop-dash-btn primary"
                   disabled={schedulingClosure || saving}
-                  onClick={() => void scheduleClosure()}
+                  onClick={() => void saveDailySchedule()}
                 >
-                  {schedulingClosure ? 'Enregistrement…' : 'Programmer la fermeture'}
+                  {schedulingClosure ? 'Enregistrement…' : 'Enregistrer les horaires quotidiens'}
                 </button>
                 {formClosurePreview.isShopClosed ? (
                   <button
@@ -1254,7 +1295,7 @@ export default function ShopDashboard() {
                     disabled={schedulingClosure || saving || !editingId}
                     onClick={() => void openShopNow()}
                   >
-                    <FaDoorOpen aria-hidden /> Ouvrir la boutique maintenant
+                    <FaDoorOpen aria-hidden /> Ouvrir la boutique (cas exceptionnel)
                   </button>
                 ) : (
                   <button
@@ -1266,6 +1307,16 @@ export default function ShopDashboard() {
                     <FaLock aria-hidden /> Fermer la boutique maintenant
                   </button>
                 )}
+                {formClosurePreview.manualOverride ? (
+                  <button
+                    type="button"
+                    className="shop-dash-btn secondary"
+                    disabled={schedulingClosure || saving || !editingId}
+                    onClick={() => void clearClosureOverride()}
+                  >
+                    Réactiver l’horaire automatique
+                  </button>
+                ) : null}
                 {form.shopClosure.enabled ? (
                   <button
                     type="button"
@@ -1273,7 +1324,7 @@ export default function ShopDashboard() {
                     disabled={schedulingClosure || saving}
                     onClick={() => void cancelClosure()}
                   >
-                    Annuler la programmation
+                    Désactiver les horaires automatiques
                   </button>
                 ) : null}
               </div>
