@@ -175,6 +175,8 @@ export function mapCommandeToExportRow(commande) {
     address: formatAddress(commande),
     instructions: String(commande.adresseLivraison?.instruction || '').trim() || '—',
     lineItems: formatLineItems(commande),
+    subtotalPrice: Number(commande.sousTotal || 0),
+    deliveryFee: Number(commande.fraisLivraison || 0),
     itemQuantity: sumCommandeItemQuantity(commande),
     total: Number(commande.total || 0),
   };
@@ -182,6 +184,8 @@ export function mapCommandeToExportRow(commande) {
 
 export function prepareRestaurantCommandesExport(commandes, meta = {}) {
   const rows = (commandes || []).map(mapCommandeToExportRow);
+  const totalSubtotal = rows.reduce((s, r) => s + r.subtotalPrice, 0);
+  const totalDelivery = rows.reduce((s, r) => s + r.deliveryFee, 0);
   const totalAmount = rows.reduce((s, r) => s + r.total, 0);
 
   return {
@@ -197,6 +201,8 @@ export function prepareRestaurantCommandesExport(commandes, meta = {}) {
     cityLabel: meta.cityLabel || 'Toutes les villes',
     orders: rows,
     orderCount: rows.length,
+    totalSubtotal,
+    totalDelivery,
     totalAmount,
   };
 }

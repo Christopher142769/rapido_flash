@@ -14,9 +14,34 @@ const BRAND = {
   text: '#1a1411',
   muted: '#7a6558',
   white: '#ffffff',
+  green: '#2e7d32',
 };
 
-const COL_COUNT = 6;
+const COL_COUNT = 9;
+
+const TABLE_HEADERS = [
+  'N°',
+  'Nom',
+  'Téléphone',
+  'Lieu',
+  'Qté',
+  'Consignes',
+  'Montant',
+  'Livraison',
+  'Total',
+];
+
+const COLGROUP = `<colgroup>
+  <col style="width:24px"/>
+  <col style="width:78px"/>
+  <col style="width:72px"/>
+  <col style="width:118px"/>
+  <col style="width:36px"/>
+  <col style="width:100px"/>
+  <col style="width:62px"/>
+  <col style="width:58px"/>
+  <col style="width:62px"/>
+</colgroup>`;
 
 function escapeHtml(v) {
   return String(v ?? '')
@@ -35,6 +60,10 @@ function fmtDateShort(d) {
 
 function fmtMoney(n) {
   return `${Number(n || 0).toLocaleString('fr-FR')} FCFA`;
+}
+
+function fmtMoneyCell(n) {
+  return Number(n || 0).toLocaleString('fr-FR');
 }
 
 function safeFilenamePart(s) {
@@ -57,52 +86,50 @@ function downloadWord(html, filename) {
 
 function wordStyles() {
   return `
-    @page { size: 29.7cm 21cm; margin: 1.2cm 1cm; }
-    body { font-family: Calibri, Arial, sans-serif; color: ${BRAND.text}; font-size: 10pt; margin: 0; padding: 0; }
+    @page { size: 29.7cm 21cm; margin: 1cm 0.8cm; }
+    body { font-family: Calibri, Arial, sans-serif; color: ${BRAND.text}; font-size: 9.5pt; margin: 0; padding: 0; }
     table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
     .rf-page { width: 100%; }
     .rf-brand td { background: ${BRAND.brown}; color: ${BRAND.white}; padding: 14px 16px; border: none; }
-    .rf-brand h1 { margin: 0; font-size: 18pt; font-weight: bold; letter-spacing: 0.04em; }
-    .rf-brand p { margin: 4px 0 0; font-size: 9.5pt; color: #f5d78a; }
+    .rf-brand h1 { margin: 0; font-size: 17pt; font-weight: bold; letter-spacing: 0.04em; }
+    .rf-brand p { margin: 4px 0 0; font-size: 9pt; color: #f5d78a; }
     .rf-accent td { background: ${BRAND.amber}; height: 4px; padding: 0; border: none; font-size: 1px; line-height: 4px; }
-    .rf-meta td { background: ${BRAND.cream}; border: 1px solid ${BRAND.border}; padding: 7px 10px; font-size: 9.5pt; vertical-align: top; }
-    .rf-meta .lbl { color: ${BRAND.muted}; font-size: 8pt; text-transform: uppercase; letter-spacing: 0.06em; font-weight: bold; }
+    .rf-meta td { background: ${BRAND.cream}; border: 1px solid ${BRAND.border}; padding: 7px 10px; font-size: 9pt; vertical-align: top; }
+    .rf-meta .lbl { color: ${BRAND.muted}; font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.06em; font-weight: bold; }
     .rf-meta .val { color: ${BRAND.text}; font-weight: 600; padding-top: 2px; }
-    .rf-kpi td { background: #faf8f5; border: 1px solid ${BRAND.border}; padding: 10px 8px; text-align: center; vertical-align: middle; width: 25%; }
-    .rf-kpi .kpi-lbl { font-size: 8pt; text-transform: uppercase; color: ${BRAND.muted}; letter-spacing: 0.07em; font-weight: bold; margin-bottom: 4px; }
-    .rf-kpi .kpi-val { font-size: 14pt; font-weight: bold; color: ${BRAND.amber}; }
-    .rf-kpi .kpi-sub { font-size: 8pt; color: ${BRAND.muted}; margin-top: 3px; }
+    .rf-kpi td { background: #faf8f5; border: 1px solid ${BRAND.border}; padding: 9px 6px; text-align: center; vertical-align: middle; width: 20%; }
+    .rf-kpi .kpi-lbl { font-size: 7.5pt; text-transform: uppercase; color: ${BRAND.muted}; letter-spacing: 0.07em; font-weight: bold; margin-bottom: 3px; }
+    .rf-kpi .kpi-val { font-size: 12pt; font-weight: bold; color: ${BRAND.amber}; }
+    .rf-kpi .kpi-sub { font-size: 7.5pt; color: ${BRAND.muted}; margin-top: 2px; }
+    .rf-kpi .kpi-val--total { color: ${BRAND.brown}; font-size: 13pt; }
     .rf-data { width: 100%; margin-top: 10px; }
-    .rf-data th, .rf-data td { border: 1px solid ${BRAND.border}; padding: 7px 8px; vertical-align: top; font-size: 9.5pt; word-wrap: break-word; }
-    .rf-city-h td { background: ${BRAND.brown}; color: ${BRAND.white}; font-weight: bold; font-size: 11pt; padding: 9px 10px; border: 1px solid #6d3610; }
-    .rf-city-h .city-meta { font-size: 9pt; font-weight: normal; color: #f5d78a; }
-    .rf-col-h th { background: ${BRAND.headerBg}; color: #444; font-size: 8.5pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; padding: 8px; text-align: left; }
+    .rf-data th, .rf-data td { border: 1px solid ${BRAND.border}; padding: 6px 5px; vertical-align: top; font-size: 9pt; word-wrap: break-word; }
+    .rf-city-h td { background: ${BRAND.brown}; color: ${BRAND.white}; font-weight: bold; font-size: 10.5pt; padding: 8px 10px; border: 1px solid #6d3610; }
+    .rf-city-h .city-meta { font-size: 8.5pt; font-weight: normal; color: #f5d78a; }
+    .rf-col-h th { background: ${BRAND.headerBg}; color: #444; font-size: 7.5pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.04em; padding: 7px 5px; text-align: left; }
+    .rf-col-h .th-money { text-align: right; background: #efe6dc; color: ${BRAND.brown}; }
+    .rf-col-h .th-total { background: #e8d4c0; color: ${BRAND.brown}; }
     .rf-row-a td { background: ${BRAND.white}; }
     .rf-row-b td { background: ${BRAND.creamAlt}; }
     .rf-empty td { background: #fafafa; color: ${BRAND.muted}; font-style: italic; text-align: center; padding: 12px; }
-    .rf-subtotal td { background: #fff8e8; font-weight: bold; font-size: 9.5pt; border-top: 2px solid ${BRAND.amber}; padding: 8px 10px; }
+    .rf-subtotal td { background: #fff8e8; font-weight: bold; font-size: 9pt; border-top: 2px solid ${BRAND.amber}; padding: 7px 6px; }
+    .rf-subtotal .sub-lbl { text-align: right; color: ${BRAND.brown}; }
     .rf-spacer td { border: none; height: 8px; background: ${BRAND.white}; padding: 0; }
-    .rf-grand td { background: ${BRAND.brown}; color: ${BRAND.white}; font-weight: bold; font-size: 10.5pt; padding: 11px 10px; border: 1px solid #6d3610; }
-    .rf-footer td { border: none; padding: 12px 0 0; font-size: 8.5pt; color: ${BRAND.muted}; border-top: 2px solid ${BRAND.amber}; }
-    .c-num { text-align: center; font-weight: bold; color: ${BRAND.muted}; width: 28px; }
-    .c-nom { font-weight: 600; width: 95px; }
-    .c-tel { width: 82px; white-space: nowrap; }
-    .c-lieu { width: 200px; }
-    .c-qty { text-align: center; font-weight: bold; color: ${BRAND.amber}; width: 52px; }
-    .c-cons { width: 150px; }
+    .rf-grand td { background: ${BRAND.brown}; color: ${BRAND.white}; font-weight: bold; font-size: 10pt; padding: 10px 6px; border: 1px solid #6d3610; }
+    .rf-grand .g-money { text-align: right; }
+    .rf-grand .g-total { background: #6d3610; text-align: right; font-size: 10.5pt; }
+    .rf-footer td { border: none; padding: 12px 0 0; font-size: 8pt; color: ${BRAND.muted}; border-top: 2px solid ${BRAND.amber}; }
+    .c-num { text-align: center; font-weight: bold; color: ${BRAND.muted}; }
+    .c-nom { font-weight: 600; }
+    .c-tel { white-space: nowrap; font-size: 8.5pt; }
+    .c-qty { text-align: center; font-weight: bold; color: ${BRAND.amber}; }
+    .c-cons { font-size: 8.5pt; }
+    .c-money { text-align: right; white-space: nowrap; font-size: 8.5pt; color: #333; }
+    .c-money-del { color: ${BRAND.muted}; }
+    .c-money-free { text-align: right; color: ${BRAND.green}; font-weight: bold; font-size: 8pt; }
+    .c-money-total { text-align: right; font-weight: bold; color: ${BRAND.amber}; background: #fffbf5; font-size: 9pt; }
   `;
 }
-
-const TABLE_HEADERS = ['N°', 'Nom', 'Téléphone', 'Lieu', 'Qté', 'Consignes'];
-
-const COLGROUP = `<colgroup>
-  <col class="c-num" style="width:28px"/>
-  <col class="c-nom" style="width:95px"/>
-  <col class="c-tel" style="width:82px"/>
-  <col class="c-lieu" style="width:200px"/>
-  <col class="c-qty" style="width:52px"/>
-  <col class="c-cons" style="width:150px"/>
-</colgroup>`;
 
 function wordShell({ title, subtitle, metaRows, kpiCells, dataTableBody, grandTotalRow, footerText }) {
   const metaHtml = metaRows
@@ -122,7 +149,7 @@ function wordShell({ title, subtitle, metaRows, kpiCells, dataTableBody, grandTo
     .map(
       (k) => `<td>
         <div class="kpi-lbl">${escapeHtml(k.label)}</div>
-        <div class="kpi-val">${escapeHtml(k.value)}</div>
+        <div class="kpi-val${k.highlight ? ' kpi-val--total' : ''}">${escapeHtml(k.value)}</div>
         ${k.sub ? `<div class="kpi-sub">${escapeHtml(k.sub)}</div>` : ''}
       </td>`
     )
@@ -151,15 +178,11 @@ function wordShell({ title, subtitle, metaRows, kpiCells, dataTableBody, grandTo
   <tr class="rf-accent"><td colspan="${COL_COUNT}">&nbsp;</td></tr>
   <tr><td colspan="${COL_COUNT}" style="height:10px;border:none;">&nbsp;</td></tr>
   <tr><td colspan="${COL_COUNT}" style="border:none;padding:0;">
-    <table width="100%" cellpadding="0" cellspacing="0" class="rf-meta">
-      ${metaHtml}
-    </table>
+    <table width="100%" cellpadding="0" cellspacing="0" class="rf-meta">${metaHtml}</table>
   </td></tr>
   <tr><td colspan="${COL_COUNT}" style="height:8px;border:none;">&nbsp;</td></tr>
   <tr><td colspan="${COL_COUNT}" style="border:none;padding:0;">
-    <table width="100%" cellpadding="0" cellspacing="0" class="rf-kpi">
-      ${kpiHtml}
-    </table>
+    <table width="100%" cellpadding="0" cellspacing="0" class="rf-kpi">${kpiHtml}</table>
   </td></tr>
   <tr><td colspan="${COL_COUNT}" style="height:10px;border:none;">&nbsp;</td></tr>
   <tr><td colspan="${COL_COUNT}" style="border:none;padding:0;">
@@ -170,9 +193,7 @@ function wordShell({ title, subtitle, metaRows, kpiCells, dataTableBody, grandTo
   </td></tr>
   <tr><td colspan="${COL_COUNT}" style="height:6px;border:none;">&nbsp;</td></tr>
   <tr><td colspan="${COL_COUNT}" style="border:none;padding:0;">
-    <table width="100%" cellpadding="0" cellspacing="0">
-      ${grandTotalRow}
-    </table>
+    <table width="100%" cellpadding="0" cellspacing="0">${grandTotalRow}</table>
   </td></tr>
   <tr class="rf-footer"><td colspan="${COL_COUNT}">${footerText}</td></tr>
 </table>
@@ -189,6 +210,17 @@ function shopLieu(r) {
   return full.replace(/^(Cotonou|Calavi)\s*[—–-]\s*/i, '').trim() || full;
 }
 
+function moneyTd(amount, className = 'c-money') {
+  return `<td class="${className}">${escapeHtml(fmtMoneyCell(amount))}</td>`;
+}
+
+function shopDeliveryTd(r) {
+  if (r.freeDelivery) {
+    return '<td class="c-money-free">Gratuit</td>';
+  }
+  return moneyTd(r.deliveryFee, 'c-money c-money-del');
+}
+
 function shopTableRow(r, index, stripe) {
   const fullName = [r.firstName, r.lastName].filter((p) => p && p !== '—').join(' ') || '—';
   const consignes = r.clientSpecifications && r.clientSpecifications !== '—' ? r.clientSpecifications : '—';
@@ -201,6 +233,9 @@ function shopTableRow(r, index, stripe) {
     <td class="c-lieu">${escapeHtml(shopLieu(r))}</td>
     <td class="c-qty">${escapeHtml(r.quantityLabel)}</td>
     <td class="c-cons">${escapeHtml(consignes)}</td>
+    ${moneyTd(r.subtotalPrice)}
+    ${shopDeliveryTd(r)}
+    ${moneyTd(r.totalPrice, 'c-money c-money-total')}
   </tr>`;
 }
 
@@ -213,13 +248,21 @@ function restaurantTableRow(r, index, stripe) {
     <td class="c-nom">${escapeHtml(r.clientName)}</td>
     <td class="c-tel">${escapeHtml(r.phone)}</td>
     <td class="c-lieu">${escapeHtml(r.address)}</td>
-    <td class="c-qty">${escapeHtml(r.lineItems)}</td>
+    <td class="c-qty">${escapeHtml(String(r.itemQuantity || '—'))}</td>
     <td class="c-cons">${escapeHtml(consignes)}</td>
+    ${moneyTd(r.subtotalPrice)}
+    ${moneyTd(r.deliveryFee, 'c-money c-money-del')}
+    ${moneyTd(r.total, 'c-money c-money-total')}
   </tr>`;
 }
 
 function columnHeaderRow() {
-  return `<tr class="rf-col-h">${TABLE_HEADERS.map((h) => `<th>${escapeHtml(h)}</th>`).join('')}</tr>`;
+  const moneyClass = (h) => {
+    if (h === 'Total') return 'th-money th-total';
+    if (h === 'Montant' || h === 'Livraison') return 'th-money';
+    return '';
+  };
+  return `<tr class="rf-col-h">${TABLE_HEADERS.map((h) => `<th class="${moneyClass(h)}">${escapeHtml(h)}</th>`).join('')}</tr>`;
 }
 
 function inferShopRowCity(r) {
@@ -250,12 +293,21 @@ function normalizeCity(city) {
   return 'Autre';
 }
 
-function groupRowsByCityFixed(rows, inferCity, getQuantity, getAmount, cityFilter) {
+function emptyCitySlot(city) {
+  return {
+    city,
+    rows: [],
+    totalQuantity: 0,
+    orderCount: 0,
+    totalSubtotal: 0,
+    totalDelivery: 0,
+    totalAmount: 0,
+  };
+}
+
+function groupRowsByCityFixed(rows, inferCity, getQuantity, getMoney, cityFilter) {
   const slots = Object.fromEntries(
-    [...POINTS_CITIES, 'Autre'].map((city) => [
-      city,
-      { city, rows: [], totalQuantity: 0, orderCount: 0, totalAmount: 0 },
-    ])
+    [...POINTS_CITIES, 'Autre'].map((city) => [city, emptyCitySlot(city)])
   );
 
   for (const row of rows) {
@@ -264,7 +316,9 @@ function groupRowsByCityFixed(rows, inferCity, getQuantity, getAmount, cityFilte
     g.rows.push(row);
     g.totalQuantity += getQuantity(row);
     g.orderCount += 1;
-    g.totalAmount += getAmount(row);
+    g.totalSubtotal += getMoney.subtotal(row);
+    g.totalDelivery += getMoney.delivery(row);
+    g.totalAmount += getMoney.total(row);
   }
 
   if (cityFilter && POINTS_CITIES.includes(cityFilter)) {
@@ -289,7 +343,13 @@ function formatShopQuantity(total, rows) {
 function buildCityBlock(group, rowMapper, formatGroupQuantity) {
   const qtyLabel = formatGroupQuantity(group);
   const cityTitle = group.city.toUpperCase();
-  const cityMeta = `${group.orderCount} commande(s) · Qté : ${qtyLabel} · ${fmtMoney(group.totalAmount)}`;
+  const cityMeta = [
+    `${group.orderCount} cmd`,
+    `Qté ${qtyLabel}`,
+    `Produits ${fmtMoney(group.totalSubtotal)}`,
+    `Livraison ${fmtMoney(group.totalDelivery)}`,
+    `Total ${fmtMoney(group.totalAmount)}`,
+  ].join(' · ');
 
   let body = `<tr class="rf-city-h"><td colspan="${COL_COUNT}">
     ${escapeHtml(cityTitle)}
@@ -304,9 +364,12 @@ function buildCityBlock(group, rowMapper, formatGroupQuantity) {
   }
 
   body += `<tr class="rf-subtotal">
-    <td colspan="4" style="text-align:right;">Sous-total ${escapeHtml(group.city)}</td>
+    <td colspan="4" class="sub-lbl">Sous-total ${escapeHtml(group.city)}</td>
     <td class="c-qty">${escapeHtml(qtyLabel)}</td>
-    <td>${group.orderCount} cmd · ${escapeHtml(fmtMoney(group.totalAmount))}</td>
+    <td>&nbsp;</td>
+    <td class="c-money">${escapeHtml(fmtMoneyCell(group.totalSubtotal))}</td>
+    <td class="c-money c-money-del">${escapeHtml(fmtMoneyCell(group.totalDelivery))}</td>
+    <td class="c-money c-money-total">${escapeHtml(fmtMoneyCell(group.totalAmount))}</td>
   </tr>`;
   body += `<tr class="rf-spacer"><td colspan="${COL_COUNT}">&nbsp;</td></tr>`;
 
@@ -317,29 +380,45 @@ function buildDataBody(groups, rowMapper, formatGroupQuantity) {
   return groups.map((g) => buildCityBlock(g, rowMapper, formatGroupQuantity)).join('');
 }
 
-function grandTotalRow(cells) {
-  return `<tr class="rf-grand">${cells
-    .map((c) => `<td colspan="${c.span}">${c.html}</td>`)
-    .join('')}</tr>`;
+function buildGrandTotalRow({ label, qtyLabel, totalSubtotal, totalDelivery, totalAmount }) {
+  return `<tr class="rf-grand">
+    <td colspan="4">${escapeHtml(label)}</td>
+    <td style="text-align:center;">${escapeHtml(qtyLabel)}</td>
+    <td>&nbsp;</td>
+    <td class="g-money">${escapeHtml(fmtMoneyCell(totalSubtotal))}</td>
+    <td class="g-money">${escapeHtml(fmtMoneyCell(totalDelivery))}</td>
+    <td class="g-total">${escapeHtml(fmtMoneyCell(totalAmount))}</td>
+  </tr>
+  <tr><td colspan="${COL_COUNT}" style="border:none;padding:4px 0 0;font-size:8pt;color:${BRAND.muted};text-align:right;">
+    Montants en FCFA · Total = Montant produits + Frais de livraison
+  </td></tr>`;
 }
 
 function productQtyLabel(productLabel, fallback) {
   return productLabel && !productLabel.startsWith('Tous') ? productLabel : fallback;
 }
 
-function buildExportKpiCells({ cityFilter, cityLabel, totalQtyLabel, prodLabel, orderCount, totalAmount, cotonouQty, calaviQty }) {
-  const base = [
+function buildMoneyKpiCells({ orderCount, totalQtyLabel, prodLabel, totalSubtotal, totalDelivery, totalAmount }) {
+  return [
     { label: 'Commandes', value: String(orderCount) },
     { label: 'Quantité totale', value: totalQtyLabel, sub: prodLabel },
-    { label: 'Montant total', value: fmtMoney(totalAmount) },
+    { label: 'Montant produits', value: fmtMoney(totalSubtotal) },
+    { label: 'Frais livraison', value: fmtMoney(totalDelivery) },
+    { label: 'Total général', value: fmtMoney(totalAmount), highlight: true },
   ];
-  if (cityFilter) {
-    base.push({ label: 'Ville', value: cityLabel });
-  } else {
-    base.push({ label: 'Répartition', value: `Cotonou ${cotonouQty}`, sub: `Calavi ${calaviQty}` });
-  }
-  return base;
 }
+
+const SHOP_MONEY = {
+  subtotal: (r) => Number(r.subtotalPrice || 0),
+  delivery: (r) => Number(r.deliveryFee || 0),
+  total: (r) => Number(r.totalPrice || 0),
+};
+
+const RESTAURANT_MONEY = {
+  subtotal: (r) => Number(r.subtotalPrice || 0),
+  delivery: (r) => Number(r.deliveryFee || 0),
+  total: (r) => Number(r.total || 0),
+};
 
 export function exportShopOrdersToWord(exportData) {
   if (!exportData?.orders?.length) return;
@@ -357,14 +436,8 @@ export function exportShopOrdersToWord(exportData) {
     rows,
     inferShopRowCity,
     shopRowQuantity,
-    (r) => Number(r.totalPrice || 0),
+    SHOP_MONEY,
     cityFilter
-  );
-
-  const cotonouQty = formatShopQuantity(byCity[0]?.totalQuantity || 0, byCity[0]?.rows?.length ? byCity[0].rows : rows);
-  const calaviQty = formatShopQuantity(
-    byCity.find((g) => g.city === 'Calavi')?.totalQuantity || 0,
-    byCity.find((g) => g.city === 'Calavi')?.rows?.length ? byCity.find((g) => g.city === 'Calavi').rows : rows
   );
 
   const formatGroupQty = (group) =>
@@ -386,22 +459,22 @@ export function exportShopOrdersToWord(exportData) {
         { label: 'Ville', valueHtml: escapeHtml(cityLabel) },
       ],
     ],
-    kpiCells: buildExportKpiCells({
-      cityFilter,
-      cityLabel,
+    kpiCells: buildMoneyKpiCells({
+      orderCount: exportData.orderCount,
       totalQtyLabel,
       prodLabel,
-      orderCount: exportData.orderCount,
+      totalSubtotal: exportData.totalSubtotal,
+      totalDelivery: exportData.totalDelivery,
       totalAmount: exportData.totalAmount,
-      cotonouQty,
-      calaviQty,
     }),
     dataTableBody,
-    grandTotalRow: grandTotalRow([
-      { span: 4, html: `TOTAL${cityFilter ? ` ${escapeHtml(cityLabel)}` : ' GÉNÉRAL'} — ${exportData.orderCount} commande(s)` },
-      { span: 1, html: escapeHtml(totalQtyLabel) },
-      { span: 1, html: escapeHtml(fmtMoney(exportData.totalAmount)) },
-    ]),
+    grandTotalRow: buildGrandTotalRow({
+      label: `TOTAL${cityFilter ? ` ${cityLabel}` : ' GÉNÉRAL'} — ${exportData.orderCount} commande(s)`,
+      qtyLabel: totalQtyLabel,
+      totalSubtotal: exportData.totalSubtotal,
+      totalDelivery: exportData.totalDelivery,
+      totalAmount: exportData.totalAmount,
+    }),
     footerText: `Rapido Flash · Document éditable dans Microsoft Word · ${escapeHtml(prodLabel)}`,
   });
 
@@ -427,12 +500,10 @@ export function exportRestaurantCommandesToWord(exportData) {
     rows,
     inferRestaurantRowCity,
     restaurantRowQuantity,
-    (r) => Number(r.total || 0),
+    RESTAURANT_MONEY,
     cityFilter
   );
 
-  const cotonouQty = formatFilterQuantity(byCity[0]?.totalQuantity || 0);
-  const calaviQty = formatFilterQuantity(byCity.find((g) => g.city === 'Calavi')?.totalQuantity || 0);
   const formatGroupQty = (group) => formatFilterQuantity(group.totalQuantity);
 
   const dataTableBody = buildDataBody(byCity, restaurantTableRow, formatGroupQty);
@@ -457,23 +528,23 @@ export function exportRestaurantCommandesToWord(exportData) {
         { label: '', valueHtml: '' },
       ],
     ],
-    kpiCells: buildExportKpiCells({
-      cityFilter,
-      cityLabel,
+    kpiCells: buildMoneyKpiCells({
+      orderCount: exportData.orderCount,
       totalQtyLabel,
       prodLabel,
-      orderCount: exportData.orderCount,
+      totalSubtotal: exportData.totalSubtotal,
+      totalDelivery: exportData.totalDelivery,
       totalAmount: exportData.totalAmount,
-      cotonouQty,
-      calaviQty,
     }),
     dataTableBody,
-    grandTotalRow: grandTotalRow([
-      { span: 4, html: `TOTAL${cityFilter ? ` ${escapeHtml(cityLabel)}` : ' GÉNÉRAL'} — ${exportData.orderCount} commande(s)` },
-      { span: 1, html: escapeHtml(totalQtyLabel) },
-      { span: 1, html: escapeHtml(fmtMoney(exportData.totalAmount)) },
-    ]),
-    footerText: `Rapido Flash · Document éditable dans Microsoft Word`,
+    grandTotalRow: buildGrandTotalRow({
+      label: `TOTAL${cityFilter ? ` ${cityLabel}` : ' GÉNÉRAL'} — ${exportData.orderCount} commande(s)`,
+      qtyLabel: totalQtyLabel,
+      totalSubtotal: exportData.totalSubtotal,
+      totalDelivery: exportData.totalDelivery,
+      totalAmount: exportData.totalAmount,
+    }),
+    footerText: 'Rapido Flash · Document éditable dans Microsoft Word',
   });
 
   downloadWord(
