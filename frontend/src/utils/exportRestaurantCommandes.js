@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import { inferRestaurantCommandeCity, matchesDeliveryCity } from './pointsByCity';
 import { SHOP_STATUT_LABELS } from './exportShopOrders';
 
 const ORDER_TZ = 'Africa/Porto-Novo';
@@ -104,7 +105,7 @@ function matchesCommandeProduct(commande, productKey) {
 
 export function filterRestaurantCommandes(
   commandes,
-  { dateFrom, dateTo, statut, productKey, restaurantId } = {}
+  { dateFrom, dateTo, statut, productKey, restaurantId, city } = {}
 ) {
   return (commandes || []).filter((c) => {
     if (restaurantId) {
@@ -113,6 +114,7 @@ export function filterRestaurantCommandes(
     }
     if (statut && c.statut !== statut) return false;
     if (!matchesCommandeProduct(c, productKey)) return false;
+    if (!matchesDeliveryCity(c, city, inferRestaurantCommandeCity)) return false;
     const key = orderDayKey(c);
     if (!key) return false;
     if (dateFrom && key < dateFrom) return false;
@@ -191,6 +193,8 @@ export function prepareRestaurantCommandesExport(commandes, meta = {}) {
     productLabel: meta.productLabel || 'Tous les articles',
     restaurantFilter: meta.restaurantFilter || '',
     restaurantLabel: meta.restaurantLabel || 'Toutes les entreprises',
+    cityFilter: meta.cityFilter || '',
+    cityLabel: meta.cityLabel || 'Toutes les villes',
     orders: rows,
     orderCount: rows.length,
     totalAmount,
@@ -258,7 +262,7 @@ export function exportRestaurantCommandesToExcel(exportData) {
 </head>
 <body>
   <h1>RAPIDO — Commandes</h1>
-  <p class="meta">Période : ${period} · ${escapeCsv(exportData.restaurantLabel)} · Statut : ${escapeCsv(exportData.statutLabel)} · Article : ${escapeCsv(exportData.productLabel)} · ${exportData.orderCount} commande(s)</p>
+  <p class="meta">Période : ${period} · ${escapeCsv(exportData.restaurantLabel)} · Statut : ${escapeCsv(exportData.statutLabel)} · Article : ${escapeCsv(exportData.productLabel)} · Ville : ${escapeCsv(exportData.cityLabel)} · ${exportData.orderCount} commande(s)</p>
   <table>
     <thead><tr>${EXCEL_HEADERS.map((h) => `<th>${h}</th>`).join('')}</tr></thead>
     <tbody>
@@ -277,7 +281,7 @@ export function exportRestaurantCommandesToExcel(exportData) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `commandes-${safeFilenamePart(exportData.restaurantLabel)}-${Date.now()}.xls`;
+  a.download = `commandes-${safeFilenamePart(exportData.restaurantLabel)}-${safeFilenamePart(exportData.cityFilter || 'toutes-villes')}-${Date.now()}.xls`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -330,7 +334,7 @@ export function exportRestaurantCommandesToPdf(exportData) {
   pdf.setFontSize(9);
   setText(BRAND.goldLight);
   pdf.text(
-    `${exportData.restaurantLabel} · ${exportData.statutLabel} · ${exportData.productLabel}`,
+    `${exportData.restaurantLabel} · ${exportData.statutLabel} · ${exportData.productLabel} · ${exportData.cityLabel}`,
     margin,
     19
   );
@@ -432,7 +436,7 @@ export function exportRestaurantCommandesToPdf(exportData) {
 
   drawPageFooter();
 
-  pdf.save(`commandes-${safeFilenamePart(exportData.restaurantLabel)}-${Date.now()}.pdf`);
+  pdf.save(`commandes-${safeFilenamePart(exportData.restaurantLabel)}-${safeFilenamePart(exportData.cityFilter || 'toutes-villes')}-${Date.now()}.pdf`);
 }
 
 export function defaultCommandeDateRange() {

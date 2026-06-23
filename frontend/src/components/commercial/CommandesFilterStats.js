@@ -10,15 +10,20 @@ export default function CommandesFilterStats({
   totalAmount,
   statutLabel,
   productLabel,
+  cityLabel,
   formatPrice,
   quantityLabel = 'Quantité totale',
 }) {
+  const filterHint = [productLabel, cityLabel && cityLabel !== 'Toutes les villes' ? cityLabel : null]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <div className="commercial-kpi-grid commandes-filter-stats">
       <div className="commercial-kpi">
         <div className="commercial-kpi-label">Commandes · {statutLabel}</div>
         <div className="commercial-kpi-value commercial-kpi-value--gold">{orderCount}</div>
-        <p className="commandes-filter-stats-hint">{productLabel}</p>
+        <p className="commandes-filter-stats-hint">{filterHint || productLabel}</p>
       </div>
       <div className="commercial-kpi">
         <div className="commercial-kpi-label">{quantityLabel}</div>

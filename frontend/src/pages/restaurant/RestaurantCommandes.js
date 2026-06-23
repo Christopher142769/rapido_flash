@@ -19,6 +19,7 @@ import '../commercial/commercial.css';
 import './RestaurantCommandes.css';
 import CommandesFilterStats from '../../components/commercial/CommandesFilterStats';
 import { sumRestaurantCommandesQuantity } from '../../utils/commandesFilterStats';
+import { CITY_FILTER_LABELS, POINTS_CITIES } from '../../utils/pointsByCity';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -42,6 +43,7 @@ const RestaurantCommandes = () => {
   const [selectedRestaurant, setSelectedRestaurant] = useState('');
   const [filter, setFilter] = useState('');
   const [productFilter, setProductFilter] = useState('');
+  const [cityFilter, setCityFilter] = useState('');
   const [dateFrom, setDateFrom] = useState(() => defaultCommandeDateRange().dateFrom);
   const [dateTo, setDateTo] = useState(() => defaultCommandeDateRange().dateTo);
 
@@ -74,11 +76,12 @@ const RestaurantCommandes = () => {
       statut: filter || undefined,
       productKey: productFilter || undefined,
       restaurantId: selectedRestaurant || undefined,
+      city: cityFilter || undefined,
     });
     return [...list].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
-  }, [allCommandes, selectedRestaurant, filter, productFilter, dateFrom, dateTo]);
+  }, [allCommandes, selectedRestaurant, filter, productFilter, cityFilter, dateFrom, dateTo]);
 
   const selectedRestaurantLabel =
     restaurants.find((r) => String(r._id) === String(selectedRestaurant))?.nom ||
@@ -88,6 +91,7 @@ const RestaurantCommandes = () => {
     productOptions.find((p) => p.key === productFilter)?.label || 'Tous les articles';
 
   const selectedStatutLabel = filter ? COMMANDE_STATUT_LABELS[filter] || filter : 'Tous les statuts';
+  const selectedCityLabel = CITY_FILTER_LABELS[cityFilter] || 'Toutes les villes';
 
   const exportData = useMemo(
     () =>
@@ -100,6 +104,8 @@ const RestaurantCommandes = () => {
         productLabel: selectedProductLabel,
         restaurantFilter: selectedRestaurant,
         restaurantLabel: selectedRestaurantLabel,
+        cityFilter,
+        cityLabel: selectedCityLabel,
       }),
     [
       filteredCommandes,
@@ -107,9 +113,11 @@ const RestaurantCommandes = () => {
       dateTo,
       filter,
       productFilter,
+      cityFilter,
       selectedProductLabel,
       selectedRestaurant,
       selectedRestaurantLabel,
+      selectedCityLabel,
     ]
   );
 
@@ -250,6 +258,17 @@ const RestaurantCommandes = () => {
                 ))}
               </select>
             </label>
+            <label>
+              Ville
+              <select value={cityFilter} onChange={(e) => setCityFilter(e.target.value)}>
+                <option value="">Toutes les villes</option>
+                {POINTS_CITIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </label>
             <button
               type="button"
               className="commercial-btn commercial-btn--outline"
@@ -266,6 +285,7 @@ const RestaurantCommandes = () => {
             totalAmount={filterStats.totalAmount}
             statutLabel={selectedStatutLabel}
             productLabel={selectedProductLabel}
+            cityLabel={selectedCityLabel}
             formatPrice={formatPrice}
             quantityLabel="Quantité articles"
           />
@@ -305,7 +325,7 @@ const RestaurantCommandes = () => {
         </div>
 
         <p className="commandes-shop-hint">
-          Filtrez par <strong>date de commande</strong>, entreprise, statut et article, puis exportez le
+          Filtrez par <strong>date de commande</strong>, entreprise, statut, article et ville, puis exportez le
           détail en PDF, Excel ou Word. Les commandes <strong>Shop express</strong> sont gérées dans{' '}
           <button
             type="button"

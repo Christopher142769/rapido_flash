@@ -250,7 +250,7 @@ function normalizeCity(city) {
   return 'Autre';
 }
 
-function groupRowsByCityFixed(rows, inferCity, getQuantity, getAmount) {
+function groupRowsByCityFixed(rows, inferCity, getQuantity, getAmount, cityFilter) {
   const slots = Object.fromEntries(
     [...POINTS_CITIES, 'Autre'].map((city) => [
       city,
@@ -265,6 +265,10 @@ function groupRowsByCityFixed(rows, inferCity, getQuantity, getAmount) {
     g.totalQuantity += getQuantity(row);
     g.orderCount += 1;
     g.totalAmount += getAmount(row);
+  }
+
+  if (cityFilter && POINTS_CITIES.includes(cityFilter)) {
+    return [slots[cityFilter]];
   }
 
   const result = POINTS_CITIES.map((city) => slots[city]);
@@ -323,10 +327,26 @@ function productQtyLabel(productLabel, fallback) {
   return productLabel && !productLabel.startsWith('Tous') ? productLabel : fallback;
 }
 
+function buildExportKpiCells({ cityFilter, cityLabel, totalQtyLabel, prodLabel, orderCount, totalAmount, cotonouQty, calaviQty }) {
+  const base = [
+    { label: 'Commandes', value: String(orderCount) },
+    { label: 'Quantité totale', value: totalQtyLabel, sub: prodLabel },
+    { label: 'Montant total', value: fmtMoney(totalAmount) },
+  ];
+  if (cityFilter) {
+    base.push({ label: 'Ville', value: cityLabel });
+  } else {
+    base.push({ label: 'Répartition', value: `Cotonou ${cotonouQty}`, sub: `Calavi ${calaviQty}` });
+  }
+  return base;
+}
+
 export function exportShopOrdersToWord(exportData) {
   if (!exportData?.orders?.length) return;
 
   const rows = exportData.orders;
+  const cityFilter = exportData.cityFilter || '';
+  const cityLabel = exportData.cityLabel || 'Toutes les villes';
   const period = `${fmtDateShort(exportData.dateFrom)} → ${fmtDateShort(exportData.dateTo)}`;
   const prodLabel = productQtyLabel(exportData.productLabel, 'produit');
 
@@ -337,58 +357,66 @@ export function exportShopOrdersToWord(exportData) {
     rows,
     inferShopRowCity,
     shopRowQuantity,
-    (r) => Number(r.totalPrice || 0)
+    (r) => Number(r.totalPrice || 0),
+    cityFilter
   );
 
-  const cotonouQty = formatShopQuantity(byCity[0].totalQuantity, byCity[0].rows.length ? byCity[0].rows : rows);
-  const calaviQty = formatShopQuantity(byCity[1].totalQuantity, byCity[1].rows.length ? byCity[1].rows : rows);
+  const cotonouQty = formatShopQuantity(byCity[0]?.totalQuantity || 0, byCity[0]?.rows?.length ? byCity[0].rows : rows);
+  const calaviQty = formatShopQuantity(
+    byCity.find((g) => g.city === 'Calavi')?.totalQuantity || 0,
+    byCity.find((g) => g.city === 'Calavi')?.rows?.length ? byCity.find((g) => g.city === 'Calavi').rows : rows
+  );
 
   const formatGroupQty = (group) =>
     formatShopQuantity(group.totalQuantity, group.rows.length ? group.rows : rows);
 
   const dataTableBody = buildDataBody(byCity, shopTableRow, formatGroupQty);
+  const subtitle = cityFilter
+    ? `Feuille de tournée · ${cityLabel}`
+    : 'Feuille de tournée · Cotonou & Calavi';
 
   const html = wordShell({
     title: 'RAPIDO — Commandes Shop',
-    subtitle: 'Feuille de tournée · Cotonou & Calavi',
+    subtitle,
     metaRows: [
       [
         { label: 'Période', valueHtml: escapeHtml(period) },
         { label: 'Statut', valueHtml: escapeHtml(exportData.statutLabel) },
         { label: 'Produit', valueHtml: escapeHtml(exportData.productLabel) },
-        { label: 'Généré le', valueHtml: escapeHtml(new Date().toLocaleString('fr-FR')) },
+        { label: 'Ville', valueHtml: escapeHtml(cityLabel) },
       ],
     ],
-    kpiCells: [
-      { label: 'Commandes', value: String(exportData.orderCount) },
-      {
-        label: 'Quantité totale',
-        value: totalQtyLabel,
-        sub: prodLabel,
-      },
-      { label: 'Montant total', value: fmtMoney(exportData.totalAmount) },
-      {
-        label: 'Répartition',
-        value: `Cotonou ${cotonouQty}`,
-        sub: `Calavi ${calaviQty}`,
-      },
-    ],
+    kpiCells: buildExportKpiCells({
+      cityFilter,
+      cityLabel,
+      totalQtyLabel,
+      prodLabel,
+      orderCount: exportData.orderCount,
+      totalAmount: exportData.totalAmount,
+      cotonouQty,
+      calaviQty,
+    }),
     dataTableBody,
     grandTotalRow: grandTotalRow([
-      { span: 4, html: `TOTAL GÉNÉRAL — ${exportData.orderCount} commande(s)` },
+      { span: 4, html: `TOTAL${cityFilter ? ` ${escapeHtml(cityLabel)}` : ' GÉNÉRAL'} — ${exportData.orderCount} commande(s)` },
       { span: 1, html: escapeHtml(totalQtyLabel) },
       { span: 1, html: escapeHtml(fmtMoney(exportData.totalAmount)) },
     ]),
     footerText: `Rapido Flash · Document éditable dans Microsoft Word · ${escapeHtml(prodLabel)}`,
   });
 
-  downloadWord(html, `commandes-shop-${safeFilenamePart(exportData.statutLabel)}-${Date.now()}.doc`);
+  downloadWord(
+    html,
+    `commandes-shop-${safeFilenamePart(cityFilter || 'toutes-villes')}-${safeFilenamePart(exportData.statutLabel)}-${Date.now()}.doc`
+  );
 }
 
 export function exportRestaurantCommandesToWord(exportData) {
   if (!exportData?.orders?.length) return;
 
   const rows = exportData.orders;
+  const cityFilter = exportData.cityFilter || '';
+  const cityLabel = exportData.cityLabel || 'Toutes les villes';
   const period = `${fmtDateShort(exportData.dateFrom)} → ${fmtDateShort(exportData.dateTo)}`;
   const prodLabel = productQtyLabel(exportData.productLabel, 'articles');
 
@@ -399,44 +427,57 @@ export function exportRestaurantCommandesToWord(exportData) {
     rows,
     inferRestaurantRowCity,
     restaurantRowQuantity,
-    (r) => Number(r.total || 0)
+    (r) => Number(r.total || 0),
+    cityFilter
   );
 
-  const cotonouQty = formatFilterQuantity(byCity[0].totalQuantity);
-  const calaviQty = formatFilterQuantity(byCity[1].totalQuantity);
+  const cotonouQty = formatFilterQuantity(byCity[0]?.totalQuantity || 0);
+  const calaviQty = formatFilterQuantity(byCity.find((g) => g.city === 'Calavi')?.totalQuantity || 0);
   const formatGroupQty = (group) => formatFilterQuantity(group.totalQuantity);
 
   const dataTableBody = buildDataBody(byCity, restaurantTableRow, formatGroupQty);
+  const subtitle = cityFilter
+    ? `Feuille de tournée · ${cityLabel}`
+    : 'Feuille de tournée · Cotonou & Calavi';
 
   const html = wordShell({
     title: 'RAPIDO — Commandes',
-    subtitle: 'Feuille de tournée · Cotonou & Calavi',
+    subtitle,
     metaRows: [
       [
         { label: 'Période', valueHtml: escapeHtml(period) },
         { label: 'Entreprise', valueHtml: escapeHtml(exportData.restaurantLabel) },
         { label: 'Statut', valueHtml: escapeHtml(exportData.statutLabel) },
+        { label: 'Ville', valueHtml: escapeHtml(cityLabel) },
+      ],
+      [
         { label: 'Article', valueHtml: escapeHtml(exportData.productLabel) },
+        { label: 'Généré le', valueHtml: escapeHtml(new Date().toLocaleString('fr-FR')) },
+        { label: '', valueHtml: '' },
+        { label: '', valueHtml: '' },
       ],
     ],
-    kpiCells: [
-      { label: 'Commandes', value: String(exportData.orderCount) },
-      { label: 'Quantité totale', value: totalQtyLabel, sub: prodLabel },
-      { label: 'Montant total', value: fmtMoney(exportData.totalAmount) },
-      {
-        label: 'Répartition',
-        value: `Cotonou ${cotonouQty}`,
-        sub: `Calavi ${calaviQty}`,
-      },
-    ],
+    kpiCells: buildExportKpiCells({
+      cityFilter,
+      cityLabel,
+      totalQtyLabel,
+      prodLabel,
+      orderCount: exportData.orderCount,
+      totalAmount: exportData.totalAmount,
+      cotonouQty,
+      calaviQty,
+    }),
     dataTableBody,
     grandTotalRow: grandTotalRow([
-      { span: 4, html: `TOTAL GÉNÉRAL — ${exportData.orderCount} commande(s)` },
+      { span: 4, html: `TOTAL${cityFilter ? ` ${escapeHtml(cityLabel)}` : ' GÉNÉRAL'} — ${exportData.orderCount} commande(s)` },
       { span: 1, html: escapeHtml(totalQtyLabel) },
       { span: 1, html: escapeHtml(fmtMoney(exportData.totalAmount)) },
     ]),
     footerText: `Rapido Flash · Document éditable dans Microsoft Word`,
   });
 
-  downloadWord(html, `commandes-${safeFilenamePart(exportData.restaurantLabel)}-${Date.now()}.doc`);
+  downloadWord(
+    html,
+    `commandes-${safeFilenamePart(exportData.restaurantLabel)}-${safeFilenamePart(cityFilter || 'toutes-villes')}-${Date.now()}.doc`
+  );
 }

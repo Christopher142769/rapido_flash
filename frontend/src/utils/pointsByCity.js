@@ -14,6 +14,37 @@ export function inferOrderCity(order) {
   return 'Autre';
 }
 
+export function inferShopOrderCity(order) {
+  const c = order.customer || {};
+  return inferOrderCity({
+    city: c.city,
+    address: c.addressDescription,
+    location: [c.city, c.addressDescription].filter(Boolean).join(' '),
+    offPlatformLocation: order.offPlatformLocation,
+  });
+}
+
+export function inferRestaurantCommandeCity(commande) {
+  const addr = commande.adresseLivraison?.adresse || '';
+  return inferOrderCity({ address: addr, location: addr });
+}
+
+export function normalizeDeliveryCity(city) {
+  if (city === 'Cotonou' || city === 'Calavi') return city;
+  return 'Autre';
+}
+
+export function matchesDeliveryCity(order, cityFilter, inferCity) {
+  if (!cityFilter) return true;
+  return normalizeDeliveryCity(inferCity(order)) === cityFilter;
+}
+
+export const CITY_FILTER_LABELS = {
+  '': 'Toutes les villes',
+  Cotonou: 'Cotonou',
+  Calavi: 'Calavi',
+};
+
 export function groupOrdersByCity(orders, quantityUnit) {
   const map = new Map();
   for (const o of orders || []) {

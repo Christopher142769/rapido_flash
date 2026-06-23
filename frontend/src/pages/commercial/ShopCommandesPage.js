@@ -24,6 +24,7 @@ import { exportShopOrdersToWord } from '../../utils/exportCommandesWord';
 import { formatDeliveryDateShort } from '../../utils/shopDeliveryDate';
 import CommandesFilterStats from '../../components/commercial/CommandesFilterStats';
 import { sumShopOrdersQuantity } from '../../utils/commandesFilterStats';
+import { CITY_FILTER_LABELS, POINTS_CITIES } from '../../utils/pointsByCity';
 import '../restaurant/RestaurantCommandes.css';
 import './commercial.css';
 
@@ -76,6 +77,7 @@ export default function ShopCommandesPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [productFilter, setProductFilter] = useState('');
+  const [cityFilter, setCityFilter] = useState('');
   const [dateFrom, setDateFrom] = useState(() => defaultDateRange().dateFrom);
   const [dateTo, setDateTo] = useState(() => defaultDateRange().dateTo);
   const [specsOrder, setSpecsOrder] = useState(null);
@@ -112,16 +114,18 @@ export default function ShopCommandesPage() {
       dateTo,
       statut: filter || undefined,
       productKey: productFilter || undefined,
+      city: cityFilter || undefined,
     });
     return [...list].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
-  }, [orders, filter, productFilter, dateFrom, dateTo]);
+  }, [orders, filter, productFilter, cityFilter, dateFrom, dateTo]);
 
   const selectedProductLabel =
     productOptions.find((p) => p.key === productFilter)?.label || 'Tous les produits';
 
   const selectedStatutLabel = filter ? STATUT_LABELS[filter] || filter : 'Tous les statuts';
+  const selectedCityLabel = CITY_FILTER_LABELS[cityFilter] || 'Toutes les villes';
 
   const exportData = useMemo(
     () =>
@@ -132,8 +136,10 @@ export default function ShopCommandesPage() {
         statutLabel: filter ? STATUT_LABELS[filter] || filter : 'Tous les statuts',
         productFilter,
         productLabel: selectedProductLabel,
+        cityFilter,
+        cityLabel: selectedCityLabel,
       }),
-    [filteredOrders, dateFrom, dateTo, filter, productFilter, selectedProductLabel]
+    [filteredOrders, dateFrom, dateTo, filter, productFilter, cityFilter, selectedProductLabel, selectedCityLabel]
   );
 
   const filterStats = useMemo(
@@ -261,6 +267,17 @@ export default function ShopCommandesPage() {
                   ))}
                 </select>
               </label>
+              <label>
+                Ville
+                <select value={cityFilter} onChange={(e) => setCityFilter(e.target.value)}>
+                  <option value="">Toutes les villes</option>
+                  {POINTS_CITIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <button
                 type="button"
                 className="commercial-btn commercial-btn--outline"
@@ -277,6 +294,7 @@ export default function ShopCommandesPage() {
               totalAmount={filterStats.totalAmount}
               statutLabel={selectedStatutLabel}
               productLabel={selectedProductLabel}
+              cityLabel={selectedCityLabel}
               formatPrice={formatPrice}
               quantityLabel="Quantité produits"
             />
@@ -316,7 +334,7 @@ export default function ShopCommandesPage() {
           </div>
 
           <p className="commandes-shop-hint">
-            Filtrez par <strong>date de commande</strong>, statut et produit, puis exportez le détail complet en
+            Filtrez par <strong>date de commande</strong>, statut, produit et ville, puis exportez le détail complet en
             PDF, Excel ou Word. Même processus opérationnel : confirmer, préparation, livraison, livrée.
           </p>
 

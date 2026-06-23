@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import { inferShopOrderCity, matchesDeliveryCity } from './pointsByCity';
 
 const SHOP_ORDER_TZ = 'Africa/Porto-Novo';
 
@@ -122,10 +123,11 @@ function matchesShopProduct(order, productKey) {
   return shopProductKey(order) === productKey;
 }
 
-export function filterShopOrders(orders, { dateFrom, dateTo, statut, productKey } = {}) {
+export function filterShopOrders(orders, { dateFrom, dateTo, statut, productKey, city } = {}) {
   return (orders || []).filter((o) => {
     if (statut && o.statut !== statut) return false;
     if (!matchesShopProduct(o, productKey)) return false;
+    if (!matchesDeliveryCity(o, city, inferShopOrderCity)) return false;
     const key = orderDayKey(o);
     if (!key) return false;
     if (dateFrom && key < dateFrom) return false;
@@ -190,6 +192,8 @@ export function prepareShopOrdersExport(orders, meta = {}) {
     statutLabel: meta.statutLabel || 'Tous les statuts',
     productFilter: meta.productFilter || '',
     productLabel: meta.productLabel || 'Tous les produits',
+    cityFilter: meta.cityFilter || '',
+    cityLabel: meta.cityLabel || 'Toutes les villes',
     orders: rows,
     orderCount: rows.length,
     totalSubtotal,
@@ -285,7 +289,7 @@ export function exportShopOrdersToExcel(exportData) {
 </head>
 <body>
   <h1>RAPIDO — Commandes Shop</h1>
-  <p class="meta">Période : ${period} · Statut : ${escapeCsv(exportData.statutLabel)} · Produit : ${escapeCsv(exportData.productLabel)} · ${exportData.orderCount} commande(s)</p>
+  <p class="meta">Période : ${period} · Statut : ${escapeCsv(exportData.statutLabel)} · Produit : ${escapeCsv(exportData.productLabel)} · Ville : ${escapeCsv(exportData.cityLabel)} · ${exportData.orderCount} commande(s)</p>
   <table>
     <thead><tr>${EXCEL_HEADERS.map((h) => `<th>${h}</th>`).join('')}</tr></thead>
     <tbody>
@@ -307,7 +311,7 @@ export function exportShopOrdersToExcel(exportData) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `commandes-shop-${safeFilenamePart(exportData.statutLabel)}-${Date.now()}.xls`;
+  a.download = `commandes-shop-${safeFilenamePart(exportData.cityFilter || 'toutes-villes')}-${safeFilenamePart(exportData.statutLabel)}-${Date.now()}.xls`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -359,7 +363,7 @@ export function exportShopOrdersToPdf(exportData) {
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(9);
   setText(BRAND.goldLight);
-  pdf.text(`Export détaillé · ${exportData.statutLabel} · ${exportData.productLabel}`, margin, 19);
+  pdf.text(`Export détaillé · ${exportData.statutLabel} · ${exportData.productLabel} · ${exportData.cityLabel}`, margin, 19);
 
   pdf.setFontSize(8);
   pdf.text(
@@ -495,5 +499,5 @@ export function exportShopOrdersToPdf(exportData) {
 
   drawPageFooter();
 
-  pdf.save(`commandes-shop-${safeFilenamePart(exportData.statutLabel)}-${Date.now()}.pdf`);
+  pdf.save(`commandes-shop-${safeFilenamePart(exportData.cityFilter || 'toutes-villes')}-${safeFilenamePart(exportData.statutLabel)}-${Date.now()}.pdf`);
 }
