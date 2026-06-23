@@ -111,11 +111,12 @@ export default function ShopProductLanding() {
     [product, closureTick]
   );
 
+  const countdownEndsAt = promoState?.promoEndsAt || product?.promo?.endsAt || null;
+  const showCountdown = promoState?.isPromoLive && countdownEndsAt;
   const showOrderLimitBanner =
     availabilityState?.dailyOrderLimitEnabled &&
     !availabilityState?.isShopClosed &&
     availabilityState.ordersRemaining > 0;
-
   const hasTopFixedBar = showCountdown || showOrderLimitBanner;
 
   /** Bascule auto fermeture / quota commandes. */
@@ -141,8 +142,6 @@ export default function ShopProductLanding() {
   }, [fetchProduct, product?.dailyOrderLimit, product?.dailyOrderLimitEnabled]);
   const gallery = useMemo(() => (product ? getProductGallery(product) : []), [product]);
   const canOrder = !!product?.whatsappNumber;
-  const countdownEndsAt = promoState?.promoEndsAt || product?.promo?.endsAt || null;
-  const showCountdown = promoState?.isPromoLive && countdownEndsAt;
   const unitPrice = promoState?.isPromoLive ? promoState.promoPrice : product?.basePrice;
   const unitBasePrice = product?.basePrice ?? 0;
   const quantityUnit = normalizeShopQuantityUnit(product?.quantityUnit);
