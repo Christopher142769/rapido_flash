@@ -1,7 +1,7 @@
-/** Export Word (.doc) — tableau opérationnel Rapido, sections Cotonou / Calavi. */
+/** Export Word (.doc) — tableau livraison Rapido, sections Cotonou / Calavi (MS Word). */
 
 import { formatFilterQuantity } from './commandesFilterStats';
-import { inferOrderCity } from './pointsByCity';
+import { inferOrderCity, POINTS_CITIES } from './pointsByCity';
 import { formatQuantityWithUnit } from './shopQuantityUnit';
 
 const BRAND = {
@@ -9,13 +9,14 @@ const BRAND = {
   amber: '#c76d2e',
   cream: '#fffbf7',
   creamAlt: '#fff9f5',
-  border: '#e8dcc8',
+  headerBg: '#f5efe8',
+  border: '#d4c4b0',
   text: '#1a1411',
   muted: '#7a6558',
   white: '#ffffff',
 };
 
-const CITY_ORDER = ['Cotonou', 'Calavi', 'Autre'];
+const COL_COUNT = 6;
 
 function escapeHtml(v) {
   return String(v ?? '')
@@ -56,35 +57,77 @@ function downloadWord(html, filename) {
 
 function wordStyles() {
   return `
-    body { font-family: Calibri, 'Segoe UI', Arial, sans-serif; color: ${BRAND.text}; font-size: 10.5pt; line-height: 1.4; margin: 0; padding: 24px; }
-    h1 { font-size: 20pt; font-weight: bold; color: ${BRAND.white}; margin: 0; letter-spacing: 0.04em; }
-    .rf-header { background: ${BRAND.brown}; padding: 16px 20px 14px; margin: -24px -24px 0; }
-    .rf-header-accent { height: 4px; background: ${BRAND.amber}; margin: 0 -24px 18px; }
-    .rf-subtitle { color: #f5d78a; font-size: 9.5pt; margin: 5px 0 0; }
-    .rf-meta { color: ${BRAND.muted}; font-size: 9pt; margin: 0 0 14px; }
-    .rf-summary { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-    .rf-summary td { background: ${BRAND.cream}; border: 1px solid ${BRAND.border}; padding: 8px 12px; font-size: 9pt; }
-    .rf-summary strong { color: ${BRAND.amber}; }
-    .rf-city-section { margin-bottom: 20px; page-break-inside: avoid; }
-    .rf-city-header { background: ${BRAND.brown}; color: ${BRAND.white}; font-size: 12pt; font-weight: bold; padding: 10px 12px; margin: 0 0 0; letter-spacing: 0.03em; }
-    .rf-city-badge { float: right; font-size: 9pt; font-weight: normal; color: #f5d78a; }
-    .rf-data { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 0; }
-    .rf-data th { background: #a0522d; color: ${BRAND.white}; font-size: 9pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.06em; padding: 10px 8px; text-align: left; border: 1px solid #6d3610; vertical-align: middle; }
-    .rf-data td { padding: 9px 8px; border: 1px solid ${BRAND.border}; vertical-align: top; font-size: 10pt; word-wrap: break-word; }
-    .rf-data tr:nth-child(even) td { background: ${BRAND.creamAlt}; }
-    .rf-col-num { width: 5%; text-align: center; font-weight: bold; color: ${BRAND.muted}; }
-    .rf-col-nom { width: 16%; font-weight: 600; }
-    .rf-col-tel { width: 13%; }
-    .rf-col-lieu { width: 26%; }
-    .rf-col-qty { width: 12%; text-align: center; font-weight: bold; color: ${BRAND.amber}; }
-    .rf-col-consignes { width: 28%; white-space: pre-wrap; }
-    .rf-city-total { background: #fff8e8; border: 1px solid ${BRAND.border}; border-top: 2px solid ${BRAND.amber}; padding: 8px 12px; font-size: 9.5pt; font-weight: bold; color: ${BRAND.brown}; margin-bottom: 4px; }
-    .rf-footer { margin-top: 18px; padding-top: 10px; border-top: 2px solid ${BRAND.amber}; color: ${BRAND.muted}; font-size: 8.5pt; }
-    .rf-total-bar { background: ${BRAND.brown}; color: ${BRAND.white}; padding: 10px 14px; margin-top: 12px; font-weight: bold; font-size: 10pt; }
+    @page { size: 29.7cm 21cm; margin: 1.2cm 1cm; }
+    body { font-family: Calibri, Arial, sans-serif; color: ${BRAND.text}; font-size: 10pt; margin: 0; padding: 0; }
+    table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    .rf-page { width: 100%; }
+    .rf-brand td { background: ${BRAND.brown}; color: ${BRAND.white}; padding: 14px 16px; border: none; }
+    .rf-brand h1 { margin: 0; font-size: 18pt; font-weight: bold; letter-spacing: 0.04em; }
+    .rf-brand p { margin: 4px 0 0; font-size: 9.5pt; color: #f5d78a; }
+    .rf-accent td { background: ${BRAND.amber}; height: 4px; padding: 0; border: none; font-size: 1px; line-height: 4px; }
+    .rf-meta td { background: ${BRAND.cream}; border: 1px solid ${BRAND.border}; padding: 7px 10px; font-size: 9.5pt; vertical-align: top; }
+    .rf-meta .lbl { color: ${BRAND.muted}; font-size: 8pt; text-transform: uppercase; letter-spacing: 0.06em; font-weight: bold; }
+    .rf-meta .val { color: ${BRAND.text}; font-weight: 600; padding-top: 2px; }
+    .rf-kpi td { background: #faf8f5; border: 1px solid ${BRAND.border}; padding: 10px 8px; text-align: center; vertical-align: middle; width: 25%; }
+    .rf-kpi .kpi-lbl { font-size: 8pt; text-transform: uppercase; color: ${BRAND.muted}; letter-spacing: 0.07em; font-weight: bold; margin-bottom: 4px; }
+    .rf-kpi .kpi-val { font-size: 14pt; font-weight: bold; color: ${BRAND.amber}; }
+    .rf-kpi .kpi-sub { font-size: 8pt; color: ${BRAND.muted}; margin-top: 3px; }
+    .rf-data { width: 100%; margin-top: 10px; }
+    .rf-data th, .rf-data td { border: 1px solid ${BRAND.border}; padding: 7px 8px; vertical-align: top; font-size: 9.5pt; word-wrap: break-word; }
+    .rf-city-h td { background: ${BRAND.brown}; color: ${BRAND.white}; font-weight: bold; font-size: 11pt; padding: 9px 10px; border: 1px solid #6d3610; }
+    .rf-city-h .city-meta { font-size: 9pt; font-weight: normal; color: #f5d78a; }
+    .rf-col-h th { background: ${BRAND.headerBg}; color: #444; font-size: 8.5pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; padding: 8px; text-align: left; }
+    .rf-row-a td { background: ${BRAND.white}; }
+    .rf-row-b td { background: ${BRAND.creamAlt}; }
+    .rf-empty td { background: #fafafa; color: ${BRAND.muted}; font-style: italic; text-align: center; padding: 12px; }
+    .rf-subtotal td { background: #fff8e8; font-weight: bold; font-size: 9.5pt; border-top: 2px solid ${BRAND.amber}; padding: 8px 10px; }
+    .rf-spacer td { border: none; height: 8px; background: ${BRAND.white}; padding: 0; }
+    .rf-grand td { background: ${BRAND.brown}; color: ${BRAND.white}; font-weight: bold; font-size: 10.5pt; padding: 11px 10px; border: 1px solid #6d3610; }
+    .rf-footer td { border: none; padding: 12px 0 0; font-size: 8.5pt; color: ${BRAND.muted}; border-top: 2px solid ${BRAND.amber}; }
+    .c-num { text-align: center; font-weight: bold; color: ${BRAND.muted}; width: 28px; }
+    .c-nom { font-weight: 600; width: 95px; }
+    .c-tel { width: 82px; white-space: nowrap; }
+    .c-lieu { width: 200px; }
+    .c-qty { text-align: center; font-weight: bold; color: ${BRAND.amber}; width: 52px; }
+    .c-cons { width: 150px; }
   `;
 }
 
-function wordShell({ title, subtitle, metaHtml, summaryHtml, tableHtml, totalHtml }) {
+const TABLE_HEADERS = ['N°', 'Nom', 'Téléphone', 'Lieu', 'Qté', 'Consignes'];
+
+const COLGROUP = `<colgroup>
+  <col class="c-num" style="width:28px"/>
+  <col class="c-nom" style="width:95px"/>
+  <col class="c-tel" style="width:82px"/>
+  <col class="c-lieu" style="width:200px"/>
+  <col class="c-qty" style="width:52px"/>
+  <col class="c-cons" style="width:150px"/>
+</colgroup>`;
+
+function wordShell({ title, subtitle, metaRows, kpiCells, dataTableBody, grandTotalRow, footerText }) {
+  const metaHtml = metaRows
+    .map(
+      (row) => `<tr>${row
+        .map(
+          (cell) => `<td width="25%">
+          <div class="lbl">${escapeHtml(cell.label)}</div>
+          <div class="val">${cell.valueHtml}</div>
+        </td>`
+        )
+        .join('')}</tr>`
+    )
+    .join('');
+
+  const kpiHtml = `<tr>${kpiCells
+    .map(
+      (k) => `<td>
+        <div class="kpi-lbl">${escapeHtml(k.label)}</div>
+        <div class="kpi-val">${escapeHtml(k.value)}</div>
+        ${k.sub ? `<div class="kpi-sub">${escapeHtml(k.sub)}</div>` : ''}
+      </td>`
+    )
+    .join('')}</tr>`;
+
   return `<!DOCTYPE html>
 <html xmlns:o="urn:schemas-microsoft-com:office:office"
       xmlns:w="urn:schemas-microsoft-com:office:word"
@@ -93,66 +136,91 @@ function wordShell({ title, subtitle, metaHtml, summaryHtml, tableHtml, totalHtm
 <meta charset="UTF-8"/>
 <meta name="ProgId" content="Word.Document"/>
 <meta name="Generator" content="Rapido Flash"/>
-<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]-->
+<!--[if gte mso 9]><xml>
+<w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument>
+</xml><![endif]-->
 <style>${wordStyles()}</style>
 </head>
 <body>
-  <div class="rf-header">
+<div class="Section1">
+<table class="rf-page" width="100%" cellpadding="0" cellspacing="0">
+  <tr class="rf-brand"><td colspan="${COL_COUNT}">
     <h1>${escapeHtml(title)}</h1>
-    ${subtitle ? `<p class="rf-subtitle">${escapeHtml(subtitle)}</p>` : ''}
-  </div>
-  <div class="rf-header-accent"></div>
-  <p class="rf-meta">${metaHtml}</p>
-  ${summaryHtml}
-  ${tableHtml}
-  ${totalHtml}
-  <p class="rf-footer">Généré le ${escapeHtml(new Date().toLocaleString('fr-FR'))} · Rapido Flash · Document éditable (Word)</p>
+    ${subtitle ? `<p>${escapeHtml(subtitle)}</p>` : ''}
+  </td></tr>
+  <tr class="rf-accent"><td colspan="${COL_COUNT}">&nbsp;</td></tr>
+  <tr><td colspan="${COL_COUNT}" style="height:10px;border:none;">&nbsp;</td></tr>
+  <tr><td colspan="${COL_COUNT}" style="border:none;padding:0;">
+    <table width="100%" cellpadding="0" cellspacing="0" class="rf-meta">
+      ${metaHtml}
+    </table>
+  </td></tr>
+  <tr><td colspan="${COL_COUNT}" style="height:8px;border:none;">&nbsp;</td></tr>
+  <tr><td colspan="${COL_COUNT}" style="border:none;padding:0;">
+    <table width="100%" cellpadding="0" cellspacing="0" class="rf-kpi">
+      ${kpiHtml}
+    </table>
+  </td></tr>
+  <tr><td colspan="${COL_COUNT}" style="height:10px;border:none;">&nbsp;</td></tr>
+  <tr><td colspan="${COL_COUNT}" style="border:none;padding:0;">
+    <table class="rf-data" width="100%" cellpadding="0" cellspacing="0">
+      ${COLGROUP}
+      <tbody>${dataTableBody}</tbody>
+    </table>
+  </td></tr>
+  <tr><td colspan="${COL_COUNT}" style="height:6px;border:none;">&nbsp;</td></tr>
+  <tr><td colspan="${COL_COUNT}" style="border:none;padding:0;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      ${grandTotalRow}
+    </table>
+  </td></tr>
+  <tr class="rf-footer"><td colspan="${COL_COUNT}">${footerText}</td></tr>
+</table>
+</div>
 </body>
 </html>`;
 }
 
-function summaryTable(cells) {
-  const tds = cells.map((c) => `<td><strong>${escapeHtml(c.value)}</strong> ${escapeHtml(c.label)}</td>`).join('');
-  return `<table class="rf-summary"><tr>${tds}</tr></table>`;
+function shopLieu(r) {
+  const addr = r.address && r.address !== '—' ? r.address : '';
+  if (addr) return addr;
+  const full = r.fullAddress || '';
+  if (!full || full === '—') return '—';
+  return full.replace(/^(Cotonou|Calavi)\s*[—–-]\s*/i, '').trim() || full;
 }
 
-function shopTableRow(r, index) {
+function shopTableRow(r, index, stripe) {
   const fullName = [r.firstName, r.lastName].filter((p) => p && p !== '—').join(' ') || '—';
-  const lieu = r.fullAddress || [r.city, r.address].filter((p) => p && p !== '—').join(' — ') || '—';
   const consignes = r.clientSpecifications && r.clientSpecifications !== '—' ? r.clientSpecifications : '—';
-  const qty = r.productName && r.productName !== '—'
-    ? `${r.quantityLabel}\n(${r.productName})`
-    : r.quantityLabel;
+  const rowClass = stripe % 2 === 0 ? 'rf-row-a' : 'rf-row-b';
 
-  return `<tr>
-    <td class="rf-col-num">${index + 1}</td>
-    <td class="rf-col-nom">${escapeHtml(fullName)}</td>
-    <td class="rf-col-tel">${escapeHtml(r.phone)}</td>
-    <td class="rf-col-lieu">${escapeHtml(lieu)}</td>
-    <td class="rf-col-qty">${escapeHtml(qty)}</td>
-    <td class="rf-col-consignes">${escapeHtml(consignes)}</td>
+  return `<tr class="${rowClass}">
+    <td class="c-num">${index + 1}</td>
+    <td class="c-nom">${escapeHtml(fullName)}</td>
+    <td class="c-tel">${escapeHtml(r.phone)}</td>
+    <td class="c-lieu">${escapeHtml(shopLieu(r))}</td>
+    <td class="c-qty">${escapeHtml(r.quantityLabel)}</td>
+    <td class="c-cons">${escapeHtml(consignes)}</td>
   </tr>`;
 }
 
-function restaurantTableRow(r, index) {
-  return `<tr>
-    <td class="rf-col-num">${index + 1}</td>
-    <td class="rf-col-nom">${escapeHtml(r.clientName)}</td>
-    <td class="rf-col-tel">${escapeHtml(r.phone)}</td>
-    <td class="rf-col-lieu">${escapeHtml(r.address)}</td>
-    <td class="rf-col-qty">${escapeHtml(r.lineItems)}</td>
-    <td class="rf-col-consignes">${escapeHtml(r.instructions && r.instructions !== '—' ? r.instructions : '—')}</td>
+function restaurantTableRow(r, index, stripe) {
+  const consignes = r.instructions && r.instructions !== '—' ? r.instructions : '—';
+  const rowClass = stripe % 2 === 0 ? 'rf-row-a' : 'rf-row-b';
+
+  return `<tr class="${rowClass}">
+    <td class="c-num">${index + 1}</td>
+    <td class="c-nom">${escapeHtml(r.clientName)}</td>
+    <td class="c-tel">${escapeHtml(r.phone)}</td>
+    <td class="c-lieu">${escapeHtml(r.address)}</td>
+    <td class="c-qty">${escapeHtml(r.lineItems)}</td>
+    <td class="c-cons">${escapeHtml(consignes)}</td>
   </tr>`;
 }
 
-function buildDataTable(headers, rowsHtml) {
-  return `<table class="rf-data">
-    <thead><tr>${headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
-    <tbody>${rowsHtml}</tbody>
-  </table>`;
+function columnHeaderRow() {
+  return `<tr class="rf-col-h">${TABLE_HEADERS.map((h) => `<th>${escapeHtml(h)}</th>`).join('')}</tr>`;
 }
-
-const TABLE_HEADERS = ['N°', 'Nom', 'Téléphone', 'Lieu', 'Quantité', 'Consignes'];
 
 function inferShopRowCity(r) {
   return inferOrderCity({
@@ -177,28 +245,31 @@ function restaurantRowQuantity(r) {
   return Number.isFinite(q) && q > 0 ? q : 0;
 }
 
-function sortCityGroups(groups) {
-  return [...groups].sort((a, b) => {
-    const ia = CITY_ORDER.indexOf(a.city);
-    const ib = CITY_ORDER.indexOf(b.city);
-    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
-  });
+function normalizeCity(city) {
+  if (city === 'Cotonou' || city === 'Calavi') return city;
+  return 'Autre';
 }
 
-function groupRowsByCity(rows, inferCity, getQuantity, getAmount) {
-  const map = new Map();
+function groupRowsByCityFixed(rows, inferCity, getQuantity, getAmount) {
+  const slots = Object.fromEntries(
+    [...POINTS_CITIES, 'Autre'].map((city) => [
+      city,
+      { city, rows: [], totalQuantity: 0, orderCount: 0, totalAmount: 0 },
+    ])
+  );
+
   for (const row of rows) {
-    const city = inferCity(row);
-    if (!map.has(city)) {
-      map.set(city, { city, rows: [], totalQuantity: 0, orderCount: 0, totalAmount: 0 });
-    }
-    const g = map.get(city);
+    const city = normalizeCity(inferCity(row));
+    const g = slots[city];
     g.rows.push(row);
     g.totalQuantity += getQuantity(row);
     g.orderCount += 1;
     g.totalAmount += getAmount(row);
   }
-  return sortCityGroups([...map.values()]);
+
+  const result = POINTS_CITIES.map((city) => slots[city]);
+  if (slots.Autre.orderCount > 0) result.push(slots.Autre);
+  return result;
 }
 
 function resolveShopQuantityUnit(rows) {
@@ -211,21 +282,45 @@ function formatShopQuantity(total, rows) {
   return unit ? formatQuantityWithUnit(total, unit) : formatFilterQuantity(total);
 }
 
-function buildCitySections(groups, rowMapper, formatGroupQuantity) {
-  return groups
-    .map((group) => {
-      const qtyLabel = formatGroupQuantity(group);
-      const rowsHtml = group.rows.map((r, i) => rowMapper(r, i)).join('');
-      return `<div class="rf-city-section">
-        <div class="rf-city-header">
-          ${escapeHtml(group.city)}
-          <span class="rf-city-badge">${group.orderCount} commande(s) · ${escapeHtml(qtyLabel)}</span>
-        </div>
-        ${buildDataTable(TABLE_HEADERS, rowsHtml)}
-        <div class="rf-city-total">Sous-total ${escapeHtml(group.city)} — ${group.orderCount} commande(s) · ${escapeHtml(qtyLabel)} · ${escapeHtml(fmtMoney(group.totalAmount))}</div>
-      </div>`;
-    })
-    .join('');
+function buildCityBlock(group, rowMapper, formatGroupQuantity) {
+  const qtyLabel = formatGroupQuantity(group);
+  const cityTitle = group.city.toUpperCase();
+  const cityMeta = `${group.orderCount} commande(s) · Qté : ${qtyLabel} · ${fmtMoney(group.totalAmount)}`;
+
+  let body = `<tr class="rf-city-h"><td colspan="${COL_COUNT}">
+    ${escapeHtml(cityTitle)}
+    <span class="city-meta"> — ${escapeHtml(cityMeta)}</span>
+  </td></tr>`;
+  body += columnHeaderRow();
+
+  if (!group.rows.length) {
+    body += `<tr class="rf-empty"><td colspan="${COL_COUNT}">Aucune commande pour ${escapeHtml(group.city)}</td></tr>`;
+  } else {
+    body += group.rows.map((r, i) => rowMapper(r, i, i)).join('');
+  }
+
+  body += `<tr class="rf-subtotal">
+    <td colspan="4" style="text-align:right;">Sous-total ${escapeHtml(group.city)}</td>
+    <td class="c-qty">${escapeHtml(qtyLabel)}</td>
+    <td>${group.orderCount} cmd · ${escapeHtml(fmtMoney(group.totalAmount))}</td>
+  </tr>`;
+  body += `<tr class="rf-spacer"><td colspan="${COL_COUNT}">&nbsp;</td></tr>`;
+
+  return body;
+}
+
+function buildDataBody(groups, rowMapper, formatGroupQuantity) {
+  return groups.map((g) => buildCityBlock(g, rowMapper, formatGroupQuantity)).join('');
+}
+
+function grandTotalRow(cells) {
+  return `<tr class="rf-grand">${cells
+    .map((c) => `<td colspan="${c.span}">${c.html}</td>`)
+    .join('')}</tr>`;
+}
+
+function productQtyLabel(productLabel, fallback) {
+  return productLabel && !productLabel.startsWith('Tous') ? productLabel : fallback;
 }
 
 export function exportShopOrdersToWord(exportData) {
@@ -233,41 +328,58 @@ export function exportShopOrdersToWord(exportData) {
 
   const rows = exportData.orders;
   const period = `${fmtDateShort(exportData.dateFrom)} → ${fmtDateShort(exportData.dateTo)}`;
-  const metaHtml = `Période : <strong>${escapeHtml(period)}</strong> · Statut : ${escapeHtml(exportData.statutLabel)} · Produit : ${escapeHtml(exportData.productLabel)}`;
+  const prodLabel = productQtyLabel(exportData.productLabel, 'produit');
 
   const totalQuantity = rows.reduce((s, r) => s + shopRowQuantity(r), 0);
   const totalQtyLabel = formatShopQuantity(totalQuantity, rows);
-  const productQtyLabel =
-    exportData.productLabel && exportData.productLabel !== 'Tous les produits'
-      ? exportData.productLabel
-      : 'produit';
 
-  const byCity = groupRowsByCity(
+  const byCity = groupRowsByCityFixed(
     rows,
     inferShopRowCity,
     shopRowQuantity,
     (r) => Number(r.totalPrice || 0)
   );
 
-  const summaryHtml = summaryTable([
-    { value: String(exportData.orderCount), label: 'commande(s)' },
-    { value: totalQtyLabel, label: `qté totale (${productQtyLabel})` },
-    { value: fmtMoney(exportData.totalAmount), label: 'total' },
-    { value: byCity.map((g) => `${g.city} (${formatShopQuantity(g.totalQuantity, g.rows)})`).join(' · '), label: 'répartition' },
-  ]);
+  const cotonouQty = formatShopQuantity(byCity[0].totalQuantity, byCity[0].rows.length ? byCity[0].rows : rows);
+  const calaviQty = formatShopQuantity(byCity[1].totalQuantity, byCity[1].rows.length ? byCity[1].rows : rows);
 
-  const formatGroupQty = (group) => formatShopQuantity(group.totalQuantity, group.rows);
-  const tableHtml = buildCitySections(byCity, shopTableRow, formatGroupQty);
+  const formatGroupQty = (group) =>
+    formatShopQuantity(group.totalQuantity, group.rows.length ? group.rows : rows);
 
-  const totalHtml = `<div class="rf-total-bar">${exportData.orderCount} commande(s) · Quantité totale ${escapeHtml(totalQtyLabel)} (${escapeHtml(productQtyLabel)}) · Total ${escapeHtml(fmtMoney(exportData.totalAmount))}</div>`;
+  const dataTableBody = buildDataBody(byCity, shopTableRow, formatGroupQty);
 
   const html = wordShell({
     title: 'RAPIDO — Commandes Shop',
-    subtitle: 'Tableau de livraison · Cotonou & Calavi',
-    metaHtml,
-    summaryHtml,
-    tableHtml,
-    totalHtml,
+    subtitle: 'Feuille de tournée · Cotonou & Calavi',
+    metaRows: [
+      [
+        { label: 'Période', valueHtml: escapeHtml(period) },
+        { label: 'Statut', valueHtml: escapeHtml(exportData.statutLabel) },
+        { label: 'Produit', valueHtml: escapeHtml(exportData.productLabel) },
+        { label: 'Généré le', valueHtml: escapeHtml(new Date().toLocaleString('fr-FR')) },
+      ],
+    ],
+    kpiCells: [
+      { label: 'Commandes', value: String(exportData.orderCount) },
+      {
+        label: 'Quantité totale',
+        value: totalQtyLabel,
+        sub: prodLabel,
+      },
+      { label: 'Montant total', value: fmtMoney(exportData.totalAmount) },
+      {
+        label: 'Répartition',
+        value: `Cotonou ${cotonouQty}`,
+        sub: `Calavi ${calaviQty}`,
+      },
+    ],
+    dataTableBody,
+    grandTotalRow: grandTotalRow([
+      { span: 4, html: `TOTAL GÉNÉRAL — ${exportData.orderCount} commande(s)` },
+      { span: 1, html: escapeHtml(totalQtyLabel) },
+      { span: 1, html: escapeHtml(fmtMoney(exportData.totalAmount)) },
+    ]),
+    footerText: `Rapido Flash · Document éditable dans Microsoft Word · ${escapeHtml(prodLabel)}`,
   });
 
   downloadWord(html, `commandes-shop-${safeFilenamePart(exportData.statutLabel)}-${Date.now()}.doc`);
@@ -278,41 +390,52 @@ export function exportRestaurantCommandesToWord(exportData) {
 
   const rows = exportData.orders;
   const period = `${fmtDateShort(exportData.dateFrom)} → ${fmtDateShort(exportData.dateTo)}`;
-  const metaHtml = `Période : <strong>${escapeHtml(period)}</strong> · ${escapeHtml(exportData.restaurantLabel)} · Statut : ${escapeHtml(exportData.statutLabel)} · Article : ${escapeHtml(exportData.productLabel)}`;
+  const prodLabel = productQtyLabel(exportData.productLabel, 'articles');
 
   const totalQuantity = rows.reduce((s, r) => s + restaurantRowQuantity(r), 0);
   const totalQtyLabel = formatFilterQuantity(totalQuantity);
-  const productQtyLabel =
-    exportData.productLabel && exportData.productLabel !== 'Tous les articles'
-      ? exportData.productLabel
-      : 'articles';
 
-  const byCity = groupRowsByCity(
+  const byCity = groupRowsByCityFixed(
     rows,
     inferRestaurantRowCity,
     restaurantRowQuantity,
     (r) => Number(r.total || 0)
   );
 
-  const summaryHtml = summaryTable([
-    { value: String(exportData.orderCount), label: 'commande(s)' },
-    { value: totalQtyLabel, label: `qté totale (${productQtyLabel})` },
-    { value: fmtMoney(exportData.totalAmount), label: 'total' },
-    { value: byCity.map((g) => `${g.city} (${formatFilterQuantity(g.totalQuantity)})`).join(' · '), label: 'répartition' },
-  ]);
-
+  const cotonouQty = formatFilterQuantity(byCity[0].totalQuantity);
+  const calaviQty = formatFilterQuantity(byCity[1].totalQuantity);
   const formatGroupQty = (group) => formatFilterQuantity(group.totalQuantity);
-  const tableHtml = buildCitySections(byCity, restaurantTableRow, formatGroupQty);
 
-  const totalHtml = `<div class="rf-total-bar">${exportData.orderCount} commande(s) · Quantité totale ${escapeHtml(totalQtyLabel)} (${escapeHtml(productQtyLabel)}) · Total ${escapeHtml(fmtMoney(exportData.totalAmount))}</div>`;
+  const dataTableBody = buildDataBody(byCity, restaurantTableRow, formatGroupQty);
 
   const html = wordShell({
     title: 'RAPIDO — Commandes',
-    subtitle: 'Tableau de livraison · Cotonou & Calavi',
-    metaHtml,
-    summaryHtml,
-    tableHtml,
-    totalHtml,
+    subtitle: 'Feuille de tournée · Cotonou & Calavi',
+    metaRows: [
+      [
+        { label: 'Période', valueHtml: escapeHtml(period) },
+        { label: 'Entreprise', valueHtml: escapeHtml(exportData.restaurantLabel) },
+        { label: 'Statut', valueHtml: escapeHtml(exportData.statutLabel) },
+        { label: 'Article', valueHtml: escapeHtml(exportData.productLabel) },
+      ],
+    ],
+    kpiCells: [
+      { label: 'Commandes', value: String(exportData.orderCount) },
+      { label: 'Quantité totale', value: totalQtyLabel, sub: prodLabel },
+      { label: 'Montant total', value: fmtMoney(exportData.totalAmount) },
+      {
+        label: 'Répartition',
+        value: `Cotonou ${cotonouQty}`,
+        sub: `Calavi ${calaviQty}`,
+      },
+    ],
+    dataTableBody,
+    grandTotalRow: grandTotalRow([
+      { span: 4, html: `TOTAL GÉNÉRAL — ${exportData.orderCount} commande(s)` },
+      { span: 1, html: escapeHtml(totalQtyLabel) },
+      { span: 1, html: escapeHtml(fmtMoney(exportData.totalAmount)) },
+    ]),
+    footerText: `Rapido Flash · Document éditable dans Microsoft Word`,
   });
 
   downloadWord(html, `commandes-${safeFilenamePart(exportData.restaurantLabel)}-${Date.now()}.doc`);
