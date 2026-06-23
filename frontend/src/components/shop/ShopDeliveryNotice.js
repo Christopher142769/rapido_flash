@@ -13,8 +13,8 @@ export default function ShopDeliveryNotice({ variant = 'landing' }) {
     >
       <FaClock className="shop-inline-note-icon" aria-hidden />
       <span>
-        <strong>NB</strong> — Commandez aujourd’hui, livraison demain sous 24 h ({deliveryDateLabel}
-        ). Soyez joignable à l’adresse indiquée.
+        <strong>NB</strong> — Commandez aujourd’hui, livraison un jour après, le {deliveryDateLabel}
+        . Soyez joignable à l’adresse indiquée.
       </span>
     </aside>
   );
