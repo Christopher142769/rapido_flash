@@ -143,6 +143,19 @@ function formatAddress(commande) {
   return '—';
 }
 
+function sumCommandeItemQuantity(commande) {
+  let q = 0;
+  for (const item of commande.plats || []) {
+    const n = Number(item.quantite);
+    if (Number.isFinite(n) && n > 0) q += n;
+  }
+  for (const item of commande.produits || []) {
+    const n = Number(item.quantite);
+    if (Number.isFinite(n) && n > 0) q += n;
+  }
+  return q;
+}
+
 export function mapCommandeToExportRow(commande) {
   return {
     id: String(commande._id),
@@ -160,6 +173,7 @@ export function mapCommandeToExportRow(commande) {
     address: formatAddress(commande),
     instructions: String(commande.adresseLivraison?.instruction || '').trim() || '—',
     lineItems: formatLineItems(commande),
+    itemQuantity: sumCommandeItemQuantity(commande),
     total: Number(commande.total || 0),
   };
 }

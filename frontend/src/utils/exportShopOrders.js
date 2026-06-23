@@ -152,6 +152,7 @@ export function mapShopOrderToExportRow(order) {
     productName: order.productName || '—',
     slug: order.slug || '—',
     quantity: order.quantity,
+    quantityUnit: order.quantityUnit || 'unit',
     quantityLabel: order.quantityLabel || String(order.quantity ?? '—'),
     unitPrice: Number(order.unitPrice || 0),
     subtotalPrice: subtotal,
