@@ -14,6 +14,7 @@ import {
   getCommandeProductOptions,
   prepareRestaurantCommandesExport,
 } from '../../utils/exportRestaurantCommandes';
+import { exportRestaurantCommandesToWord } from '../../utils/exportCommandesWord';
 import '../commercial/commercial.css';
 import './RestaurantCommandes.css';
 import CommandesFilterStats from '../../components/commercial/CommandesFilterStats';
@@ -135,6 +136,14 @@ const RestaurantCommandes = () => {
       return;
     }
     exportRestaurantCommandesToPdf(exportData);
+  };
+
+  const handleExportWord = () => {
+    if (!exportData.orders.length) {
+      showError('Aucune commande à exporter pour cette période et ces filtres.');
+      return;
+    }
+    exportRestaurantCommandesToWord(exportData);
   };
 
   const updateStatut = async (commande, nouveauStatut) => {
@@ -283,13 +292,21 @@ const RestaurantCommandes = () => {
               >
                 Exporter PDF
               </button>
+              <button
+                type="button"
+                className="commercial-btn commercial-btn--outline"
+                onClick={handleExportWord}
+                disabled={!exportData.orders.length}
+              >
+                Exporter Word
+              </button>
             </div>
           </div>
         </div>
 
         <p className="commandes-shop-hint">
           Filtrez par <strong>date de commande</strong>, entreprise, statut et article, puis exportez le
-          détail en PDF ou Excel. Les commandes <strong>Shop express</strong> sont gérées dans{' '}
+          détail en PDF, Excel ou Word. Les commandes <strong>Shop express</strong> sont gérées dans{' '}
           <button
             type="button"
             className="commandes-shop-link"

@@ -20,6 +20,7 @@ import {
   prepareShopOrdersExport,
   SHOP_STATUT_LABELS,
 } from '../../utils/exportShopOrders';
+import { exportShopOrdersToWord } from '../../utils/exportCommandesWord';
 import { formatDeliveryDateShort } from '../../utils/shopDeliveryDate';
 import CommandesFilterStats from '../../components/commercial/CommandesFilterStats';
 import { sumShopOrdersQuantity } from '../../utils/commandesFilterStats';
@@ -160,6 +161,14 @@ export default function ShopCommandesPage() {
     exportShopOrdersToPdf(exportData);
   };
 
+  const handleExportWord = () => {
+    if (!exportData.orders.length) {
+      showError('Aucune commande à exporter pour cette période et ce filtre.');
+      return;
+    }
+    exportShopOrdersToWord(exportData);
+  };
+
   const run = async (fn, msg) => {
     setBusy(true);
     try {
@@ -294,13 +303,21 @@ export default function ShopCommandesPage() {
                 >
                   Exporter PDF
                 </button>
+                <button
+                  type="button"
+                  className="commercial-btn commercial-btn--outline"
+                  onClick={handleExportWord}
+                  disabled={!exportData.orders.length}
+                >
+                  Exporter Word
+                </button>
               </div>
             </div>
           </div>
 
           <p className="commandes-shop-hint">
             Filtrez par <strong>date de commande</strong>, statut et produit, puis exportez le détail complet en
-            PDF ou Excel. Même processus opérationnel : confirmer, préparation, livraison, livrée.
+            PDF, Excel ou Word. Même processus opérationnel : confirmer, préparation, livraison, livrée.
           </p>
 
           {filteredOrders.length === 0 ? (
