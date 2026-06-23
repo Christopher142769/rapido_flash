@@ -104,7 +104,73 @@ function buildCommandeClientMessage(commande, restaurant) {
   return lines.join('\n');
 }
 
-async function sendClientWhatsAppMessage({ phone, message, logLabel }) {
+function buildShopOrderTemplateParams(order) {
+  const c = order.customer || {};
+  const name = firstNameFrom([c.firstName, c.lastName].filter(Boolean).join(' '));
+  const address = [c.city, c.addressDescription].filter(Boolean).join(' — ');
+  let deliveryLine = 'Gratuite';
+  if (!order.freeDelivery && Number(order.deliveryFee) > 0) {
+    deliveryLine = formatCfa(order.deliveryFee);
+  } else if (!order.freeDelivery && Number(order.deliveryFee) === 0) {
+    deliveryLine = 'Incluse';
+  }
+  return [
+    name,
+    String(order.productName || 'Produit').slice(0, 120),
+    String(order.quantityLabel || order.quantity || '—').slice(0, 60),
+    formatCfa(order.totalPrice),
+    `${deliveryLine} · ${address}`.slice(0, 180),
+    String(order.orderNumber || order._id || '—').slice(0, 40),
+  ];
+}
+
+function buildCommandeTemplateParams(commande, restaurant) {
+  const client = commande.client;
+  const clientName =
+    (typeof client === 'object' && client?.nom) || commande.clientName || 'Client';
+  const name = firstNameFrom(clientName);
+  const restoName = restaurant?.nom || 'Rapido Flash';
+  const addr = commande.adresseLivraison || {};
+  const addressLine = [addr.adresse, addr.instruction].filter(Boolean).join(' — ');
+
+  const items = [];
+  for (const item of commande.plats || []) {
+    const plat = item.plat;
+    items.push(`${typeof plat === 'object' ? plat?.nom : 'Plat'} x${item.quantite}`);
+  }
+  for (const item of commande.produits || []) {
+    const produit = item.produit;
+    items.push(`${typeof produit === 'object' ? produit?.nom : 'Produit'} x${item.quantite}`);
+  }
+
+  const deliveryLine =
+    Number(commande.fraisLivraison) > 0
+      ? formatCfa(commande.fraisLivraison)
+      : 'Incluse';
+
+  return [
+    name,
+    restoName.slice(0, 120),
+    (items.join(', ') || 'Voir application').slice(0, 120),
+    formatCfa(commande.total),
+    `${deliveryLine} · ${addressLine}`.slice(0, 180),
+    String(commande._id || '—').slice(-8),
+  ];
+}
+
+function buildTemplateBodyComponents(params) {
+  return [
+    {
+      type: 'body',
+      parameters: params.map((text) => ({
+        type: 'text',
+        text: String(text ?? '—').slice(0, 1024),
+      })),
+    },
+  ];
+}
+
+async function sendClientWhatsAppMessage({ phone, message, templateParams, logLabel }) {
   if (!isClientAutoMessageEnabled()) {
     return { sent: false, reason: 'disabled' };
   }
@@ -137,7 +203,10 @@ async function sendClientWhatsAppMessage({ phone, message, logLabel }) {
   const templateName = String(process.env.WHATSAPP_ORDER_TEMPLATE_NAME || '').trim();
   if (templateName) {
     const lang = process.env.WHATSAPP_ORDER_TEMPLATE_LANG || 'fr';
-    const result = await sendWhatsAppTemplate(toDigits, templateName, lang);
+    const components = templateParams?.length
+      ? buildTemplateBodyComponents(templateParams)
+      : undefined;
+    const result = await sendWhatsAppTemplate(toDigits, templateName, lang, components);
     if (result.sent) {
       console.log(`[WhatsApp client — ${logLabel}] Template envoyé → ${toDigits}`);
       return { ...result, phone: toDigits };
@@ -161,7 +230,8 @@ async function sendClientWhatsAppMessage({ phone, message, logLabel }) {
 async function notifyShopOrderClientWhatsApp(order) {
   const phone = order?.customer?.phone;
   const message = buildShopOrderClientMessage(order);
-  return sendClientWhatsAppMessage({ phone, message, logLabel: 'Shop' });
+  const templateParams = buildShopOrderTemplateParams(order);
+  return sendClientWhatsAppMessage({ phone, message, templateParams, logLabel: 'Shop' });
 }
 
 async function notifyCommandeClientWhatsApp(commande, restaurant) {
@@ -170,7 +240,28 @@ async function notifyCommandeClientWhatsApp(commande, restaurant) {
     (typeof commande.client === 'object' && (commande.client?.telephone || commande.client?.phone)) ||
     '';
   const message = buildCommandeClientMessage(commande, restaurant);
-  return sendClientWhatsAppMessage({ phone, message, logLabel: 'App' });
+  const templateParams = buildCommandeTemplateParams(commande, restaurant);
+  return sendClientWhatsAppMessage({ phone, message, templateParams, logLabel: 'App' });
+}
+
+/** Test manuel : node scripts/testWhatsAppClient.js 97123456 */
+async function testClientWhatsApp(phone) {
+  const sampleOrder = {
+    orderNumber: 'RF-TEST',
+    productName: 'Produit test',
+    quantityLabel: '1',
+    subtotalPrice: 5000,
+    deliveryFee: 500,
+    totalPrice: 5500,
+    customer: {
+      firstName: 'Test',
+      lastName: 'Rapido',
+      phone,
+      city: 'Cotonou',
+      addressDescription: 'Quartier test',
+    },
+  };
+  return notifyShopOrderClientWhatsApp(sampleOrder);
 }
 
 module.exports = {
@@ -178,5 +269,8 @@ module.exports = {
   notifyCommandeClientWhatsApp,
   buildShopOrderClientMessage,
   buildCommandeClientMessage,
+  buildShopOrderTemplateParams,
+  buildCommandeTemplateParams,
+  testClientWhatsApp,
   isClientAutoMessageEnabled,
 };
