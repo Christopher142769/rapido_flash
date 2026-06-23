@@ -1,43 +1,9 @@
 const { getRapidoWhatsAppNotifyDigits } = require('../utils/rapidoWhatsApp');
-
-const GRAPH_API_VERSION = 'v21.0';
+const { isWhatsAppCloudConfigured, sendWhatsAppText } = require('./whatsappCloudApi');
 
 function isWhatsAppConfigured() {
-  const cloud =
-    process.env.WHATSAPP_CLOUD_ACCESS_TOKEN && process.env.WHATSAPP_CLOUD_PHONE_NUMBER_ID;
   const callmebot = process.env.CALLMEBOT_WHATSAPP_APIKEY;
-  return Boolean(cloud || callmebot);
-}
-
-async function sendViaWhatsAppCloud(toDigits, body) {
-  const token = process.env.WHATSAPP_CLOUD_ACCESS_TOKEN;
-  const phoneNumberId = process.env.WHATSAPP_CLOUD_PHONE_NUMBER_ID;
-  if (!token || !phoneNumberId) {
-    return { sent: false, reason: 'cloud_not_configured' };
-  }
-
-  const url = `https://graph.facebook.com/${GRAPH_API_VERSION}/${phoneNumberId}/messages`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      messaging_product: 'whatsapp',
-      recipient_type: 'individual',
-      to: toDigits,
-      type: 'text',
-      text: { preview_url: true, body: body.slice(0, 4096) },
-    }),
-  });
-
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const errMsg = data?.error?.message || res.statusText || 'whatsapp_cloud_error';
-    return { sent: false, reason: 'cloud_error', error: errMsg, details: data };
-  }
-  return { sent: true, provider: 'cloud', messageId: data?.messages?.[0]?.id };
+  return Boolean(isWhatsAppCloudConfigured() || callmebot);
 }
 
 async function sendViaCallMeBot(toDigits, body) {
@@ -77,12 +43,11 @@ async function notifyOrderWhatsApp(body) {
     return { sent: false, reason: 'empty_body' };
   }
 
-  const cloudConfigured =
-    process.env.WHATSAPP_CLOUD_ACCESS_TOKEN && process.env.WHATSAPP_CLOUD_PHONE_NUMBER_ID;
+  const cloudConfigured = isWhatsAppCloudConfigured();
   const callmebotConfigured = process.env.CALLMEBOT_WHATSAPP_APIKEY;
 
   if (cloudConfigured) {
-    const result = await sendViaWhatsAppCloud(toDigits, text);
+    const result = await sendWhatsAppText(toDigits, text);
     if (result.sent) return result;
     if (!callmebotConfigured) {
       console.error('[WhatsApp commande] Cloud:', result.error || result.reason);

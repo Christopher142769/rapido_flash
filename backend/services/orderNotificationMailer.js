@@ -1,6 +1,10 @@
 const { sendCustomFormNotification } = require('../utils/mailer');
 const { getPlatformAdminEmails } = require('../utils/maintenanceAccess');
 const { notifyOrderWhatsApp } = require('./orderNotificationWhatsApp');
+const {
+  notifyShopOrderClientWhatsApp,
+  notifyCommandeClientWhatsApp,
+} = require('./customerOrderWhatsApp');
 
 /** Si PLATFORM_ADMIN_EMAIL est vide (dev local). */
 const FALLBACK_ORDER_NOTIFY_EMAIL = 'rapido002026@gmail.com';
@@ -98,6 +102,10 @@ async function notifyShopOrderCreated(order) {
     console.error('Notification WhatsApp commande Shop:', err.message);
   });
 
+  void notifyShopOrderClientWhatsApp(order).catch((err) => {
+    console.error('WhatsApp client commande Shop:', err.message);
+  });
+
   return sendToOrderInbox({ subject, html, text });
 }
 
@@ -174,6 +182,10 @@ async function notifyCommandeCreated(commande, restaurant) {
 
   void notifyOrderWhatsApp(text).catch((err) => {
     console.error('Notification WhatsApp commande app:', err.message);
+  });
+
+  void notifyCommandeClientWhatsApp(commande, restaurant).catch((err) => {
+    console.error('WhatsApp client commande app:', err.message);
   });
 
   return sendToOrderInbox({ subject, html, text });
