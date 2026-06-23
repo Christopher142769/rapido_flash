@@ -1,4 +1,4 @@
-/** Export Word (.doc) éditable — charte Rapido, une fiche claire par commande. */
+/** Export Word (.doc) — tableau opérationnel Rapido (nom, téléphone, lieu, quantité, consignes). */
 
 const BRAND = {
   brown: '#8B4513',
@@ -17,13 +17,6 @@ function escapeHtml(v) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
-}
-
-function fmtDate(d) {
-  if (!d) return '—';
-  const x = new Date(d);
-  if (Number.isNaN(x.getTime())) return '—';
-  return x.toLocaleString('fr-FR');
 }
 
 function fmtDateShort(d) {
@@ -57,38 +50,32 @@ function downloadWord(html, filename) {
 
 function wordStyles() {
   return `
-    body { font-family: Calibri, 'Segoe UI', Arial, sans-serif; color: ${BRAND.text}; font-size: 11pt; line-height: 1.45; margin: 0; padding: 24px; }
-    h1 { font-size: 22pt; font-weight: bold; color: ${BRAND.white}; margin: 0; letter-spacing: 0.04em; }
-    .rf-header { background: ${BRAND.brown}; padding: 18px 22px 16px; margin: -24px -24px 20px; }
-    .rf-header-accent { height: 4px; background: ${BRAND.amber}; margin: 0 -24px 20px; }
-    .rf-subtitle { color: #f5d78a; font-size: 10pt; margin: 6px 0 0; }
-    .rf-meta { color: ${BRAND.muted}; font-size: 9.5pt; margin: 0 0 18px; }
-    .rf-kpi-table { width: 100%; border-collapse: separate; border-spacing: 8px 0; margin-bottom: 22px; }
-    .rf-kpi-cell { background: ${BRAND.cream}; border: 1px solid ${BRAND.border}; padding: 12px 14px; vertical-align: top; width: 25%; }
-    .rf-kpi-label { font-size: 8pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.08em; color: ${BRAND.muted}; margin: 0 0 4px; }
-    .rf-kpi-value { font-size: 13pt; font-weight: bold; color: ${BRAND.amber}; margin: 0; }
-    .rf-order { margin-bottom: 22px; page-break-inside: avoid; }
-    .rf-order-head { background: ${BRAND.brown}; color: ${BRAND.white}; padding: 10px 14px; }
-    .rf-order-head-table { width: 100%; border-collapse: collapse; }
-    .rf-order-num { font-size: 12pt; font-weight: bold; margin: 0; }
-    .rf-order-meta { font-size: 9pt; color: #f5d78a; margin: 2px 0 0; }
-    .rf-order-total { font-size: 13pt; font-weight: bold; text-align: right; color: ${BRAND.white}; margin: 0; }
-    .rf-order-body { border: 1px solid ${BRAND.border}; border-top: none; background: ${BRAND.white}; }
-    .rf-section { padding: 0; }
-    .rf-section-title { background: ${BRAND.creamAlt}; color: ${BRAND.brown}; font-size: 8.5pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; padding: 7px 14px; margin: 0; border-bottom: 1px solid ${BRAND.border}; }
-    .rf-fields { width: 100%; border-collapse: collapse; }
-    .rf-fields td { padding: 8px 14px; border-bottom: 1px solid ${BRAND.border}; vertical-align: top; font-size: 10pt; }
-    .rf-fields tr:last-child td { border-bottom: none; }
-    .rf-label { width: 32%; color: ${BRAND.muted}; font-weight: 600; }
-    .rf-value { color: ${BRAND.text}; font-weight: 600; }
-    .rf-value-strong { color: ${BRAND.amber}; font-weight: bold; }
-    .rf-notes { background: ${BRAND.cream}; padding: 10px 14px; font-size: 10pt; border-top: 1px solid ${BRAND.border}; white-space: pre-wrap; }
-    .rf-footer { margin-top: 24px; padding-top: 12px; border-top: 2px solid ${BRAND.amber}; color: ${BRAND.muted}; font-size: 8.5pt; }
-    .rf-total-bar { background: ${BRAND.brown}; color: ${BRAND.white}; padding: 12px 16px; margin-top: 8px; font-weight: bold; font-size: 11pt; }
+    body { font-family: Calibri, 'Segoe UI', Arial, sans-serif; color: ${BRAND.text}; font-size: 10.5pt; line-height: 1.4; margin: 0; padding: 24px; }
+    h1 { font-size: 20pt; font-weight: bold; color: ${BRAND.white}; margin: 0; letter-spacing: 0.04em; }
+    .rf-header { background: ${BRAND.brown}; padding: 16px 20px 14px; margin: -24px -24px 0; }
+    .rf-header-accent { height: 4px; background: ${BRAND.amber}; margin: 0 -24px 18px; }
+    .rf-subtitle { color: #f5d78a; font-size: 9.5pt; margin: 5px 0 0; }
+    .rf-meta { color: ${BRAND.muted}; font-size: 9pt; margin: 0 0 14px; }
+    .rf-summary { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    .rf-summary td { background: ${BRAND.cream}; border: 1px solid ${BRAND.border}; padding: 8px 12px; font-size: 9pt; }
+    .rf-summary strong { color: ${BRAND.amber}; }
+    .rf-data { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .rf-data th { background: ${BRAND.brown}; color: ${BRAND.white}; font-size: 9pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.06em; padding: 10px 8px; text-align: left; border: 1px solid #6d3610; vertical-align: middle; }
+    .rf-data td { padding: 9px 8px; border: 1px solid ${BRAND.border}; vertical-align: top; font-size: 10pt; word-wrap: break-word; }
+    .rf-data tr:nth-child(even) td { background: ${BRAND.creamAlt}; }
+    .rf-data tr:hover td { background: ${BRAND.cream}; }
+    .rf-col-num { width: 5%; text-align: center; font-weight: bold; color: ${BRAND.muted}; }
+    .rf-col-nom { width: 16%; font-weight: 600; }
+    .rf-col-tel { width: 13%; }
+    .rf-col-lieu { width: 26%; }
+    .rf-col-qty { width: 12%; text-align: center; font-weight: bold; color: ${BRAND.amber}; }
+    .rf-col-consignes { width: 28%; white-space: pre-wrap; }
+    .rf-footer { margin-top: 18px; padding-top: 10px; border-top: 2px solid ${BRAND.amber}; color: ${BRAND.muted}; font-size: 8.5pt; }
+    .rf-total-bar { background: ${BRAND.brown}; color: ${BRAND.white}; padding: 10px 14px; margin-top: 12px; font-weight: bold; font-size: 10pt; }
   `;
 }
 
-function wordShell({ title, subtitle, metaHtml, kpiHtml, ordersHtml, totalHtml }) {
+function wordShell({ title, subtitle, metaHtml, summaryHtml, tableHtml, totalHtml }) {
   return `<!DOCTYPE html>
 <html xmlns:o="urn:schemas-microsoft-com:office:office"
       xmlns:w="urn:schemas-microsoft-com:office:word"
@@ -107,158 +94,80 @@ function wordShell({ title, subtitle, metaHtml, kpiHtml, ordersHtml, totalHtml }
   </div>
   <div class="rf-header-accent"></div>
   <p class="rf-meta">${metaHtml}</p>
-  ${kpiHtml}
-  ${ordersHtml}
+  ${summaryHtml}
+  ${tableHtml}
   ${totalHtml}
-  <p class="rf-footer">Document généré le ${escapeHtml(new Date().toLocaleString('fr-FR'))} · Rapido Flash · Éditable dans Microsoft Word</p>
+  <p class="rf-footer">Généré le ${escapeHtml(new Date().toLocaleString('fr-FR'))} · Rapido Flash · Document éditable (Word)</p>
 </body>
 </html>`;
 }
 
-function fieldRow(label, value, { strong = false } = {}) {
+function summaryTable(cells) {
+  const tds = cells.map((c) => `<td><strong>${escapeHtml(c.value)}</strong> ${escapeHtml(c.label)}</td>`).join('');
+  return `<table class="rf-summary"><tr>${tds}</tr></table>`;
+}
+
+function shopTableRow(r, index) {
+  const fullName = [r.firstName, r.lastName].filter((p) => p && p !== '—').join(' ') || '—';
+  const lieu = r.fullAddress || [r.city, r.address].filter((p) => p && p !== '—').join(' — ') || '—';
+  const consignes = r.clientSpecifications && r.clientSpecifications !== '—' ? r.clientSpecifications : '—';
+  const qty = r.productName && r.productName !== '—'
+    ? `${r.quantityLabel}\n(${r.productName})`
+    : r.quantityLabel;
+
   return `<tr>
-    <td class="rf-label">${escapeHtml(label)}</td>
-    <td class="rf-value${strong ? ' rf-value-strong' : ''}">${escapeHtml(value)}</td>
+    <td class="rf-col-num">${index + 1}</td>
+    <td class="rf-col-nom">${escapeHtml(fullName)}</td>
+    <td class="rf-col-tel">${escapeHtml(r.phone)}</td>
+    <td class="rf-col-lieu">${escapeHtml(lieu)}</td>
+    <td class="rf-col-qty">${escapeHtml(qty)}</td>
+    <td class="rf-col-consignes">${escapeHtml(consignes)}</td>
   </tr>`;
 }
 
-function section(title, rowsHtml) {
-  return `<div class="rf-section">
-    <p class="rf-section-title">${escapeHtml(title)}</p>
-    <table class="rf-fields"><tbody>${rowsHtml}</tbody></table>
-  </div>`;
+function restaurantTableRow(r, index) {
+  return `<tr>
+    <td class="rf-col-num">${index + 1}</td>
+    <td class="rf-col-nom">${escapeHtml(r.clientName)}</td>
+    <td class="rf-col-tel">${escapeHtml(r.phone)}</td>
+    <td class="rf-col-lieu">${escapeHtml(r.address)}</td>
+    <td class="rf-col-qty">${escapeHtml(r.lineItems)}</td>
+    <td class="rf-col-consignes">${escapeHtml(r.instructions && r.instructions !== '—' ? r.instructions : '—')}</td>
+  </tr>`;
 }
 
-function kpiRow(cells) {
-  const tds = cells
-    .map(
-      (c) => `<td class="rf-kpi-cell">
-        <p class="rf-kpi-label">${escapeHtml(c.label)}</p>
-        <p class="rf-kpi-value">${escapeHtml(c.value)}</p>
-      </td>`
-    )
-    .join('');
-  return `<table class="rf-kpi-table"><tr>${tds}</tr></table>`;
+function buildDataTable(headers, rowsHtml) {
+  return `<table class="rf-data">
+    <thead><tr>${headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>`;
 }
 
-function shopOrderCard(r, index) {
-  const dates = [
-    r.confirmedAt ? `Confirmée : ${fmtDateShort(r.confirmedAt)}` : null,
-    r.requestedDeliveryAt ? `Livraison demandée : ${fmtDateShort(r.requestedDeliveryAt)}` : null,
-    r.scheduledDeliveryAt ? `Relance : ${fmtDateShort(r.scheduledDeliveryAt)}` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
-
-  const financeRows = [
-    fieldRow('Prix unitaire', fmtMoney(r.unitPrice)),
-    fieldRow('Sous-total produit', fmtMoney(r.subtotalPrice)),
-    fieldRow(
-      'Frais de livraison',
-      r.freeDelivery ? 'Gratuite (promo)' : fmtMoney(r.deliveryFee)
-    ),
-    fieldRow('Total à payer', fmtMoney(r.totalPrice), { strong: true }),
-  ];
-  if (r.isPromoLive) {
-    financeRows.push(fieldRow('Promotion', `-${r.discountPercent}%`));
-  }
-
-  return `<div class="rf-order">
-    <div class="rf-order-head">
-      <table class="rf-order-head-table">
-        <tr>
-          <td>
-            <p class="rf-order-num">Commande ${index + 1} — N° ${escapeHtml(r.orderNumber)}</p>
-            <p class="rf-order-meta">${escapeHtml(r.statutLabel)} · ${escapeHtml(fmtDateShort(r.orderDate))}${r.isOffPlatform ? ' · Hors plateforme' : ''}</p>
-          </td>
-          <td><p class="rf-order-total">${escapeHtml(fmtMoney(r.totalPrice))}</p></td>
-        </tr>
-      </table>
-    </div>
-    <div class="rf-order-body">
-      ${section(
-        'Produit commandé',
-        [
-          fieldRow('Produit', r.productName),
-          fieldRow('Quantité', r.quantityLabel),
-          fieldRow('Fiche produit', r.slug),
-        ].join('')
-      )}
-      ${section(
-        'Client',
-        [
-          fieldRow('Prénom', r.firstName),
-          fieldRow('Nom', r.lastName),
-          fieldRow('Téléphone / WhatsApp', r.phone),
-          fieldRow('Ville', r.city),
-        ].join('')
-      )}
-      ${section('Livraison', [fieldRow('Adresse complète', r.fullAddress), dates ? fieldRow('Dates', dates) : ''].filter(Boolean).join(''))}
-      ${section('Paiement & montants', financeRows.join(''))}
-      ${r.clientSpecifications && r.clientSpecifications !== '—'
-        ? `<div class="rf-notes"><strong>Spécifications / instructions :</strong><br/>${escapeHtml(r.clientSpecifications)}</div>`
-        : ''}
-      <div class="rf-notes" style="background:#fff;border-top:1px solid ${BRAND.border};font-size:9pt;color:${BRAND.muted};">
-        ${escapeHtml(r.paymentMode)}
-      </div>
-    </div>
-  </div>`;
-}
-
-function restaurantOrderCard(r, index) {
-  return `<div class="rf-order">
-    <div class="rf-order-head">
-      <table class="rf-order-head-table">
-        <tr>
-          <td>
-            <p class="rf-order-num">Commande ${index + 1} — #${escapeHtml(r.orderNumber)}</p>
-            <p class="rf-order-meta">${escapeHtml(r.statutLabel)} · ${escapeHtml(fmtDateShort(r.orderDate))} · ${escapeHtml(r.restaurantName)}</p>
-          </td>
-          <td><p class="rf-order-total">${escapeHtml(fmtMoney(r.total))}</p></td>
-        </tr>
-      </table>
-    </div>
-    <div class="rf-order-body">
-      ${section(
-        'Client',
-        [
-          fieldRow('Nom', r.clientName),
-          fieldRow('Email', r.clientEmail),
-          fieldRow('Téléphone', r.phone),
-        ].join('')
-      )}
-      ${section(
-        'Livraison',
-        [fieldRow('Adresse', r.address), fieldRow('Instructions livreur', r.instructions)].join('')
-      )}
-      ${section('Articles commandés', [fieldRow('Détail', r.lineItems)].join(''))}
-      ${section('Montant', [fieldRow('Total', fmtMoney(r.total), { strong: true })].join(''))}
-    </div>
-  </div>`;
-}
+const TABLE_HEADERS = ['N°', 'Nom', 'Téléphone', 'Lieu', 'Quantité', 'Consignes'];
 
 export function exportShopOrdersToWord(exportData) {
   if (!exportData?.orders?.length) return;
 
   const period = `${fmtDateShort(exportData.dateFrom)} → ${fmtDateShort(exportData.dateTo)}`;
-  const metaHtml = `Période : <strong>${escapeHtml(period)}</strong> · Statut : ${escapeHtml(exportData.statutLabel)} · Produit : ${escapeHtml(exportData.productLabel)} · ${exportData.orderCount} commande(s)`;
+  const metaHtml = `Période : <strong>${escapeHtml(period)}</strong> · Statut : ${escapeHtml(exportData.statutLabel)} · Produit : ${escapeHtml(exportData.productLabel)}`;
 
-  const kpiHtml = kpiRow([
-    { label: 'Commandes', value: String(exportData.orderCount) },
-    { label: 'Sous-total produits', value: fmtMoney(exportData.totalSubtotal) },
-    { label: 'Frais livraison', value: fmtMoney(exportData.totalDelivery) },
-    { label: 'Total à payer', value: fmtMoney(exportData.totalAmount) },
+  const summaryHtml = summaryTable([
+    { value: String(exportData.orderCount), label: 'commande(s)' },
+    { value: fmtMoney(exportData.totalAmount), label: 'total' },
+    { value: fmtMoney(exportData.totalSubtotal), label: 'sous-total produits' },
+    { value: fmtMoney(exportData.totalDelivery), label: 'livraison' },
   ]);
 
-  const ordersHtml = exportData.orders.map(shopOrderCard).join('');
-  const totalHtml = `<div class="rf-total-bar">TOTAL EXPORT — ${exportData.orderCount} commande(s) · ${escapeHtml(fmtMoney(exportData.totalAmount))}</div>`;
+  const tableHtml = buildDataTable(TABLE_HEADERS, exportData.orders.map(shopTableRow).join(''));
+
+  const totalHtml = `<div class="rf-total-bar">${exportData.orderCount} commande(s) · Total ${escapeHtml(fmtMoney(exportData.totalAmount))}</div>`;
 
   const html = wordShell({
     title: 'RAPIDO — Commandes Shop',
-    subtitle: 'Export détaillé · document éditable',
+    subtitle: 'Tableau de livraison · édition Word',
     metaHtml,
-    kpiHtml,
-    ordersHtml,
+    summaryHtml,
+    tableHtml,
     totalHtml,
   });
 
@@ -269,22 +178,23 @@ export function exportRestaurantCommandesToWord(exportData) {
   if (!exportData?.orders?.length) return;
 
   const period = `${fmtDateShort(exportData.dateFrom)} → ${fmtDateShort(exportData.dateTo)}`;
-  const metaHtml = `Période : <strong>${escapeHtml(period)}</strong> · ${escapeHtml(exportData.restaurantLabel)} · Statut : ${escapeHtml(exportData.statutLabel)} · Article : ${escapeHtml(exportData.productLabel)} · ${exportData.orderCount} commande(s)`;
+  const metaHtml = `Période : <strong>${escapeHtml(period)}</strong> · ${escapeHtml(exportData.restaurantLabel)} · Statut : ${escapeHtml(exportData.statutLabel)} · Article : ${escapeHtml(exportData.productLabel)}`;
 
-  const kpiHtml = kpiRow([
-    { label: 'Commandes', value: String(exportData.orderCount) },
-    { label: 'Montant total', value: fmtMoney(exportData.totalAmount) },
+  const summaryHtml = summaryTable([
+    { value: String(exportData.orderCount), label: 'commande(s)' },
+    { value: fmtMoney(exportData.totalAmount), label: 'total' },
   ]);
 
-  const ordersHtml = exportData.orders.map(restaurantOrderCard).join('');
-  const totalHtml = `<div class="rf-total-bar">TOTAL EXPORT — ${exportData.orderCount} commande(s) · ${escapeHtml(fmtMoney(exportData.totalAmount))}</div>`;
+  const tableHtml = buildDataTable(TABLE_HEADERS, exportData.orders.map(restaurantTableRow).join(''));
+
+  const totalHtml = `<div class="rf-total-bar">${exportData.orderCount} commande(s) · Total ${escapeHtml(fmtMoney(exportData.totalAmount))}</div>`;
 
   const html = wordShell({
     title: 'RAPIDO — Commandes',
-    subtitle: 'Export détaillé · document éditable',
+    subtitle: 'Tableau de livraison · édition Word',
     metaHtml,
-    kpiHtml,
-    ordersHtml,
+    summaryHtml,
+    tableHtml,
     totalHtml,
   });
 
