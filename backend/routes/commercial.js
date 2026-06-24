@@ -330,6 +330,12 @@ router.put('/orders/:id/confirm', auth, isCommercialStaff, async (req, res) => {
     order.commercialStatus = 'confirme';
     order.confirmedAt = new Date();
     await order.save();
+    try {
+      const { createMissionFromShopOrder } = require('../utils/championMission');
+      await createMissionFromShopOrder(order);
+    } catch (missionErr) {
+      console.error('Champion mission:', missionErr.message);
+    }
     res.json(order);
   } catch (e) {
     res.status(500).json({ message: e.message });

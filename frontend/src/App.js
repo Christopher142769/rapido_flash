@@ -55,6 +55,7 @@ import CommercialCommandesPage from './pages/commercial/CommercialCommandesPage'
 import CommercialBilanPage from './pages/commercial/CommercialBilanPage';
 import CommercialRelancesPage from './pages/commercial/CommercialRelancesPage';
 import CommerciauxDashboard from './pages/commercial/CommerciauxDashboard';
+import ChampionsDashboard from './pages/commercial/ChampionsDashboard';
 import CommercialPointsPage from './pages/commercial/CommercialPointsPage';
 import ChatThread from './pages/client/ChatThread';
 import ChatsInbox from './pages/client/ChatsInbox';
@@ -63,6 +64,12 @@ import NotificationPermissionBanner from './components/NotificationPermissionBan
 import SupportWidget from './components/SupportWidget';
 import GlobalLangSwitcher from './components/GlobalLangSwitcher';
 import LanguageRouteSync from './components/LanguageRouteSync';
+import ChampionHome from './pages/champion/ChampionHome';
+import ChampionOnboarding from './pages/champion/ChampionOnboarding';
+import ChampionGate from './pages/champion/ChampionGate';
+import ChampionApp from './pages/champion/ChampionApp';
+import ChampionStatusPage from './pages/champion/ChampionStatusPage';
+import ChampionReviewPage from './pages/champion/ChampionReviewPage';
 
 import './App.css';
 import MaintenanceGate from './components/MaintenanceGate';
@@ -102,7 +109,9 @@ function FormLegacyRedirect() {
 function AppRoutes() {
   const location = useLocation();
   const isRecrutement =
-    location.pathname.startsWith('/recrutement') || location.pathname.startsWith('/form');
+    location.pathname.startsWith('/recrutement') ||
+    location.pathname.startsWith('/form') ||
+    location.pathname.startsWith('/champion');
 
   return (
     <MaintenanceGate>
@@ -126,6 +135,17 @@ function AppRoutes() {
         <Route path="/recrutement" element={<RecrutementPage page="index" />} />
         <Route path="/form/:slug" element={<PublicCustomFormPage />} />
         <Route path="/formulaire/:slug" element={<FormLegacyRedirect />} />
+
+        {/* Espace livreurs Champion */}
+        <Route path="/champion" element={<ChampionHome />} />
+        <Route path="/champion/inscription" element={<ChampionOnboarding />} />
+        <Route path="/champion/en-attente" element={<ChampionStatusPage statusKey="pending_validation" />} />
+        <Route path="/champion/rejete" element={<ChampionStatusPage statusKey="rejected" />} />
+        <Route path="/champion/suspendu" element={<ChampionStatusPage statusKey="suspended" />} />
+        <Route path="/champion/avis/:missionId" element={<ChampionReviewPage />} />
+        <Route path="/champion/app" element={<ChampionGate />}>
+          <Route index element={<ChampionApp />} />
+        </Route>
 
         {/* Home public : découverte sans connexion */}
         <Route path="/home" element={<Home />} />
@@ -184,6 +204,7 @@ function AppRoutes() {
           <Route path="commercial-relances" element={<CommercialRelancesPage />} />
           <Route path="commercial-points" element={<CommercialPointsPage />} />
           <Route path="commerciaux" element={<CommerciauxDashboard />} />
+          <Route path="champions" element={<ChampionsDashboard />} />
         </Route>
         <Route path="/dashboard/*" element={<DashboardLegacyRedirect />} />
         <Route path="/entreprises" element={<Navigate to={DASHBOARD_BASE_PATH} replace />} />

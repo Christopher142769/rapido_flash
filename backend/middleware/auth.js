@@ -47,4 +47,11 @@ const isRestaurantAdmin = (req, res, next) => {
   next();
 };
 
-module.exports = { auth, isRestaurant, isCommercialStaff, isRestaurantAdmin };
+const isLivreur = (req, res, next) => {
+  if (req.user.role !== 'livreur') {
+    return res.status(403).json({ message: 'Accès refusé - Espace Champion requis' });
+  }
+  next();
+};
+
+module.exports = { auth, isRestaurant, isCommercialStaff, isRestaurantAdmin, isLivreur };

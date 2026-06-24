@@ -32,6 +32,11 @@ function validateShopCustomer(customer) {
   if (!SHOP_CITIES.includes(city)) return 'Choisissez Cotonou ou Calavi';
   if (!addressDescription) return 'L’adresse complète de livraison est requise';
 
+  const email = String(c.email || '').trim().toLowerCase();
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return 'Adresse email invalide';
+  }
+
   return null;
 }
 
@@ -113,6 +118,7 @@ router.post('/', async (req, res) => {
         firstName: String(customer.firstName).trim(),
         lastName: String(customer.lastName).trim(),
         phone: String(customer.phone).trim(),
+        email: String(customer.email || '').trim().toLowerCase(),
         city: String(customer.city).trim(),
         addressDescription: String(customer.addressDescription).trim(),
       },
@@ -198,6 +204,15 @@ router.put('/:id/statut', auth, isCommercialStaff, async (req, res) => {
       }
     }
     await order.save();
+
+    if (statut === 'confirmee') {
+      try {
+        const { createMissionFromShopOrder } = require('../utils/championMission');
+        await createMissionFromShopOrder(order);
+      } catch (missionErr) {
+        console.error('Champion mission:', missionErr.message);
+      }
+    }
 
     res.json(order);
   } catch (e) {

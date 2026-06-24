@@ -22,6 +22,7 @@ import {
   FaBell as FaBellRelance,
   FaUserTie,
   FaBullseye,
+  FaMotorcycle,
 } from 'react-icons/fa';
 
 export const DASHBOARD_HOME_SECTION = 'dashboard_home';
@@ -75,6 +76,13 @@ function buildCommercialNavItems({ isAdmin, t }) {
       path: '/dashboard/commerciaux',
       section: COMMERCIAL_NAV_SECTION,
       Icon: FaUserTie,
+    });
+    items.push({
+      id: 'champions',
+      label: 'Livreurs Champion',
+      path: '/dashboard/champions',
+      section: COMMERCIAL_NAV_SECTION,
+      Icon: FaMotorcycle,
     });
   }
   return items;

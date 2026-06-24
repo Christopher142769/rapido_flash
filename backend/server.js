@@ -130,6 +130,7 @@ app.use('/api/account-requests', require('./routes/accountRequests'));
 app.use('/api/shop-products', require('./routes/shopProducts'));
 app.use('/api/shop-orders', require('./routes/shopOrders'));
 app.use('/api/commercial', require('./routes/commercial'));
+app.use('/api/champions', require('./routes/champions'));
 app.use('/api/custom-forms', require('./routes/customForms'));
 
 // Healthcheck Render

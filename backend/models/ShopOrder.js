@@ -5,6 +5,7 @@ const shopCustomerSchema = new mongoose.Schema(
     firstName: { type: String, required: true, trim: true },
     lastName: { type: String, required: true, trim: true },
     phone: { type: String, required: true, trim: true },
+    email: { type: String, trim: true, lowercase: true, default: '' },
     city: { type: String, required: true, trim: true },
     addressDescription: { type: String, required: true, trim: true },
   },

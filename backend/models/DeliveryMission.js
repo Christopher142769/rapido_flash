@@ -1,0 +1,56 @@
+const mongoose = require('mongoose');
+
+const deliveryMissionSchema = new mongoose.Schema(
+  {
+    sourceType: { type: String, enum: ['shop', 'restaurant'], required: true },
+    shopOrderId: { type: mongoose.Schema.Types.ObjectId, ref: 'ShopOrder', default: null },
+    commandeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Commande', default: null },
+    status: {
+      type: String,
+      enum: [
+        'available',
+        'accepted',
+        'heading_pickup',
+        'picked_up',
+        'en_route',
+        'arrived',
+        'delivered',
+        'cancelled',
+      ],
+      default: 'available',
+      index: true,
+    },
+    championId: { type: mongoose.Schema.Types.ObjectId, ref: 'Champion', default: null, index: true },
+    workZone: { type: String, trim: true, default: '', index: true },
+    pickupLabel: { type: String, default: '' },
+    pickupAddress: { type: String, default: '' },
+    pickupPhone: { type: String, default: '' },
+    pickupLat: { type: Number, default: null },
+    pickupLng: { type: Number, default: null },
+    deliveryLabel: { type: String, default: '' },
+    deliveryAddress: { type: String, default: '' },
+    deliveryPhone: { type: String, default: '' },
+    deliveryLat: { type: Number, default: null },
+    deliveryLng: { type: Number, default: null },
+    clientEmail: { type: String, default: '', trim: true, lowercase: true },
+    clientName: { type: String, default: '' },
+    productSummary: { type: String, default: '' },
+    earnings: { type: Number, default: 0 },
+    orderTotal: { type: Number, default: 0 },
+    paymentMode: { type: String, default: 'cash_on_delivery' },
+    distanceKm: { type: Number, default: 0 },
+    estimatedMinutes: { type: Number, default: 15 },
+    deliveryCode: { type: String, default: '' },
+    deliveryCodeEmailSentAt: { type: Date, default: null },
+    deliveryCodeVerified: { type: Boolean, default: false },
+    proofPhotoUrl: { type: String, default: '' },
+    cancelReason: { type: String, default: '' },
+    acceptedAt: { type: Date, default: null },
+    pickedUpAt: { type: Date, default: null },
+    deliveredAt: { type: Date, default: null },
+    cancelledAt: { type: Date, default: null },
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model('DeliveryMission', deliveryMissionSchema);
