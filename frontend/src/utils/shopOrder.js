@@ -42,7 +42,6 @@ export function emptyCustomerForm() {
     firstName: '',
     lastName: '',
     phone: '',
-    email: '',
     city: '',
     addressDescription: '',
     deliveryDate: getDefaultDeliveryDateKey(),
@@ -74,7 +73,6 @@ export function buildShopOrderPayload(product, promoState, quantity, customer) {
       firstName: String(customer.firstName || '').trim(),
       lastName: String(customer.lastName || '').trim(),
       phone: String(customer.phone || '').trim(),
-      email: String(customer.email || '').trim().toLowerCase(),
       city: String(customer.city || '').trim(),
       addressDescription: String(customer.addressDescription || '').trim(),
     },
@@ -172,10 +170,6 @@ export function validateCustomerForm(customer) {
   if (!customer.lastName?.trim()) errors.lastName = 'Le nom est requis';
   const phone = String(customer.phone || '').replace(/\s/g, '');
   if (!phone || phone.length < 8) errors.phone = 'Un numéro joignable est requis';
-  const email = String(customer.email || '').trim();
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    errors.email = 'Adresse email invalide';
-  }
   if (!isValidShopCity(customer.city)) errors.city = 'Choisissez Cotonou ou Calavi';
   if (!customer.addressDescription?.trim()) {
     errors.addressDescription = 'Indiquez votre adresse complète de livraison';

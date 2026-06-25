@@ -54,24 +54,6 @@ export default function ShopOrderForm({ customer, errors, onFieldChange, idPrefi
         {errors.phone ? <span className="shop-order-form-error">{errors.phone}</span> : null}
       </div>
 
-      <div className="shop-order-form-field">
-        <label htmlFor={`${idPrefix}-email`}>Email (pour le code de livraison)</label>
-        <input
-          id={`${idPrefix}-email`}
-          type="email"
-          inputMode="email"
-          placeholder="votre@email.com"
-          className={errors.email ? 'has-error' : ''}
-          value={customer.email || ''}
-          onChange={(e) => setField('email', e.target.value)}
-          autoComplete="email"
-        />
-        <p className="shop-order-form-hint" style={{ marginTop: 6, fontSize: '0.82rem', color: '#666' }}>
-          Vous recevrez un code à 4 chiffres par email à remettre au livreur.
-        </p>
-        {errors.email ? <span className="shop-order-form-error">{errors.email}</span> : null}
-      </div>
-
       {/* Date de livraison — désactivée temporairement pour conversion rapide
       <div
         className={`shop-order-form-field shop-order-form-field--delivery${
