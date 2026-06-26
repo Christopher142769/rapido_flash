@@ -4,10 +4,11 @@ import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
 import ShopDeliveryNotice from '../../components/shop/ShopDeliveryNotice';
 import {
   buildShopOrderClientConfirmationMessage,
+  buildWhatsAppOrderUrl,
   formatCustomerAddress,
   formatCustomerFullName,
   loadShopOrder,
-  openShopOrderWhatsAppConfirmation,
+  openShopOrderWhatsAppTrack,
   buildWhatsAppSupportUrl,
 } from '../../utils/shopOrder';
 import { formatPriceXof } from '../../utils/shopPromo';
@@ -36,12 +37,12 @@ export default function ShopOrderConfirmation() {
   const fullName = formatCustomerFullName(order.customer);
   const fullAddress = formatCustomerAddress(order.customer);
 
-  const handleTrackOrder = (e) => {
+  const handleTrackOrder = async (e) => {
     e.preventDefault();
-    const opened = openShopOrderWhatsAppConfirmation(order);
+    const opened = await openShopOrderWhatsAppTrack(order);
     if (!opened) {
       alert(
-        'Numéro WhatsApp invalide. Votre commande est bien confirmée — contactez Rapido au +229 40 39 39 94.'
+        'WhatsApp indisponible pour ce produit. Votre commande est confirmée — contactez Rapido au +229 40 39 39 94.'
       );
     }
   };
@@ -55,12 +56,12 @@ export default function ShopOrderConfirmation() {
         <h1 className="shop-confirm-title">Commande confirmée</h1>
         <p className="shop-confirm-lead">
           Merci {order.customer.firstName || fullName.split(' ')[0] || ''} ! Votre commande est enregistrée.
-          Appuyez sur le bouton ci-dessous pour recevoir votre confirmation sur WhatsApp — livraison prévue{' '}
-          <strong>demain</strong> (sous 24 h).
+          Appuyez sur le bouton ci-dessous pour envoyer votre commande à Rapido sur WhatsApp — vous recevrez
+          automatiquement la confirmation avec livraison prévue <strong>demain</strong>.
         </p>
 
-        <div className="shop-confirm-wa-preview" aria-label="Aperçu du message WhatsApp">
-          <p className="shop-confirm-wa-preview-label">Message de confirmation</p>
+        <div className="shop-confirm-wa-preview" aria-label="Aperçu de la réponse Rapido">
+          <p className="shop-confirm-wa-preview-label">Réponse automatique Rapido</p>
           <pre className="shop-confirm-wa-preview-text">{waConfirmationMessage}</pre>
         </div>
 
@@ -163,10 +164,11 @@ export default function ShopOrderConfirmation() {
             className="shop-confirm-cta shop-confirm-cta--wa"
             onClick={handleTrackOrder}
           >
-            Suivre ma commande sur WhatsApp
+            Suivre ma commande
           </button>
           <p className="shop-confirm-wa-hint">
-            WhatsApp s’ouvre avec votre confirmation. Il suffit d’appuyer sur <strong>Envoyer</strong>.
+            WhatsApp s’ouvre chez Rapido avec votre commande. Appuyez sur <strong>Envoyer</strong> — Rapido vous
+            répondra automatiquement sous quelques secondes.
           </p>
           {supportWaUrl ? (
             <a

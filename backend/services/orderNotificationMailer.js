@@ -2,7 +2,6 @@ const { sendCustomFormNotification } = require('../utils/mailer');
 const { getPlatformAdminEmails } = require('../utils/maintenanceAccess');
 const { notifyOrderWhatsApp } = require('./orderNotificationWhatsApp');
 const {
-  notifyShopOrderClientWhatsApp,
   notifyCommandeClientWhatsApp,
 } = require('./customerOrderWhatsApp');
 
@@ -102,9 +101,7 @@ async function notifyShopOrderCreated(order) {
     console.error('Notification WhatsApp commande Shop:', err.message);
   });
 
-  void notifyShopOrderClientWhatsApp(order).catch((err) => {
-    console.error('WhatsApp client commande Shop:', err.message);
-  });
+  // Confirmation client : après « Suivre ma commande » (webhook ou délai), pas à la création.
 
   return sendToOrderInbox({ subject, html, text });
 }

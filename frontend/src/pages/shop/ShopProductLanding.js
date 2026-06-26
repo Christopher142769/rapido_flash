@@ -218,7 +218,7 @@ export default function ShopProductLanding() {
     setSubmitting(true);
     try {
       const saved = await submitShopOrderToApi(order);
-      const orderForSession = { ...order, orderId: saved._id };
+      const orderForSession = { ...order, orderId: saved._id, orderNumber: saved.orderNumber };
       if (!saveShopOrder(orderForSession)) {
         alert('Commande enregistrée, mais le récapitulatif local a échoué. Contactez Rapido sur WhatsApp.');
       }

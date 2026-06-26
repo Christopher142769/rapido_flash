@@ -13,6 +13,8 @@ const { notifyShopOrderCreated } = require('../services/orderNotificationMailer'
 const { isAllowedDeliveryDate, getDefaultDeliveryDateKey, deliveryDateKeyToDate } = require('../utils/shopDeliveryDate');
 const { unconfirmShopOrder } = require('../utils/shopOrderStatus');
 const { isEviscerationApplicable } = require('../utils/shopEvisceration');
+const { normalizeBeninPhoneDigits } = require('../utils/phoneDigits');
+const { scheduleShopOrderWhatsAppConfirmation } = require('../services/shopOrderWhatsAppConfirmation');
 
 const router = express.Router();
 
@@ -155,6 +157,29 @@ router.post('/', async (req, res) => {
     });
 
     res.status(201).json(order);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+/** Planifie la confirmation WhatsApp après « Suivre ma commande » (client envoie d’abord le récap à Rapido). */
+router.post('/:id/whatsapp-confirmation', async (req, res) => {
+  try {
+    const order = await ShopOrder.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Commande introuvable' });
+
+    const phone = normalizeBeninPhoneDigits(req.body?.phone);
+    const orderPhone = normalizeBeninPhoneDigits(order.customer?.phone);
+    if (!phone || !orderPhone || phone !== orderPhone) {
+      return res.status(403).json({ message: 'Numéro non autorisé' });
+    }
+
+    if (order.whatsappConfirmationSentAt) {
+      return res.json({ scheduled: false, alreadySent: true });
+    }
+
+    scheduleShopOrderWhatsAppConfirmation(order._id);
+    res.json({ scheduled: true });
   } catch (e) {
     res.status(500).json({ message: e.message });
   }

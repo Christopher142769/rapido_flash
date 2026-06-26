@@ -15,7 +15,8 @@ function isClientAutoMessageEnabled() {
 }
 
 function formatCfa(amount) {
-  return `${Math.round(Number(amount) || 0).toLocaleString('fr-FR')} FCFA`;
+  const n = Math.round(Number(amount) || 0);
+  return `CFA${n.toLocaleString('fr-FR')}`;
 }
 
 function firstNameFrom(fullName) {
@@ -27,14 +28,16 @@ function buildShopOrderClientMessage(order) {
   const c = order.customer || {};
   const name = firstNameFrom([c.firstName, c.lastName].filter(Boolean).join(' '));
   const address = [c.city, c.addressDescription].filter(Boolean).join(' — ');
+  const ref = order.orderNumber || (order._id ? String(order._id).slice(-8).toUpperCase() : '');
   const lines = [
-    `Bonjour ${name} 👋`,
+    `Bonjour ${name}`,
     '',
-    'Merci ! Votre commande *Rapido Flash* est bien enregistrée ✅',
+    '*Commande confirmée — Rapido Flash*',
     '',
-    `📦 *${order.productName || 'Produit'}*`,
+    'Votre commande est bien enregistrée et validée par notre équipe.',
+    '',
+    `*${order.productName || 'Produit'}*`,
     `Quantité : ${order.quantityLabel || order.quantity}`,
-    `Sous-total : ${formatCfa(order.subtotalPrice ?? order.totalPrice)}`,
   ];
 
   if (order.freeDelivery) {
@@ -43,17 +46,19 @@ function buildShopOrderClientMessage(order) {
     lines.push(`Livraison : ${formatCfa(order.deliveryFee)}`);
   }
 
+  if (Number(order.eviscerationFee) > 0) {
+    lines.push(`Éviscération et nettoyage : ${formatCfa(order.eviscerationFee)}`);
+  }
+
   lines.push(`*Total à payer : ${formatCfa(order.totalPrice)}*`);
   lines.push('');
-  lines.push(`📍 ${address}`);
-  if (order.orderNumber) {
-    lines.push(`🔖 Réf. : ${order.orderNumber}`);
-  }
+  if (address) lines.push(`Livraison : ${address}`);
+  if (ref) lines.push(`Réf. : ${ref}`);
   lines.push('');
-  lines.push(`🚚 ${DELIVERY_NOTE}`);
+  lines.push('*Livraison demain* (sous 24 h)');
+  lines.push('Restez joignable sur WhatsApp à l’adresse indiquée.');
   lines.push('');
-  lines.push('Une question ? Répondez directement à ce message.');
-  lines.push(`— Équipe Rapido Flash · ${RAPIDO_WA_DISPLAY}`);
+  lines.push('— Équipe Rapido Flash');
 
   return lines.join('\n');
 }
