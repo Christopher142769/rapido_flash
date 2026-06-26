@@ -5,15 +5,25 @@ const {
   mergeClosureWithOrderLimit,
 } = require('./shopOrderLimit');
 
+const { computeEviscerationFee, isEviscerationApplicable } = require('./shopEvisceration');
+
 function getShopDeliveryFee(product, promoState) {
   if (promoState?.freeDelivery) return 0;
   return Math.max(0, Math.round(Number(product?.deliveryFee || 0)));
 }
 
-function computeShopOrderTotals(unitPrice, quantity, deliveryFee) {
+function computeShopOrderTotals(unitPrice, quantity, deliveryFee, options = {}) {
+  const { eviscerationCleaning = false, quantityUnit = 'unit' } = options;
   const subtotalPrice = Math.round(Number(unitPrice || 0) * Number(quantity || 0));
   const fee = Math.max(0, Math.round(Number(deliveryFee || 0)));
-  return { subtotalPrice, deliveryFee: fee, totalPrice: subtotalPrice + fee };
+  const eviscerationFee = computeEviscerationFee(quantity, quantityUnit, eviscerationCleaning);
+  return {
+    subtotalPrice,
+    deliveryFee: fee,
+    eviscerationCleaning: !!eviscerationCleaning && eviscerationFee > 0,
+    eviscerationFee,
+    totalPrice: subtotalPrice + fee + eviscerationFee,
+  };
 }
 
 /**

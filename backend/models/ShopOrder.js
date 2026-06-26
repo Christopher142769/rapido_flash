@@ -36,6 +36,8 @@ const shopOrderSchema = new mongoose.Schema(
     /** Sous-total produit (unitPrice × quantité), hors livraison. */
     subtotalPrice: { type: Number, min: 0 },
     deliveryFee: { type: Number, default: 0, min: 0 },
+    eviscerationCleaning: { type: Boolean, default: false },
+    eviscerationFee: { type: Number, default: 0, min: 0 },
     totalPrice: { type: Number, required: true, min: 0 },
     basePrice: { type: Number, default: 0 },
     isPromoLive: { type: Boolean, default: false },

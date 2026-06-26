@@ -6,6 +6,7 @@ import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
 import ShopProductGallery from '../../components/shop/ShopProductGallery';
 import ShopContentBlocks from '../../components/shop/ShopContentBlocks';
 import ShopOrderForm from '../../components/shop/ShopOrderForm';
+import ShopEviscerationOption from '../../components/shop/ShopEviscerationOption';
 import { getProductGallery } from '../../utils/shopProductMedia';
 import {
   buildShopOrderPayload,
@@ -15,7 +16,8 @@ import {
   validateCustomerForm,
 } from '../../utils/shopOrder';
 import ShopDeliveryNotice from '../../components/shop/ShopDeliveryNotice';
-import { getShopPromoState, formatPriceXof, getShopDeliveryFee } from '../../utils/shopPromo';
+import { getShopPromoState, formatPriceXof, getShopDeliveryFee, computeShopOrderTotals } from '../../utils/shopPromo';
+import { isEviscerationApplicable } from '../../utils/shopEvisceration';
 import {
   formatQuantityWithUnit,
   getPriceUnitSuffix,
@@ -48,6 +50,7 @@ export default function ShopProductLanding() {
   const [submitting, setSubmitting] = useState(false);
   const [qtyModalOpen, setQtyModalOpen] = useState(false);
   const [highlightQty, setHighlightQty] = useState(false);
+  const [eviscerationCleaning, setEviscerationCleaning] = useState(false);
   const [closureTick, setClosureTick] = useState(() => Date.now());
   const topBarRef = useRef(null);
 
@@ -152,7 +155,17 @@ export default function ShopProductLanding() {
   const deliveryFee = promoState ? getShopDeliveryFee(product, promoState) : 0;
   const subtotalPrice = hasQuantity ? (unitPrice || 0) * quantity : 0;
   const totalBasePrice = hasQuantity ? unitBasePrice * quantity : 0;
+  const orderTotals = hasQuantity
+    ? computeShopOrderTotals(unitPrice, quantity, deliveryFee, {
+        eviscerationCleaning,
+        quantityUnit,
+      })
+    : null;
+  const eviscerationFee = orderTotals?.eviscerationFee || 0;
+  const grandTotal = orderTotals?.totalPrice || 0;
   const subtotalLabel = hasQuantity ? formatPriceXof(subtotalPrice) : null;
+  const grandTotalLabel = hasQuantity ? formatPriceXof(grandTotal) : null;
+  const showEviscerationOption = isEviscerationApplicable(quantityUnit);
 
   const navSections = useMemo(() => {
     const items = [
@@ -184,6 +197,10 @@ export default function ShopProductLanding() {
     };
   }, [hasTopFixedBar, showCountdown, showOrderLimitBanner, countdownEndsAt]);
 
+  useEffect(() => {
+    if (!showEviscerationOption) setEviscerationCleaning(false);
+  }, [showEviscerationOption]);
+
   const handleFieldChange = (field, value) => {
     setCustomer((c) => ({ ...c, [field]: value }));
     setFormErrors((e) => {
@@ -202,7 +219,9 @@ export default function ShopProductLanding() {
       return;
     }
 
-    const order = buildShopOrderPayload(product, promoState, orderQuantity, customer);
+    const order = buildShopOrderPayload(product, promoState, orderQuantity, customer, {
+      eviscerationCleaning: showEviscerationOption ? eviscerationCleaning : false,
+    });
     setSubmitting(true);
     try {
       const saved = await submitShopOrderToApi(order);
@@ -348,7 +367,17 @@ export default function ShopProductLanding() {
                     </span>
                   ) : deliveryFee > 0 ? (
                     <span className="shop-pdp-buybox-delivery-info">
-                      Frais de livraison : {formatPriceXof(deliveryFee)} (ajoutés au récapitulatif)
+                      Frais de livraison : {formatPriceXof(deliveryFee)}
+                    </span>
+                  ) : null}
+                  {eviscerationFee > 0 ? (
+                    <span className="shop-pdp-buybox-delivery-info shop-pdp-buybox-delivery-info--evic">
+                      Éviscération et nettoyage : {formatPriceXof(eviscerationFee)}
+                    </span>
+                  ) : null}
+                  {(deliveryFee > 0 || eviscerationFee > 0 || promoState?.freeDelivery) && hasQuantity ? (
+                    <span className="shop-pdp-buybox-total-line">
+                      Total : <strong>{grandTotalLabel}</strong>
                     </span>
                   ) : null}
                 </>
@@ -395,6 +424,15 @@ export default function ShopProductLanding() {
               min={0}
               highlight={highlightQty && !hasQuantity}
             />
+
+            {showEviscerationOption && hasQuantity ? (
+              <ShopEviscerationOption
+                enabled={eviscerationCleaning}
+                onChange={setEviscerationCleaning}
+                quantity={quantity}
+                quantityUnit={quantityUnit}
+              />
+            ) : null}
 
             <div id="shop-order-fields">
               <ShopOrderForm
@@ -445,7 +483,7 @@ export default function ShopProductLanding() {
       <div className="shop-pdp-sticky">
         <div className="shop-pdp-sticky-inner">
           <span className="shop-pdp-sticky-price">
-            {hasQuantity ? subtotalLabel : formatPriceXof(unitPrice) + (priceUnitSuffix || '')}
+            {hasQuantity ? grandTotalLabel : formatPriceXof(unitPrice) + (priceUnitSuffix || '')}
           </span>
           {canOrder ? (
             <button

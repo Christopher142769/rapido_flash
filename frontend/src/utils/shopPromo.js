@@ -2,6 +2,8 @@
  * État promo Shop — aligné sur backend/utils/shopPromo.js
  * Fiche publiée : promo active jusqu'à arrêt manuel (pas de coupure à endsAt).
  */
+import { computeEviscerationFee } from './shopEvisceration';
+
 export const DEFAULT_BOOST_HOURS = 72;
 
 export function getShopDeliveryFee(product, promoState) {
@@ -9,10 +11,18 @@ export function getShopDeliveryFee(product, promoState) {
   return Math.max(0, Math.round(Number(product?.deliveryFee || 0)));
 }
 
-export function computeShopOrderTotals(unitPrice, quantity, deliveryFee) {
+export function computeShopOrderTotals(unitPrice, quantity, deliveryFee, options = {}) {
+  const { eviscerationCleaning = false, quantityUnit = 'unit' } = options;
   const subtotalPrice = Math.round(Number(unitPrice || 0) * Number(quantity || 0));
   const fee = Math.max(0, Math.round(Number(deliveryFee || 0)));
-  return { subtotalPrice, deliveryFee: fee, totalPrice: subtotalPrice + fee };
+  const eviscerationFee = computeEviscerationFee(quantity, quantityUnit, eviscerationCleaning);
+  return {
+    subtotalPrice,
+    deliveryFee: fee,
+    eviscerationCleaning: !!eviscerationCleaning && eviscerationFee > 0,
+    eviscerationFee,
+    totalPrice: subtotalPrice + fee + eviscerationFee,
+  };
 }
 
 export function getShopPromoState(product, now = new Date()) {

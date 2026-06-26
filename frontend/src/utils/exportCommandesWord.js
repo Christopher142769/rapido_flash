@@ -17,9 +17,9 @@ const BRAND = {
   green: '#2e7d32',
 };
 
-const COL_COUNT = 9;
+const RESTAURANT_COL_COUNT = 9;
 
-const TABLE_HEADERS = [
+const RESTAURANT_TABLE_HEADERS = [
   'N°',
   'Nom',
   'Téléphone',
@@ -31,7 +31,23 @@ const TABLE_HEADERS = [
   'Total',
 ];
 
-const COLGROUP = `<colgroup>
+const SHOP_COL_COUNT = 11;
+
+const SHOP_TABLE_HEADERS = [
+  'N°',
+  'Nom',
+  'Téléphone',
+  'Lieu',
+  'Qté',
+  'Consignes',
+  'Évisc. & nett.',
+  'Montant évisc.',
+  'Montant',
+  'Livraison',
+  'Total',
+];
+
+const COLGROUP_RESTAURANT = `<colgroup>
   <col style="width:24px"/>
   <col style="width:78px"/>
   <col style="width:72px"/>
@@ -41,6 +57,20 @@ const COLGROUP = `<colgroup>
   <col style="width:62px"/>
   <col style="width:58px"/>
   <col style="width:62px"/>
+</colgroup>`;
+
+const COLGROUP_SHOP = `<colgroup>
+  <col style="width:22px"/>
+  <col style="width:72px"/>
+  <col style="width:68px"/>
+  <col style="width:108px"/>
+  <col style="width:34px"/>
+  <col style="width:88px"/>
+  <col style="width:44px"/>
+  <col style="width:52px"/>
+  <col style="width:54px"/>
+  <col style="width:50px"/>
+  <col style="width:54px"/>
 </colgroup>`;
 
 function escapeHtml(v) {
@@ -126,12 +156,12 @@ function wordStyles() {
     .c-cons { font-size: 8.5pt; }
     .c-money { text-align: right; white-space: nowrap; font-size: 8.5pt; color: #333; }
     .c-money-del { color: ${BRAND.muted}; }
-    .c-money-free { text-align: right; color: ${BRAND.green}; font-weight: bold; font-size: 8pt; }
+    .c-evic { text-align: center; font-weight: bold; font-size: 8.5pt; }
     .c-money-total { text-align: right; font-weight: bold; color: ${BRAND.amber}; background: #fffbf5; font-size: 9pt; }
   `;
 }
 
-function wordShell({ title, subtitle, metaRows, kpiCells, dataTableBody, grandTotalRow, footerText }) {
+function wordShell({ title, subtitle, metaRows, kpiCells, dataTableBody, grandTotalRow, footerText, colCount, colgroup }) {
   const metaHtml = metaRows
     .map(
       (row) => `<tr>${row
@@ -171,31 +201,31 @@ function wordShell({ title, subtitle, metaRows, kpiCells, dataTableBody, grandTo
 <body>
 <div class="Section1">
 <table class="rf-page" width="100%" cellpadding="0" cellspacing="0">
-  <tr class="rf-brand"><td colspan="${COL_COUNT}">
+  <tr class="rf-brand"><td colspan="${colCount}">
     <h1>${escapeHtml(title)}</h1>
     ${subtitle ? `<p>${escapeHtml(subtitle)}</p>` : ''}
   </td></tr>
-  <tr class="rf-accent"><td colspan="${COL_COUNT}">&nbsp;</td></tr>
-  <tr><td colspan="${COL_COUNT}" style="height:10px;border:none;">&nbsp;</td></tr>
-  <tr><td colspan="${COL_COUNT}" style="border:none;padding:0;">
+  <tr class="rf-accent"><td colspan="${colCount}">&nbsp;</td></tr>
+  <tr><td colspan="${colCount}" style="height:10px;border:none;">&nbsp;</td></tr>
+  <tr><td colspan="${colCount}" style="border:none;padding:0;">
     <table width="100%" cellpadding="0" cellspacing="0" class="rf-meta">${metaHtml}</table>
   </td></tr>
-  <tr><td colspan="${COL_COUNT}" style="height:8px;border:none;">&nbsp;</td></tr>
-  <tr><td colspan="${COL_COUNT}" style="border:none;padding:0;">
+  <tr><td colspan="${colCount}" style="height:8px;border:none;">&nbsp;</td></tr>
+  <tr><td colspan="${colCount}" style="border:none;padding:0;">
     <table width="100%" cellpadding="0" cellspacing="0" class="rf-kpi">${kpiHtml}</table>
   </td></tr>
-  <tr><td colspan="${COL_COUNT}" style="height:10px;border:none;">&nbsp;</td></tr>
-  <tr><td colspan="${COL_COUNT}" style="border:none;padding:0;">
+  <tr><td colspan="${colCount}" style="height:10px;border:none;">&nbsp;</td></tr>
+  <tr><td colspan="${colCount}" style="border:none;padding:0;">
     <table class="rf-data" width="100%" cellpadding="0" cellspacing="0">
-      ${COLGROUP}
+      ${colgroup}
       <tbody>${dataTableBody}</tbody>
     </table>
   </td></tr>
-  <tr><td colspan="${COL_COUNT}" style="height:6px;border:none;">&nbsp;</td></tr>
-  <tr><td colspan="${COL_COUNT}" style="border:none;padding:0;">
+  <tr><td colspan="${colCount}" style="height:6px;border:none;">&nbsp;</td></tr>
+  <tr><td colspan="${colCount}" style="border:none;padding:0;">
     <table width="100%" cellpadding="0" cellspacing="0">${grandTotalRow}</table>
   </td></tr>
-  <tr class="rf-footer"><td colspan="${COL_COUNT}">${footerText}</td></tr>
+  <tr class="rf-footer"><td colspan="${colCount}">${footerText}</td></tr>
 </table>
 </div>
 </body>
@@ -233,6 +263,8 @@ function shopTableRow(r, index, stripe) {
     <td class="c-lieu">${escapeHtml(shopLieu(r))}</td>
     <td class="c-qty">${escapeHtml(r.quantityLabel)}</td>
     <td class="c-cons">${escapeHtml(consignes)}</td>
+    <td class="c-evic">${escapeHtml(r.eviscerationLabel || 'Non')}</td>
+    ${moneyTd(r.eviscerationFee || 0)}
     ${moneyTd(r.subtotalPrice)}
     ${shopDeliveryTd(r)}
     ${moneyTd(r.totalPrice, 'c-money c-money-total')}
@@ -256,13 +288,13 @@ function restaurantTableRow(r, index, stripe) {
   </tr>`;
 }
 
-function columnHeaderRow() {
+function columnHeaderRow(headers) {
   const moneyClass = (h) => {
     if (h === 'Total') return 'th-money th-total';
-    if (h === 'Montant' || h === 'Livraison') return 'th-money';
+    if (['Montant', 'Livraison', 'Montant évisc.'].includes(h)) return 'th-money';
     return '';
   };
-  return `<tr class="rf-col-h">${TABLE_HEADERS.map((h) => `<th class="${moneyClass(h)}">${escapeHtml(h)}</th>`).join('')}</tr>`;
+  return `<tr class="rf-col-h">${headers.map((h) => `<th class="${moneyClass(h)}">${escapeHtml(h)}</th>`).join('')}</tr>`;
 }
 
 function inferShopRowCity(r) {
@@ -301,6 +333,7 @@ function emptyCitySlot(city) {
     orderCount: 0,
     totalSubtotal: 0,
     totalDelivery: 0,
+    totalEvisceration: 0,
     totalAmount: 0,
   };
 }
@@ -318,6 +351,7 @@ function groupRowsByCityFixed(rows, inferCity, getQuantity, getMoney, cityFilter
     g.orderCount += 1;
     g.totalSubtotal += getMoney.subtotal(row);
     g.totalDelivery += getMoney.delivery(row);
+    if (getMoney.evisceration) g.totalEvisceration += getMoney.evisceration(row);
     g.totalAmount += getMoney.total(row);
   }
 
@@ -340,25 +374,28 @@ function formatShopQuantity(total, rows) {
   return unit ? formatQuantityWithUnit(total, unit) : formatFilterQuantity(total);
 }
 
-function buildCityBlock(group, rowMapper, formatGroupQuantity) {
+function buildCityBlock(group, rowMapper, formatGroupQuantity, { colCount, headers, shopMode = false }) {
   const qtyLabel = formatGroupQuantity(group);
   const cityTitle = group.city.toUpperCase();
   const cityMeta = [
     `${group.orderCount} cmd`,
     `Qté ${qtyLabel}`,
     `Produits ${fmtMoney(group.totalSubtotal)}`,
+    shopMode && group.totalEvisceration ? `Évisc. ${fmtMoney(group.totalEvisceration)}` : null,
     `Livraison ${fmtMoney(group.totalDelivery)}`,
     `Total ${fmtMoney(group.totalAmount)}`,
-  ].join(' · ');
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
-  let body = `<tr class="rf-city-h"><td colspan="${COL_COUNT}">
+  let body = `<tr class="rf-city-h"><td colspan="${colCount}">
     ${escapeHtml(cityTitle)}
     <span class="city-meta"> — ${escapeHtml(cityMeta)}</span>
   </td></tr>`;
-  body += columnHeaderRow();
+  body += columnHeaderRow(headers);
 
   if (!group.rows.length) {
-    body += `<tr class="rf-empty"><td colspan="${COL_COUNT}">Aucune commande pour ${escapeHtml(group.city)}</td></tr>`;
+    body += `<tr class="rf-empty"><td colspan="${colCount}">Aucune commande pour ${escapeHtml(group.city)}</td></tr>`;
   } else {
     body += group.rows.map((r, i) => rowMapper(r, i, i)).join('');
   }
@@ -367,30 +404,41 @@ function buildCityBlock(group, rowMapper, formatGroupQuantity) {
     <td colspan="4" class="sub-lbl">Sous-total ${escapeHtml(group.city)}</td>
     <td class="c-qty">${escapeHtml(qtyLabel)}</td>
     <td>&nbsp;</td>
+    ${shopMode ? `<td>&nbsp;</td>${moneyTd(group.totalEvisceration || 0)}` : ''}
     <td class="c-money">${escapeHtml(fmtMoneyCell(group.totalSubtotal))}</td>
     <td class="c-money c-money-del">${escapeHtml(fmtMoneyCell(group.totalDelivery))}</td>
     <td class="c-money c-money-total">${escapeHtml(fmtMoneyCell(group.totalAmount))}</td>
   </tr>`;
-  body += `<tr class="rf-spacer"><td colspan="${COL_COUNT}">&nbsp;</td></tr>`;
+  body += `<tr class="rf-spacer"><td colspan="${colCount}">&nbsp;</td></tr>`;
 
   return body;
 }
 
-function buildDataBody(groups, rowMapper, formatGroupQuantity) {
-  return groups.map((g) => buildCityBlock(g, rowMapper, formatGroupQuantity)).join('');
+function buildDataBody(groups, rowMapper, formatGroupQuantity, tableConfig) {
+  return groups.map((g) => buildCityBlock(g, rowMapper, formatGroupQuantity, tableConfig)).join('');
 }
 
-function buildGrandTotalRow({ label, qtyLabel, totalSubtotal, totalDelivery, totalAmount }) {
+function buildGrandTotalRow({
+  label,
+  qtyLabel,
+  totalSubtotal,
+  totalDelivery,
+  totalEvisceration = 0,
+  totalAmount,
+  colCount,
+  shopMode = false,
+}) {
   return `<tr class="rf-grand">
     <td colspan="4">${escapeHtml(label)}</td>
     <td style="text-align:center;">${escapeHtml(qtyLabel)}</td>
     <td>&nbsp;</td>
+    ${shopMode ? `<td>&nbsp;</td><td class="g-money">${escapeHtml(fmtMoneyCell(totalEvisceration))}</td>` : ''}
     <td class="g-money">${escapeHtml(fmtMoneyCell(totalSubtotal))}</td>
     <td class="g-money">${escapeHtml(fmtMoneyCell(totalDelivery))}</td>
     <td class="g-total">${escapeHtml(fmtMoneyCell(totalAmount))}</td>
   </tr>
-  <tr><td colspan="${COL_COUNT}" style="border:none;padding:4px 0 0;font-size:8pt;color:${BRAND.muted};text-align:right;">
-    Montants en FCFA · Total = Montant produits + Frais de livraison
+  <tr><td colspan="${colCount}" style="border:none;padding:4px 0 0;font-size:8pt;color:${BRAND.muted};text-align:right;">
+    Montants en FCFA · Total = Montant produits${shopMode ? ' + Éviscération' : ''} + Frais de livraison
   </td></tr>`;
 }
 
@@ -398,19 +446,32 @@ function productQtyLabel(productLabel, fallback) {
   return productLabel && !productLabel.startsWith('Tous') ? productLabel : fallback;
 }
 
-function buildMoneyKpiCells({ orderCount, totalQtyLabel, prodLabel, totalSubtotal, totalDelivery, totalAmount }) {
-  return [
+function buildMoneyKpiCells({
+  orderCount,
+  totalQtyLabel,
+  prodLabel,
+  totalSubtotal,
+  totalDelivery,
+  totalEvisceration = 0,
+  totalAmount,
+}) {
+  const cells = [
     { label: 'Commandes', value: String(orderCount) },
     { label: 'Quantité totale', value: totalQtyLabel, sub: prodLabel },
     { label: 'Montant produits', value: fmtMoney(totalSubtotal) },
     { label: 'Frais livraison', value: fmtMoney(totalDelivery) },
-    { label: 'Total général', value: fmtMoney(totalAmount), highlight: true },
   ];
+  if (totalEvisceration > 0) {
+    cells.push({ label: 'Éviscération', value: fmtMoney(totalEvisceration) });
+  }
+  cells.push({ label: 'Total général', value: fmtMoney(totalAmount), highlight: true });
+  return cells;
 }
 
 const SHOP_MONEY = {
   subtotal: (r) => Number(r.subtotalPrice || 0),
   delivery: (r) => Number(r.deliveryFee || 0),
+  evisceration: (r) => Number(r.eviscerationFee || 0),
   total: (r) => Number(r.totalPrice || 0),
 };
 
@@ -443,7 +504,11 @@ export function exportShopOrdersToWord(exportData) {
   const formatGroupQty = (group) =>
     formatShopQuantity(group.totalQuantity, group.rows.length ? group.rows : rows);
 
-  const dataTableBody = buildDataBody(byCity, shopTableRow, formatGroupQty);
+  const dataTableBody = buildDataBody(byCity, shopTableRow, formatGroupQty, {
+    colCount: SHOP_COL_COUNT,
+    headers: SHOP_TABLE_HEADERS,
+    shopMode: true,
+  });
   const subtitle = cityFilter
     ? `Feuille de tournée · ${cityLabel}`
     : 'Feuille de tournée · Cotonou & Calavi';
@@ -465,6 +530,7 @@ export function exportShopOrdersToWord(exportData) {
       prodLabel,
       totalSubtotal: exportData.totalSubtotal,
       totalDelivery: exportData.totalDelivery,
+      totalEvisceration: exportData.totalEvisceration,
       totalAmount: exportData.totalAmount,
     }),
     dataTableBody,
@@ -473,9 +539,14 @@ export function exportShopOrdersToWord(exportData) {
       qtyLabel: totalQtyLabel,
       totalSubtotal: exportData.totalSubtotal,
       totalDelivery: exportData.totalDelivery,
+      totalEvisceration: exportData.totalEvisceration,
       totalAmount: exportData.totalAmount,
+      colCount: SHOP_COL_COUNT,
+      shopMode: true,
     }),
     footerText: `Rapido Flash · Document éditable dans Microsoft Word · ${escapeHtml(prodLabel)}`,
+    colCount: SHOP_COL_COUNT,
+    colgroup: COLGROUP_SHOP,
   });
 
   downloadWord(
@@ -506,7 +577,11 @@ export function exportRestaurantCommandesToWord(exportData) {
 
   const formatGroupQty = (group) => formatFilterQuantity(group.totalQuantity);
 
-  const dataTableBody = buildDataBody(byCity, restaurantTableRow, formatGroupQty);
+  const dataTableBody = buildDataBody(byCity, restaurantTableRow, formatGroupQty, {
+    colCount: RESTAURANT_COL_COUNT,
+    headers: RESTAURANT_TABLE_HEADERS,
+    shopMode: false,
+  });
   const subtitle = cityFilter
     ? `Feuille de tournée · ${cityLabel}`
     : 'Feuille de tournée · Cotonou & Calavi';
@@ -543,8 +618,12 @@ export function exportRestaurantCommandesToWord(exportData) {
       totalSubtotal: exportData.totalSubtotal,
       totalDelivery: exportData.totalDelivery,
       totalAmount: exportData.totalAmount,
+      colCount: RESTAURANT_COL_COUNT,
+      shopMode: false,
     }),
     footerText: 'Rapido Flash · Document éditable dans Microsoft Word',
+    colCount: RESTAURANT_COL_COUNT,
+    colgroup: COLGROUP_RESTAURANT,
   });
 
   downloadWord(

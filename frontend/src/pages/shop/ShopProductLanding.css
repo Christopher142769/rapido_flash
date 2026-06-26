@@ -234,6 +234,23 @@
   color: #2e7d32;
 }
 
+.shop-pdp-buybox-delivery-info--evic {
+  background: rgba(21, 128, 61, 0.08);
+  color: #15803d;
+}
+
+.shop-pdp-buybox-total-line {
+  flex: 0 0 100%;
+  margin-top: 10px;
+  font-size: 0.95rem;
+  color: var(--rf-text-dark);
+}
+
+.shop-pdp-buybox-total-line strong {
+  color: #c76d2e;
+  font-size: 1.05rem;
+}
+
 .shop-pdp-qty-value {
   min-width: 48px;
   text-align: center;

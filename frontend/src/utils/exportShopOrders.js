@@ -159,6 +159,9 @@ export function mapShopOrderToExportRow(order) {
     unitPrice: Number(order.unitPrice || 0),
     subtotalPrice: subtotal,
     deliveryFee: Number(order.deliveryFee || 0),
+    eviscerationCleaning: !!order.eviscerationCleaning,
+    eviscerationFee: Number(order.eviscerationFee || 0),
+    eviscerationLabel: order.eviscerationCleaning ? 'Oui' : 'Non',
     totalPrice: Number(order.totalPrice || 0),
     freeDelivery: !!order.freeDelivery,
     isPromoLive: !!order.isPromoLive,
@@ -183,6 +186,7 @@ export function prepareShopOrdersExport(orders, meta = {}) {
   const rows = (orders || []).map(mapShopOrderToExportRow);
   const totalSubtotal = rows.reduce((s, r) => s + r.subtotalPrice, 0);
   const totalDelivery = rows.reduce((s, r) => s + r.deliveryFee, 0);
+  const totalEvisceration = rows.reduce((s, r) => s + r.eviscerationFee, 0);
   const totalAmount = rows.reduce((s, r) => s + r.totalPrice, 0);
 
   return {
@@ -198,6 +202,7 @@ export function prepareShopOrdersExport(orders, meta = {}) {
     orderCount: rows.length,
     totalSubtotal,
     totalDelivery,
+    totalEvisceration,
     totalAmount,
   };
 }
@@ -213,6 +218,8 @@ const EXCEL_HEADERS = [
   'Prix unitaire (FCFA)',
   'Sous-total (FCFA)',
   'Frais livraison (FCFA)',
+  'Éviscération et nettoyage',
+  'Montant éviscération (FCFA)',
   'Total (FCFA)',
   'Promo',
   'Livraison gratuite',
@@ -241,6 +248,8 @@ function rowToExcelCells(r) {
     r.unitPrice,
     r.subtotalPrice,
     r.deliveryFee,
+    r.eviscerationLabel,
+    r.eviscerationFee,
     r.totalPrice,
     r.isPromoLive ? `-${r.discountPercent}%` : '—',
     r.freeDelivery ? 'Oui' : 'Non',
@@ -298,8 +307,10 @@ export function exportShopOrdersToExcel(exportData) {
         <td colspan="8">TOTAL</td>
         <td>${exportData.totalSubtotal}</td>
         <td>${exportData.totalDelivery}</td>
+        <td></td>
+        <td>${exportData.totalEvisceration}</td>
         <td>${exportData.totalAmount}</td>
-        <td colspan="${EXCEL_HEADERS.length - 11}"></td>
+        <td colspan="${EXCEL_HEADERS.length - 12}"></td>
       </tr>
     </tbody>
   </table>
@@ -376,13 +387,14 @@ export function exportShopOrdersToPdf(exportData) {
 
   y = 34;
 
-  const kpiW = contentW / 4;
+  const kpiW = contentW / 5;
   const kpiH = 16;
-  const kpiLabels = ['Commandes', 'Sous-total produits', 'Frais livraison', 'Total à payer'];
+  const kpiLabels = ['Commandes', 'Sous-total produits', 'Frais livraison', 'Éviscération', 'Total à payer'];
   const kpiValues = [
     String(exportData.orderCount),
     fmtMoney(exportData.totalSubtotal),
     fmtMoney(exportData.totalDelivery),
+    fmtMoney(exportData.totalEvisceration),
     fmtMoney(exportData.totalAmount),
   ];
 
@@ -397,8 +409,8 @@ export function exportShopOrdersToPdf(exportData) {
     setText(BRAND.muted);
     pdf.text(label.toUpperCase(), x + 4, y + 5);
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(i === 3 ? 10 : 9);
-    setText(i === 3 ? BRAND.gold : BRAND.text);
+    pdf.setFontSize(i === 4 ? 10 : 9);
+    setText(i === 4 ? BRAND.gold : BRAND.text);
     pdf.text(kpiValues[i], x + 4, y + 11);
   });
 
@@ -452,6 +464,7 @@ export function exportShopOrdersToPdf(exportData) {
       `Unitaire : ${fmtMoney(r.unitPrice)}`,
       `Sous-total : ${fmtMoney(r.subtotalPrice)}`,
       r.deliveryFee > 0 ? `Livraison : ${fmtMoney(r.deliveryFee)}` : r.freeDelivery ? 'Livraison gratuite' : null,
+      r.eviscerationFee > 0 ? `Éviscération : ${fmtMoney(r.eviscerationFee)}` : r.eviscerationCleaning === false && r.quantityUnit && ['kg', 'g', 'tonne'].includes(r.quantityUnit) ? 'Éviscération : Non' : null,
       r.isPromoLive ? `Promo -${r.discountPercent}%` : null,
     ]
       .filter(Boolean)

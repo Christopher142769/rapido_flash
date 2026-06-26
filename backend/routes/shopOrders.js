@@ -85,7 +85,13 @@ router.post('/', async (req, res) => {
     const quantityUnit = normalizeShopQuantityUnit(product.quantityUnit);
     const unitPrice = promoState.isPromoLive ? promoState.promoPrice : promoState.basePrice;
     const deliveryFee = getShopDeliveryFee(product, promoState);
-    const { subtotalPrice, totalPrice } = computeShopOrderTotals(unitPrice, quantity, deliveryFee);
+    const eviscerationCleaning =
+      !!req.body?.eviscerationCleaning && isEviscerationApplicable(quantityUnit);
+    const totals = computeShopOrderTotals(unitPrice, quantity, deliveryFee, {
+      eviscerationCleaning,
+      quantityUnit,
+    });
+    const { subtotalPrice, totalPrice, eviscerationFee } = totals;
 
     let requestedDeliveryAt = req.body?.requestedDeliveryAt
       ? new Date(req.body.requestedDeliveryAt)
@@ -109,6 +115,8 @@ router.post('/', async (req, res) => {
       unitPrice,
       subtotalPrice,
       deliveryFee,
+      eviscerationCleaning: totals.eviscerationCleaning,
+      eviscerationFee,
       totalPrice,
       basePrice: promoState.basePrice,
       isPromoLive: promoState.isPromoLive,

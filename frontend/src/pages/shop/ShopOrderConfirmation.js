@@ -9,6 +9,7 @@ import {
   loadShopOrder,
 } from '../../utils/shopOrder';
 import { formatPriceXof } from '../../utils/shopPromo';
+import { isEviscerationApplicable } from '../../utils/shopEvisceration';
 import { getPriceUnitSuffix } from '../../utils/shopQuantityUnit';
 import './shopTypography.css';
 import './ShopOrderConfirmation.css';
@@ -80,6 +81,17 @@ export default function ShopOrderConfirmation() {
               <div>
                 <dt>Frais de livraison</dt>
                 <dd>{formatPriceXof(order.deliveryFee)}</dd>
+              </div>
+            ) : null}
+            {Number(order.eviscerationFee) > 0 ? (
+              <div>
+                <dt>Éviscération et nettoyage</dt>
+                <dd>{formatPriceXof(order.eviscerationFee)}</dd>
+              </div>
+            ) : isEviscerationApplicable(order.quantityUnit) ? (
+              <div>
+                <dt>Éviscération et nettoyage</dt>
+                <dd>Non</dd>
               </div>
             ) : null}
             <div className="shop-confirm-total">

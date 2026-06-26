@@ -23,6 +23,7 @@ export async function submitShopOrderToApi(order) {
       slug: order.slug,
       quantity: order.quantity,
       customer: order.customer,
+      eviscerationCleaning: !!order.eviscerationCleaning,
       // requestedDeliveryAt: order.requestedDeliveryAt || undefined,
     }),
   });
@@ -48,11 +49,17 @@ export function emptyCustomerForm() {
   };
 }
 
-export function buildShopOrderPayload(product, promoState, quantity, customer) {
+export function buildShopOrderPayload(product, promoState, quantity, customer, options = {}) {
   const unitPrice = promoState?.isPromoLive ? promoState.promoPrice : product.basePrice;
   const quantityUnit = normalizeShopQuantityUnit(product.quantityUnit);
   const deliveryFee = getShopDeliveryFee(product, promoState);
-  const { subtotalPrice, totalPrice } = computeShopOrderTotals(unitPrice, quantity, deliveryFee);
+  const eviscerationCleaning = !!options.eviscerationCleaning;
+  const { subtotalPrice, totalPrice, eviscerationFee } = computeShopOrderTotals(
+    unitPrice,
+    quantity,
+    deliveryFee,
+    { eviscerationCleaning, quantityUnit }
+  );
   return {
     slug: product.slug,
     productName: product.name,
@@ -62,6 +69,8 @@ export function buildShopOrderPayload(product, promoState, quantity, customer) {
     unitPrice,
     subtotalPrice,
     deliveryFee,
+    eviscerationCleaning: eviscerationFee > 0,
+    eviscerationFee,
     totalPrice,
     basePrice: product.basePrice,
     isPromoLive: !!promoState?.isPromoLive,
@@ -139,6 +148,9 @@ export function buildWhatsAppOrderMessage(order) {
     lines.push('*Livraison gratuite* (offre en cours)');
   } else if (Number(order.deliveryFee) > 0) {
     lines.push(`*Frais de livraison :* ${formatPriceXof(order.deliveryFee)}`);
+  }
+  if (Number(order.eviscerationFee) > 0) {
+    lines.push(`*Éviscération et nettoyage :* ${formatPriceXof(order.eviscerationFee)}`);
   }
   lines.push(`*Total à payer :* ${formatPriceXof(order.totalPrice)}`);
   lines.push(
