@@ -6,7 +6,6 @@ import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
 import ShopProductGallery from '../../components/shop/ShopProductGallery';
 import ShopContentBlocks from '../../components/shop/ShopContentBlocks';
 import ShopOrderForm from '../../components/shop/ShopOrderForm';
-import ShopEviscerationOption from '../../components/shop/ShopEviscerationOption';
 import { getProductGallery } from '../../utils/shopProductMedia';
 import {
   buildShopOrderPayload,
@@ -17,7 +16,6 @@ import {
 } from '../../utils/shopOrder';
 import ShopDeliveryNotice from '../../components/shop/ShopDeliveryNotice';
 import { getShopPromoState, formatPriceXof, getShopDeliveryFee, computeShopOrderTotals } from '../../utils/shopPromo';
-import { isEviscerationApplicable } from '../../utils/shopEvisceration';
 import {
   formatQuantityWithUnit,
   getPriceUnitSuffix,
@@ -165,7 +163,6 @@ export default function ShopProductLanding() {
   const grandTotal = orderTotals?.totalPrice || 0;
   const subtotalLabel = hasQuantity ? formatPriceXof(subtotalPrice) : null;
   const grandTotalLabel = hasQuantity ? formatPriceXof(grandTotal) : null;
-  const showEviscerationOption = isEviscerationApplicable(quantityUnit);
 
   const navSections = useMemo(() => {
     const items = [
@@ -197,10 +194,6 @@ export default function ShopProductLanding() {
     };
   }, [hasTopFixedBar, showCountdown, showOrderLimitBanner, countdownEndsAt]);
 
-  useEffect(() => {
-    if (!showEviscerationOption) setEviscerationCleaning(false);
-  }, [showEviscerationOption]);
-
   const handleFieldChange = (field, value) => {
     setCustomer((c) => ({ ...c, [field]: value }));
     setFormErrors((e) => {
@@ -220,7 +213,7 @@ export default function ShopProductLanding() {
     }
 
     const order = buildShopOrderPayload(product, promoState, orderQuantity, customer, {
-      eviscerationCleaning: showEviscerationOption ? eviscerationCleaning : false,
+      eviscerationCleaning,
     });
     setSubmitting(true);
     try {
@@ -425,20 +418,15 @@ export default function ShopProductLanding() {
               highlight={highlightQty && !hasQuantity}
             />
 
-            {showEviscerationOption && hasQuantity ? (
-              <ShopEviscerationOption
-                enabled={eviscerationCleaning}
-                onChange={setEviscerationCleaning}
-                quantity={quantity}
-                quantityUnit={quantityUnit}
-              />
-            ) : null}
-
             <div id="shop-order-fields">
               <ShopOrderForm
                 customer={customer}
                 errors={formErrors}
                 onFieldChange={handleFieldChange}
+                eviscerationCleaning={eviscerationCleaning}
+                onEviscerationChange={setEviscerationCleaning}
+                quantity={quantity}
+                quantityUnit={quantityUnit}
               />
             </div>
 

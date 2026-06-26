@@ -9,13 +9,17 @@ export function quantityToKg(quantity, unit) {
       return q / 1000;
     case 'tonne':
       return q * 1000;
+    case 'unit':
+      // Sur le Shop poisson, la quantité saisie correspond en pratique aux kilos commandés.
+      return q;
     default:
-      return 0;
+      return q;
   }
 }
 
-export function isEviscerationApplicable(quantityUnit) {
-  return ['kg', 'g', 'tonne'].includes(quantityUnit);
+/** Toujours proposer sur le Shop — le tarif est basé sur les kilos (ou la quantité commandée). */
+export function isEviscerationApplicable(_quantityUnit) {
+  return true;
 }
 
 export function computeEviscerationFee(quantity, quantityUnit, enabled) {

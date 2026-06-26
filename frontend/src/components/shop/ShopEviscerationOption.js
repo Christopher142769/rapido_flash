@@ -38,7 +38,7 @@ export default function ShopEviscerationOption({
           Oui
         </button>
       </div>
-      {enabled && fee > 0 ? (
+      {enabled && quantity >= 1 && fee > 0 ? (
         <p className="shop-evic-fee">
           + {formatPriceXof(fee)}
           <span className="shop-evic-fee-detail">
@@ -46,6 +46,8 @@ export default function ShopEviscerationOption({
             ({kg.toLocaleString('fr-FR', { maximumFractionDigits: 3 })} kg × {EVISCERATION_FEE_PER_KG} FCFA)
           </span>
         </p>
+      ) : enabled && quantity < 1 ? (
+        <p className="shop-evic-fee shop-evic-fee--hint">Choisissez une quantité pour voir le montant.</p>
       ) : null}
     </div>
   );

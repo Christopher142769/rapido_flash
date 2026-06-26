@@ -9,13 +9,15 @@ function quantityToKg(quantity, unit) {
       return q / 1000;
     case 'tonne':
       return q * 1000;
+    case 'unit':
+      return q;
     default:
-      return 0;
+      return q;
   }
 }
 
-function isEviscerationApplicable(quantityUnit) {
-  return ['kg', 'g', 'tonne'].includes(quantityUnit);
+function isEviscerationApplicable(_quantityUnit) {
+  return true;
 }
 
 function computeEviscerationFee(quantity, quantityUnit, enabled) {
