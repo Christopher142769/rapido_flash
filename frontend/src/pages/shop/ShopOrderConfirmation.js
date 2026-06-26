@@ -3,10 +3,12 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
 import ShopDeliveryNotice from '../../components/shop/ShopDeliveryNotice';
 import {
-  buildWhatsAppOrderUrl,
+  buildShopOrderClientConfirmationMessage,
   formatCustomerAddress,
   formatCustomerFullName,
   loadShopOrder,
+  openShopOrderWhatsAppConfirmation,
+  buildWhatsAppSupportUrl,
 } from '../../utils/shopOrder';
 import { formatPriceXof } from '../../utils/shopPromo';
 import { isEviscerationApplicable } from '../../utils/shopEvisceration';
@@ -29,9 +31,20 @@ export default function ShopOrderConfirmation() {
 
   if (!order) return null;
 
-  const waUrl = buildWhatsAppOrderUrl(order);
+  const waConfirmationMessage = buildShopOrderClientConfirmationMessage(order);
+  const supportWaUrl = buildWhatsAppSupportUrl(order);
   const fullName = formatCustomerFullName(order.customer);
   const fullAddress = formatCustomerAddress(order.customer);
+
+  const handleTrackOrder = (e) => {
+    e.preventDefault();
+    const opened = openShopOrderWhatsAppConfirmation(order);
+    if (!opened) {
+      alert(
+        'Numéro WhatsApp invalide. Votre commande est bien confirmée — contactez Rapido au +229 40 39 39 94.'
+      );
+    }
+  };
 
   return (
     <div className="shop-confirm">
@@ -39,10 +52,17 @@ export default function ShopOrderConfirmation() {
 
       <div className="shop-confirm-inner">
         <div className="shop-confirm-badge">✓</div>
-        <h1 className="shop-confirm-title">Récapitulatif de votre commande</h1>
+        <h1 className="shop-confirm-title">Commande confirmée</h1>
         <p className="shop-confirm-lead">
-          Vérifiez vos informations puis contactez Rapido sur WhatsApp pour finaliser et suivre votre commande.
+          Merci {order.customer.firstName || fullName.split(' ')[0] || ''} ! Votre commande est enregistrée.
+          Appuyez sur le bouton ci-dessous pour recevoir votre confirmation sur WhatsApp — livraison prévue{' '}
+          <strong>demain</strong> (sous 24 h).
         </p>
+
+        <div className="shop-confirm-wa-preview" aria-label="Aperçu du message WhatsApp">
+          <p className="shop-confirm-wa-preview-label">Message de confirmation</p>
+          <pre className="shop-confirm-wa-preview-text">{waConfirmationMessage}</pre>
+        </div>
 
         <ShopDeliveryNotice variant="confirm" />
 
@@ -138,17 +158,27 @@ export default function ShopOrderConfirmation() {
         </section>
 
         <div className="shop-confirm-actions">
-          {waUrl ? (
+          <button
+            type="button"
+            className="shop-confirm-cta shop-confirm-cta--wa"
+            onClick={handleTrackOrder}
+          >
+            Suivre ma commande sur WhatsApp
+          </button>
+          <p className="shop-confirm-wa-hint">
+            WhatsApp s’ouvre avec votre confirmation. Il suffit d’appuyer sur <strong>Envoyer</strong>.
+          </p>
+          {supportWaUrl ? (
             <a
-              className="shop-confirm-cta shop-confirm-cta--wa"
-              href={waUrl}
+              className="shop-confirm-link shop-confirm-link--wa"
+              href={supportWaUrl}
               target="_blank"
               rel="noopener noreferrer"
             >
-              Suivre ma commande
+              Une question ? Contacter Rapido
             </a>
           ) : (
-            <p className="shop-confirm-warn">WhatsApp indisponible pour ce produit. Contactez Rapido par téléphone.</p>
+            <p className="shop-confirm-warn">Pour toute question, appelez le +229 40 39 39 94.</p>
           )}
           <Link className="shop-confirm-link" to={`/shop/${slug}`}>
             ← Retour à la fiche produit

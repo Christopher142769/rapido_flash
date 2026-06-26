@@ -9,8 +9,12 @@ import {
   getPriceUnitSuffix,
   normalizeShopQuantityUnit,
 } from './shopQuantityUnit';
+import { normalizeBeninPhoneDigits } from './phoneDigits';
+import { normalizeTextForWhatsAppPrefill } from './orderTrackingWhatsApp';
 
 export const SHOP_ORDER_STORAGE_KEY = 'rapido_shop_order_pending';
+
+const RAPIDO_WA_DISPLAY = '+229 40 39 39 94';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -128,6 +132,78 @@ export function formatCustomerAddress(customer) {
   const city = customer?.city || customer?.address;
   const parts = [city, customer?.addressDescription].filter(Boolean);
   return parts.join(' — ');
+}
+
+function firstNameFrom(customer) {
+  const part = String(customer?.firstName || formatCustomerFullName(customer) || '')
+    .trim()
+    .split(/\s+/)[0];
+  return part || 'Client';
+}
+
+/** Message de confirmation professionnel (WhatsApp, sans API — envoi vers le numéro du client). */
+export function buildShopOrderClientConfirmationMessage(order) {
+  const name = firstNameFrom(order.customer);
+  const addressLine = formatCustomerAddress(order.customer);
+  const lines = [
+    `Bonjour ${name} 👋`,
+    '',
+    '✅ *Commande confirmée — Rapido Flash*',
+    '',
+    'Votre commande est bien enregistrée et validée par notre équipe.',
+    '',
+    `📦 *${order.productName}*`,
+    `Quantité : ${order.quantityLabel || order.quantity}`,
+  ];
+
+  if (order.freeDelivery) {
+    lines.push('Livraison : *gratuite* (offre en cours)');
+  } else if (Number(order.deliveryFee) > 0) {
+    lines.push(`Livraison : ${formatPriceXof(order.deliveryFee)}`);
+  }
+
+  if (Number(order.eviscerationFee) > 0) {
+    lines.push(`Éviscération et nettoyage : ${formatPriceXof(order.eviscerationFee)}`);
+  }
+
+  lines.push(`*Total à payer : ${formatPriceXof(order.totalPrice)}*`);
+  lines.push('');
+  lines.push(`📍 ${addressLine}`);
+
+  if (order.orderId) {
+    lines.push(`🔖 Réf. : ${String(order.orderId).slice(-8).toUpperCase()}`);
+  }
+
+  lines.push('');
+  lines.push('🚚 *Livraison demain* (sous 24 h)');
+  lines.push('Restez joignable sur WhatsApp à l’adresse indiquée.');
+  lines.push('');
+  lines.push(`Une question ? ${RAPIDO_WA_DISPLAY}`);
+  lines.push('');
+  lines.push('— Équipe Rapido Flash');
+
+  return lines.join('\n');
+}
+
+/** Ouvre WhatsApp avec la confirmation préremplie (discussion avec soi-même, sans API). */
+export function openShopOrderWhatsAppConfirmation(order) {
+  const digits = normalizeBeninPhoneDigits(order?.customer?.phone);
+  if (!digits) return false;
+
+  const text = normalizeTextForWhatsAppPrefill(buildShopOrderClientConfirmationMessage(order));
+  const url = `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
+  return true;
+}
+
+export function buildWhatsAppSupportUrl(order) {
+  const raw = String(order?.whatsappNumber || '').replace(/\D/g, '');
+  if (!raw) return null;
+  const ref = order.orderId ? String(order.orderId).slice(-8).toUpperCase() : '';
+  const text = encodeURIComponent(
+    `Bonjour Rapido, j’ai une question sur ma commande Shop${ref ? ` (réf. ${ref})` : ''}.`
+  );
+  return `https://wa.me/${raw}?text=${text}`;
 }
 
 export function buildWhatsAppOrderMessage(order) {
