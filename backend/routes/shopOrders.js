@@ -12,6 +12,7 @@ const { sendToUserIds } = require('../services/pushNotifications');
 const { notifyShopOrderCreated } = require('../services/orderNotificationMailer');
 const { isAllowedDeliveryDate, getDefaultDeliveryDateKey, deliveryDateKeyToDate } = require('../utils/shopDeliveryDate');
 const { unconfirmShopOrder } = require('../utils/shopOrderStatus');
+const { isEviscerationApplicable } = require('../utils/shopEvisceration');
 
 const router = express.Router();
 
