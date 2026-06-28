@@ -22,6 +22,35 @@
 
 .shop-pdp-error p {
   color: var(--rf-text-muted);
+  line-height: 1.55;
+}
+
+.shop-pdp-error-retry {
+  margin-top: 20px;
+  padding: 14px 28px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(165deg, var(--rf-amber) 0%, #a85a24 100%);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(199, 109, 46, 0.35);
+}
+
+.shop-pdp-error-retry:hover {
+  transform: translateY(-1px);
+}
+
+.shop-pdp-error-hint {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f8f4ef;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #555;
 }
 
 /* Bandeau fixe : quota commandes + décompte promo + navbar */

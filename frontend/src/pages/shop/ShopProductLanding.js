@@ -29,19 +29,21 @@ import ShopQuantityPicker from '../../components/shop/ShopQuantityPicker';
 import ShopTrustCards from '../../components/shop/ShopTrustCards';
 import ShopOrderLimitBanner from '../../components/shop/ShopOrderLimitBanner';
 import { getShopAvailabilityState } from '../../utils/shopOrderLimit';
+import { resolveShopProductFetchError } from '../../utils/shopProductFetchError';
 import './shopTypography.css';
 import './ShopProductLanding.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const BASE_URL = API_URL.replace('/api', '');
 const CHECKOUT_FORM_ID = 'shop-checkout-form';
+const SHOP_FETCH_TIMEOUT_MS = 15000;
 
 export default function ShopProductLanding() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [errorState, setErrorState] = useState(null);
   const [quantity, setQuantity] = useState(0);
   const [customer, setCustomer] = useState(() => emptyCustomerForm());
   const [formErrors, setFormErrors] = useState({});
@@ -56,18 +58,24 @@ export default function ShopProductLanding() {
     return axios
       .get(`${API_URL}/shop-products/public/${encodeURIComponent(slug)}`, {
         params: { _t: Date.now() },
+        timeout: SHOP_FETCH_TIMEOUT_MS,
       })
       .then((res) => {
         setProduct(res.data);
-        setError('');
+        setErrorState(null);
         return res.data;
       })
       .catch((err) => {
-        setError(err.response?.data?.message || 'Produit introuvable');
+        setErrorState(resolveShopProductFetchError(err));
         setProduct(null);
         return null;
       });
   }, [slug]);
+
+  const handleRetryFetch = () => {
+    setLoading(true);
+    fetchProduct().finally(() => setLoading(false));
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -256,13 +264,31 @@ export default function ShopProductLanding() {
   };
 
   if (loading) return <PageLoader />;
-  if (error || !product) {
+  if (errorState || !product) {
+    const err = errorState || {
+      kind: 'unknown',
+      title: 'Chargement impossible',
+      message: 'Ce lien n’est plus actif.',
+      canRetry: true,
+      hintFacebook: false,
+    };
     return (
       <div className="shop-pdp">
         <ShopBrandHeader />
         <div className="shop-pdp-error">
-          <h1>Produit indisponible</h1>
-          <p>{error || 'Ce lien n’est plus actif.'}</p>
+          <h1>{err.title}</h1>
+          <p>{err.message}</p>
+          {err.canRetry ? (
+            <button type="button" className="shop-pdp-error-retry" onClick={handleRetryFetch}>
+              Réessayer
+            </button>
+          ) : null}
+          {err.hintFacebook ? (
+            <p className="shop-pdp-error-hint">
+              Vous venez de Facebook ou Instagram ? Appuyez sur <strong>⋮</strong> puis{' '}
+              <strong>Ouvrir dans Chrome</strong> (ou Safari).
+            </p>
+          ) : null}
         </div>
       </div>
     );
