@@ -6,6 +6,7 @@ import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
 import ShopProductGallery from '../../components/shop/ShopProductGallery';
 import ShopContentBlocks from '../../components/shop/ShopContentBlocks';
 import ShopOrderForm from '../../components/shop/ShopOrderForm';
+import ShopEviscerationOption from '../../components/shop/ShopEviscerationOption';
 import { getProductGallery } from '../../utils/shopProductMedia';
 import {
   buildShopOrderPayload,
@@ -418,15 +419,18 @@ export default function ShopProductLanding() {
               highlight={highlightQty && !hasQuantity}
             />
 
+            <ShopEviscerationOption
+              enabled={eviscerationCleaning}
+              onChange={setEviscerationCleaning}
+              quantity={quantity}
+              quantityUnit={quantityUnit}
+            />
+
             <div id="shop-order-fields">
               <ShopOrderForm
                 customer={customer}
                 errors={formErrors}
                 onFieldChange={handleFieldChange}
-                eviscerationCleaning={eviscerationCleaning}
-                onEviscerationChange={setEviscerationCleaning}
-                quantity={quantity}
-                quantityUnit={quantityUnit}
               />
             </div>
 

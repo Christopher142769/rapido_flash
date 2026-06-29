@@ -1,19 +1,9 @@
 import React from 'react';
 import { SHOP_DELIVERY_CITIES } from '../../utils/shopDelivery';
-import ShopEviscerationOption from './ShopEviscerationOption';
 // import { getDefaultDeliveryDateKey, getShopDeliveryDateOptions } from '../../utils/shopDeliveryDate';
 import './ShopOrderForm.css';
 
-export default function ShopOrderForm({
-  customer,
-  errors,
-  onFieldChange,
-  idPrefix = 'shop',
-  eviscerationCleaning = false,
-  onEviscerationChange = () => {},
-  quantity = 0,
-  quantityUnit = 'unit',
-}) {
+export default function ShopOrderForm({ customer, errors, onFieldChange, idPrefix = 'shop' }) {
   const setField = (field, value) => onFieldChange(field, value);
   // const defaultDeliveryDate = useMemo(() => getDefaultDeliveryDateKey(), []);
   // const deliveryOptions = useMemo(() => getShopDeliveryDateOptions(), []);
@@ -129,13 +119,6 @@ export default function ShopOrderForm({
           <span className="shop-order-form-error">{errors.addressDescription}</span>
         ) : null}
       </div>
-
-      <ShopEviscerationOption
-        enabled={eviscerationCleaning}
-        onChange={onEviscerationChange}
-        quantity={quantity}
-        quantityUnit={quantityUnit}
-      />
     </div>
   );
 }

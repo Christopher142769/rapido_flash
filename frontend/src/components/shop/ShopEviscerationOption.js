@@ -18,24 +18,22 @@ export default function ShopEviscerationOption({
 
   return (
     <div className="shop-evic-option">
-      <p className="shop-evic-title">Éviscération et nettoyage</p>
-      <p className="shop-evic-hint">
-        {EVISCERATION_FEE_PER_KG.toLocaleString('fr-FR')} FCFA par kilo commandé
-      </p>
-      <div className="shop-evic-choices" role="group" aria-label="Éviscération et nettoyage">
+      <div className="shop-evic-row">
+        <div className="shop-evic-text">
+          <p className="shop-evic-title">Éviscération et nettoyage</p>
+          <p className="shop-evic-hint">
+            {EVISCERATION_FEE_PER_KG.toLocaleString('fr-FR')} FCFA par kilo commandé
+          </p>
+        </div>
         <button
           type="button"
-          className={`shop-evic-choice${!enabled ? ' is-selected' : ''}`}
-          onClick={() => onChange(false)}
+          role="switch"
+          aria-checked={enabled}
+          aria-label="Éviscération et nettoyage"
+          className={`shop-evic-toggle${enabled ? ' is-on' : ''}`}
+          onClick={() => onChange(!enabled)}
         >
-          Non
-        </button>
-        <button
-          type="button"
-          className={`shop-evic-choice${enabled ? ' is-selected' : ''}`}
-          onClick={() => onChange(true)}
-        >
-          Oui
+          <span className="shop-evic-toggle-knob" aria-hidden />
         </button>
       </div>
       {enabled && quantity >= 1 && fee > 0 ? (
