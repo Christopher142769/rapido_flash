@@ -190,7 +190,7 @@ router.get('/', auth, isCommercialStaff, async (req, res) => {
   try {
     const orders = await ShopOrder.find()
       .populate('shopProduct', 'name slug mainImage')
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: 1, _id: 1 })
       .lean();
     res.json(orders);
   } catch (e) {

@@ -294,7 +294,7 @@ router.get('/orders', auth, isCommercialStaff, async (req, res) => {
   try {
     let orders = await ShopOrder.find()
       .populate('shopProduct', 'name slug mainImage')
-      .sort({ orderDate: -1, createdAt: -1 })
+      .sort({ createdAt: 1, _id: 1 })
       .lean();
 
     const status = req.query.status;
