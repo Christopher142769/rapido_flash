@@ -129,7 +129,7 @@ export default function DashboardSidebarPremium({ onNavigate, className = '' }) 
           <img src="/images/logo.png" alt="" className="h-10 w-10 shrink-0 rounded-lg object-contain" />
           <div className="min-w-0">
             <div
-              className="truncate text-lg font-semibold leading-tight tracking-tight"
+              className="truncate text-lg font-bold leading-tight tracking-tight"
               style={{ fontFamily: 'var(--font-display)', color: 'var(--rf-text-dark)' }}
             >
               Rapido Flash
