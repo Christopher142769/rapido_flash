@@ -302,10 +302,6 @@ export default function ShopProductLanding() {
                 aria-live="polite"
                 aria-label="Compte à rebours de l'offre"
               >
-                <p className="shop-pdp-countdown-headline">
-                  Cette offre est limitée et{' '}
-                  <span className="shop-pdp-countdown-headline-accent">se termine dans</span>
-                </p>
                 <ShopCountdown endsAt={countdownEndsAt} variant="urgent" />
               </div>
             ) : null}

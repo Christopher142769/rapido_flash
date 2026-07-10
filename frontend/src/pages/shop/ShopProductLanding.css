@@ -59,26 +59,6 @@
   flex-shrink: 0;
 }
 
-.shop-pdp-countdown-headline {
-  margin: 0 0 10px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  line-height: 1.35;
-  color: var(--rf-text-muted);
-  text-align: center;
-}
-
-.shop-pdp-countdown-headline-accent {
-  font-weight: 800;
-  color: var(--rf-danger);
-  letter-spacing: -0.02em;
-}
-
-.shop-pdp-countdown-strip .shop-countdown-track {
-  margin-bottom: 10px;
-  max-width: 360px;
-}
-
 .shop-pdp-countdown-strip .shop-countdown-unit {
   min-width: 56px;
   padding: 8px 8px 6px;

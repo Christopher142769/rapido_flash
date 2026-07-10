@@ -5,6 +5,54 @@
 import { computeEviscerationFee } from './shopEvisceration';
 
 export const DEFAULT_BOOST_HOURS = 72;
+export const DEFAULT_COUNTDOWN_HOURS = 48;
+
+/**
+ * Fin de compte à rebours stable : ne se réinitialise pas au refresh.
+ * Si endsAt est passé mais la promo continue (runUntilStopped), on avance
+ * par fenêtres fixes depuis l'ancre d'origine (temps réel écoulé).
+ */
+export function resolveStableCountdownEndsAt({
+  endsAt,
+  startsAt,
+  anchorAt,
+  nowMs,
+  durationHours = DEFAULT_COUNTDOWN_HOURS,
+  allowRolling = false,
+}) {
+  const durationMs =
+    Math.min(720, Math.max(1, Number(durationHours) || DEFAULT_COUNTDOWN_HOURS)) * 3600 * 1000;
+  const t = Number(nowMs) || Date.now();
+
+  if (endsAt && endsAt.getTime() > t) {
+    return endsAt;
+  }
+
+  if (!allowRolling) {
+    return endsAt || null;
+  }
+
+  const rollFrom = endsAt || startsAt || (anchorAt ? new Date(anchorAt) : null);
+  if (!rollFrom || !Number.isFinite(rollFrom.getTime())) {
+    return null;
+  }
+
+  let endMs = rollFrom.getTime();
+  if (endsAt) {
+    // Fenêtres successives à partir de la date de fin enregistrée
+    if (endMs <= t) {
+      const cycles = Math.floor((t - endMs) / durationMs) + 1;
+      endMs += cycles * durationMs;
+    }
+  } else {
+    // Pas de endsAt : fenêtres depuis startsAt / createdAt
+    const elapsed = Math.max(0, t - endMs);
+    const cycleIndex = Math.floor(elapsed / durationMs);
+    endMs = endMs + (cycleIndex + 1) * durationMs;
+  }
+
+  return new Date(endMs);
+}
 
 export function getShopDeliveryFee(product, promoState) {
   if (promoState?.freeDelivery) return 0;
@@ -54,12 +102,16 @@ export function getShopPromoState(product, now = new Date()) {
   if (startsAt && t < startsAt.getTime()) isPromoLive = false;
   if (endsAt && t > endsAt.getTime() && !runUntilStopped) isPromoLive = false;
 
-  let countdownEndsAt = endsAt;
-  if (isPromoLive && (!countdownEndsAt || countdownEndsAt.getTime() <= t)) {
-    if (runUntilStopped || published) {
-      countdownEndsAt = new Date(t + 48 * 3600 * 1000);
-    }
-  }
+  const countdownEndsAt = isPromoLive
+    ? resolveStableCountdownEndsAt({
+        endsAt,
+        startsAt,
+        anchorAt: product?.createdAt || product?.updatedAt || null,
+        nowMs: t,
+        durationHours: Number(promo.boostHours) || DEFAULT_COUNTDOWN_HOURS,
+        allowRolling: runUntilStopped || published,
+      })
+    : endsAt;
 
   let promoPrice = basePrice;
   if (isPromoLive) {

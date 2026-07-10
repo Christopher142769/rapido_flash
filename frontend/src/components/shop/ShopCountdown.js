@@ -28,40 +28,51 @@ function Separator() {
   );
 }
 
+function remainingMs(endsAt) {
+  const end = new Date(endsAt).getTime();
+  if (!Number.isFinite(end)) return 0;
+  return Math.max(0, end - Date.now());
+}
+
 export default function ShopCountdown({ endsAt, variant = 'default', endedLabel, onComplete }) {
-  const [remaining, setRemaining] = useState(0);
-  const initialMsRef = useRef(null);
+  const [remaining, setRemaining] = useState(() => remainingMs(endsAt));
   const completedRef = useRef(false);
 
   useEffect(() => {
     completedRef.current = false;
-    initialMsRef.current = null;
+    setRemaining(remainingMs(endsAt));
   }, [endsAt]);
 
   useEffect(() => {
     const tick = () => {
-      const end = new Date(endsAt).getTime();
-      const left = Math.max(0, end - Date.now());
-      if (initialMsRef.current === null && left > 0) {
-        initialMsRef.current = left;
-      }
+      const left = remainingMs(endsAt);
       setRemaining(left);
       if (left <= 0 && !completedRef.current) {
         completedRef.current = true;
         onComplete?.();
       }
     };
+
     tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
+    const id = setInterval(tick, 250);
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') tick();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', tick);
+    window.addEventListener('pageshow', tick);
+
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', tick);
+      window.removeEventListener('pageshow', tick);
+    };
   }, [endsAt, onComplete]);
 
   const { days, hours, minutes, seconds } = formatCountdown(remaining);
   const showDays = days > 0;
-  const progressPct =
-    initialMsRef.current && initialMsRef.current > 0
-      ? Math.min(100, (remaining / initialMsRef.current) * 100)
-      : 100;
 
   if (remaining <= 0) {
     return <p className="shop-countdown-ended">{endedLabel || 'Offre terminée'}</p>;
@@ -69,9 +80,6 @@ export default function ShopCountdown({ endsAt, variant = 'default', endedLabel,
 
   return (
     <div className={`shop-countdown${variant === 'urgent' ? ' shop-countdown--urgent' : ''}`} role="timer">
-      <div className="shop-countdown-track" aria-hidden>
-        <span className="shop-countdown-track-fill" style={{ width: `${progressPct}%` }} />
-      </div>
       <div className="shop-countdown-digits">
         {showDays ? (
           <>

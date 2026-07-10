@@ -2,26 +2,6 @@
   width: 100%;
 }
 
-.shop-countdown-track {
-  height: 4px;
-  background: rgba(199, 109, 46, 0.12);
-  border-radius: 999px;
-  overflow: hidden;
-  margin-bottom: 20px;
-  max-width: 420px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.shop-countdown-track-fill {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--rf-amber), var(--rf-gold));
-  transition: width 1s linear;
-  box-shadow: 0 0 12px rgba(199, 109, 46, 0.45);
-}
-
 .shop-countdown-digits {
   display: flex;
   align-items: flex-end;
@@ -96,13 +76,4 @@
   box-shadow:
     0 8px 28px rgba(220, 38, 38, 0.1),
     0 2px 8px rgba(26, 20, 16, 0.04);
-}
-
-.shop-countdown--urgent .shop-countdown-track {
-  background: rgba(220, 38, 38, 0.1);
-}
-
-.shop-countdown--urgent .shop-countdown-track-fill {
-  background: linear-gradient(90deg, #dc2626, #ef4444);
-  box-shadow: 0 0 12px rgba(220, 38, 38, 0.45);
 }
