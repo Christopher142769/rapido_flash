@@ -51,6 +51,8 @@ export default function ShopProductLanding() {
   const [highlightQty, setHighlightQty] = useState(false);
   const [eviscerationCleaning, setEviscerationCleaning] = useState(false);
   const [closureTick, setClosureTick] = useState(() => Date.now());
+  /** Recalcule la fenêtre promo (relance auto du minuteur à 00:00:00). */
+  const [promoClock, setPromoClock] = useState(() => Date.now());
   const topBarRef = useRef(null);
 
   const fetchProduct = React.useCallback(() => {
@@ -107,19 +109,36 @@ export default function ShopProductLanding() {
     meta.setAttribute('content', desc);
   }, [product]);
 
-  const promoState = useMemo(() => (product ? getShopPromoState(product) : null), [product]);
+  const promoState = useMemo(
+    () => (product ? getShopPromoState(product, new Date(promoClock)) : null),
+    [product, promoClock]
+  );
   const availabilityState = useMemo(
     () => (product ? getShopAvailabilityState(product, new Date(closureTick)) : null),
     [product, closureTick]
   );
 
   const countdownEndsAt = promoState?.promoEndsAt || product?.promo?.endsAt || null;
+  const countdownAutoRestart = !!(
+    promoState?.isPromoLive &&
+    (promoState?.runUntilStopped || product?.published)
+  );
   const showCountdown = promoState?.isPromoLive && countdownEndsAt;
   const showOrderLimitBanner =
     availabilityState?.dailyOrderLimitEnabled &&
     !availabilityState?.isShopClosed &&
     availabilityState.ordersRemaining > 0;
   const hasTopFixedBar = showCountdown || showOrderLimitBanner;
+
+  /** À l’échéance : relancer le compte à rebours sur la durée fixée (fenêtre suivante). */
+  useEffect(() => {
+    if (!showCountdown || !countdownAutoRestart || !countdownEndsAt) return undefined;
+    const endMs = new Date(countdownEndsAt).getTime();
+    if (!Number.isFinite(endMs)) return undefined;
+    const delay = Math.max(0, endMs - Date.now() + 80);
+    const id = setTimeout(() => setPromoClock(Date.now()), delay);
+    return () => clearTimeout(id);
+  }, [showCountdown, countdownAutoRestart, countdownEndsAt]);
 
   /** Bascule auto fermeture / quota commandes. */
   useEffect(() => {
@@ -302,7 +321,12 @@ export default function ShopProductLanding() {
                 aria-live="polite"
                 aria-label="Compte à rebours de l'offre"
               >
-                <ShopCountdown endsAt={countdownEndsAt} variant="urgent" />
+                <ShopCountdown
+                  endsAt={countdownEndsAt}
+                  variant="urgent"
+                  autoRestart={countdownAutoRestart}
+                  onComplete={() => setPromoClock(Date.now())}
+                />
               </div>
             ) : null}
             <ShopBrandHeader sections={navSections} inTopBar />

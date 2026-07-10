@@ -34,7 +34,14 @@ function remainingMs(endsAt) {
   return Math.max(0, end - Date.now());
 }
 
-export default function ShopCountdown({ endsAt, variant = 'default', endedLabel, onComplete }) {
+export default function ShopCountdown({
+  endsAt,
+  variant = 'default',
+  endedLabel,
+  onComplete,
+  /** Si true : à 00:00:00 on notifie le parent pour relancer (pas de message « terminée »). */
+  autoRestart = false,
+}) {
   const [remaining, setRemaining] = useState(() => remainingMs(endsAt));
   const completedRef = useRef(false);
 
@@ -73,8 +80,9 @@ export default function ShopCountdown({ endsAt, variant = 'default', endedLabel,
 
   const { days, hours, minutes, seconds } = formatCountdown(remaining);
   const showDays = days > 0;
+  const ended = remaining <= 0;
 
-  if (remaining <= 0) {
+  if (ended && !autoRestart) {
     return <p className="shop-countdown-ended">{endedLabel || 'Offre terminée'}</p>;
   }
 
@@ -87,11 +95,11 @@ export default function ShopCountdown({ endsAt, variant = 'default', endedLabel,
             <Separator />
           </>
         ) : null}
-        <CountdownUnit value={hours} label="Heures" />
+        <CountdownUnit value={ended ? 0 : hours} label="Heures" />
         <Separator />
-        <CountdownUnit value={minutes} label="Min" />
+        <CountdownUnit value={ended ? 0 : minutes} label="Min" />
         <Separator />
-        <CountdownUnit value={seconds} label="Sec" />
+        <CountdownUnit value={ended ? 0 : seconds} label="Sec" />
       </div>
     </div>
   );
