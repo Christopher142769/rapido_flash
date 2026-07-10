@@ -1,114 +1,205 @@
 .shop-confirm {
+  --shop-confirm-sticky-h: 76px;
   min-height: 100vh;
-  background: #fff;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(232, 181, 74, 0.12), transparent 55%),
+    #fff;
   color: var(--rf-text-dark);
+  padding-bottom: calc(var(--shop-confirm-sticky-h) + env(safe-area-inset-bottom, 0px));
 }
 
 .shop-confirm-inner {
-  max-width: 560px;
+  max-width: 420px;
   margin: 0 auto;
-  padding: 32px 16px 56px;
+  padding: 20px 16px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.shop-confirm-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 16px;
 }
 
 .shop-confirm-badge {
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--rf-success-bg);
   color: var(--rf-success);
-  font-size: 1.4rem;
+  font-size: 1.15rem;
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .shop-confirm-title {
-  margin: 0 0 24px;
-  font-size: 1.45rem;
+  margin: 0;
+  font-size: 1.2rem;
   font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 
-.shop-confirm-section {
-  padding: 20px 0;
+.shop-confirm-card {
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border: 1px solid rgba(199, 109, 46, 0.16);
+  border-radius: 16px;
+  padding: 14px 16px 12px;
+  box-shadow:
+    0 10px 28px rgba(26, 20, 16, 0.06),
+    0 1px 0 rgba(255, 255, 255, 0.8) inset;
+}
+
+.shop-confirm-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  margin-bottom: 8px;
   border-bottom: 1px solid var(--rf-border);
 }
 
-.shop-confirm-section--first {
-  padding-top: 0;
-}
-
-.shop-confirm-section:last-of-type {
-  border-bottom: none;
-}
-
-.shop-confirm-section h2 {
-  margin: 0 0 14px;
-  font-size: 0.8rem;
+.shop-confirm-product {
+  margin: 0;
+  font-size: 1rem;
   font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  color: var(--rf-text-dark);
+}
+
+.shop-confirm-qty {
+  margin: 0;
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
   color: var(--rf-amber);
+  white-space: nowrap;
 }
 
 .shop-confirm-dl {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 6px;
 }
 
 .shop-confirm-dl > div {
-  display: grid;
-  grid-template-columns: minmax(100px, 36%) 1fr;
-  gap: 8px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .shop-confirm-dl dt {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: var(--rf-text-muted);
   text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .shop-confirm-dl dd {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   font-weight: 600;
-}
-
-.shop-confirm-total dd {
-  color: var(--rf-amber);
-  font-size: 1.2rem;
+  text-align: right;
+  line-height: 1.35;
 }
 
 .shop-confirm-highlight {
   color: var(--rf-success) !important;
 }
 
-.shop-confirm-dl a {
+.shop-confirm-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(232, 181, 74, 0.14), rgba(199, 109, 46, 0.08));
+}
+
+.shop-confirm-total-row span {
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--rf-text-dark);
+}
+
+.shop-confirm-total-row strong {
+  font-size: 1.15rem;
+  font-weight: 900;
   color: var(--rf-amber);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.shop-confirm-customer {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--rf-border);
+  text-align: center;
+}
+
+.shop-confirm-customer p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--rf-text-muted);
+}
+
+.shop-confirm-customer-name {
+  font-weight: 700 !important;
+  color: var(--rf-text-dark) !important;
+  margin-bottom: 2px !important;
+}
+
+.shop-confirm-customer a {
+  color: var(--rf-amber);
+  font-weight: 600;
+  text-decoration: none;
 }
 
 .shop-confirm-actions {
-  margin-top: 32px;
+  width: 100%;
+  margin-top: 18px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  align-items: center;
+  gap: 10px;
+}
+
+/* CTA inline : visible sur desktop / grands écrans */
+.shop-confirm-actions .shop-confirm-cta {
+  display: none;
 }
 
 .shop-confirm-cta {
   display: block;
   width: 100%;
+  max-width: 420px;
   text-align: center;
   text-decoration: none;
   border: none;
   border-radius: 999px;
-  padding: 18px 22px;
+  padding: 16px 20px;
   font-weight: 800;
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-family: inherit;
   cursor: pointer;
   letter-spacing: 0.02em;
@@ -118,7 +209,9 @@
   background: linear-gradient(165deg, var(--rf-amber) 0%, #a85a24 100%);
   color: #fff;
   box-shadow: 0 6px 20px rgba(199, 109, 46, 0.38);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .shop-confirm-cta--wa:hover {
@@ -126,20 +219,59 @@
   box-shadow: 0 8px 26px rgba(199, 109, 46, 0.45);
 }
 
-.shop-confirm-link--wa {
-  margin-top: 4px;
-}
-
 .shop-confirm-link {
   text-align: center;
   font-weight: 600;
+  font-size: 0.85rem;
   color: var(--rf-amber);
   text-decoration: none;
+}
+
+.shop-confirm-link--muted {
+  color: var(--rf-text-muted);
+  font-weight: 500;
+  font-size: 0.8rem;
 }
 
 .shop-confirm-warn {
   margin: 0;
   color: var(--rf-danger);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
+}
+
+/* Bouton toujours visible en bas sur mobile */
+.shop-confirm-sticky {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #fff 28%);
+  display: flex;
+  justify-content: center;
+}
+
+.shop-confirm-sticky .shop-confirm-cta {
+  max-width: 420px;
+}
+
+@media (min-width: 640px) {
+  .shop-confirm {
+    --shop-confirm-sticky-h: 0px;
+    padding-bottom: 40px;
+  }
+
+  .shop-confirm-inner {
+    padding-top: 28px;
+  }
+
+  .shop-confirm-actions .shop-confirm-cta {
+    display: block;
+  }
+
+  .shop-confirm-sticky {
+    display: none;
+  }
 }

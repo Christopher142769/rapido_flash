@@ -32,6 +32,8 @@ export default function ShopOrderConfirmation() {
   const supportWaUrl = buildWhatsAppSupportUrl(order);
   const fullName = formatCustomerFullName(order.customer);
   const fullAddress = formatCustomerAddress(order.customer);
+  const city = order.customer.city || order.customer.address;
+  const addressLine = order.customer.addressDescription || fullAddress || '—';
 
   const handleTrackOrder = async (e) => {
     e.preventDefault();
@@ -48,20 +50,20 @@ export default function ShopOrderConfirmation() {
       <ShopBrandHeader />
 
       <div className="shop-confirm-inner">
-        <div className="shop-confirm-badge">✓</div>
-        <h1 className="shop-confirm-title">Commande confirmée</h1>
+        <header className="shop-confirm-hero">
+          <div className="shop-confirm-badge" aria-hidden>
+            ✓
+          </div>
+          <h1 className="shop-confirm-title">Commande confirmée</h1>
+        </header>
 
-        <section className="shop-confirm-section shop-confirm-section--first">
-          <h2>Commande</h2>
+        <article className="shop-confirm-card">
+          <div className="shop-confirm-card-head">
+            <p className="shop-confirm-product">{order.productName}</p>
+            <p className="shop-confirm-qty">{order.quantityLabel || order.quantity}</p>
+          </div>
+
           <dl className="shop-confirm-dl">
-            <div>
-              <dt>Produit</dt>
-              <dd>{order.productName}</dd>
-            </div>
-            <div>
-              <dt>Quantité</dt>
-              <dd>{order.quantityLabel || order.quantity}</dd>
-            </div>
             <div>
               <dt>Prix unitaire</dt>
               <dd>
@@ -80,67 +82,52 @@ export default function ShopOrderConfirmation() {
             {order.freeDelivery ? (
               <div>
                 <dt>Livraison</dt>
-                <dd className="shop-confirm-highlight">Gratuite (offre en cours)</dd>
+                <dd className="shop-confirm-highlight">Gratuite</dd>
               </div>
             ) : Number(order.deliveryFee) > 0 ? (
               <div>
-                <dt>Frais de livraison</dt>
+                <dt>Livraison</dt>
                 <dd>{formatPriceXof(order.deliveryFee)}</dd>
               </div>
             ) : null}
             {Number(order.eviscerationFee) > 0 ? (
               <div>
-                <dt>Éviscération et nettoyage</dt>
+                <dt>Éviscération</dt>
                 <dd>{formatPriceXof(order.eviscerationFee)}</dd>
               </div>
             ) : isEviscerationApplicable(order.quantityUnit) ? (
               <div>
-                <dt>Éviscération et nettoyage</dt>
+                <dt>Éviscération</dt>
                 <dd>Non</dd>
               </div>
             ) : null}
-            <div className="shop-confirm-total">
-              <dt>Total à payer</dt>
-              <dd>{formatPriceXof(order.totalPrice)}</dd>
-            </div>
             {order.deliveryDateLabel || order.requestedDeliveryAt ? (
               <div>
-                <dt>Date de livraison souhaitée</dt>
-                <dd>{order.deliveryDateLabel || new Date(order.requestedDeliveryAt).toLocaleDateString('fr-FR')}</dd>
+                <dt>Livraison prévue</dt>
+                <dd>
+                  {order.deliveryDateLabel ||
+                    new Date(order.requestedDeliveryAt).toLocaleDateString('fr-FR')}
+                </dd>
               </div>
             ) : null}
           </dl>
-        </section>
 
-        <section className="shop-confirm-section">
-          <h2>Vos coordonnées</h2>
-          <dl className="shop-confirm-dl">
-            <div>
-              <dt>Nom complet</dt>
-              <dd>{fullName}</dd>
-            </div>
-            <div>
-              <dt>Téléphone (WhatsApp)</dt>
-              <dd>
-                <a href={`tel:${order.customer.phone.replace(/\s/g, '')}`}>{order.customer.phone}</a>
-              </dd>
-            </div>
-            <div>
-              <dt>Ville</dt>
-              <dd>{order.customer.city || order.customer.address}</dd>
-            </div>
-            <div>
-              <dt>Adresse complète</dt>
-              <dd>{order.customer.addressDescription || '—'}</dd>
-            </div>
-            {fullAddress && fullAddress !== (order.customer.city || order.customer.address) ? (
-              <div>
-                <dt>Livraison</dt>
-                <dd>{fullAddress}</dd>
-              </div>
-            ) : null}
-          </dl>
-        </section>
+          <div className="shop-confirm-total-row">
+            <span>Total à payer</span>
+            <strong>{formatPriceXof(order.totalPrice)}</strong>
+          </div>
+
+          <div className="shop-confirm-customer">
+            <p className="shop-confirm-customer-name">{fullName}</p>
+            <p>
+              <a href={`tel:${order.customer.phone.replace(/\s/g, '')}`}>{order.customer.phone}</a>
+            </p>
+            <p>
+              {city}
+              {addressLine && addressLine !== city ? ` · ${addressLine}` : ''}
+            </p>
+          </div>
+        </article>
 
         <div className="shop-confirm-actions">
           <button
@@ -152,7 +139,7 @@ export default function ShopOrderConfirmation() {
           </button>
           {supportWaUrl ? (
             <a
-              className="shop-confirm-link shop-confirm-link--wa"
+              className="shop-confirm-link"
               href={supportWaUrl}
               target="_blank"
               rel="noopener noreferrer"
@@ -162,10 +149,20 @@ export default function ShopOrderConfirmation() {
           ) : (
             <p className="shop-confirm-warn">Pour toute question, appelez le +229 40 39 39 94.</p>
           )}
-          <Link className="shop-confirm-link" to={`/shop/${slug}`}>
+          <Link className="shop-confirm-link shop-confirm-link--muted" to={`/shop/${slug}`}>
             ← Retour à la fiche produit
           </Link>
         </div>
+      </div>
+
+      <div className="shop-confirm-sticky">
+        <button
+          type="button"
+          className="shop-confirm-cta shop-confirm-cta--wa"
+          onClick={handleTrackOrder}
+        >
+          Suivre ma commande
+        </button>
       </div>
     </div>
   );
