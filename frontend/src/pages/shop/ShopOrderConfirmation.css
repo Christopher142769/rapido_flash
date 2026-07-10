@@ -25,73 +25,18 @@
 }
 
 .shop-confirm-title {
-  margin: 0 0 10px;
+  margin: 0 0 24px;
   font-size: 1.45rem;
   font-weight: 800;
-}
-
-.shop-confirm-lead {
-  margin: 0 0 20px;
-  color: var(--rf-text-muted);
-  line-height: 1.55;
-  font-size: 0.95rem;
-}
-
-.shop-confirm-lead strong {
-  color: var(--rf-text-dark);
-}
-
-.shop-confirm-wa-preview {
-  margin: 0 0 24px;
-  padding: 14px 16px;
-  border-radius: 14px;
-  background: #e7f8ed;
-  border: 1px solid #c8e6d0;
-}
-
-.shop-confirm-wa-preview-label {
-  margin: 0 0 8px;
-  font-size: 0.72rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #1b7a3a;
-}
-
-.shop-confirm-wa-preview-text {
-  margin: 0;
-  white-space: pre-wrap;
-  font-family: inherit;
-  font-size: 0.84rem;
-  line-height: 1.45;
-  color: #1a1a1a;
-}
-
-.shop-confirm-wa-hint {
-  margin: 10px 0 0;
-  font-size: 0.82rem;
-  color: var(--rf-text-muted);
-  text-align: center;
-  line-height: 1.45;
-}
-
-.shop-confirm-link--wa {
-  margin-top: 12px;
-}
-
-.shop-confirm-note {
-  margin: 0 0 28px;
-  padding: 14px 0;
-  border-top: 1px solid var(--rf-border);
-  border-bottom: 1px solid var(--rf-border);
-  font-size: 0.85rem;
-  line-height: 1.5;
-  font-weight: 600;
 }
 
 .shop-confirm-section {
   padding: 20px 0;
   border-bottom: 1px solid var(--rf-border);
+}
+
+.shop-confirm-section--first {
+  padding-top: 0;
 }
 
 .shop-confirm-section:last-of-type {
@@ -148,7 +93,7 @@
 }
 
 .shop-confirm-actions {
-  margin-top: 28px;
+  margin-top: 32px;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -161,11 +106,12 @@
   text-decoration: none;
   border: none;
   border-radius: 999px;
-  padding: 16px 20px;
-  font-weight: 700;
-  font-size: inherit;
+  padding: 18px 22px;
+  font-weight: 800;
+  font-size: 1.05rem;
   font-family: inherit;
   cursor: pointer;
+  letter-spacing: 0.02em;
 }
 
 .shop-confirm-cta--wa {
@@ -178,6 +124,10 @@
 .shop-confirm-cta--wa:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 26px rgba(199, 109, 46, 0.45);
+}
+
+.shop-confirm-link--wa {
+  margin-top: 4px;
 }
 
 .shop-confirm-link {

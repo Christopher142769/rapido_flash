@@ -1,10 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
-import ShopDeliveryNotice from '../../components/shop/ShopDeliveryNotice';
 import {
-  buildShopOrderClientConfirmationMessage,
-  buildWhatsAppOrderUrl,
   formatCustomerAddress,
   formatCustomerFullName,
   loadShopOrder,
@@ -32,7 +29,6 @@ export default function ShopOrderConfirmation() {
 
   if (!order) return null;
 
-  const waConfirmationMessage = buildShopOrderClientConfirmationMessage(order);
   const supportWaUrl = buildWhatsAppSupportUrl(order);
   const fullName = formatCustomerFullName(order.customer);
   const fullAddress = formatCustomerAddress(order.customer);
@@ -54,20 +50,8 @@ export default function ShopOrderConfirmation() {
       <div className="shop-confirm-inner">
         <div className="shop-confirm-badge">✓</div>
         <h1 className="shop-confirm-title">Commande confirmée</h1>
-        <p className="shop-confirm-lead">
-          Merci {order.customer.firstName || fullName.split(' ')[0] || ''} ! Votre commande est enregistrée.
-          Appuyez sur le bouton ci-dessous pour envoyer votre commande à Rapido sur WhatsApp — vous recevrez
-          automatiquement la confirmation avec livraison prévue <strong>demain</strong>.
-        </p>
 
-        <div className="shop-confirm-wa-preview" aria-label="Aperçu de la réponse Rapido">
-          <p className="shop-confirm-wa-preview-label">Réponse automatique Rapido</p>
-          <pre className="shop-confirm-wa-preview-text">{waConfirmationMessage}</pre>
-        </div>
-
-        <ShopDeliveryNotice variant="confirm" />
-
-        <section className="shop-confirm-section">
+        <section className="shop-confirm-section shop-confirm-section--first">
           <h2>Commande</h2>
           <dl className="shop-confirm-dl">
             <div>
@@ -166,10 +150,6 @@ export default function ShopOrderConfirmation() {
           >
             Suivre ma commande
           </button>
-          <p className="shop-confirm-wa-hint">
-            WhatsApp s’ouvre chez Rapido avec votre commande. Appuyez sur <strong>Envoyer</strong> — Rapido vous
-            répondra automatiquement sous quelques secondes.
-          </p>
           {supportWaUrl ? (
             <a
               className="shop-confirm-link shop-confirm-link--wa"
