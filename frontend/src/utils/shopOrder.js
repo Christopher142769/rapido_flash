@@ -12,6 +12,24 @@ import {
 
 export const SHOP_ORDER_STORAGE_KEY = 'rapido_shop_order_pending';
 
+/** Numéro WhatsApp Shop (suivi commande, support) — local Bénin 96973890 → +229. */
+export const SHOP_WHATSAPP_LOCAL = '96973890';
+
+export function getShopWhatsAppDigits() {
+  let digits = String(process.env.REACT_APP_SHOP_WHATSAPP || SHOP_WHATSAPP_LOCAL).replace(/\D/g, '');
+  if (digits.length === 8) digits = `229${digits}`;
+  if (digits.length === 10 && digits.startsWith('0')) digits = `229${digits.slice(1)}`;
+  return digits || `229${SHOP_WHATSAPP_LOCAL}`;
+}
+
+export function getShopWhatsAppDisplay() {
+  const d = getShopWhatsAppDigits();
+  if (d.length === 11 && d.startsWith('229')) {
+    return `+229 ${d.slice(3, 5)} ${d.slice(5, 7)} ${d.slice(7, 9)} ${d.slice(9)}`;
+  }
+  return d ? `+${d}` : `+229 ${SHOP_WHATSAPP_LOCAL}`;
+}
+
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 /** Enregistre la commande côté serveur (dashboard + notifications). */
@@ -76,7 +94,7 @@ export function buildShopOrderPayload(product, promoState, quantity, customer, o
     isPromoLive: !!promoState?.isPromoLive,
     discountPercent: promoState?.discountPercent || 0,
     freeDelivery: !!promoState?.freeDelivery,
-    whatsappNumber: product.whatsappNumber || '',
+    whatsappNumber: getShopWhatsAppDigits(),
     ctaLabel: product.ctaLabel || 'Commander',
     customer: {
       firstName: String(customer.firstName || '').trim(),
@@ -194,9 +212,11 @@ export async function openShopOrderWhatsAppTrack(order) {
 }
 
 export function buildWhatsAppSupportUrl(order) {
-  const raw = String(order?.whatsappNumber || '').replace(/\D/g, '');
+  const raw = getShopWhatsAppDigits();
   if (!raw) return null;
-  const ref = order.orderId ? String(order.orderId).slice(-8).toUpperCase() : '';
+  const ref =
+    order?.orderNumber ||
+    (order?.orderId ? String(order.orderId).slice(-8).toUpperCase() : '');
   const text = encodeURIComponent(
     `Bonjour Rapido, j’ai une question sur ma commande Shop${ref ? ` (réf. ${ref})` : ''}.`
   );
@@ -207,48 +227,52 @@ export function buildWhatsAppOrderMessage(order) {
   const name = formatCustomerFullName(order.customer);
   const addressLine = formatCustomerAddress(order.customer);
   const lines = [
-    'Bonjour Rapido, je souhaite passer commande (Shop express) :',
+    'Bonjour Rapido, je souhaite suivre ma commande (Shop express) :',
+    '',
     '',
     `*Produit :* ${order.productName}`,
+    '',
     `*Quantité :* ${order.quantityLabel || order.quantity}`,
+    '',
     `*Prix unitaire :* ${formatPriceXof(order.unitPrice)}${getPriceUnitSuffix(order.quantityUnit)}`,
+    '',
     `*Sous-total :* ${formatPriceXof(order.subtotalPrice ?? order.unitPrice * order.quantity)}`,
   ];
   if (order.isPromoLive && order.discountPercent) {
-    lines.push(`*Promo :* -${order.discountPercent}%`);
+    lines.push('', `*Promo :* -${order.discountPercent}%`);
   }
   if (order.freeDelivery) {
-    lines.push('*Livraison gratuite* (offre en cours)');
+    lines.push('', '*Frais de livraison :* Gratuite (offre en cours)');
   } else if (Number(order.deliveryFee) > 0) {
-    lines.push(`*Frais de livraison :* ${formatPriceXof(order.deliveryFee)}`);
+    lines.push('', `*Frais de livraison :* ${formatPriceXof(order.deliveryFee)}`);
   }
   if (Number(order.eviscerationFee) > 0) {
-    lines.push(`*Éviscération et nettoyage :* ${formatPriceXof(order.eviscerationFee)}`);
+    lines.push('', `*Éviscération et nettoyage :* ${formatPriceXof(order.eviscerationFee)}`);
   }
-  lines.push(`*Total à payer :* ${formatPriceXof(order.totalPrice)}`);
   lines.push(
     '',
+    `*Total à payer :* ${formatPriceXof(order.totalPrice)}`,
+    '',
+    '',
     '*Mes coordonnées :*',
+    '',
     `Nom : ${name}`,
+    '',
     `Téléphone (WhatsApp) : ${order.customer.phone}`,
+    '',
     `Ville / livraison : ${addressLine}`,
   );
-  if (order.deliveryDateLabel || order.requestedDeliveryAt) {
-    lines.push(
-      `Date de livraison souhaitée : ${order.deliveryDateLabel || formatDeliveryDateShort(order.requestedDeliveryAt)}`
-    );
-  }
   if (order.orderNumber) {
-    lines.push(`Réf. commande : ${order.orderNumber}`);
+    lines.push('', `Réf. commande : ${order.orderNumber}`);
   } else if (order.orderId) {
-    lines.push(`Réf. commande : ${String(order.orderId).slice(-8).toUpperCase()}`);
+    lines.push('', `Réf. commande : ${String(order.orderId).slice(-8).toUpperCase()}`);
   }
-  lines.push('', 'Merci de confirmer ma commande.');
+  lines.push('', '', 'Merci de confirmer ma commande.');
   return lines.join('\n');
 }
 
 export function buildWhatsAppOrderUrl(order) {
-  const raw = String(order?.whatsappNumber || '').replace(/\D/g, '');
+  const raw = getShopWhatsAppDigits();
   if (!raw) return null;
   const text = encodeURIComponent(buildWhatsAppOrderMessage(order));
   return `https://wa.me/${raw}?text=${text}`;

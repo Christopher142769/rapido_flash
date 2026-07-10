@@ -7,6 +7,7 @@ import {
   loadShopOrder,
   openShopOrderWhatsAppTrack,
   buildWhatsAppSupportUrl,
+  getShopWhatsAppDisplay,
 } from '../../utils/shopOrder';
 import { formatPriceXof } from '../../utils/shopPromo';
 import { isEviscerationApplicable } from '../../utils/shopEvisceration';
@@ -30,6 +31,7 @@ export default function ShopOrderConfirmation() {
   if (!order) return null;
 
   const supportWaUrl = buildWhatsAppSupportUrl(order);
+  const shopWaDisplay = getShopWhatsAppDisplay();
   const fullName = formatCustomerFullName(order.customer);
   const fullAddress = formatCustomerAddress(order.customer);
   const city = order.customer.city || order.customer.address;
@@ -40,7 +42,7 @@ export default function ShopOrderConfirmation() {
     const opened = await openShopOrderWhatsAppTrack(order);
     if (!opened) {
       alert(
-        'WhatsApp indisponible pour ce produit. Votre commande est confirmée — contactez Rapido au +229 40 39 39 94.'
+        `WhatsApp indisponible. Votre commande est confirmée — contactez Rapido au ${shopWaDisplay}.`
       );
     }
   };
@@ -147,7 +149,7 @@ export default function ShopOrderConfirmation() {
               Une question ? Contacter Rapido
             </a>
           ) : (
-            <p className="shop-confirm-warn">Pour toute question, appelez le +229 40 39 39 94.</p>
+            <p className="shop-confirm-warn">Pour toute question, appelez le {shopWaDisplay}.</p>
           )}
           <Link className="shop-confirm-link shop-confirm-link--muted" to={`/shop/${slug}`}>
             ← Retour à la fiche produit

@@ -14,6 +14,7 @@ import {
   saveShopOrder,
   submitShopOrderToApi,
   validateCustomerForm,
+  getShopWhatsAppDigits,
 } from '../../utils/shopOrder';
 import ShopDeliveryNotice from '../../components/shop/ShopDeliveryNotice';
 import { getShopPromoState, formatPriceXof, getShopDeliveryFee, computeShopOrderTotals } from '../../utils/shopPromo';
@@ -162,7 +163,7 @@ export default function ShopProductLanding() {
     return () => clearInterval(id);
   }, [fetchProduct, product?.dailyOrderLimit, product?.dailyOrderLimitEnabled]);
   const gallery = useMemo(() => (product ? getProductGallery(product) : []), [product]);
-  const canOrder = !!product?.whatsappNumber;
+  const canOrder = !!getShopWhatsAppDigits();
   const unitPrice = promoState?.isPromoLive ? promoState.promoPrice : product?.basePrice;
   const unitBasePrice = product?.basePrice ?? 0;
   const quantityUnit = normalizeShopQuantityUnit(product?.quantityUnit);
@@ -473,7 +474,7 @@ export default function ShopProductLanding() {
         </div>
       ) : null}
 
-      <ShopTrustCards whatsappNumber={product.whatsappNumber} />
+      <ShopTrustCards whatsappNumber={getShopWhatsAppDigits()} />
 
       <ShopQuantityModal
         open={qtyModalOpen}
