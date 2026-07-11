@@ -34,8 +34,15 @@ export function mealCartCount(items = loadMealCart()) {
 export function addMealToCart(product, quantity, accompagnements = []) {
   const cart = loadMealCart();
   const qty = Math.max(1, Math.round(Number(quantity) || 1));
-  const accKey = accompagnements
-    .filter((a) => a.quantity > 0)
+  const normalizedAcc = accompagnements
+    .filter((a) => Number(a.quantity) > 0)
+    .map((a) => ({
+      id: a.id || a._id,
+      name: a.name,
+      price: Number(a.price) || 0,
+      quantity: Math.max(1, Math.round(Number(a.quantity) || 1)),
+    }));
+  const accKey = normalizedAcc
     .map((a) => `${a.id || a.name}:${a.quantity}`)
     .sort()
     .join('|');
@@ -44,6 +51,19 @@ export function addMealToCart(product, quantity, accompagnements = []) {
   const existing = cart.find((it) => it.lineKey === lineKey);
   if (existing) {
     existing.quantity += qty;
+    const byId = new Map(
+      (existing.accompagnements || []).map((a) => [String(a.id || a.name), { ...a }])
+    );
+    for (const a of normalizedAcc) {
+      const key = String(a.id || a.name);
+      const prev = byId.get(key);
+      if (prev) {
+        prev.quantity += a.quantity;
+      } else {
+        byId.set(key, { ...a });
+      }
+    }
+    existing.accompagnements = Array.from(byId.values());
   } else {
     cart.push({
       lineKey,
@@ -56,18 +76,19 @@ export function addMealToCart(product, quantity, accompagnements = []) {
       isPromoLive: !!product.isPromoLive,
       discountPercent: product.discountPercent || 0,
       quantity: qty,
-      accompagnements: accompagnements
-        .filter((a) => a.quantity > 0)
-        .map((a) => ({
-          id: a.id || a._id,
-          name: a.name,
-          price: Number(a.price) || 0,
-          quantity: Math.max(1, Number(a.quantity) || 1),
-        })),
+      accompagnements: normalizedAcc,
     });
   }
   saveMealCart(cart);
   return cart;
+}
+
+export function lineMealSubtotal(it) {
+  const acc = (it.accompagnements || []).reduce(
+    (s, a) => s + Number(a.price || 0) * Number(a.quantity || 0),
+    0
+  );
+  return Math.round(Number(it.unitPrice || 0) * Number(it.quantity || 0) + acc);
 }
 
 export function updateMealCartLine(lineKey, patch) {
@@ -86,13 +107,7 @@ export function removeMealCartLine(lineKey) {
 }
 
 export function estimateMealCartTotals(items, deliveryFee = 0, freeDelivery = false) {
-  const subtotal = items.reduce((sum, it) => {
-    const acc = (it.accompagnements || []).reduce(
-      (s, a) => s + Number(a.price || 0) * Number(a.quantity || 0),
-      0
-    );
-    return sum + Number(it.unitPrice || 0) * Number(it.quantity || 0) + acc;
-  }, 0);
+  const subtotal = items.reduce((sum, it) => sum + lineMealSubtotal(it), 0);
   const fee = freeDelivery ? 0 : Math.max(0, Number(deliveryFee) || 0);
   return { subtotalPrice: Math.round(subtotal), deliveryFee: fee, totalPrice: Math.round(subtotal) + fee };
 }

@@ -91,6 +91,7 @@ const emptyForm = () => ({
   whatsappNumber: '',
   contactPhone: '',
   ctaLabel: 'Commander maintenant',
+  showDeliveryNotice: true,
 });
 
 function toDatetimeLocal(iso) {
@@ -163,6 +164,7 @@ function buildProductPayload(f, galleryList) {
     whatsappNumber: f.whatsappNumber,
     contactPhone: f.contactPhone,
     ctaLabel: f.ctaLabel,
+    showDeliveryNotice: f.showDeliveryNotice !== false,
   };
 }
 
@@ -187,6 +189,9 @@ export default function ShopDashboard() {
   const [refreshingPage, setRefreshingPage] = useState(false);
   const [boosting, setBoosting] = useState(false);
   const [schedulingClosure, setSchedulingClosure] = useState(false);
+  const [shopNoticeMessage, setShopNoticeMessage] = useState('');
+  const [shopNoticeDefault, setShopNoticeDefault] = useState('');
+  const [savingNotice, setSavingNotice] = useState(false);
 
   const formRef = useRef(form);
   const editingIdRef = useRef(editingId);
@@ -209,7 +214,14 @@ export default function ShopDashboard() {
     loadProducts()
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [loadProducts]);
+    axios
+      .get(`${API_URL}/shop-settings`, authHeaders)
+      .then((res) => {
+        setShopNoticeMessage(res.data?.deliveryNoticeMessage || '');
+        setShopNoticeDefault(res.data?.deliveryNoticeMessageDefault || '');
+      })
+      .catch(() => {});
+  }, [loadProducts, authHeaders]);
 
   const publicOrigin = typeof window !== 'undefined' ? window.location.origin : '';
 
@@ -272,6 +284,7 @@ export default function ShopDashboard() {
       whatsappNumber: p.whatsappNumber || '',
       contactPhone: p.contactPhone || '',
       ctaLabel: p.ctaLabel || 'Commander maintenant',
+      showDeliveryNotice: p.showDeliveryNotice !== false,
     };
     setEditingId(p._id);
     editingIdRef.current = p._id;
@@ -1477,6 +1490,14 @@ export default function ShopDashboard() {
               />
             </div>
           </div>
+          <label className="shop-dash-check">
+            <input
+              type="checkbox"
+              checked={form.showDeliveryNotice !== false}
+              onChange={(e) => setForm((f) => ({ ...f, showDeliveryNotice: e.target.checked }))}
+            />
+              Afficher le message NB livraison sur la fiche produit
+            </label>
           </section>
 
           <div className="shop-dash-form-footer">
@@ -1489,6 +1510,88 @@ export default function ShopDashboard() {
           </div>
         </form>
       ) : null}
+
+      <div className="shop-dash-card shop-dash-form" style={{ marginBottom: 20 }}>
+        <header className="shop-dash-form-header">
+          <div>
+            <h3 className="shop-dash-form-title">Message NB livraison</h3>
+            <p className="shop-dash-form-sub">
+              Message général affiché sur les fiches produit où le NB est activé. Utilisez{' '}
+              <code>{'{date}'}</code> pour la date de livraison.
+            </p>
+          </div>
+        </header>
+        <textarea
+          className="shop-dash-input"
+          rows={3}
+          value={shopNoticeMessage}
+          onChange={(e) => setShopNoticeMessage(e.target.value)}
+          placeholder={
+            shopNoticeDefault ||
+            'Commandez aujourd’hui, livraison un jour après, le {date}. Soyez joignable à l’adresse indiquée.'
+          }
+        />
+        {products.length ? (
+          <div style={{ marginTop: 12 }}>
+            <p className="shop-dash-hint" style={{ marginBottom: 8 }}>
+              Attribuer le NB aux produits :
+            </p>
+            <div className="shop-repas-nb-assign-list">
+              {products.map((p) => (
+                <label key={p._id} className="shop-dash-check">
+                  <input
+                    type="checkbox"
+                    checked={p.showDeliveryNotice !== false}
+                    onChange={async (e) => {
+                      const checked = e.target.checked;
+                      try {
+                        await axios.put(
+                          `${API_URL}/shop-products/${p._id}`,
+                          { showDeliveryNotice: checked },
+                          authHeaders
+                        );
+                        setProducts((list) =>
+                          list.map((x) => (x._id === p._id ? { ...x, showDeliveryNotice: checked } : x))
+                        );
+                      } catch (err) {
+                        alert(err.response?.data?.message || 'Erreur');
+                      }
+                    }}
+                  />
+                  {p.name}
+                </label>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        <div style={{ marginTop: 12 }}>
+          <button
+            type="button"
+            className="shop-dash-btn shop-dash-btn--primary"
+            disabled={savingNotice}
+            onClick={async () => {
+              setSavingNotice(true);
+              try {
+                const res = await axios.put(
+                  `${API_URL}/shop-settings`,
+                  { deliveryNoticeMessage: shopNoticeMessage },
+                  authHeaders
+                );
+                setShopNoticeMessage(res.data?.deliveryNoticeMessage || '');
+                if (res.data?.deliveryNoticeMessageDefault) {
+                  setShopNoticeDefault(res.data.deliveryNoticeMessageDefault);
+                }
+              } catch (err) {
+                alert(err.response?.data?.message || 'Erreur');
+              } finally {
+                setSavingNotice(false);
+              }
+            }}
+          >
+            {savingNotice ? 'Enregistrement…' : 'Enregistrer le message'}
+          </button>
+        </div>
+      </div>
 
       <div className="shop-dash-card">
         <div className="shop-dash-list-head">

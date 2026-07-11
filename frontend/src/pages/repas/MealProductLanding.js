@@ -8,6 +8,7 @@ import ShopOrderForm from '../../components/shop/ShopOrderForm';
 import ShopDeliveryNotice from '../../components/shop/ShopDeliveryNotice';
 import ShopQuantityPicker from '../../components/shop/ShopQuantityPicker';
 import ShopQuantityModal from '../../components/shop/ShopQuantityModal';
+import MealAccompagnementModal from '../../components/shop/MealAccompagnementModal';
 import ShopTrustCards from '../../components/shop/ShopTrustCards';
 import ShopContentBlocks from '../../components/shop/ShopContentBlocks';
 import { getProductGallery } from '../../utils/shopProductMedia';
@@ -25,7 +26,7 @@ import {
   saveMealOrder,
   submitMealOrderToApi,
 } from '../../utils/mealOrder';
-import { loadMealCart, mealCartCount } from '../../utils/mealCart';
+import { loadMealCart, mealCartCount, addMealToCart } from '../../utils/mealCart';
 import '../shop/shopTypography.css';
 import '../shop/ShopProductLanding.css';
 import './MealProductLanding.css';
@@ -46,8 +47,13 @@ export default function MealProductLanding() {
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [qtyModalOpen, setQtyModalOpen] = useState(false);
+  const [accModalOpen, setAccModalOpen] = useState(false);
+  const [pendingOrderQty, setPendingOrderQty] = useState(null);
+  const [pendingAction, setPendingAction] = useState('order'); // 'order' | 'cart'
   const [highlightQty, setHighlightQty] = useState(false);
+  const [highlightAcc, setHighlightAcc] = useState(false);
   const [accQty, setAccQty] = useState({});
+  const [toast, setToast] = useState('');
   const [promoClock, setPromoClock] = useState(() => Date.now());
   const [urgencyClock, setUrgencyClock] = useState(() => Date.now());
   const [cartCount, setCartCount] = useState(() => mealCartCount());
@@ -212,29 +218,68 @@ export default function MealProductLanding() {
     });
   };
 
-  const validateAccompagnements = () => {
-    const required = (product?.accompagnements || []).filter((a) => a.required);
-    for (const r of required) {
-      const key = r._id || r.name;
-      if ((accQty[key] || 0) < 1) {
-        return `Choisissez l’accompagnement : ${r.name}`;
-      }
-    }
-    return null;
+  const hasAccompagnements = (product?.accompagnements || []).length > 0;
+  const hasSelectedAcc = selectedAcc.length > 0;
+
+  const openAccModal = (orderQuantity, action = 'order') => {
+    setPendingOrderQty(orderQuantity);
+    setPendingAction(action);
+    setQtyModalOpen(false);
+    setHighlightAcc(true);
+    setAccModalOpen(true);
+    document.getElementById('meal-acc-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
-  const completeOrder = async (orderQuantity) => {
+  const pushToCart = (orderQuantity, accList) => {
+    addMealToCart(product, orderQuantity, accList);
+    setToast('Ajouté au panier');
+    setAccModalOpen(false);
+    setPendingOrderQty(null);
+  };
+
+  useEffect(() => {
+    if (!toast) return undefined;
+    const id = setTimeout(() => setToast(''), 2200);
+    return () => clearTimeout(id);
+  }, [toast]);
+
+  const completeOrder = async (orderQuantity, accOverride) => {
     const nextErrors = validateCustomerForm(customer);
     if (Object.keys(nextErrors).length) {
       setFormErrors(nextErrors);
       setQtyModalOpen(false);
+      setAccModalOpen(false);
       document.getElementById('shop-order-fields')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
-    const accErr = validateAccompagnements();
-    if (accErr) {
-      alert(accErr);
+
+    const accList =
+      accOverride ||
+      (product?.accompagnements || [])
+        .map((a) => {
+          const key = a._id || a.name;
+          const q = Number(accQty[key] || 0);
+          if (q < 1) return null;
+          return { id: a._id, name: a.name, price: Number(a.price) || 0, quantity: q };
+        })
+        .filter(Boolean);
+
+    if ((product?.accompagnements || []).length > 0 && accList.length === 0) {
+      openAccModal(orderQuantity, 'order');
       return;
+    }
+
+    const required = (product?.accompagnements || []).filter((a) => a.required);
+    for (const r of required) {
+      const found = accList.find(
+        (a) =>
+          (a.id && String(a.id) === String(r._id)) ||
+          String(a.name).toLowerCase() === String(r.name).toLowerCase()
+      );
+      if (!found || found.quantity < 1) {
+        openAccModal(orderQuantity, 'order');
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -244,7 +289,7 @@ export default function MealProductLanding() {
           {
             mealProductId: product._id,
             quantity: orderQuantity,
-            accompagnements: selectedAcc,
+            accompagnements: accList,
           },
         ],
         customer
@@ -255,6 +300,8 @@ export default function MealProductLanding() {
         slug: product.slug,
       });
       setQtyModalOpen(false);
+      setAccModalOpen(false);
+      setPendingOrderQty(null);
       navigate(`/repas/${slug}/commande`);
     } catch (err) {
       alert(err.message || 'Impossible d’enregistrer la commande. Réessayez.');
@@ -273,7 +320,26 @@ export default function MealProductLanding() {
         ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
+    if (hasAccompagnements && !hasSelectedAcc) {
+      openAccModal(quantity, 'order');
+      return;
+    }
     void completeOrder(quantity);
+  };
+
+  const requestAddToCart = () => {
+    if (!hasQuantity) {
+      setHighlightQty(true);
+      document
+        .getElementById('meal-quantity-section')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    if (hasAccompagnements && !hasSelectedAcc) {
+      openAccModal(quantity, 'cart');
+      return;
+    }
+    pushToCart(quantity, selectedAcc);
   };
 
   if (loading) return <PageLoader />;
@@ -337,7 +403,9 @@ export default function MealProductLanding() {
             <h1 className="shop-pdp-buybox-title">{product.name}</h1>
             {product.shortDescription ? <p className="shop-pdp-buybox-sub">{product.shortDescription}</p> : null}
 
-            <ShopDeliveryNotice />
+            {product.showDeliveryNotice !== false ? (
+              <ShopDeliveryNotice message={shopSettings?.deliveryNoticeMessage} />
+            ) : null}
 
             <div className={`shop-pdp-buybox-price${!hasQuantity ? ' shop-pdp-buybox-price--empty' : ''}`}>
               {hasQuantity ? (
@@ -351,10 +419,17 @@ export default function MealProductLanding() {
                       {formatPriceXof(unitPrice)} × {quantity}
                     </span>
                   ) : null}
-                  {accTotal > 0 ? (
-                    <span className="shop-pdp-buybox-delivery-info">
-                      Accompagnements : {formatPriceXof(accTotal)}
-                    </span>
+                  {selectedAcc.length ? (
+                    <ul className="meal-pdp-buybox-acc-list">
+                      {selectedAcc.map((a) => (
+                        <li key={a.id || a.name}>
+                          <span>
+                            {a.name} ×{a.quantity}
+                          </span>
+                          <strong>{formatPriceXof(a.price * a.quantity)}</strong>
+                        </li>
+                      ))}
+                    </ul>
                   ) : null}
                   {promoState?.freeDelivery ? (
                     <span className="shop-pdp-buybox-delivery-info shop-pdp-buybox-delivery-info--free">
@@ -412,18 +487,23 @@ export default function MealProductLanding() {
             />
 
             {(product.accompagnements || []).length ? (
-              <div className="meal-pdp-acc">
+              <div
+                id="meal-acc-section"
+                className={`meal-pdp-acc${highlightAcc && !hasSelectedAcc ? ' meal-pdp-acc--highlight' : ''}`}
+              >
                 <h3 className="meal-pdp-acc-title">Accompagnements</h3>
-                <p className="meal-pdp-acc-lead">Ajoutez ce qui accompagne votre plat.</p>
+                <p className="meal-pdp-acc-lead">
+                  Obligatoire — choisissez au moins un accompagnement pour votre plat.
+                </p>
                 {product.accompagnements.map((a) => {
                   const key = a._id || a.name;
                   const q = accQty[key] || 0;
                   return (
-                    <div key={key} className="meal-pdp-acc-row">
+                    <div key={key} className={`meal-pdp-acc-row${q > 0 ? ' is-selected' : ''}`}>
                       <div className="meal-pdp-acc-info">
                         <strong>
                           {a.name}
-                          {a.required ? <span className="meal-pdp-acc-req"> *</span> : null}
+                          <span className="meal-pdp-acc-req"> *</span>
                         </strong>
                         <span>{formatPriceXof(a.price)}</span>
                       </div>
@@ -431,9 +511,10 @@ export default function MealProductLanding() {
                         <button
                           type="button"
                           aria-label={`Retirer ${a.name}`}
-                          onClick={() =>
-                            setAccQty((s) => ({ ...s, [key]: Math.max(0, (s[key] || 0) - 1) }))
-                          }
+                          onClick={() => {
+                            setAccQty((s) => ({ ...s, [key]: Math.max(0, (s[key] || 0) - 1) }));
+                            setHighlightAcc(false);
+                          }}
                         >
                           −
                         </button>
@@ -441,12 +522,13 @@ export default function MealProductLanding() {
                         <button
                           type="button"
                           aria-label={`Ajouter ${a.name}`}
-                          onClick={() =>
+                          onClick={() => {
                             setAccQty((s) => ({
                               ...s,
                               [key]: Math.min(a.maxQuantity || 10, (s[key] || 0) + 1),
-                            }))
-                          }
+                            }));
+                            setHighlightAcc(false);
+                          }}
                         >
                           +
                         </button>
@@ -467,9 +549,19 @@ export default function MealProductLanding() {
             </div>
 
             {canOrder ? (
-              <button type="submit" className="shop-pdp-cta shop-pdp-cta--primary" disabled={submitting}>
-                {submitting ? 'Enregistrement…' : 'Commander maintenant'}
-              </button>
+              <div className="meal-pdp-cta-row">
+                <button
+                  type="button"
+                  className="shop-pdp-cta shop-pdp-cta--secondary"
+                  onClick={requestAddToCart}
+                  disabled={submitting}
+                >
+                  Ajouter au panier
+                </button>
+                <button type="submit" className="shop-pdp-cta shop-pdp-cta--primary" disabled={submitting}>
+                  {submitting ? 'Enregistrement…' : 'Commander maintenant'}
+                </button>
+              </div>
             ) : (
               <button type="button" className="shop-pdp-cta shop-pdp-cta--primary" disabled>
                 Commande bientôt disponible
@@ -505,10 +597,61 @@ export default function MealProductLanding() {
         onConfirm={(pickedQty) => {
           setQuantity(pickedQty);
           setHighlightQty(false);
+          if (hasAccompagnements && !hasSelectedAcc) {
+            openAccModal(pickedQty, 'order');
+            return;
+          }
           void completeOrder(pickedQty);
         }}
         submitting={submitting}
       />
+
+      <MealAccompagnementModal
+        open={accModalOpen}
+        onClose={() => {
+          setAccModalOpen(false);
+          setPendingOrderQty(null);
+        }}
+        productName={product.name}
+        options={product.accompagnements || []}
+        initialQty={accQty}
+        ctaLabel={pendingAction === 'cart' ? 'Ajouter au panier' : 'Valider et commander'}
+        onConfirm={(draft) => {
+          setAccQty(draft);
+          setHighlightAcc(false);
+          setAccModalOpen(false);
+          const qty = pendingOrderQty ?? quantity;
+          const accList = (product.accompagnements || [])
+            .map((a) => {
+              const key = a._id || a.name;
+              const q = Number(draft[key] || 0);
+              if (q < 1) return null;
+              return { id: a._id, name: a.name, price: Number(a.price) || 0, quantity: q };
+            })
+            .filter(Boolean);
+          setPendingOrderQty(null);
+          if (pendingAction === 'cart') {
+            if (qty < 1) {
+              setHighlightQty(true);
+              return;
+            }
+            pushToCart(qty, accList);
+            return;
+          }
+          if (qty < 1) {
+            setQtyModalOpen(true);
+            return;
+          }
+          void completeOrder(qty, accList);
+        }}
+      />
+
+      {toast ? (
+        <div className="meal-pdp-toast" role="status">
+          {toast}{' '}
+          <Link to="/repas/panier">Voir le panier</Link>
+        </div>
+      ) : null}
 
       <div className="shop-pdp-sticky">
         <div className="shop-pdp-sticky-inner">
@@ -516,14 +659,24 @@ export default function MealProductLanding() {
             {hasQuantity ? formatPriceXof(grandTotal) : formatPriceXof(unitPrice)}
           </span>
           {canOrder ? (
-            <button
-              type="submit"
-              form={CHECKOUT_FORM_ID}
-              className="shop-pdp-cta shop-pdp-cta--primary shop-pdp-cta--sticky"
-              disabled={submitting}
-            >
-              {submitting ? 'Enregistrement…' : 'Commander'}
-            </button>
+            <>
+              <button
+                type="button"
+                className="shop-pdp-cta shop-pdp-cta--secondary shop-pdp-cta--sticky"
+                onClick={requestAddToCart}
+                disabled={submitting}
+              >
+                Panier
+              </button>
+              <button
+                type="submit"
+                form={CHECKOUT_FORM_ID}
+                className="shop-pdp-cta shop-pdp-cta--primary shop-pdp-cta--sticky"
+                disabled={submitting}
+              >
+                {submitting ? '…' : 'Commander'}
+              </button>
+            </>
           ) : null}
         </div>
       </div>

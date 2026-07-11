@@ -72,6 +72,7 @@ const emptyForm = () => ({
   images: [],
   copySections: [emptyCopyBlock('text')],
   accompagnements: [],
+  showDeliveryNotice: true,
   promo: {
     active: false,
     priceMode: 'percent',
@@ -212,6 +213,7 @@ export default function ShopRepasDashboard() {
       basePrice: p.basePrice ?? '',
       category: p.category || '',
       published: !!p.published,
+      showDeliveryNotice: p.showDeliveryNotice !== false,
       mainImage: p.mainImage || '',
       images: Array.isArray(p.images) ? p.images : [],
       copySections:
@@ -341,6 +343,7 @@ export default function ShopRepasDashboard() {
         basePrice: Number(form.basePrice),
         category: form.category,
         published: form.published,
+        showDeliveryNotice: form.showDeliveryNotice !== false,
         mainImage: galleryList[0] || '',
         images: galleryList.slice(1),
         copySections: Array.isArray(form.copySections) ? form.copySections : [],
@@ -643,6 +646,58 @@ export default function ShopRepasDashboard() {
                 />
               </div>
             </div>
+            <div style={{ marginTop: 14 }}>
+              <label>Message NB livraison (général)</label>
+              <textarea
+                className="shop-dash-input"
+                rows={3}
+                value={settings.deliveryNoticeMessage ?? ''}
+                onChange={(e) => setSettings((s) => ({ ...s, deliveryNoticeMessage: e.target.value }))}
+                placeholder={
+                  settings.deliveryNoticeMessageDefault ||
+                  'Commandez aujourd’hui, livraison un jour après, le {date}. Soyez joignable à l’adresse indiquée.'
+                }
+              />
+              <p className="shop-dash-hint">
+                Utilisez <code>{'{date}'}</code> pour la date de livraison. Ce message s’affiche sur les plats où le NB
+                est activé.
+              </p>
+            </div>
+            {products.length ? (
+              <div className="shop-repas-nb-assign" style={{ marginTop: 14 }}>
+                <p className="shop-dash-hint" style={{ marginBottom: 8 }}>
+                  Attribuer le NB aux plats :
+                </p>
+                <div className="shop-repas-nb-assign-list">
+                  {products.map((p) => (
+                    <label key={p._id} className="shop-dash-check">
+                      <input
+                        type="checkbox"
+                        checked={p.showDeliveryNotice !== false}
+                        onChange={async (e) => {
+                          const checked = e.target.checked;
+                          try {
+                            await axios.put(
+                              `${API_URL}/meal-products/${p._id}`,
+                              { showDeliveryNotice: checked },
+                              authHeaders()
+                            );
+                            setProducts((list) =>
+                              list.map((x) =>
+                                x._id === p._id ? { ...x, showDeliveryNotice: checked } : x
+                              )
+                            );
+                          } catch (err) {
+                            alert(err.response?.data?.message || 'Erreur');
+                          }
+                        }}
+                      />
+                      {p.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <button
               type="button"
               className="shop-dash-btn shop-dash-btn--primary"
@@ -651,6 +706,7 @@ export default function ShopRepasDashboard() {
                 saveSettings({
                   deliveryFee: Number(settings.deliveryFee) || 0,
                   categories: settings.categories,
+                  deliveryNoticeMessage: settings.deliveryNoticeMessage || '',
                 })
               }
             >
@@ -1089,6 +1145,14 @@ export default function ShopRepasDashboard() {
               />
               Publié sur /repas/{'{slug}'}
             </label>
+            <label className="shop-dash-check">
+              <input
+                type="checkbox"
+                checked={form.showDeliveryNotice !== false}
+                onChange={(e) => setForm((f) => ({ ...f, showDeliveryNotice: e.target.checked }))}
+              />
+              Afficher le message NB livraison sur la fiche produit
+            </label>
             {formPromoPreview.isPromoLive ? (
               <p className="shop-dash-hint">
                 Prix affiché : <strong>{formatPriceXof(formPromoPreview.promoPrice)}</strong>
@@ -1203,7 +1267,7 @@ export default function ShopRepasDashboard() {
             <ShopFormSectionHead
               step="4"
               title="Accompagnements"
-              subtitle="Nom, prix, et si le choix est obligatoire sur la fiche produit."
+              subtitle="Si des accompagnements sont ajoutés, le client doit en choisir au moins un avant de commander."
               onRefresh={refreshPage}
               refreshing={refreshing}
             />

@@ -1,49 +1,54 @@
 .meal-cart {
+  --meal-gutter: clamp(16px, 4vw, 28px);
   min-height: 100vh;
-  background: #f7f4ef;
+  background:
+    radial-gradient(ellipse 70% 40% at 50% 0%, rgba(232, 181, 74, 0.12), transparent 55%),
+    #f7f4ef;
   font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: #1a1410;
-  padding-bottom: 40px;
+  padding-bottom: calc(28px + env(safe-area-inset-bottom));
 }
 
-.meal-cart-top {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 18px;
-  background: rgba(247, 244, 239, 0.95);
-  border-bottom: 1px solid rgba(26, 20, 16, 0.06);
-  position: sticky;
-  top: 0;
-  z-index: 10;
+.meal-cart-head {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 18px var(--meal-gutter) 8px;
 }
 
-.meal-cart-top a {
-  color: var(--rf-amber);
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.meal-cart-top h1 {
+.meal-cart-head h1 {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 1.35rem;
   font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.meal-cart-head p {
+  margin: 6px 0 0;
+  font-size: 0.88rem;
+  color: #6b5e54;
 }
 
 .meal-cart-inner {
   max-width: 520px;
   margin: 0 auto;
-  padding: 18px 16px 40px;
+  padding: 12px var(--meal-gutter) 40px;
 }
 
 .meal-cart-empty {
   text-align: center;
   padding: 60px 20px;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.meal-cart-empty p {
+  margin: 0 0 18px;
+  color: #6b5e54;
 }
 
 .meal-cart-lines {
   list-style: none;
-  margin: 0 0 20px;
+  margin: 0 0 16px;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -57,15 +62,17 @@
   border-radius: 16px;
   padding: 12px;
   border: 1px solid rgba(26, 20, 16, 0.06);
+  box-shadow: 0 8px 24px rgba(26, 20, 16, 0.04);
 }
 
 .meal-cart-line-img {
-  width: 72px;
-  height: 72px;
+  width: 76px;
+  height: 76px;
   border-radius: 12px;
   overflow: hidden;
   flex-shrink: 0;
   background: #efe8df;
+  display: block;
 }
 
 .meal-cart-line-img img,
@@ -83,8 +90,15 @@
   min-width: 0;
 }
 
-.meal-cart-line-body strong {
+.meal-cart-line-name {
   font-size: 0.95rem;
+  font-weight: 800;
+  color: inherit;
+  text-decoration: none;
+}
+
+.meal-cart-line-name:hover {
+  color: var(--rf-amber, #c76d2e);
 }
 
 .meal-cart-line-body > span {
@@ -94,14 +108,23 @@
 
 .meal-cart-acc {
   font-size: 0.75rem !important;
-  color: var(--rf-amber) !important;
+  color: var(--rf-amber, #c76d2e) !important;
+  font-weight: 600;
+}
+
+.meal-cart-line-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  flex-wrap: wrap;
 }
 
 .meal-cart-line-ctrl {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 8px;
 }
 
 .meal-cart-line-ctrl button {
@@ -112,6 +135,14 @@
   background: #f7f4ef;
   font-weight: 800;
   cursor: pointer;
+  color: #c76d2e;
+}
+
+.meal-cart-line-ctrl > span {
+  min-width: 1.1rem;
+  text-align: center;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
 
 .meal-cart-remove {
@@ -119,7 +150,12 @@
   border-radius: 8px !important;
   padding: 0 10px;
   font-size: 0.75rem;
-  color: #b91c1c;
+  color: #b91c1c !important;
+}
+
+.meal-cart-line-total {
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .meal-cart-totals {
@@ -145,15 +181,35 @@
 }
 
 .meal-cart-total strong {
-  color: var(--rf-amber);
+  color: var(--rf-amber, #c76d2e);
   font-size: 1.15rem;
+}
+
+.meal-cart-form-block {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid rgba(26, 20, 16, 0.06);
+  margin-bottom: 16px;
+}
+
+.meal-cart-form-block h2 {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.meal-cart-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
 }
 
 .meal-cart-cta {
   display: block;
   width: 100%;
   text-align: center;
-  margin-top: 16px;
   border: none;
   border-radius: 999px;
   padding: 16px 20px;
@@ -161,7 +217,7 @@
   font-size: 1rem;
   font-family: inherit;
   cursor: pointer;
-  background: linear-gradient(165deg, var(--rf-amber) 0%, #a85a24 100%);
+  background: linear-gradient(165deg, var(--rf-amber, #c76d2e) 0%, #a85a24 100%);
   color: #fff;
   text-decoration: none;
   box-shadow: 0 6px 20px rgba(199, 109, 46, 0.35);
@@ -172,8 +228,17 @@
   cursor: wait;
 }
 
+.meal-cart-continue {
+  text-align: center;
+  color: #6b5e54;
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-decoration: none;
+}
+
 .meal-cart-err {
   color: #b91c1c;
   font-weight: 600;
   text-align: center;
+  margin: 0 0 12px;
 }

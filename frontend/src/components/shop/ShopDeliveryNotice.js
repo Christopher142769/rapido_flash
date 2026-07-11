@@ -3,8 +3,17 @@ import { FaClock } from 'react-icons/fa';
 import { formatDeliveryDateShort, getDefaultDeliveryDateKey } from '../../utils/shopDeliveryDate';
 import './ShopDeliveryNotice.css';
 
-export default function ShopDeliveryNotice({ variant = 'landing' }) {
+export const DEFAULT_DELIVERY_NOTICE_MESSAGE =
+  'Commandez aujourd’hui, livraison un jour après, le {date}. Soyez joignable à l’adresse indiquée.';
+
+export function resolveDeliveryNoticeMessage(template) {
   const deliveryDateLabel = formatDeliveryDateShort(getDefaultDeliveryDateKey());
+  const raw = String(template || '').trim() || DEFAULT_DELIVERY_NOTICE_MESSAGE;
+  return raw.replace(/\{date\}/gi, deliveryDateLabel);
+}
+
+export default function ShopDeliveryNotice({ variant = 'landing', message }) {
+  const text = resolveDeliveryNoticeMessage(message);
 
   return (
     <aside
@@ -13,8 +22,7 @@ export default function ShopDeliveryNotice({ variant = 'landing' }) {
     >
       <FaClock className="shop-inline-note-icon" aria-hidden />
       <span>
-        <strong>NB</strong> — Commandez aujourd’hui, livraison un jour après, le {deliveryDateLabel}
-        . Soyez joignable à l’adresse indiquée.
+        <strong>NB</strong> — {text}
       </span>
     </aside>
   );

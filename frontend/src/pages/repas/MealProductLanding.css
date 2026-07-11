@@ -91,3 +91,101 @@
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
+
+.meal-pdp-cta-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.meal-pdp .shop-pdp-cta--secondary {
+  background: #fff;
+  color: var(--rf-amber, #c76d2e);
+  border: 1.5px solid rgba(199, 109, 46, 0.45);
+  box-shadow: none;
+}
+
+.meal-pdp .shop-pdp-sticky-inner {
+  gap: 8px;
+}
+
+.meal-pdp .shop-pdp-cta--sticky.shop-pdp-cta--secondary {
+  flex: 0 0 auto;
+  padding-left: 14px;
+  padding-right: 14px;
+  font-size: 0.82rem;
+}
+
+.meal-pdp-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(88px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 90;
+  max-width: calc(100% - 32px);
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: #1a1410;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  box-shadow: 0 12px 32px rgba(26, 20, 16, 0.28);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.meal-pdp-toast a {
+  color: #f0c078;
+  text-decoration: underline;
+}
+
+.meal-pdp-acc--highlight {
+  border-radius: 14px;
+  padding: 14px 12px 8px;
+  border: 1.5px solid rgba(199, 109, 46, 0.45);
+  background: #fff8f1;
+  box-shadow: 0 0 0 4px rgba(199, 109, 46, 0.1);
+  animation: meal-acc-pulse 1.2s ease 2;
+}
+
+@keyframes meal-acc-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 4px rgba(199, 109, 46, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(199, 109, 46, 0.16);
+  }
+}
+
+.meal-pdp-acc-row.is-selected {
+  background: rgba(199, 109, 46, 0.04);
+}
+
+.meal-pdp-buybox-acc-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 8px 0 0;
+  width: 100%;
+  border-top: 1px dashed rgba(26, 20, 16, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.meal-pdp-buybox-acc-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.82rem;
+  color: var(--rf-text-muted);
+}
+
+.meal-pdp-buybox-acc-list strong {
+  font-weight: 700;
+  color: var(--rf-text-dark);
+  font-variant-numeric: tabular-nums;
+}

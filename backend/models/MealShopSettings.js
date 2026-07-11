@@ -35,6 +35,16 @@ const mealShopSettingsSchema = new mongoose.Schema(
     categories: { type: [String], default: [] },
     /** Frais de livraison globaux (FCFA) pour toute la commande. */
     deliveryFee: { type: Number, default: 500, min: 0 },
+    /**
+     * Message NB livraison affiché sur les fiches produits où showDeliveryNotice est actif.
+     * Utiliser {date} pour la date de livraison calculée.
+     */
+    deliveryNoticeMessage: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: 500,
+    },
     shopClosure: {
       enabled: { type: Boolean, default: false },
       dailyCloseTime: { type: String, default: '', trim: true },

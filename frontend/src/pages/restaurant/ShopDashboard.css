@@ -701,6 +701,19 @@
   line-height: 1.45;
 }
 
+.shop-repas-nb-assign-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow: auto;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--rf-border, #e8dfd4);
+  background: #faf8f5;
+  margin-bottom: 12px;
+}
+
 .shop-dash-hint--inline {
   margin: 6px 0 0;
   font-size: 0.78rem;

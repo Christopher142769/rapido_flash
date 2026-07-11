@@ -15,6 +15,9 @@ const DEFAULT_TRUST = [
   { title: 'Support WhatsApp', subtitle: 'Suivi de commande facile' },
 ];
 
+const DEFAULT_DELIVERY_NOTICE =
+  'Commandez aujourd’hui, livraison un jour après, le {date}. Soyez joignable à l’adresse indiquée.';
+
 async function getOrCreateSettings() {
   let doc = await MealShopSettings.findOne({ key: 'default' });
   if (!doc) {
@@ -45,6 +48,8 @@ function serializeSettings(doc, ordersToday = 0) {
   return {
     ...raw,
     trustItems: raw.trustItems?.length ? raw.trustItems : DEFAULT_TRUST,
+    deliveryNoticeMessage: String(raw.deliveryNoticeMessage || '').trim(),
+    deliveryNoticeMessageDefault: DEFAULT_DELIVERY_NOTICE,
     ...availability,
     ordersToday,
   };
@@ -116,6 +121,11 @@ router.put('/', auth, isRestaurant, async (req, res) => {
     }
     if (body.deliveryFee != null) {
       doc.deliveryFee = Math.max(0, Math.round(Number(body.deliveryFee) || 0));
+    }
+    if (body.deliveryNoticeMessage != null) {
+      doc.deliveryNoticeMessage = String(body.deliveryNoticeMessage || '')
+        .trim()
+        .slice(0, 500);
     }
     if (body.shopClosure != null) {
       const sc = body.shopClosure;

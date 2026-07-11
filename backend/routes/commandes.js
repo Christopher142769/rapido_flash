@@ -288,8 +288,8 @@ router.get('/for-my-restaurants', auth, async (req, res) => {
 });
 
 /**
- * Statistiques dashboard (KPI + série temporelle) pour les entreprises accessibles.
- * Query: from=YYYY-MM-DD&to=YYYY-MM-DD (optionnel → jour courant UTC si absent).
+ * Statistiques dashboard (KPI + série + CA par ville + filtre produit).
+ * Query: from, to, productId, productKind (all|shop|meal|restaurant)
  */
 router.get('/dashboard-stats', auth, async (req, res) => {
   try {
@@ -297,7 +297,13 @@ router.get('/dashboard-stats', auth, async (req, res) => {
       return res.status(403).json({ message: 'Accès refusé' });
     }
 
+    const mongoose = require('mongoose');
     const Conversation = require('../models/Conversation');
+    const MealOrder = require('../models/MealOrder');
+    const MealProduct = require('../models/MealProduct');
+    const ShopProduct = require('../models/ShopProduct');
+    const Produit = require('../models/Produit');
+    const Plat = require('../models/Plat');
 
     const owned = await Restaurant.find({
       $or: [{ proprietaire: req.user._id }, { gestionnaires: req.user._id }],
@@ -348,209 +354,354 @@ router.get('/dashboard-stats', auth, async (req, res) => {
     }
 
     const sameDay = fromStr === toStr;
-    /** Même logique que Commandes Shop : orderDate || createdAt, fuseau Bénin. */
-    const periodFilter = buildPeriodFilter(fromStr, toStr);
-    const shopDateMatch = periodFilter || {};
+    const periodFilter = buildPeriodFilter(fromStr, toStr) || {};
+    const cmdPeriodFilter = periodFilter.createdAt
+      ? { createdAt: periodFilter.createdAt }
+      : periodFilter.$expr
+        ? periodFilter
+        : { createdAt: { $gte: start, $lte: end } };
 
-    async function fetchShopStats() {
-      const [shopStatus, shopAmounts, shopByBucket] = await Promise.all([
-        ShopOrder.aggregate([
-          { $match: shopDateMatch },
-          { $group: { _id: '$statut', count: { $sum: 1 } } },
-        ]),
-        ShopOrder.aggregate([
-          { $match: shopDateMatch },
-          {
-            $group: {
-              _id: null,
-              totalMontant: {
-                $sum: { $cond: [{ $ne: ['$statut', 'annulee'] }, '$totalPrice', 0] },
-              },
-              chiffreAffaires: {
-                $sum: { $cond: [{ $eq: ['$statut', 'livree'] }, '$totalPrice', 0] },
-              },
-            },
-          },
-        ]),
-        ShopOrder.aggregate([
-          { $match: shopDateMatch },
-          {
-            $group: {
-              _id: sameDay
-                ? {
-                    $dateToString: {
-                      format: '%H',
-                      date: { $ifNull: ['$orderDate', '$createdAt'] },
-                      timezone: 'Africa/Porto-Novo',
-                    },
-                  }
-                : {
-                    $dateToString: {
-                      format: '%Y-%m-%d',
-                      date: { $ifNull: ['$orderDate', '$createdAt'] },
-                      timezone: 'Africa/Porto-Novo',
-                    },
-                  },
-              count: { $sum: 1 },
-            },
-          },
-        ]),
+    let productKind = String(req.query.productKind || 'all').toLowerCase();
+    let productId = String(req.query.productId || '').trim();
+    if (!['all', 'shop', 'meal', 'restaurant'].includes(productKind)) productKind = 'all';
+    if (productKind === 'all') productId = '';
+    if (productId && !mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ message: 'Produit invalide' });
+    }
+    const productOid = productId ? new mongoose.Types.ObjectId(productId) : null;
+
+    const [shopProductDocs, mealProductDocs, restaurantProduitDocs, restaurantPlatDocs] =
+      await Promise.all([
+        ShopProduct.find({}).select('_id name').sort({ name: 1 }).lean(),
+        MealProduct.find({}).select('_id name').sort({ name: 1 }).lean(),
+        ids.length
+          ? Produit.find({ restaurant: { $in: ids } }).select('_id nom').sort({ nom: 1 }).lean()
+          : Promise.resolve([]),
+        ids.length
+          ? Plat.find({ 'restaurants.restaurant': { $in: ids } })
+              .select('_id nom')
+              .sort({ nom: 1 })
+              .lean()
+          : Promise.resolve([]),
       ]);
-      return { shopStatus, shopAmounts: shopAmounts[0] || {}, shopByBucket };
-    }
 
-    if (ids.length === 0) {
-      const { shopStatus, shopAmounts, shopByBucket } = await fetchShopStats();
-      const countsByStatus = { ...emptyCounts };
-      let shopTotal = 0;
-      for (const row of shopStatus) {
-        if (row._id && Object.prototype.hasOwnProperty.call(countsByStatus, row._id)) {
-          countsByStatus[row._id] = row.count;
-          shopTotal += row.count;
+    const products = [
+      ...shopProductDocs.map((p) => ({
+        id: String(p._id),
+        name: p.name,
+        kind: 'shop',
+        label: `Shop · ${p.name}`,
+      })),
+      ...mealProductDocs.map((p) => ({
+        id: String(p._id),
+        name: p.name,
+        kind: 'meal',
+        label: `Repas · ${p.name}`,
+      })),
+      ...restaurantProduitDocs.map((p) => ({
+        id: String(p._id),
+        name: p.nom,
+        kind: 'restaurant',
+        label: `Catalogue · ${p.nom}`,
+      })),
+      ...restaurantPlatDocs.map((p) => ({
+        id: String(p._id),
+        name: p.nom,
+        kind: 'restaurant',
+        label: `Plat · ${p.nom}`,
+      })),
+    ];
+
+    const includeShop = productKind === 'all' || productKind === 'shop';
+    const includeMeal = productKind === 'all' || productKind === 'meal';
+    const includeRestaurant =
+      (productKind === 'all' || productKind === 'restaurant') && ids.length > 0;
+
+    const bucketExpr = (dateField) =>
+      sameDay
+        ? {
+            $dateToString: {
+              format: '%H',
+              date: dateField,
+              timezone: 'Africa/Porto-Novo',
+            },
+          }
+        : {
+            $dateToString: {
+              format: '%Y-%m-%d',
+              date: dateField,
+              timezone: 'Africa/Porto-Novo',
+            },
+          };
+
+    const shopDateField = { $ifNull: ['$orderDate', '$createdAt'] };
+    const mealDateField = { $ifNull: ['$orderDate', '$createdAt'] };
+
+    function mergeStatus(into, rows) {
+      for (const row of rows || []) {
+        if (row._id && Object.prototype.hasOwnProperty.call(into, row._id)) {
+          into[row._id] += row.count || 0;
         }
       }
-      let series = [];
-      if (sameDay) {
-        const mapH = {};
-        for (const b of shopByBucket || []) {
-          const h = parseInt(b._id, 10);
-          if (!Number.isNaN(h)) mapH[h] = b.count;
-        }
-        for (let h = 0; h < 24; h += 1) {
-          series.push({ label: `${String(h).padStart(2, '0')}h`, count: mapH[h] || 0 });
-        }
-      }
-      return res.json({
-        from: fromStr,
-        to: toStr,
-        granularity: sameDay ? 'hour' : 'day',
-        enterpriseCount: 0,
-        unreadMessages: 0,
-        countsByStatus,
-        totalCommandes: shopTotal,
-        montantTotalCommandes: shopAmounts.totalMontant || 0,
-        chiffreAffaires: shopAmounts.chiffreAffaires || 0,
-        series,
-      });
     }
 
-    const match = {
-      restaurant: { $in: ids },
-      ...(periodFilter || { createdAt: { $gte: start, $lte: end } }),
-    };
+    function mergeCityMap(map, rows) {
+      for (const row of rows || []) {
+        const city = String(row._id || 'Autre').trim() || 'Autre';
+        if (!map.has(city)) {
+          map.set(city, { city, orderCount: 0, montantTotal: 0, chiffreAffaires: 0 });
+        }
+        const cur = map.get(city);
+        cur.orderCount += row.orderCount || 0;
+        cur.montantTotal += row.montantTotal || 0;
+        cur.chiffreAffaires += row.chiffreAffaires || 0;
+      }
+    }
 
-    const [agg, shopStats] = await Promise.all([
-      Commande.aggregate([
-        { $match: match },
-        {
-          $facet: {
-            byStatus: [{ $group: { _id: '$statut', count: { $sum: 1 } } }],
-            amounts: [
-              {
-                $group: {
-                  _id: null,
-                  totalMontant: {
-                    $sum: { $cond: [{ $ne: ['$statut', 'annulee'] }, '$total', 0] },
-                  },
-                  chiffreAffaires: {
-                    $sum: { $cond: [{ $eq: ['$statut', 'livree'] }, '$total', 0] },
-                  },
-                },
-              },
-            ],
-            byBucket: sameDay
-              ? [
-                  {
-                    $group: {
-                      _id: {
-                        $dateToString: {
-                          format: '%H',
-                          date: '$createdAt',
-                          timezone: 'Africa/Porto-Novo',
-                        },
-                      },
-                      count: { $sum: 1 },
-                    },
-                  },
-                  { $sort: { _id: 1 } },
-                ]
-              : [
-                  {
-                    $group: {
-                      _id: {
-                        $dateToString: {
-                          format: '%Y-%m-%d',
-                          date: '$createdAt',
-                          timezone: 'Africa/Porto-Novo',
-                        },
-                      },
-                      count: { $sum: 1 },
-                    },
-                  },
-                  { $sort: { _id: 1 } },
-                ],
-          },
-        },
-      ]),
-      fetchShopStats(),
-    ]);
-
-    const aggRow = agg[0] || {};
-    const cmdAmounts = aggRow.amounts?.[0] || {};
+    function mergeBucketMap(map, rows) {
+      for (const row of rows || []) {
+        if (row._id == null) continue;
+        map[row._id] = (map[row._id] || 0) + (row.count || 0);
+      }
+    }
 
     const countsByStatus = { ...emptyCounts };
-    for (const row of aggRow.byStatus || []) {
-      if (row._id && Object.prototype.hasOwnProperty.call(countsByStatus, row._id)) {
-        countsByStatus[row._id] = row.count;
-      }
+    let montantTotalCommandes = 0;
+    let chiffreAffaires = 0;
+    const cityMap = new Map();
+    const bucketMap = {};
+
+    const tasks = [];
+
+    if (includeShop) {
+      const shopMatch = {
+        ...periodFilter,
+        ...(productOid ? { shopProduct: productOid } : {}),
+      };
+      tasks.push(
+        ShopOrder.aggregate([
+          { $match: shopMatch },
+          {
+            $facet: {
+              byStatus: [{ $group: { _id: '$statut', count: { $sum: 1 } } }],
+              amounts: [
+                {
+                  $group: {
+                    _id: null,
+                    totalMontant: {
+                      $sum: { $cond: [{ $ne: ['$statut', 'annulee'] }, '$totalPrice', 0] },
+                    },
+                    chiffreAffaires: {
+                      $sum: { $cond: [{ $eq: ['$statut', 'livree'] }, '$totalPrice', 0] },
+                    },
+                  },
+                },
+              ],
+              byBucket: [
+                {
+                  $group: {
+                    _id: bucketExpr(shopDateField),
+                    count: { $sum: 1 },
+                  },
+                },
+              ],
+              byCity: [
+                {
+                  $group: {
+                    _id: {
+                      $let: {
+                        vars: {
+                          c: { $ifNull: ['$customer.city', ''] },
+                          loc: { $ifNull: ['$offPlatformLocation', ''] },
+                        },
+                        in: {
+                          $cond: [
+                            { $and: [{ $ne: ['$$c', ''] }, { $ne: ['$$c', null] }] },
+                            '$$c',
+                            {
+                              $cond: [
+                                { $regexMatch: { input: '$$loc', regex: /calavi/i } },
+                                'Calavi',
+                                {
+                                  $cond: [
+                                    { $regexMatch: { input: '$$loc', regex: /cotonou/i } },
+                                    'Cotonou',
+                                    'Autre',
+                                  ],
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
+                    orderCount: { $sum: 1 },
+                    montantTotal: {
+                      $sum: { $cond: [{ $ne: ['$statut', 'annulee'] }, '$totalPrice', 0] },
+                    },
+                    chiffreAffaires: {
+                      $sum: { $cond: [{ $eq: ['$statut', 'livree'] }, '$totalPrice', 0] },
+                    },
+                  },
+                },
+                { $sort: { chiffreAffaires: -1 } },
+              ],
+            },
+          },
+        ]).then((rows) => ({ source: 'shop', facet: rows[0] || {} }))
+      );
     }
-    for (const row of shopStats.shopStatus || []) {
-      if (row._id && Object.prototype.hasOwnProperty.call(countsByStatus, row._id)) {
-        countsByStatus[row._id] += row.count;
+
+    if (includeMeal) {
+      const mealMatch = {
+        ...periodFilter,
+        ...(productOid ? { 'items.mealProduct': productOid } : {}),
+      };
+      tasks.push(
+        MealOrder.aggregate([
+          { $match: mealMatch },
+          {
+            $facet: {
+              byStatus: [{ $group: { _id: '$statut', count: { $sum: 1 } } }],
+              amounts: [
+                {
+                  $group: {
+                    _id: null,
+                    totalMontant: {
+                      $sum: { $cond: [{ $ne: ['$statut', 'annulee'] }, '$totalPrice', 0] },
+                    },
+                    chiffreAffaires: {
+                      $sum: { $cond: [{ $eq: ['$statut', 'livree'] }, '$totalPrice', 0] },
+                    },
+                  },
+                },
+              ],
+              byBucket: [
+                {
+                  $group: {
+                    _id: bucketExpr(mealDateField),
+                    count: { $sum: 1 },
+                  },
+                },
+              ],
+              byCity: [
+                {
+                  $group: {
+                    _id: { $ifNull: ['$customer.city', 'Autre'] },
+                    orderCount: { $sum: 1 },
+                    montantTotal: {
+                      $sum: { $cond: [{ $ne: ['$statut', 'annulee'] }, '$totalPrice', 0] },
+                    },
+                    chiffreAffaires: {
+                      $sum: { $cond: [{ $eq: ['$statut', 'livree'] }, '$totalPrice', 0] },
+                    },
+                  },
+                },
+                { $sort: { chiffreAffaires: -1 } },
+              ],
+            },
+          },
+        ]).then((rows) => ({ source: 'meal', facet: rows[0] || {} }))
+      );
+    }
+
+    if (includeRestaurant) {
+      const cmdMatch = {
+        restaurant: { $in: ids },
+        ...(periodFilter.$expr ? periodFilter : cmdPeriodFilter),
+      };
+      if (productOid) {
+        cmdMatch.$or = [{ 'produits.produit': productOid }, { 'plats.plat': productOid }];
       }
+      tasks.push(
+        Commande.aggregate([
+          { $match: cmdMatch },
+          {
+            $facet: {
+              byStatus: [{ $group: { _id: '$statut', count: { $sum: 1 } } }],
+              amounts: [
+                {
+                  $group: {
+                    _id: null,
+                    totalMontant: {
+                      $sum: { $cond: [{ $ne: ['$statut', 'annulee'] }, '$total', 0] },
+                    },
+                    chiffreAffaires: {
+                      $sum: { $cond: [{ $eq: ['$statut', 'livree'] }, '$total', 0] },
+                    },
+                  },
+                },
+              ],
+              byBucket: [
+                {
+                  $group: {
+                    _id: bucketExpr('$createdAt'),
+                    count: { $sum: 1 },
+                  },
+                },
+              ],
+              byCity: [
+                {
+                  $group: {
+                    _id: 'App',
+                    orderCount: { $sum: 1 },
+                    montantTotal: {
+                      $sum: { $cond: [{ $ne: ['$statut', 'annulee'] }, '$total', 0] },
+                    },
+                    chiffreAffaires: {
+                      $sum: { $cond: [{ $eq: ['$statut', 'livree'] }, '$total', 0] },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        ]).then((rows) => ({ source: 'restaurant', facet: rows[0] || {} }))
+      );
+    }
+
+    const results = await Promise.all(tasks);
+    for (const { facet } of results) {
+      mergeStatus(countsByStatus, facet.byStatus);
+      const amounts = facet.amounts?.[0] || {};
+      montantTotalCommandes += amounts.totalMontant || 0;
+      chiffreAffaires += amounts.chiffreAffaires || 0;
+      mergeBucketMap(bucketMap, facet.byBucket);
+      mergeCityMap(cityMap, facet.byCity);
     }
 
     const totalCommandes = Object.values(countsByStatus).reduce((a, b) => a + b, 0);
-    const montantTotalCommandes =
-      (cmdAmounts.totalMontant || 0) + (shopStats.shopAmounts.totalMontant || 0);
-    const chiffreAffaires =
-      (cmdAmounts.chiffreAffaires || 0) + (shopStats.shopAmounts.chiffreAffaires || 0);
 
     let series = [];
     if (sameDay) {
-      const mapH = {};
-      for (const b of aggRow.byBucket || []) {
-        const h = parseInt(b._id, 10);
-        if (!Number.isNaN(h)) mapH[h] = (mapH[h] || 0) + b.count;
-      }
-      for (const b of shopStats.shopByBucket || []) {
-        const h = parseInt(b._id, 10);
-        if (!Number.isNaN(h)) mapH[h] = (mapH[h] || 0) + b.count;
-      }
       for (let h = 0; h < 24; h += 1) {
-        series.push({ label: `${String(h).padStart(2, '0')}h`, count: mapH[h] || 0 });
+        const key = String(h).padStart(2, '0');
+        series.push({
+          label: `${key}h`,
+          count: bucketMap[key] || bucketMap[String(h)] || 0,
+        });
       }
     } else {
-      const mapD = {};
-      for (const b of aggRow.byBucket || []) {
-        if (b._id) mapD[b._id] = (mapD[b._id] || 0) + b.count;
-      }
-      for (const b of shopStats.shopByBucket || []) {
-        if (b._id) mapD[b._id] = (mapD[b._id] || 0) + b.count;
-      }
       const cur = new Date(start);
       const last = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate()));
       while (cur <= last) {
         const key = isoDateUtc(cur);
-        series.push({ label: key, count: mapD[key] || 0 });
+        series.push({ label: key, count: bucketMap[key] || 0 });
         cur.setUTCDate(cur.getUTCDate() + 1);
       }
     }
+
+    const byCity = Array.from(cityMap.values()).sort(
+      (a, b) => b.chiffreAffaires - a.chiffreAffaires || b.orderCount - a.orderCount
+    );
 
     res.json({
       from: fromStr,
       to: toStr,
       granularity: sameDay ? 'hour' : 'day',
+      productKind: productKind || 'all',
+      productId: productId || '',
+      products,
       enterpriseCount,
       unreadMessages,
       countsByStatus,
@@ -558,6 +709,7 @@ router.get('/dashboard-stats', auth, async (req, res) => {
       montantTotalCommandes,
       chiffreAffaires,
       series,
+      byCity,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -129,6 +129,7 @@ app.use('/api/promos', require('./routes/promos'));
 app.use('/api/account-requests', require('./routes/accountRequests'));
 app.use('/api/shop-products', require('./routes/shopProducts'));
 app.use('/api/shop-orders', require('./routes/shopOrders'));
+app.use('/api/shop-settings', require('./routes/shopSettings'));
 app.use('/api/meal-products', require('./routes/mealProducts'));
 app.use('/api/meal-shop', require('./routes/mealShop'));
 app.use('/api/meal-orders', require('./routes/mealOrders'));

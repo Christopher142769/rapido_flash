@@ -118,6 +118,24 @@
   line-height: 1.35;
 }
 
+.shop-confirm-item-acc {
+  padding-left: 8px;
+}
+
+.shop-confirm-item-acc dt {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+  color: var(--rf-amber);
+  font-size: 0.8rem;
+}
+
+.shop-confirm-item-acc dd {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--rf-text-muted);
+}
+
 .shop-confirm-highlight {
   color: var(--rf-success) !important;
 }

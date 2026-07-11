@@ -7,14 +7,16 @@ import {
   FaWhatsapp,
   FaHeadset,
   FaStar,
+  FaShoppingBag,
 } from 'react-icons/fa';
 import PageLoader from '../../components/PageLoader';
 import MealShopChrome from '../../components/shop/MealShopChrome';
+import MealAddToCartModal from '../../components/shop/MealAddToCartModal';
 import { getImageUrl } from '../../utils/imagePlaceholder';
 import { formatPriceXof } from '../../utils/shopPromo';
 import { getShopWhatsAppDigits } from '../../utils/shopOrder';
 import { getMealCatalogueUrgency } from '../../utils/mealShopUrgency';
-import { loadMealCart, mealCartCount } from '../../utils/mealCart';
+import { loadMealCart, mealCartCount, addMealToCart, estimateMealCartTotals } from '../../utils/mealCart';
 import '../shop/shopTypography.css';
 import './MealShopPage.css';
 
@@ -30,9 +32,16 @@ export default function MealShopPage() {
   const [error, setError] = useState('');
   const [category, setCategory] = useState('all');
   const [cartCount, setCartCount] = useState(() => mealCartCount());
+  const [cartItems, setCartItems] = useState(() => loadMealCart());
   const [urgencyClock, setUrgencyClock] = useState(() => Date.now());
+  const [atcProduct, setAtcProduct] = useState(null);
+  const [toast, setToast] = useState('');
 
-  const refreshCart = useCallback(() => setCartCount(mealCartCount(loadMealCart())), []);
+  const refreshCart = useCallback(() => {
+    const items = loadMealCart();
+    setCartItems(items);
+    setCartCount(mealCartCount(items));
+  }, []);
 
   useEffect(() => {
     const onCart = () => refreshCart();
@@ -43,6 +52,12 @@ export default function MealShopPage() {
       window.removeEventListener('storage', onCart);
     };
   }, [refreshCart]);
+
+  useEffect(() => {
+    if (!toast) return undefined;
+    const id = setTimeout(() => setToast(''), 2200);
+    return () => clearTimeout(id);
+  }, [toast]);
 
   const loadPublic = useCallback(() => {
     return Promise.all([
@@ -101,6 +116,11 @@ export default function MealShopPage() {
     return () => clearTimeout(id);
   }, [urgency.isLive, urgency.endsAt, urgency.runUntilStopped]);
 
+  const cartTotals = useMemo(
+    () => estimateMealCartTotals(cartItems, Number(settings?.deliveryFee) || 0, false),
+    [cartItems, settings?.deliveryFee]
+  );
+
   const waDigits = getShopWhatsAppDigits();
   const trustItems = settings?.trustItems?.length
     ? settings.trustItems
@@ -116,10 +136,27 @@ export default function MealShopPage() {
     { id: 'meal-trust', label: 'Avantages' },
   ];
 
+  const openAddToCart = (p, e) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+    if (settings?.isShopClosed) {
+      setToast('Boutique temporairement fermée');
+      return;
+    }
+    setAtcProduct(p);
+  };
+
+  const confirmAddToCart = ({ quantity, accompagnements }) => {
+    if (!atcProduct) return;
+    addMealToCart(atcProduct, quantity, accompagnements);
+    setAtcProduct(null);
+    setToast(`${atcProduct.name} ajouté au panier`);
+  };
+
   if (loading) return <PageLoader />;
 
   return (
-    <div className="meal-shop">
+    <div className={`meal-shop${cartCount > 0 ? ' meal-shop--cart-open' : ''}`}>
       <MealShopChrome
         sections={navSections}
         cartCount={cartCount}
@@ -131,7 +168,7 @@ export default function MealShopPage() {
 
       <div className="meal-shop-intro">
         <h1>Des plats prêts à commander</h1>
-        <p>Choisissez, personnalisez, commandez en quelques secondes.</p>
+        <p>Ajoutez au panier, personnalisez, commandez en quelques secondes.</p>
       </div>
 
       {categories.length > 1 ? (
@@ -163,6 +200,7 @@ export default function MealShopPage() {
             const price = p.isPromoLive ? p.promoPrice : p.basePrice;
             const img = p.mainImage || p.images?.[0];
             const href = `/repas/${p.slug}`;
+            const hasAcc = (p.accompagnements || []).length > 0;
             return (
               <article key={p._id} className="meal-shop-card">
                 <Link to={href} className="meal-shop-card-media">
@@ -184,9 +222,19 @@ export default function MealShopPage() {
                     <strong>{formatPriceXof(price)}</strong>
                     {p.isPromoLive && p.basePrice > price ? <s>{formatPriceXof(p.basePrice)}</s> : null}
                   </div>
-                  <Link to={href} className="meal-shop-btn meal-shop-btn--primary meal-shop-btn--block">
-                    Commander
-                  </Link>
+                  {hasAcc ? <p className="meal-shop-card-acc-hint">Avec accompagnements</p> : null}
+                  <div className="meal-shop-card-actions">
+                    <button
+                      type="button"
+                      className="meal-shop-btn meal-shop-btn--primary"
+                      onClick={(e) => openAddToCart(p, e)}
+                    >
+                      Ajouter
+                    </button>
+                    <Link to={href} className="meal-shop-btn meal-shop-btn--ghost">
+                      Voir
+                    </Link>
+                  </div>
                 </div>
               </article>
             );
@@ -244,6 +292,35 @@ export default function MealShopPage() {
           </a>
         ) : null}
       </footer>
+
+      {cartCount > 0 ? (
+        <div className="meal-shop-float-cart">
+          <Link to="/repas/panier" className="meal-shop-float-cart-inner">
+            <span className="meal-shop-float-cart-icon">
+              <FaShoppingBag aria-hidden />
+              <em>{cartCount}</em>
+            </span>
+            <span className="meal-shop-float-cart-text">
+              <strong>Voir le panier</strong>
+              <small>{formatPriceXof(cartTotals.totalPrice)}</small>
+            </span>
+          </Link>
+        </div>
+      ) : null}
+
+      {toast ? (
+        <div className="meal-shop-toast" role="status">
+          {toast}
+        </div>
+      ) : null}
+
+      <MealAddToCartModal
+        open={!!atcProduct}
+        product={atcProduct}
+        onClose={() => setAtcProduct(null)}
+        onConfirm={confirmAddToCart}
+        ctaLabel="Ajouter au panier"
+      />
     </div>
   );
 }

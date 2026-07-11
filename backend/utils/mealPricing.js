@@ -79,6 +79,10 @@ function buildMealOrderLine(product, line) {
     accTotal += price * safeQty;
   }
 
+  if (catalog.length > 0 && accompagnements.length === 0) {
+    return { error: 'Choisissez au moins un accompagnement pour ce plat' };
+  }
+
   const lineTotal = Math.round(unitPrice * quantity + accTotal);
 
   return {

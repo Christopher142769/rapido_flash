@@ -157,6 +157,8 @@ router.post('/', auth, isRestaurant, upload.fields(upload.uploadShopFields), asy
       whatsappNumber: req.body.whatsappNumber || '',
       contactPhone: req.body.contactPhone || '',
       ctaLabel: req.body.ctaLabel || 'Commander maintenant',
+      showDeliveryNotice:
+        req.body.showDeliveryNotice !== false && req.body.showDeliveryNotice !== 'false',
       sortOrder: Number(req.body.sortOrder || 0),
     });
 
@@ -215,6 +217,10 @@ router.put('/:id', auth, isRestaurant, upload.fields(upload.uploadShopFields), a
     if (req.body.whatsappNumber != null) product.whatsappNumber = req.body.whatsappNumber;
     if (req.body.contactPhone != null) product.contactPhone = req.body.contactPhone;
     if (req.body.ctaLabel != null) product.ctaLabel = req.body.ctaLabel;
+    if (req.body.showDeliveryNotice != null) {
+      product.showDeliveryNotice =
+        req.body.showDeliveryNotice === true || req.body.showDeliveryNotice === 'true';
+    }
     if (req.body.sortOrder != null) product.sortOrder = Number(req.body.sortOrder);
 
     const uploaded = collectUploadedImages(req);

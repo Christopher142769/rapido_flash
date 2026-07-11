@@ -106,47 +106,64 @@ export default function DashboardOverviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [payload, setPayload] = useState(null);
+  const [productKey, setProductKey] = useState('all');
 
   const fetchStats = useCallback(
-    async (f, tEnd, preset = 'custom') => {
+    async (f, tEnd, preset = 'custom', productSelection = productKey) => {
       setLoading(true);
       setError('');
       try {
-        const { data } = await axios.get(`${API_URL}/commandes/dashboard-stats`, {
-          params: { from: f, to: tEnd },
-        });
+        const params = { from: f, to: tEnd };
+        if (productSelection && productSelection !== 'all') {
+          const [kind, ...rest] = productSelection.split(':');
+          const id = rest.join(':');
+          if (kind && id) {
+            params.productKind = kind;
+            params.productId = id;
+          }
+        } else {
+          params.productKind = 'all';
+        }
+        const { data } = await axios.get(`${API_URL}/commandes/dashboard-stats`, { params });
         setPayload(data);
         setFrom(data.from);
         setTo(data.to);
         setDraftFrom(data.from);
         setDraftTo(data.to);
         setActivePreset(preset);
+        setProductKey(productSelection || 'all');
       } catch (e) {
         setError(t('dashboardOverview', 'loadError'));
       } finally {
         setLoading(false);
       }
     },
-    [t]
+    [t, productKey]
   );
 
   useEffect(() => {
-    fetchStats(today, today, 'today');
-  }, [today, fetchStats]);
+    fetchStats(today, today, 'today', 'all');
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial load only
+  }, [today]);
 
   const applyRange = () => {
-    fetchStats(draftFrom, draftTo, 'custom');
+    fetchStats(draftFrom, draftTo, 'custom', productKey);
   };
 
   const setPreset = (kind) => {
     const end = utcTodayISO();
     if (kind === 'today') {
-      fetchStats(end, end, 'today');
+      fetchStats(end, end, 'today', productKey);
       return;
     }
     const days = kind === '7' ? 7 : 30;
     const start = addDaysISO(end, -(days - 1));
-    fetchStats(start, end, kind);
+    fetchStats(start, end, kind, productKey);
+  };
+
+  const onProductChange = (value) => {
+    setProductKey(value);
+    fetchStats(from, to, activePreset, value);
   };
 
   const chartData = useMemo(() => {
@@ -223,6 +240,21 @@ export default function DashboardOverviewPage() {
             ))}
           </div>
           <div className="rf-do-dates">
+            <label className="rf-do-field rf-do-field--product">
+              <span>{t('dashboardOverview', 'labelProduct')}</span>
+              <select
+                className="rf-do-date-input rf-do-select"
+                value={productKey}
+                onChange={(e) => onProductChange(e.target.value)}
+              >
+                <option value="all">{t('dashboardOverview', 'allProducts')}</option>
+                {(payload?.products || []).map((p) => (
+                  <option key={`${p.kind}:${p.id}`} value={`${p.kind}:${p.id}`}>
+                    {p.label || p.name}
+                  </option>
+                ))}
+              </select>
+            </label>
             <label className="rf-do-field">
               <span>{t('dashboardOverview', 'labelFrom')}</span>
               <input
@@ -260,7 +292,9 @@ export default function DashboardOverviewPage() {
               type="button"
               className="rf-do-btn-primary"
               onClick={() =>
-                payload ? fetchStats(from, to, activePreset) : fetchStats(draftFrom, draftTo, 'custom')
+                payload
+                  ? fetchStats(from, to, activePreset, productKey)
+                  : fetchStats(draftFrom, draftTo, 'custom', productKey)
               }
             >
               {t('dashboardOverview', 'refresh')}
@@ -306,6 +340,37 @@ export default function DashboardOverviewPage() {
                 <FaRegEnvelope className="pointer-events-none absolute bottom-3 right-3 text-3xl text-[#14532d] opacity-[0.12]" aria-hidden />
               </KpiStandard>
             </div>
+
+            <h2 className="rf-do-section-title">{t('dashboardOverview', 'cityTitle')}</h2>
+            <p className="rf-do-panel-desc rf-do-city-lead">{t('dashboardOverview', 'citySubtitle')}</p>
+            {(payload.byCity || []).length ? (
+              <div className="rf-do-city-table-wrap">
+                <table className="rf-do-city-table">
+                  <thead>
+                    <tr>
+                      <th>{t('dashboardOverview', 'cityColCity')}</th>
+                      <th>{t('dashboardOverview', 'cityColOrders')}</th>
+                      <th>{t('dashboardOverview', 'cityColMontant')}</th>
+                      <th>{t('dashboardOverview', 'cityColCa')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payload.byCity.map((row) => (
+                      <tr key={row.city}>
+                        <td>{row.city}</td>
+                        <td>{row.orderCount}</td>
+                        <td>{formatXof(row.montantTotal)}</td>
+                        <td>
+                          <strong>{formatXof(row.chiffreAffaires)}</strong>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="rf-do-empty rf-do-empty--inline">{t('dashboardOverview', 'emptyCity')}</div>
+            )}
 
             <h2 className="rf-do-section-title">{t('dashboardOverview', 'statusCountsTitle')}</h2>
 

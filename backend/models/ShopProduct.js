@@ -57,6 +57,8 @@ const shopProductSchema = new mongoose.Schema(
     whatsappNumber: { type: String, default: '', trim: true },
     contactPhone: { type: String, default: '', trim: true },
     ctaLabel: { type: String, default: 'Commander maintenant', trim: true },
+    /** Afficher le NB « livraison un jour après » sur la fiche produit. */
+    showDeliveryNotice: { type: Boolean, default: true },
     sortOrder: { type: Number, default: 0 },
     /** Fermeture quotidienne automatique (fiche boostée). */
     shopClosure: {

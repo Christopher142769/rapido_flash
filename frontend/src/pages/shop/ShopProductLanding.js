@@ -41,6 +41,7 @@ export default function ShopProductLanding() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
+  const [shopSettings, setShopSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [quantity, setQuantity] = useState(0);
@@ -75,9 +76,19 @@ export default function ShopProductLanding() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    fetchProduct().finally(() => {
-      if (!cancelled) setLoading(false);
-    });
+    Promise.all([
+      fetchProduct(),
+      axios
+        .get(`${API_URL}/shop-settings/public`)
+        .then((r) => r.data)
+        .catch(() => null),
+    ])
+      .then(([, settings]) => {
+        if (!cancelled && settings) setShopSettings(settings);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     return () => {
       cancelled = true;
     };
@@ -352,7 +363,9 @@ export default function ShopProductLanding() {
             <h1 className="shop-pdp-buybox-title">{product.name}</h1>
             {product.shortDescription ? <p className="shop-pdp-buybox-sub">{product.shortDescription}</p> : null}
 
-            <ShopDeliveryNotice />
+            {product.showDeliveryNotice !== false ? (
+              <ShopDeliveryNotice message={shopSettings?.deliveryNoticeMessage} />
+            ) : null}
 
             <div className={`shop-pdp-buybox-price${!hasQuantity ? ' shop-pdp-buybox-price--empty' : ''}`}>
               {hasQuantity ? (

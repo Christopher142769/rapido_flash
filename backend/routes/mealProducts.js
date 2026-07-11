@@ -135,6 +135,8 @@ router.post('/', auth, isRestaurant, upload.fields([
       deliveryFee: Math.max(0, Math.round(Number(req.body.deliveryFee) || 0)),
       category: String(req.body.category || '').trim(),
       published: req.body.published === true || req.body.published === 'true',
+      showDeliveryNotice:
+        req.body.showDeliveryNotice !== false && req.body.showDeliveryNotice !== 'false',
       sortOrder: Number(req.body.sortOrder) || 0,
       accompagnements: normalizeAccompagnements(parseJsonField(req.body.accompagnements, [])),
       promo: buildPromoFromBody(req.body),
@@ -172,6 +174,10 @@ router.put('/:id', auth, isRestaurant, upload.fields([
     if (req.body.category != null) product.category = String(req.body.category).trim();
     if (req.body.published != null) {
       product.published = req.body.published === true || req.body.published === 'true';
+    }
+    if (req.body.showDeliveryNotice != null) {
+      product.showDeliveryNotice =
+        req.body.showDeliveryNotice === true || req.body.showDeliveryNotice === 'true';
     }
     if (req.body.sortOrder != null) product.sortOrder = Number(req.body.sortOrder) || 0;
     if (req.body.accompagnements != null) {

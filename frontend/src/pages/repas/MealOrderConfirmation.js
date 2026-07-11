@@ -63,17 +63,27 @@ export default function MealOrderConfirmation() {
           </div>
 
           <dl className="shop-confirm-dl">
-            {(order.items || []).map((it, idx) => (
-              <div key={it._id || idx}>
-                <dt>{it.productName}</dt>
-                <dd>
-                  ×{it.quantity} — {formatPriceXof(it.lineTotal)}
-                  {(it.accompagnements || []).length
-                    ? ` (${it.accompagnements.map((a) => `${a.name}×${a.quantity}`).join(', ')})`
-                    : ''}
-                </dd>
-              </div>
-            ))}
+            {(order.items || []).map((it, idx) => {
+              const platSubtotal = Math.round((Number(it.unitPrice) || 0) * (Number(it.quantity) || 0));
+              return (
+                <React.Fragment key={it._id || idx}>
+                  <div className="shop-confirm-item-main">
+                    <dt>{it.productName}</dt>
+                    <dd>
+                      ×{it.quantity} — {formatPriceXof(platSubtotal)}
+                    </dd>
+                  </div>
+                  {(it.accompagnements || []).map((a, ai) => (
+                    <div key={`${it._id || idx}-acc-${ai}`} className="shop-confirm-item-acc">
+                      <dt>
+                        + {a.name} ×{a.quantity}
+                      </dt>
+                      <dd>{formatPriceXof((Number(a.price) || 0) * (Number(a.quantity) || 0))}</dd>
+                    </div>
+                  ))}
+                </React.Fragment>
+              );
+            })}
             {order.freeDelivery ? (
               <div>
                 <dt>Livraison</dt>

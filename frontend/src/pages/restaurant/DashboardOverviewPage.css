@@ -55,6 +55,13 @@
   box-shadow: 0 20px 50px -28px rgba(12, 60, 35, 0.16);
 }
 
+.rf-do-dates {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.65rem;
+}
+
 .rf-do-pill-group {
   display: flex;
   flex-wrap: wrap;
@@ -107,6 +114,66 @@
   display: flex;
   flex-direction: column;
   gap: 0.28rem;
+}
+
+.rf-do-field--product {
+  min-width: min(100%, 220px);
+  flex: 1 1 200px;
+}
+
+.rf-do-select {
+  max-width: 280px;
+  cursor: pointer;
+}
+
+.rf-do-city-lead {
+  margin: -0.35rem 0 0.85rem;
+}
+
+.rf-do-city-table-wrap {
+  overflow-x: auto;
+  margin-bottom: 1.75rem;
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid rgba(20, 83, 45, 0.08);
+  box-shadow: 0 16px 40px -28px rgba(12, 60, 35, 0.14);
+}
+
+.rf-do-city-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.rf-do-city-table th,
+.rf-do-city-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(20, 83, 45, 0.07);
+}
+
+.rf-do-city-table th {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #5c7268;
+  background: #f3f8f4;
+}
+
+.rf-do-city-table td:nth-child(n + 2),
+.rf-do-city-table th:nth-child(n + 2) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.rf-do-city-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.rf-do-empty--inline {
+  margin-bottom: 1.5rem;
+  min-height: 72px;
 }
 
 .rf-do-field span {
