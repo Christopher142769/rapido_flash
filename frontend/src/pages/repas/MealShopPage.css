@@ -131,37 +131,37 @@
   font-weight: 600;
 }
 
-/* Une carte par ligne (liste) */
+/* Grille 2 colonnes mobile / 4 desktop — cartes carrées */
 .meal-shop-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (min-width: 900px) {
+  .meal-shop-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+  }
 }
 
 .meal-shop-card {
   background: #fff;
-  border-radius: 16px;
+  border-radius: 14px;
   overflow: hidden;
   border: 1px solid var(--rf-border);
-  display: grid;
-  grid-template-columns: 112px 1fr;
-  align-items: stretch;
+  display: flex;
+  flex-direction: column;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
     transform 0.2s ease;
 }
 
-@media (min-width: 640px) {
-  .meal-shop-card {
-    grid-template-columns: 160px 1fr;
-  }
-}
-
 .meal-shop-card:hover {
   border-color: rgba(199, 109, 46, 0.35);
   box-shadow: 0 10px 28px rgba(26, 20, 16, 0.08);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 .meal-shop-card-media {
@@ -170,7 +170,6 @@
   background: #f5efe6;
   display: block;
   overflow: hidden;
-  min-height: 100%;
 }
 
 .meal-shop-card-media img,
@@ -193,26 +192,26 @@
 }
 
 .meal-shop-card-body {
-  padding: 12px 14px;
+  padding: 10px 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  justify-content: center;
+  gap: 4px;
+  flex: 1;
   min-width: 0;
 }
 
 .meal-shop-card-cat {
   margin: 0;
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--rf-muted);
+  color: var(--rf-amber);
 }
 
 .meal-shop-card-body h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.88rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.25;
@@ -222,58 +221,70 @@
   overflow: hidden;
 }
 
+@media (min-width: 900px) {
+  .meal-shop-card-body h3 {
+    font-size: 0.98rem;
+  }
+
+  .meal-shop-card-body {
+    padding: 12px 12px 14px;
+  }
+}
+
 .meal-shop-card-body h3 a {
   color: inherit;
   text-decoration: none;
 }
 
 .meal-shop-card-price {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: var(--rf-ink);
   display: flex;
-  flex-wrap: wrap;
   align-items: baseline;
-  gap: 8px;
+  gap: 6px;
+  margin: 2px 0 4px;
+  flex-wrap: wrap;
+}
+
+.meal-shop-card-price strong {
+  color: var(--rf-amber);
+  font-size: 0.92rem;
+  font-weight: 900;
 }
 
 .meal-shop-card-price s {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--rf-muted);
-}
-
-@media (min-width: 640px) {
-  .meal-shop-card-body h3 {
-    font-size: 1.1rem;
-  }
-
-  .meal-shop-card-body {
-    padding: 14px 18px;
-  }
-}
-
-.meal-shop-card-body .meal-shop-btn {
-  margin-top: 0;
-  width: auto;
-  align-self: auto;
-  padding: 9px 14px;
-  font-size: 0.78rem;
+  color: var(--rf-text-muted);
+  font-size: 0.72rem;
 }
 
 .meal-shop-card-acc-hint {
   margin: 0;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 600;
   color: var(--rf-amber);
 }
 
 .meal-shop-card-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 4px;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.meal-shop-card-body .meal-shop-btn {
+  margin-top: 0;
+  width: 100%;
+  padding: 9px 10px;
+  font-size: 0.72rem;
+}
+
+@media (min-width: 900px) {
+  .meal-shop-card-actions {
+    flex-direction: row;
+  }
+
+  .meal-shop-card-body .meal-shop-btn {
+    font-size: 0.78rem;
+    padding: 9px 12px;
+  }
 }
 
 .meal-shop--cart-open {
