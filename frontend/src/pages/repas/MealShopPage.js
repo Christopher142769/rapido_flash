@@ -167,8 +167,7 @@ export default function MealShopPage() {
       {error ? <p className="meal-shop-error">{error}</p> : null}
 
       <div className="meal-shop-intro">
-        <h1>Des plats prêts à commander</h1>
-        <p>Ajoutez au panier, personnalisez, commandez en quelques secondes.</p>
+        <h1>Trouvez vos plats préférés</h1>
       </div>
 
       {categories.length > 1 ? (
@@ -229,7 +228,7 @@ export default function MealShopPage() {
                       className="meal-shop-btn meal-shop-btn--primary"
                       onClick={(e) => openAddToCart(p, e)}
                     >
-                      Ajouter
+                      Ajouter au panier
                     </button>
                     <Link to={href} className="meal-shop-btn meal-shop-btn--ghost">
                       Voir

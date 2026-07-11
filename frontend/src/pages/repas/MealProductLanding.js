@@ -26,7 +26,7 @@ import {
   saveMealOrder,
   submitMealOrderToApi,
 } from '../../utils/mealOrder';
-import { loadMealCart, mealCartCount, addMealToCart } from '../../utils/mealCart';
+import { loadMealCart, mealCartCount } from '../../utils/mealCart';
 import '../shop/shopTypography.css';
 import '../shop/ShopProductLanding.css';
 import './MealProductLanding.css';
@@ -49,11 +49,9 @@ export default function MealProductLanding() {
   const [qtyModalOpen, setQtyModalOpen] = useState(false);
   const [accModalOpen, setAccModalOpen] = useState(false);
   const [pendingOrderQty, setPendingOrderQty] = useState(null);
-  const [pendingAction, setPendingAction] = useState('order'); // 'order' | 'cart'
   const [highlightQty, setHighlightQty] = useState(false);
   const [highlightAcc, setHighlightAcc] = useState(false);
   const [accQty, setAccQty] = useState({});
-  const [toast, setToast] = useState('');
   const [promoClock, setPromoClock] = useState(() => Date.now());
   const [urgencyClock, setUrgencyClock] = useState(() => Date.now());
   const [cartCount, setCartCount] = useState(() => mealCartCount());
@@ -221,27 +219,13 @@ export default function MealProductLanding() {
   const hasAccompagnements = (product?.accompagnements || []).length > 0;
   const hasSelectedAcc = selectedAcc.length > 0;
 
-  const openAccModal = (orderQuantity, action = 'order') => {
+  const openAccModal = (orderQuantity) => {
     setPendingOrderQty(orderQuantity);
-    setPendingAction(action);
     setQtyModalOpen(false);
     setHighlightAcc(true);
     setAccModalOpen(true);
     document.getElementById('meal-acc-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
-
-  const pushToCart = (orderQuantity, accList) => {
-    addMealToCart(product, orderQuantity, accList);
-    setToast('Ajouté au panier');
-    setAccModalOpen(false);
-    setPendingOrderQty(null);
-  };
-
-  useEffect(() => {
-    if (!toast) return undefined;
-    const id = setTimeout(() => setToast(''), 2200);
-    return () => clearTimeout(id);
-  }, [toast]);
 
   const completeOrder = async (orderQuantity, accOverride) => {
     const nextErrors = validateCustomerForm(customer);
@@ -265,7 +249,7 @@ export default function MealProductLanding() {
         .filter(Boolean);
 
     if ((product?.accompagnements || []).length > 0 && accList.length === 0) {
-      openAccModal(orderQuantity, 'order');
+      openAccModal(orderQuantity);
       return;
     }
 
@@ -277,7 +261,7 @@ export default function MealProductLanding() {
           String(a.name).toLowerCase() === String(r.name).toLowerCase()
       );
       if (!found || found.quantity < 1) {
-        openAccModal(orderQuantity, 'order');
+        openAccModal(orderQuantity);
         return;
       }
     }
@@ -321,25 +305,10 @@ export default function MealProductLanding() {
       return;
     }
     if (hasAccompagnements && !hasSelectedAcc) {
-      openAccModal(quantity, 'order');
+      openAccModal(quantity);
       return;
     }
     void completeOrder(quantity);
-  };
-
-  const requestAddToCart = () => {
-    if (!hasQuantity) {
-      setHighlightQty(true);
-      document
-        .getElementById('meal-quantity-section')
-        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
-    if (hasAccompagnements && !hasSelectedAcc) {
-      openAccModal(quantity, 'cart');
-      return;
-    }
-    pushToCart(quantity, selectedAcc);
   };
 
   if (loading) return <PageLoader />;
@@ -549,19 +518,9 @@ export default function MealProductLanding() {
             </div>
 
             {canOrder ? (
-              <div className="meal-pdp-cta-row">
-                <button
-                  type="button"
-                  className="shop-pdp-cta shop-pdp-cta--secondary"
-                  onClick={requestAddToCart}
-                  disabled={submitting}
-                >
-                  Ajouter au panier
-                </button>
-                <button type="submit" className="shop-pdp-cta shop-pdp-cta--primary" disabled={submitting}>
-                  {submitting ? 'Enregistrement…' : 'Commander maintenant'}
-                </button>
-              </div>
+              <button type="submit" className="shop-pdp-cta shop-pdp-cta--primary" disabled={submitting}>
+                {submitting ? 'Enregistrement…' : 'Commander maintenant'}
+              </button>
             ) : (
               <button type="button" className="shop-pdp-cta shop-pdp-cta--primary" disabled>
                 Commande bientôt disponible
@@ -598,7 +557,7 @@ export default function MealProductLanding() {
           setQuantity(pickedQty);
           setHighlightQty(false);
           if (hasAccompagnements && !hasSelectedAcc) {
-            openAccModal(pickedQty, 'order');
+            openAccModal(pickedQty);
             return;
           }
           void completeOrder(pickedQty);
@@ -615,7 +574,7 @@ export default function MealProductLanding() {
         productName={product.name}
         options={product.accompagnements || []}
         initialQty={accQty}
-        ctaLabel={pendingAction === 'cart' ? 'Ajouter au panier' : 'Valider et commander'}
+        ctaLabel="Valider et commander"
         onConfirm={(draft) => {
           setAccQty(draft);
           setHighlightAcc(false);
@@ -630,14 +589,6 @@ export default function MealProductLanding() {
             })
             .filter(Boolean);
           setPendingOrderQty(null);
-          if (pendingAction === 'cart') {
-            if (qty < 1) {
-              setHighlightQty(true);
-              return;
-            }
-            pushToCart(qty, accList);
-            return;
-          }
           if (qty < 1) {
             setQtyModalOpen(true);
             return;
@@ -646,37 +597,20 @@ export default function MealProductLanding() {
         }}
       />
 
-      {toast ? (
-        <div className="meal-pdp-toast" role="status">
-          {toast}{' '}
-          <Link to="/repas/panier">Voir le panier</Link>
-        </div>
-      ) : null}
-
       <div className="shop-pdp-sticky">
         <div className="shop-pdp-sticky-inner">
           <span className="shop-pdp-sticky-price">
             {hasQuantity ? formatPriceXof(grandTotal) : formatPriceXof(unitPrice)}
           </span>
           {canOrder ? (
-            <>
-              <button
-                type="button"
-                className="shop-pdp-cta shop-pdp-cta--secondary shop-pdp-cta--sticky"
-                onClick={requestAddToCart}
-                disabled={submitting}
-              >
-                Panier
-              </button>
-              <button
-                type="submit"
-                form={CHECKOUT_FORM_ID}
-                className="shop-pdp-cta shop-pdp-cta--primary shop-pdp-cta--sticky"
-                disabled={submitting}
-              >
-                {submitting ? '…' : 'Commander'}
-              </button>
-            </>
+            <button
+              type="submit"
+              form={CHECKOUT_FORM_ID}
+              className="shop-pdp-cta shop-pdp-cta--primary shop-pdp-cta--sticky"
+              disabled={submitting}
+            >
+              {submitting ? 'Enregistrement…' : 'Commander'}
+            </button>
           ) : null}
         </div>
       </div>

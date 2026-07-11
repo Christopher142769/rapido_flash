@@ -35,6 +35,7 @@ export default function MealCartPage() {
   const [shopClosed, setShopClosed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   const refresh = useCallback(() => setItems(loadMealCart()), []);
 
@@ -56,6 +57,20 @@ export default function MealCartPage() {
     };
   }, [refresh]);
 
+  useEffect(() => {
+    if (!checkoutOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setCheckoutOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [checkoutOpen]);
+
   const totals = useMemo(
     () => estimateMealCartTotals(items, deliveryFee, false),
     [items, deliveryFee]
@@ -76,6 +91,15 @@ export default function MealCartPage() {
     });
   };
 
+  const openCheckout = () => {
+    if (shopClosed) {
+      setSubmitError('La boutique est temporairement fermée.');
+      return;
+    }
+    setSubmitError('');
+    setCheckoutOpen(true);
+  };
+
   const checkout = async (e) => {
     e.preventDefault();
     if (!items.length) return;
@@ -86,7 +110,6 @@ export default function MealCartPage() {
     const nextErrors = validateCustomerForm(customer);
     if (Object.keys(nextErrors).length) {
       setErrors(nextErrors);
-      document.getElementById('meal-cart-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
     setSubmitting(true);
@@ -99,6 +122,7 @@ export default function MealCartPage() {
         slug: order.items?.[0]?.slug || items[0]?.slug,
       });
       clearMealCart();
+      setCheckoutOpen(false);
       const slug = order.items?.[0]?.slug || items[0]?.slug;
       navigate(slug ? `/repas/${slug}/commande` : '/repas/commande', { replace: true });
     } catch (err) {
@@ -116,7 +140,7 @@ export default function MealCartPage() {
         <h1>Votre panier</h1>
         <p>
           {cartCount
-            ? `${cartCount} article${cartCount > 1 ? 's' : ''} — finalisez votre commande`
+            ? `${cartCount} article${cartCount > 1 ? 's' : ''} — vérifiez votre récapitulatif`
             : 'Ajoutez des plats depuis la boutique'}
         </p>
       </div>
@@ -129,7 +153,7 @@ export default function MealCartPage() {
           </Link>
         </div>
       ) : (
-        <form id="meal-cart-form" className="meal-cart-inner" onSubmit={checkout}>
+        <div className="meal-cart-inner">
           <ul className="meal-cart-lines">
             {items.map((it) => (
               <li key={it.lineKey} className="meal-cart-line">
@@ -209,31 +233,68 @@ export default function MealCartPage() {
             </div>
           </div>
 
-          <div className="meal-cart-form-block">
-            <h2>Vos coordonnées</h2>
-            <ShopOrderForm
-              customer={customer}
-              errors={errors}
-              onFieldChange={handleFieldChange}
-              idPrefix="meal-cart"
-            />
-          </div>
-
-          {shopClosed ? (
+          {shopClosed && !checkoutOpen ? (
             <p className="meal-cart-err">La boutique est temporairement fermée.</p>
           ) : null}
-          {submitError ? <p className="meal-cart-err">{submitError}</p> : null}
+          {submitError && !checkoutOpen ? <p className="meal-cart-err">{submitError}</p> : null}
 
           <div className="meal-cart-actions">
-            <button type="submit" className="meal-cart-cta" disabled={submitting || shopClosed}>
-              {submitting ? 'Envoi…' : `Commander — ${formatPriceXof(totals.totalPrice)}`}
+            <button
+              type="button"
+              className="meal-cart-cta"
+              disabled={shopClosed}
+              onClick={openCheckout}
+            >
+              Commander — {formatPriceXof(totals.totalPrice)}
             </button>
             <Link to="/repas" className="meal-cart-continue">
               ← Continuer mes achats
             </Link>
           </div>
-        </form>
+        </div>
       )}
+
+      {checkoutOpen ? (
+        <div
+          className="meal-cart-modal-overlay"
+          role="presentation"
+          onClick={() => !submitting && setCheckoutOpen(false)}
+        >
+          <div
+            className="meal-cart-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="meal-cart-modal-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="meal-cart-modal-close"
+              aria-label="Fermer"
+              disabled={submitting}
+              onClick={() => setCheckoutOpen(false)}
+            >
+              ×
+            </button>
+            <h2 id="meal-cart-modal-title">Finaliser la commande</h2>
+            <p className="meal-cart-modal-lead">
+              Total à payer : <strong>{formatPriceXof(totals.totalPrice)}</strong>
+            </p>
+            <form onSubmit={checkout}>
+              <ShopOrderForm
+                customer={customer}
+                errors={errors}
+                onFieldChange={handleFieldChange}
+                idPrefix="meal-cart"
+              />
+              {submitError ? <p className="meal-cart-err">{submitError}</p> : null}
+              <button type="submit" className="meal-cart-cta" disabled={submitting || shopClosed}>
+                {submitting ? 'Envoi…' : `Confirmer — ${formatPriceXof(totals.totalPrice)}`}
+              </button>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
