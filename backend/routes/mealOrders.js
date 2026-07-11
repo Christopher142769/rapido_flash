@@ -195,6 +195,10 @@ router.put('/:id/statut', auth, isCommercialStaff, async (req, res) => {
     const { statut, commercialStatus, clientSpecifications } = req.body || {};
     if (statut) {
       order.statut = statut;
+      if (statut === 'en_attente') {
+        order.commercialStatus = 'commande';
+        order.confirmedAt = undefined;
+      }
       if (statut === 'confirmee') {
         order.commercialStatus = 'confirme';
         order.confirmedAt = order.confirmedAt || new Date();

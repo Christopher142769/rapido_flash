@@ -22,7 +22,7 @@ import './DashboardOverviewPage.css';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 function utcTodayISO() {
-  return new Date().toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Porto-Novo' }).format(new Date());
 }
 
 function addDaysISO(iso, delta) {

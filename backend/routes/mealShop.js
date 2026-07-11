@@ -5,7 +5,6 @@ const upload = require('../middleware/uploadMealProduct');
 const { getShopClosureState } = require('../utils/shopClosure');
 const { getShopOrderLimitState, mergeClosureWithOrderLimit } = require('../utils/shopOrderLimit');
 const MealOrder = require('../models/MealOrder');
-const { startOfDay, endOfDay } = require('../utils/mealOrderNumber');
 
 const router = express.Router();
 
@@ -25,11 +24,14 @@ async function getOrCreateSettings() {
 }
 
 async function countTodayMealOrders() {
-  const now = new Date();
-  return MealOrder.countDocuments({
-    createdAt: { $gte: startOfDay(now), $lte: endOfDay(now) },
+  const { buildPeriodFilter } = require('../utils/commercialBilan');
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Porto-Novo' }).format(new Date());
+  const periodFilter = buildPeriodFilter(today, today);
+  const filter = {
     statut: { $ne: 'annulee' },
-  });
+    ...(periodFilter || {}),
+  };
+  return MealOrder.countDocuments(filter);
 }
 
 function serializeSettings(doc, ordersToday = 0) {

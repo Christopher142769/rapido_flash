@@ -11,6 +11,7 @@ const { sendToUserId, sendToUserIds } = require('../services/pushNotifications')
 const { notifyCommandeCreated } = require('../services/orderNotificationMailer');
 const PromoCode = require('../models/PromoCode');
 const { validatePromoCodeForOrder } = require('../utils/promoEngine');
+const { buildPeriodFilter } = require('../utils/commercialBilan');
 
 const STATUT_LABELS_CLIENT = {
   en_attente: 'En attente',
@@ -46,6 +47,11 @@ function utcDayEnd(isoDate) {
 
 function isoDateUtc(d) {
   return d.toISOString().slice(0, 10);
+}
+
+/** Jour civil Bénin — aligné Commandes Shop / filtres commerciaux. */
+function beninTodayISO(date = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Porto-Novo' }).format(date);
 }
 
 // Middleware pour parser JSON et URL-encoded pour cette route uniquement
@@ -319,7 +325,7 @@ router.get('/dashboard-stats', auth, async (req, res) => {
       annulee: 0,
     };
 
-    const todayIso = isoDateUtc(new Date());
+    const todayIso = beninTodayISO();
     let fromStr = req.query.from;
     let toStr = req.query.to;
     if (!fromStr || !/^\d{4}-\d{2}-\d{2}$/.test(String(fromStr))) {
@@ -342,10 +348,12 @@ router.get('/dashboard-stats', auth, async (req, res) => {
     }
 
     const sameDay = fromStr === toStr;
-    const shopDateMatch = { createdAt: { $gte: start, $lte: end } };
+    /** Même logique que Commandes Shop : orderDate || createdAt, fuseau Bénin. */
+    const periodFilter = buildPeriodFilter(fromStr, toStr);
+    const shopDateMatch = periodFilter || {};
 
     async function fetchShopStats() {
-      const [shopStatus, shopAmounts] = await Promise.all([
+      const [shopStatus, shopAmounts, shopByBucket] = await Promise.all([
         ShopOrder.aggregate([
           { $match: shopDateMatch },
           { $group: { _id: '$statut', count: { $sum: 1 } } },
@@ -364,18 +372,52 @@ router.get('/dashboard-stats', auth, async (req, res) => {
             },
           },
         ]),
+        ShopOrder.aggregate([
+          { $match: shopDateMatch },
+          {
+            $group: {
+              _id: sameDay
+                ? {
+                    $dateToString: {
+                      format: '%H',
+                      date: { $ifNull: ['$orderDate', '$createdAt'] },
+                      timezone: 'Africa/Porto-Novo',
+                    },
+                  }
+                : {
+                    $dateToString: {
+                      format: '%Y-%m-%d',
+                      date: { $ifNull: ['$orderDate', '$createdAt'] },
+                      timezone: 'Africa/Porto-Novo',
+                    },
+                  },
+              count: { $sum: 1 },
+            },
+          },
+        ]),
       ]);
-      return { shopStatus, shopAmounts: shopAmounts[0] || {} };
+      return { shopStatus, shopAmounts: shopAmounts[0] || {}, shopByBucket };
     }
 
     if (ids.length === 0) {
-      const { shopStatus, shopAmounts } = await fetchShopStats();
+      const { shopStatus, shopAmounts, shopByBucket } = await fetchShopStats();
       const countsByStatus = { ...emptyCounts };
       let shopTotal = 0;
       for (const row of shopStatus) {
         if (row._id && Object.prototype.hasOwnProperty.call(countsByStatus, row._id)) {
           countsByStatus[row._id] = row.count;
           shopTotal += row.count;
+        }
+      }
+      let series = [];
+      if (sameDay) {
+        const mapH = {};
+        for (const b of shopByBucket || []) {
+          const h = parseInt(b._id, 10);
+          if (!Number.isNaN(h)) mapH[h] = b.count;
+        }
+        for (let h = 0; h < 24; h += 1) {
+          series.push({ label: `${String(h).padStart(2, '0')}h`, count: mapH[h] || 0 });
         }
       }
       return res.json({
@@ -388,16 +430,14 @@ router.get('/dashboard-stats', auth, async (req, res) => {
         totalCommandes: shopTotal,
         montantTotalCommandes: shopAmounts.totalMontant || 0,
         chiffreAffaires: shopAmounts.chiffreAffaires || 0,
-        series: sameDay
-          ? Array.from({ length: 24 }, (_, h) => ({
-              label: `${String(h).padStart(2, '0')}h`,
-              count: 0,
-            }))
-          : [],
+        series,
       });
     }
 
-    const match = { restaurant: { $in: ids }, createdAt: { $gte: start, $lte: end } };
+    const match = {
+      restaurant: { $in: ids },
+      ...(periodFilter || { createdAt: { $gte: start, $lte: end } }),
+    };
 
     const [agg, shopStats] = await Promise.all([
       Commande.aggregate([
@@ -420,13 +460,30 @@ router.get('/dashboard-stats', auth, async (req, res) => {
             ],
             byBucket: sameDay
               ? [
-                  { $group: { _id: { $dateToString: { format: '%H', date: '$createdAt' } }, count: { $sum: 1 } } },
+                  {
+                    $group: {
+                      _id: {
+                        $dateToString: {
+                          format: '%H',
+                          date: '$createdAt',
+                          timezone: 'Africa/Porto-Novo',
+                        },
+                      },
+                      count: { $sum: 1 },
+                    },
+                  },
                   { $sort: { _id: 1 } },
                 ]
               : [
                   {
                     $group: {
-                      _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+                      _id: {
+                        $dateToString: {
+                          format: '%Y-%m-%d',
+                          date: '$createdAt',
+                          timezone: 'Africa/Porto-Novo',
+                        },
+                      },
                       count: { $sum: 1 },
                     },
                   },
@@ -464,7 +521,11 @@ router.get('/dashboard-stats', auth, async (req, res) => {
       const mapH = {};
       for (const b of aggRow.byBucket || []) {
         const h = parseInt(b._id, 10);
-        if (!Number.isNaN(h)) mapH[h] = b.count;
+        if (!Number.isNaN(h)) mapH[h] = (mapH[h] || 0) + b.count;
+      }
+      for (const b of shopStats.shopByBucket || []) {
+        const h = parseInt(b._id, 10);
+        if (!Number.isNaN(h)) mapH[h] = (mapH[h] || 0) + b.count;
       }
       for (let h = 0; h < 24; h += 1) {
         series.push({ label: `${String(h).padStart(2, '0')}h`, count: mapH[h] || 0 });
@@ -472,7 +533,10 @@ router.get('/dashboard-stats', auth, async (req, res) => {
     } else {
       const mapD = {};
       for (const b of aggRow.byBucket || []) {
-        if (b._id) mapD[b._id] = b.count;
+        if (b._id) mapD[b._id] = (mapD[b._id] || 0) + b.count;
+      }
+      for (const b of shopStats.shopByBucket || []) {
+        if (b._id) mapD[b._id] = (mapD[b._id] || 0) + b.count;
       }
       const cur = new Date(start);
       const last = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate()));

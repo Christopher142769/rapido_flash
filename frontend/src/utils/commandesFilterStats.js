@@ -6,6 +6,18 @@ export function sumShopOrdersQuantity(orders) {
   }, 0);
 }
 
+/** Somme des quantités de plats (lignes) pour commandes repas. */
+export function sumMealOrdersQuantity(orders) {
+  return (orders || []).reduce((sum, order) => {
+    let q = 0;
+    for (const item of order.items || []) {
+      const n = Number(item.quantity);
+      if (Number.isFinite(n) && n > 0) q += n;
+    }
+    return sum + q;
+  }, 0);
+}
+
 /** Somme des quantités (plats + produits) pour commandes restaurant. */
 export function sumRestaurantCommandesQuantity(commandes) {
   return (commandes || []).reduce((sum, commande) => {
