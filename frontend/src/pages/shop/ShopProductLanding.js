@@ -24,12 +24,11 @@ import {
   getQuantityPickerLabel,
   normalizeShopQuantityUnit,
 } from '../../utils/shopQuantityUnit';
-import ShopCountdown from '../../components/shop/ShopCountdown';
 import ShopClosedPage from '../../components/shop/ShopClosedPage';
 import ShopQuantityModal from '../../components/shop/ShopQuantityModal';
 import ShopQuantityPicker from '../../components/shop/ShopQuantityPicker';
 import ShopTrustCards from '../../components/shop/ShopTrustCards';
-import ShopOrderLimitBanner from '../../components/shop/ShopOrderLimitBanner';
+import ShopUrgencyBar from '../../components/shop/ShopUrgencyBar';
 import { getShopAvailabilityState } from '../../utils/shopOrderLimit';
 import './shopTypography.css';
 import './ShopProductLanding.css';
@@ -307,29 +306,28 @@ export default function ShopProductLanding() {
       {hasTopFixedBar ? (
         <>
           <div ref={topBarRef} className="shop-pdp-top-fixed">
-            {showOrderLimitBanner ? (
-              <ShopOrderLimitBanner
-                ordersToday={availabilityState.ordersToday}
-                ordersRemaining={availabilityState.ordersRemaining}
-                maxOrders={availabilityState.dailyOrderLimitMax}
-                progressPct={availabilityState.orderLimitProgressPct}
-              />
-            ) : null}
-            {showCountdown ? (
-              <div
-                className="shop-pdp-countdown-strip"
-                role="region"
-                aria-live="polite"
-                aria-label="Compte à rebours de l'offre"
-              >
-                <ShopCountdown
-                  endsAt={countdownEndsAt}
-                  variant="urgent"
-                  autoRestart={countdownAutoRestart}
-                  onComplete={() => setPromoClock(Date.now())}
-                />
-              </div>
-            ) : null}
+            <ShopUrgencyBar
+              label={
+                showCountdown
+                  ? 'Offre limitée — commandez vite'
+                  : 'Commandes du jour limitées'
+              }
+              endsAt={showCountdown ? countdownEndsAt : null}
+              autoRestart={countdownAutoRestart}
+              onCountdownComplete={() => setPromoClock(Date.now())}
+              ordersRemaining={
+                showOrderLimitBanner ? availabilityState.ordersRemaining : null
+              }
+              maxOrders={
+                showOrderLimitBanner ? availabilityState.dailyOrderLimitMax : 0
+              }
+              ordersToday={showOrderLimitBanner ? availabilityState.ordersToday : 0}
+              progressPct={
+                showOrderLimitBanner ? availabilityState.orderLimitProgressPct : null
+              }
+              showCountdown={showCountdown}
+              showQuota={showOrderLimitBanner}
+            />
             <ShopBrandHeader sections={navSections} inTopBar />
           </div>
           <div className="shop-pdp-top-spacer" aria-hidden />

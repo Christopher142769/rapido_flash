@@ -1,32 +1,31 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import PageLoader from '../../components/PageLoader';
-import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
+import MealShopChrome from '../../components/shop/MealShopChrome';
 import ShopProductGallery from '../../components/shop/ShopProductGallery';
 import ShopOrderForm from '../../components/shop/ShopOrderForm';
 import ShopDeliveryNotice from '../../components/shop/ShopDeliveryNotice';
-import ShopCountdown from '../../components/shop/ShopCountdown';
 import ShopQuantityPicker from '../../components/shop/ShopQuantityPicker';
 import ShopQuantityModal from '../../components/shop/ShopQuantityModal';
 import ShopTrustCards from '../../components/shop/ShopTrustCards';
+import ShopContentBlocks from '../../components/shop/ShopContentBlocks';
 import { getProductGallery } from '../../utils/shopProductMedia';
 import {
   emptyCustomerForm,
   validateCustomerForm,
   getShopWhatsAppDigits,
 } from '../../utils/shopOrder';
-import {
-  formatPriceXof,
-} from '../../utils/shopPromo';
+import { formatPriceXof } from '../../utils/shopPromo';
 import {
   getMealProductPromoState,
+  getMealCatalogueUrgency,
 } from '../../utils/mealShopUrgency';
 import {
   saveMealOrder,
   submitMealOrderToApi,
 } from '../../utils/mealOrder';
-import ShopContentBlocks from '../../components/shop/ShopContentBlocks';
+import { loadMealCart, mealCartCount } from '../../utils/mealCart';
 import '../shop/shopTypography.css';
 import '../shop/ShopProductLanding.css';
 import './MealProductLanding.css';
@@ -50,9 +49,22 @@ export default function MealProductLanding() {
   const [highlightQty, setHighlightQty] = useState(false);
   const [accQty, setAccQty] = useState({});
   const [promoClock, setPromoClock] = useState(() => Date.now());
-  const topBarRef = useRef(null);
+  const [urgencyClock, setUrgencyClock] = useState(() => Date.now());
+  const [cartCount, setCartCount] = useState(() => mealCartCount());
 
-  const fetchProduct = React.useCallback(() => {
+  const refreshCart = useCallback(() => setCartCount(mealCartCount(loadMealCart())), []);
+
+  useEffect(() => {
+    const onCart = () => refreshCart();
+    window.addEventListener('rapido-meal-cart', onCart);
+    window.addEventListener('storage', onCart);
+    return () => {
+      window.removeEventListener('rapido-meal-cart', onCart);
+      window.removeEventListener('storage', onCart);
+    };
+  }, [refreshCart]);
+
+  const fetchProduct = useCallback(() => {
     return axios
       .get(`${API_URL}/meal-products/public/${encodeURIComponent(slug)}`, {
         params: { _t: Date.now() },
@@ -79,12 +91,17 @@ export default function MealProductLanding() {
     setLoading(true);
     Promise.all([
       fetchProduct(),
-      axios.get(`${API_URL}/meal-shop/public`).then((r) => r.data).catch(() => null),
-    ]).then(([, settings]) => {
-      if (!cancelled && settings) setShopSettings(settings);
-    }).finally(() => {
-      if (!cancelled) setLoading(false);
-    });
+      axios
+        .get(`${API_URL}/meal-shop/public`)
+        .then((r) => r.data)
+        .catch(() => null),
+    ])
+      .then(([, settings]) => {
+        if (!cancelled && settings) setShopSettings(settings);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     return () => {
       cancelled = true;
     };
@@ -108,40 +125,49 @@ export default function MealProductLanding() {
     [product, promoClock]
   );
 
-  const countdownEndsAt = promoState?.promoEndsAt || product?.promo?.endsAt || null;
-  const countdownAutoRestart = !!(
-    promoState?.isPromoLive &&
-    (promoState?.runUntilStopped || product?.published)
+  const catalogueUrgency = useMemo(
+    () => getMealCatalogueUrgency(shopSettings, new Date(urgencyClock)),
+    [shopSettings, urgencyClock]
   );
-  const showCountdown = promoState?.isPromoLive && countdownEndsAt;
-  const hasTopFixedBar = showCountdown;
+
+  const productCountdownEndsAt = promoState?.promoEndsAt || product?.promo?.endsAt || null;
+  const productCountdownLive = !!(promoState?.isPromoLive && productCountdownEndsAt);
+
+  const headerUrgency = useMemo(() => {
+    if (catalogueUrgency.isLive) return catalogueUrgency;
+    if (productCountdownLive) {
+      return {
+        isLive: true,
+        endsAtIso: productCountdownEndsAt,
+        runUntilStopped: !!(promoState?.runUntilStopped || product?.published),
+        label: 'Offre limitée — commandez vite',
+        expectedOrders: catalogueUrgency.expectedOrders || 0,
+        remainingOrders: catalogueUrgency.remainingOrders || 0,
+        ordersToday: catalogueUrgency.ordersToday || 0,
+      };
+    }
+    return catalogueUrgency;
+  }, [catalogueUrgency, productCountdownLive, productCountdownEndsAt, promoState, product]);
 
   useEffect(() => {
-    if (!showCountdown || !countdownAutoRestart || !countdownEndsAt) return undefined;
-    const endMs = new Date(countdownEndsAt).getTime();
+    if (!catalogueUrgency.isLive || !catalogueUrgency.endsAt || !catalogueUrgency.runUntilStopped) {
+      return undefined;
+    }
+    const endMs = new Date(catalogueUrgency.endsAt).getTime();
+    if (!Number.isFinite(endMs)) return undefined;
+    const delay = Math.max(0, endMs - Date.now() + 80);
+    const id = setTimeout(() => setUrgencyClock(Date.now()), delay);
+    return () => clearTimeout(id);
+  }, [catalogueUrgency.isLive, catalogueUrgency.endsAt, catalogueUrgency.runUntilStopped]);
+
+  useEffect(() => {
+    if (catalogueUrgency.isLive || !productCountdownLive || !productCountdownEndsAt) return undefined;
+    const endMs = new Date(productCountdownEndsAt).getTime();
     if (!Number.isFinite(endMs)) return undefined;
     const delay = Math.max(0, endMs - Date.now() + 80);
     const id = setTimeout(() => setPromoClock(Date.now()), delay);
     return () => clearTimeout(id);
-  }, [showCountdown, countdownAutoRestart, countdownEndsAt]);
-
-  useEffect(() => {
-    if (!hasTopFixedBar || !topBarRef.current) return undefined;
-    const el = topBarRef.current;
-    const syncHeight = () => {
-      const root = el.closest('.shop-pdp');
-      if (root) root.style.setProperty('--shop-top-fixed-h', `${el.offsetHeight}px`);
-    };
-    syncHeight();
-    requestAnimationFrame(syncHeight);
-    const ro = new ResizeObserver(syncHeight);
-    ro.observe(el);
-    window.addEventListener('resize', syncHeight);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener('resize', syncHeight);
-    };
-  }, [hasTopFixedBar, showCountdown, countdownEndsAt]);
+  }, [catalogueUrgency.isLive, productCountdownLive, productCountdownEndsAt]);
 
   const gallery = useMemo(() => (product ? getProductGallery(product) : []), [product]);
   const canOrder = !!getShopWhatsAppDigits();
@@ -238,21 +264,24 @@ export default function MealProductLanding() {
   };
 
   const requestOrder = (e) => {
-    e?.preventDefault?.();
-    if (!canOrder || !product || submitting) return;
-    if (quantity < 1) {
+    e.preventDefault();
+    if (!hasQuantity) {
       setHighlightQty(true);
       setQtyModalOpen(true);
+      document
+        .getElementById('meal-quantity-section')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     void completeOrder(quantity);
   };
 
   if (loading) return <PageLoader />;
+
   if (error || !product) {
     return (
       <div className="shop-pdp meal-pdp">
-        <ShopBrandHeader />
+        <MealShopChrome cartCount={cartCount} showBack />
         <div className="shop-pdp-error">
           <h1>Plat indisponible</h1>
           <p>{error || 'Ce lien n’est plus actif.'}</p>
@@ -267,7 +296,7 @@ export default function MealProductLanding() {
   if (shopSettings?.isShopClosed) {
     return (
       <div className="shop-pdp meal-pdp">
-        <ShopBrandHeader />
+        <MealShopChrome cartCount={cartCount} showBack urgency={catalogueUrgency} />
         <div className="shop-pdp-error">
           <h1>Boutique temporairement fermée</h1>
           <p>{shopSettings.shopClosure?.message || 'Revenez un peu plus tard.'}</p>
@@ -280,33 +309,17 @@ export default function MealProductLanding() {
   }
 
   return (
-    <div className={`shop-pdp meal-pdp${hasTopFixedBar ? ' shop-pdp--top-bar' : ''}${showCountdown ? ' shop-pdp--promo' : ''}`}>
-      {hasTopFixedBar ? (
-        <>
-          <div ref={topBarRef} className="shop-pdp-top-fixed">
-            {showCountdown ? (
-              <div className="shop-pdp-countdown-strip" role="region" aria-live="polite">
-                <ShopCountdown
-                  endsAt={countdownEndsAt}
-                  variant="urgent"
-                  autoRestart={countdownAutoRestart}
-                  onComplete={() => setPromoClock(Date.now())}
-                />
-              </div>
-            ) : null}
-            <ShopBrandHeader sections={navSections} inTopBar />
-          </div>
-          <div className="shop-pdp-top-spacer" aria-hidden />
-        </>
-      ) : (
-        <ShopBrandHeader sections={navSections} />
-      )}
-
-      <div className="meal-pdp-crumb">
-        <Link to="/repas">Shop repas</Link>
-        <span>/</span>
-        <span>{product.name}</span>
-      </div>
+    <div className={`shop-pdp meal-pdp${headerUrgency?.isLive ? ' shop-pdp--promo' : ''}`}>
+      <MealShopChrome
+        sections={navSections}
+        cartCount={cartCount}
+        urgency={headerUrgency}
+        showBack
+        onCountdownComplete={() => {
+          setUrgencyClock(Date.now());
+          setPromoClock(Date.now());
+        }}
+      />
 
       <div id="shop-section-product" className="shop-pdp-layout">
         <div className="shop-pdp-gallery-col">
@@ -445,7 +458,12 @@ export default function MealProductLanding() {
             ) : null}
 
             <div id="shop-order-fields">
-              <ShopOrderForm customer={customer} errors={formErrors} onFieldChange={handleFieldChange} idPrefix="meal" />
+              <ShopOrderForm
+                customer={customer}
+                errors={formErrors}
+                onFieldChange={handleFieldChange}
+                idPrefix="meal"
+              />
             </div>
 
             {canOrder ? (
@@ -467,7 +485,9 @@ export default function MealProductLanding() {
         </div>
       ) : null}
 
-      <ShopTrustCards whatsappNumber={getShopWhatsAppDigits()} />
+      <div id="shop-section-trust">
+        <ShopTrustCards whatsappNumber={getShopWhatsAppDigits()} />
+      </div>
 
       <ShopQuantityModal
         open={qtyModalOpen}
