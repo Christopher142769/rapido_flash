@@ -1,16 +1,22 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { FaShoppingBag, FaShippingFast, FaMoneyBillWave, FaWhatsapp, FaHeadset, FaStar } from 'react-icons/fa';
+import {
+  FaShoppingBag,
+  FaShippingFast,
+  FaMoneyBillWave,
+  FaWhatsapp,
+  FaHeadset,
+  FaStar,
+  FaArrowRight,
+} from 'react-icons/fa';
 import PageLoader from '../../components/PageLoader';
+import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
 import { getImageUrl } from '../../utils/imagePlaceholder';
 import { formatPriceXof } from '../../utils/shopPromo';
 import { getShopWhatsAppDigits } from '../../utils/shopOrder';
-import {
-  addMealToCart,
-  loadMealCart,
-  mealCartCount,
-} from '../../utils/mealCart';
+import { loadMealCart, mealCartCount } from '../../utils/mealCart';
+import '../shop/shopTypography.css';
 import './MealShopPage.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -25,11 +31,7 @@ export default function MealShopPage() {
   const [error, setError] = useState('');
   const [category, setCategory] = useState('all');
   const [heroIdx, setHeroIdx] = useState(0);
-  const [modalProduct, setModalProduct] = useState(null);
-  const [qty, setQty] = useState(1);
-  const [accQty, setAccQty] = useState({});
   const [cartCount, setCartCount] = useState(() => mealCartCount());
-  const [toast, setToast] = useState('');
 
   const refreshCart = useCallback(() => setCartCount(mealCartCount(loadMealCart())), []);
 
@@ -71,11 +73,14 @@ export default function MealShopPage() {
     document.title = 'Shop Repas | Rapido Flash';
   }, []);
 
-  const slides = settings?.heroSlides?.filter((s) => s.imageUrl) || [];
+  const slides = useMemo(
+    () => (settings?.heroSlides || []).filter((s) => s.imageUrl),
+    [settings]
+  );
 
   useEffect(() => {
     if (slides.length < 2) return undefined;
-    const id = setInterval(() => setHeroIdx((i) => (i + 1) % slides.length), 5000);
+    const id = setInterval(() => setHeroIdx((i) => (i + 1) % slides.length), 5500);
     return () => clearInterval(id);
   }, [slides.length]);
 
@@ -91,63 +96,33 @@ export default function MealShopPage() {
     return products.filter((p) => p.category === category);
   }, [products, category]);
 
-  const openModal = (p) => {
-    setModalProduct(p);
-    setQty(1);
-    const init = {};
-    (p.accompagnements || []).forEach((a) => {
-      init[a._id || a.name] = a.required ? 1 : 0;
-    });
-    setAccQty(init);
-  };
-
-  const addToCart = () => {
-    if (!modalProduct) return;
-    const required = (modalProduct.accompagnements || []).filter((a) => a.required);
-    for (const r of required) {
-      const key = r._id || r.name;
-      if ((accQty[key] || 0) < 1) {
-        setToast(`Choisissez : ${r.name}`);
-        return;
-      }
-    }
-    const accompagnements = (modalProduct.accompagnements || []).map((a) => ({
-      id: a._id,
-      name: a.name,
-      price: a.price,
-      quantity: Number(accQty[a._id || a.name] || 0),
-    }));
-    addMealToCart(modalProduct, qty, accompagnements);
-    setToast('Ajouté au panier');
-    setModalProduct(null);
-    refreshCart();
-    setTimeout(() => setToast(''), 2200);
-  };
-
   const waDigits = getShopWhatsAppDigits();
   const trustItems = settings?.trustItems?.length
     ? settings.trustItems
     : [
-        { title: 'Livraison rapide', subtitle: 'Cotonou & Calavi' },
-        { title: 'Paiement à la livraison', subtitle: 'Payez à réception' },
+        { title: 'Livraison rapide', subtitle: 'Chez vous à Cotonou & Calavi' },
+        { title: 'Paiement à la livraison', subtitle: 'Payez à la réception' },
         { title: 'Plats frais', subtitle: 'Préparation soignée' },
-        { title: 'Support WhatsApp', subtitle: 'Suivi facile' },
+        { title: 'Support WhatsApp', subtitle: 'Suivi de commande facile' },
       ];
+
+  const slide = slides[heroIdx] || slides[0];
+  const navSections = [
+    { id: 'meal-products', label: 'Plats' },
+    { id: 'meal-trust', label: 'Avantages' },
+  ];
 
   if (loading) return <PageLoader />;
 
-  const slide = slides[heroIdx] || slides[0];
-
   return (
     <div className="meal-shop">
-      <header className="meal-shop-top">
-        <Link to="/repas" className="meal-shop-brand">
-          <img src="/images/logo.png" alt="" />
-          <span>Rapido Repas</span>
-        </Link>
-        <Link to="/repas/panier" className="meal-shop-cart-btn" aria-label="Panier">
+      <ShopBrandHeader sections={navSections} />
+
+      <header className="meal-shop-toolbar">
+        <p className="meal-shop-toolbar-label">Boutique multi-plats</p>
+        <Link to="/repas/panier" className="meal-shop-cart-link" aria-label="Panier">
           <FaShoppingBag />
-          {cartCount > 0 ? <span className="meal-shop-cart-badge">{cartCount}</span> : null}
+          {cartCount > 0 ? <span>{cartCount}</span> : null}
         </Link>
       </header>
 
@@ -155,18 +130,19 @@ export default function MealShopPage() {
 
       <section className="meal-shop-hero">
         <div className="meal-shop-hero-copy">
-          <h1>{slide?.title || 'Découvrez nos meilleurs plats'}</h1>
+          <p className="meal-shop-eyebrow">Rapido Repas</p>
+          <h1>{slide?.title || 'Des plats prêts à commander'}</h1>
           <p>
             {slide?.subtitle ||
-              'Commandez plusieurs plats, choisissez vos accompagnements, et faites-vous livrer rapidement.'}
+              'Choisissez votre plat, ajoutez les accompagnements, et commandez en quelques secondes.'}
           </p>
           <div className="meal-shop-hero-ctas">
             <a className="meal-shop-btn meal-shop-btn--primary" href="#meal-products">
-              Commander →
+              Voir les plats <FaArrowRight aria-hidden />
             </a>
             {settings?.promoBanner?.active ? (
               <a className="meal-shop-btn meal-shop-btn--ghost" href="#meal-promo">
-                Voir les offres
+                Offres du moment
               </a>
             ) : null}
           </div>
@@ -175,7 +151,7 @@ export default function MealShopPage() {
           {slide?.imageUrl ? (
             <img src={getImageUrl(slide.imageUrl, BASE_URL)} alt="" />
           ) : (
-            <div className="meal-shop-hero-ph" />
+            <div className="meal-shop-hero-ph" aria-hidden />
           )}
           {slides.length > 1 ? (
             <div className="meal-shop-hero-dots">
@@ -194,10 +170,7 @@ export default function MealShopPage() {
       </section>
 
       {categories.length > 1 ? (
-        <section className="meal-shop-cats">
-          <div className="meal-shop-section-head">
-            <h2>Catégories</h2>
-          </div>
+        <section className="meal-shop-cats" aria-label="Catégories">
           <div className="meal-shop-cats-row">
             {categories.map((c) => (
               <button
@@ -216,41 +189,51 @@ export default function MealShopPage() {
       <section id="meal-products" className="meal-shop-products">
         <div className="meal-shop-section-head">
           <h2>Nos plats</h2>
-          <span>{filtered.length} disponible{filtered.length > 1 ? 's' : ''}</span>
+          <span>
+            {filtered.length} disponible{filtered.length > 1 ? 's' : ''}
+          </span>
         </div>
         <div className="meal-shop-grid">
           {filtered.map((p) => {
             const price = p.isPromoLive ? p.promoPrice : p.basePrice;
             const img = p.mainImage || p.images?.[0];
+            const href = `/repas/${p.slug}`;
             return (
               <article key={p._id} className="meal-shop-card">
-                <div className="meal-shop-card-media">
+                <Link to={href} className="meal-shop-card-media">
                   {img ? <img src={getImageUrl(img, BASE_URL)} alt={p.name} /> : <div className="meal-shop-card-ph" />}
                   {p.isPromoLive && p.discountPercent ? (
                     <span className="meal-shop-badge">-{p.discountPercent}%</span>
                   ) : null}
-                </div>
+                </Link>
                 <div className="meal-shop-card-body">
-                  <h3>{p.name}</h3>
+                  {p.category ? <p className="meal-shop-card-cat">{p.category}</p> : null}
+                  <h3>
+                    <Link to={href}>{p.name}</Link>
+                  </h3>
                   {p.shortDescription ? <p className="meal-shop-card-desc">{p.shortDescription}</p> : null}
                   <div className="meal-shop-card-price">
                     <strong>{formatPriceXof(price)}</strong>
-                    {p.isPromoLive && p.basePrice > price ? (
-                      <s>{formatPriceXof(p.basePrice)}</s>
-                    ) : null}
+                    {p.isPromoLive && p.basePrice > price ? <s>{formatPriceXof(p.basePrice)}</s> : null}
                   </div>
-                  <button type="button" className="meal-shop-btn meal-shop-btn--primary meal-shop-btn--block" onClick={() => openModal(p)}>
-                    Ajouter
-                  </button>
+                  {(p.accompagnements || []).length ? (
+                    <p className="meal-shop-card-acc">
+                      {p.accompagnements.length} accompagnement
+                      {p.accompagnements.length > 1 ? 's' : ''}
+                    </p>
+                  ) : null}
+                  <Link to={href} className="meal-shop-btn meal-shop-btn--primary meal-shop-btn--block">
+                    Commander
+                  </Link>
                 </div>
               </article>
             );
           })}
         </div>
-        {!filtered.length ? <p className="meal-shop-empty">Aucun plat pour le moment.</p> : null}
+        {!filtered.length ? <p className="meal-shop-empty">Aucun plat publié pour le moment.</p> : null}
       </section>
 
-      <section className="meal-shop-trust" aria-label="Avantages">
+      <section id="meal-trust" className="meal-shop-trust" aria-label="Avantages">
         {trustItems.map((t, i) => {
           const Icon = DEFAULT_TRUST_ICONS[i % DEFAULT_TRUST_ICONS.length];
           return (
@@ -271,7 +254,7 @@ export default function MealShopPage() {
             <h2>{settings.promoBanner.title || 'Offre spéciale'}</h2>
             <p>{settings.promoBanner.subtitle}</p>
             <a className="meal-shop-btn meal-shop-btn--primary" href="#meal-products">
-              {settings.promoBanner.ctaLabel || 'Voir les plats'} →
+              {settings.promoBanner.ctaLabel || 'Voir les plats'}
             </a>
           </div>
         </section>
@@ -283,86 +266,16 @@ export default function MealShopPage() {
           <p>Livraison de repas à Cotonou et Calavi.</p>
         </div>
         {waDigits ? (
-          <a href={`https://wa.me/${waDigits}`} target="_blank" rel="noreferrer" className="meal-shop-footer-wa">
+          <a
+            href={`https://wa.me/${waDigits}`}
+            target="_blank"
+            rel="noreferrer"
+            className="meal-shop-footer-wa"
+          >
             <FaWhatsapp /> WhatsApp
           </a>
         ) : null}
       </footer>
-
-      <Link to="/repas/panier" className="meal-shop-fab">
-        <FaShoppingBag />
-        <span>Panier{cartCount ? ` (${cartCount})` : ''}</span>
-      </Link>
-
-      {modalProduct ? (
-        <div className="meal-shop-modal" role="dialog" aria-modal="true">
-          <button type="button" className="meal-shop-modal-backdrop" aria-label="Fermer" onClick={() => setModalProduct(null)} />
-          <div className="meal-shop-modal-panel">
-            <h3>{modalProduct.name}</h3>
-            <p className="meal-shop-modal-price">
-              {formatPriceXof(modalProduct.isPromoLive ? modalProduct.promoPrice : modalProduct.basePrice)}
-            </p>
-            <label className="meal-shop-qty">
-              Quantité
-              <div className="meal-shop-qty-ctrl">
-                <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))}>
-                  −
-                </button>
-                <span>{qty}</span>
-                <button type="button" onClick={() => setQty((q) => q + 1)}>
-                  +
-                </button>
-              </div>
-            </label>
-            {(modalProduct.accompagnements || []).length ? (
-              <div className="meal-shop-acc">
-                <h4>Accompagnements</h4>
-                {modalProduct.accompagnements.map((a) => {
-                  const key = a._id || a.name;
-                  return (
-                    <div key={key} className="meal-shop-acc-row">
-                      <div>
-                        <strong>
-                          {a.name}
-                          {a.required ? ' *' : ''}
-                        </strong>
-                        <span>{formatPriceXof(a.price)}</span>
-                      </div>
-                      <div className="meal-shop-qty-ctrl">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setAccQty((s) => ({ ...s, [key]: Math.max(0, (s[key] || 0) - 1) }))
-                          }
-                        >
-                          −
-                        </button>
-                        <span>{accQty[key] || 0}</span>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setAccQty((s) => ({
-                              ...s,
-                              [key]: Math.min(a.maxQuantity || 10, (s[key] || 0) + 1),
-                            }))
-                          }
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : null}
-            <button type="button" className="meal-shop-btn meal-shop-btn--primary meal-shop-btn--block" onClick={addToCart}>
-              Ajouter au panier
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      {toast ? <div className="meal-shop-toast">{toast}</div> : null}
     </div>
   );
 }

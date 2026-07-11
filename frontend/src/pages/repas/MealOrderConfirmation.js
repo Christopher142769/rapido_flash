@@ -1,25 +1,33 @@
 import React, { useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { loadMealOrder, openMealOrderWhatsAppTrack } from '../../utils/mealOrder';
 import {
-  loadMealOrder,
-  openMealOrderWhatsAppTrack,
-} from '../../utils/mealOrder';
-import { formatCustomerFullName, formatCustomerAddress, getShopWhatsAppDisplay } from '../../utils/shopOrder';
+  formatCustomerFullName,
+  formatCustomerAddress,
+  getShopWhatsAppDisplay,
+} from '../../utils/shopOrder';
 import { formatPriceXof } from '../../utils/shopPromo';
+import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
+import '../shop/shopTypography.css';
 import '../shop/ShopOrderConfirmation.css';
 
 export default function MealOrderConfirmation() {
+  const { slug } = useParams();
   const navigate = useNavigate();
   const order = useMemo(() => loadMealOrder(), []);
   const shopWaDisplay = getShopWhatsAppDisplay();
 
   useEffect(() => {
     if (!order) {
-      navigate('/repas', { replace: true });
+      navigate(slug ? `/repas/${slug}` : '/repas', { replace: true });
+      return;
+    }
+    if (slug && order.slug && order.slug !== slug) {
+      navigate(`/repas/${order.slug}/commande`, { replace: true });
       return;
     }
     document.title = 'Commande confirmée | Rapido Repas';
-  }, [order, navigate]);
+  }, [order, slug, navigate]);
 
   if (!order) return null;
 
@@ -27,6 +35,7 @@ export default function MealOrderConfirmation() {
   const fullAddress = formatCustomerAddress(order.customer);
   const city = order.customer?.city;
   const addressLine = order.customer?.addressDescription || fullAddress || '—';
+  const backHref = order.slug ? `/repas/${order.slug}` : '/repas';
 
   const handleTrack = async (e) => {
     e.preventDefault();
@@ -38,6 +47,7 @@ export default function MealOrderConfirmation() {
 
   return (
     <div className="shop-confirm">
+      <ShopBrandHeader />
       <div className="shop-confirm-inner">
         <header className="shop-confirm-hero">
           <div className="shop-confirm-badge" aria-hidden>
@@ -100,8 +110,11 @@ export default function MealOrderConfirmation() {
           <button type="button" className="shop-confirm-cta shop-confirm-cta--wa" onClick={handleTrack}>
             Suivre ma commande
           </button>
+          <Link className="shop-confirm-link shop-confirm-link--muted" to={backHref}>
+            ← Retour au plat
+          </Link>
           <Link className="shop-confirm-link shop-confirm-link--muted" to="/repas">
-            ← Retour à la boutique
+            Voir tous les plats
           </Link>
         </div>
       </div>

@@ -2,7 +2,15 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import PageLoader from '../../components/PageLoader';
 import { getImageUrl } from '../../utils/imagePlaceholder';
-import { formatPriceXof, applyBoostDefaults, promoPayloadFromForm, DEFAULT_BOOST_HOURS } from '../../utils/shopPromo';
+import {
+  formatPriceXof,
+  applyBoostDefaults,
+  promoPayloadFromForm,
+  DEFAULT_BOOST_HOURS,
+  getShopPromoState,
+} from '../../utils/shopPromo';
+import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
+import ShopFormSectionHead from '../../components/shop/ShopFormSectionHead';
 import SectionRefreshButton from '../../components/dashboard/SectionRefreshButton';
 import { useRegisterDashboardRefresh } from '../../context/DashboardRefreshContext';
 import {
@@ -10,14 +18,18 @@ import {
   FaEdit,
   FaTrash,
   FaExternalLinkAlt,
-  FaPlus,
   FaUtensils,
+  FaEye,
   FaStore,
+  FaRocket,
+  FaStop,
 } from 'react-icons/fa';
-import '../restaurant/ShopDashboard.css';
+import '../../components/dashboard/section-refresh.css';
+import './ShopDashboard.css';
 import './ShopRepasDashboard.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const BASE_URL = API_URL.replace('/api', '');
 
 const emptyAcc = () => ({ name: '', price: '', required: false, maxQuantity: 5 });
 
@@ -46,60 +58,83 @@ const emptyForm = () => ({
 
 function authHeaders() {
   const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  return { headers: token ? { Authorization: `Bearer ${token}` } : {} };
 }
 
 export default function ShopRepasDashboard() {
-  const [tab, setTab] = useState('plats');
   const [products, setProducts] = useState([]);
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [showBoutique, setShowBoutique] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
-  const publicUrl = `${window.location.origin}/repas`;
+  const publicOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+  const publicUrl = `${publicOrigin}/repas`;
 
   const load = useCallback(async () => {
-    setLoading(true);
     setError('');
     try {
       const [pRes, sRes] = await Promise.all([
-        axios.get(`${API_URL}/meal-products`, { headers: authHeaders() }),
-        axios.get(`${API_URL}/meal-shop`, { headers: authHeaders() }),
+        axios.get(`${API_URL}/meal-products`, authHeaders()),
+        axios.get(`${API_URL}/meal-shop`, authHeaders()),
       ]);
       setProducts(Array.isArray(pRes.data) ? pRes.data : []);
       setSettings(sRes.data);
     } catch (e) {
       setError(e.response?.data?.message || e.message || 'Erreur de chargement');
-    } finally {
-      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    load();
+    setLoading(true);
+    load().finally(() => setLoading(false));
   }, [load]);
 
-  useRegisterDashboardRefresh(load);
+  const refreshPage = useCallback(async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }, [load]);
+
+  useRegisterDashboardRefresh(refreshPage);
 
   const stats = useMemo(() => {
-    const published = products.filter((p) => p.published).length;
-    const promo = products.filter((p) => p.isPromoLive).length;
-    return { total: products.length, published, promo };
+    let published = 0;
+    let promoLive = 0;
+    for (const p of products) {
+      if (p.published) published += 1;
+      if (getShopPromoState(p).isPromoLive) promoLive += 1;
+    }
+    return { total: products.length, published, promoLive };
   }, [products]);
 
-  const startCreate = () => {
+  const formPromoPreview = useMemo(() => getShopPromoState({ ...form, promo: form.promo }), [form]);
+
+  const resetForm = () => {
+    setShowForm(false);
     setEditingId(null);
     setForm(emptyForm());
-    setTab('form');
     setOk('');
     setError('');
   };
 
-  const startEdit = (p) => {
+  const openCreate = () => {
+    setEditingId(null);
+    setForm(emptyForm());
+    setShowForm(true);
+    setShowBoutique(false);
+    setOk('');
+    setError('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const openEdit = (p) => {
     setEditingId(p._id);
     setForm({
       name: p.name || '',
@@ -109,7 +144,7 @@ export default function ShopRepasDashboard() {
       category: p.category || '',
       published: !!p.published,
       mainImage: p.mainImage || '',
-      images: p.images || [],
+      images: Array.isArray(p.images) ? p.images : [],
       accompagnements: (p.accompagnements || []).map((a) => ({
         name: a.name,
         price: a.price,
@@ -129,19 +164,31 @@ export default function ShopRepasDashboard() {
         boostHours: DEFAULT_BOOST_HOURS,
       },
     });
-    setTab('form');
+    setShowForm(true);
+    setShowBoutique(false);
     setOk('');
     setError('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const uploadImages = async (files) => {
     const fd = new FormData();
     [...files].forEach((f) => fd.append('images', f));
     const res = await axios.post(`${API_URL}/meal-products/upload`, fd, {
-      headers: { ...authHeaders(), 'Content-Type': 'multipart/form-data' },
+      ...authHeaders(),
+      headers: { ...authHeaders().headers, 'Content-Type': 'multipart/form-data' },
     });
     return res.data.urls || [];
   };
+
+  const galleryList = useMemo(() => {
+    const urls = [];
+    if (form.mainImage) urls.push(form.mainImage);
+    for (const u of form.images || []) {
+      if (u && !urls.includes(u)) urls.push(u);
+    }
+    return urls;
+  }, [form.mainImage, form.images]);
 
   const saveProduct = async (e) => {
     e.preventDefault();
@@ -153,14 +200,14 @@ export default function ShopRepasDashboard() {
         ? promoPayloadFromForm(applyBoostDefaults(form.promo, form.promo.boostHours))
         : promoPayloadFromForm(form.promo);
       const payload = {
-        name: form.name,
-        slug: form.slug,
+        name: form.name.trim(),
+        slug: form.slug.trim() || undefined,
         shortDescription: form.shortDescription,
         basePrice: Number(form.basePrice),
         category: form.category,
         published: form.published,
-        mainImage: form.mainImage,
-        images: form.images,
+        mainImage: galleryList[0] || '',
+        images: galleryList.slice(1),
         accompagnements: form.accompagnements
           .filter((a) => a.name?.trim())
           .map((a) => ({
@@ -173,14 +220,14 @@ export default function ShopRepasDashboard() {
       };
 
       if (editingId) {
-        await axios.put(`${API_URL}/meal-products/${editingId}`, payload, { headers: authHeaders() });
+        await axios.put(`${API_URL}/meal-products/${editingId}`, payload, authHeaders());
         setOk('Plat mis à jour');
       } else {
-        await axios.post(`${API_URL}/meal-products`, payload, { headers: authHeaders() });
+        await axios.post(`${API_URL}/meal-products`, payload, authHeaders());
         setOk('Plat créé');
       }
       await load();
-      setTab('plats');
+      resetForm();
     } catch (err) {
       setError(err.response?.data?.message || err.message);
     } finally {
@@ -188,13 +235,48 @@ export default function ShopRepasDashboard() {
     }
   };
 
-  const deleteProduct = async (id) => {
-    if (!window.confirm('Supprimer ce plat ?')) return;
+  const deleteProduct = async (p) => {
+    if (!window.confirm(`Supprimer « ${p.name} » ?`)) return;
     try {
-      await axios.delete(`${API_URL}/meal-products/${id}`, { headers: authHeaders() });
+      await axios.delete(`${API_URL}/meal-products/${p._id}`, authHeaders());
       await load();
     } catch (err) {
-      setError(err.response?.data?.message || err.message);
+      alert(err.response?.data?.message || err.message);
+    }
+  };
+
+  const copyLink = (slug) => {
+    const url = `${publicOrigin}/repas/${slug}`;
+    navigator.clipboard?.writeText(url).then(() => alert(`Lien copié :\n${url}`));
+  };
+
+  const launchPromo = async (p) => {
+    const boosted = applyBoostDefaults(
+      { ...(p.promo || {}), active: true, discountPercent: p.promo?.discountPercent || 10 },
+      DEFAULT_BOOST_HOURS
+    );
+    try {
+      await axios.patch(
+        `${API_URL}/meal-products/${p._id}/promo`,
+        { promo: promoPayloadFromForm(boosted), published: true, active: true },
+        authHeaders()
+      );
+      await load();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Erreur promo');
+    }
+  };
+
+  const stopPromo = async (p) => {
+    try {
+      await axios.patch(
+        `${API_URL}/meal-products/${p._id}/promo`,
+        { active: false, promo: { active: false } },
+        authHeaders()
+      );
+      await load();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Erreur');
     }
   };
 
@@ -202,11 +284,7 @@ export default function ShopRepasDashboard() {
     setSaving(true);
     setError('');
     try {
-      const res = await axios.put(
-        `${API_URL}/meal-shop`,
-        { ...settings, ...patch },
-        { headers: authHeaders() }
-      );
+      const res = await axios.put(`${API_URL}/meal-shop`, { ...settings, ...patch }, authHeaders());
       setSettings(res.data);
       setOk('Boutique mise à jour');
     } catch (err) {
@@ -220,126 +298,343 @@ export default function ShopRepasDashboard() {
     const fd = new FormData();
     fd.append('image', file);
     const res = await axios.post(`${API_URL}/meal-shop/upload-slide`, fd, {
-      headers: { ...authHeaders(), 'Content-Type': 'multipart/form-data' },
+      ...authHeaders(),
+      headers: { ...authHeaders().headers, 'Content-Type': 'multipart/form-data' },
     });
     return res.data.url;
   };
 
-  if (loading && !products.length) return <PageLoader />;
+  if (loading) return <PageLoader />;
 
   return (
-    <div className="dashboard-page shop-repas-dash">
-      <div className="dashboard-header">
-        <div>
-          <h1>
-            <FaUtensils style={{ marginRight: 10 }} />
-            Shop repas
-          </h1>
-          <p className="plats-subhint">Boutique multi-plats — {publicUrl}</p>
-        </div>
-        <div className="shop-repas-dash-actions">
-          <SectionRefreshButton onRefresh={load} />
-          <button type="button" className="btn-outline" onClick={() => navigator.clipboard.writeText(publicUrl)}>
-            <FaCopy /> Copier le lien
-          </button>
-          <a className="btn-outline" href="/repas" target="_blank" rel="noreferrer">
-            <FaExternalLinkAlt /> Voir /repas
-          </a>
-          <button type="button" className="btn-primary" onClick={startCreate}>
-            <FaPlus /> Nouveau plat
-          </button>
-        </div>
-      </div>
+    <div className="shop-dash shop-repas-dash">
+      <ShopBrandHeader variant="dashboard" />
 
-      <div className="shop-repas-tabs">
-        <button type="button" className={tab === 'plats' ? 'is-active' : ''} onClick={() => setTab('plats')}>
-          Plats
-        </button>
-        <button type="button" className={tab === 'form' ? 'is-active' : ''} onClick={() => (editingId || tab === 'form' ? setTab('form') : startCreate())}>
-          {editingId ? 'Modifier' : 'Créer'}
-        </button>
-        <button type="button" className={tab === 'boutique' ? 'is-active' : ''} onClick={() => setTab('boutique')}>
-          <FaStore /> Boutique
-        </button>
-      </div>
-
-      {error ? <p className="shop-repas-msg shop-repas-msg--err">{error}</p> : null}
-      {ok ? <p className="shop-repas-msg shop-repas-msg--ok">{ok}</p> : null}
-
-      {tab === 'plats' ? (
-        <>
-          <div className="shop-repas-stats">
-            <span>{stats.total} plats</span>
-            <span>{stats.published} publiés</span>
-            <span>{stats.promo} en promo</span>
+      <section className="shop-dash-hero">
+        <div className="shop-dash-hero-main">
+          <span className="shop-dash-hero-badge">
+            <FaUtensils aria-hidden /> Rapido Shop repas
+          </span>
+          <h1>Boutique multi-plats</h1>
+          <p>
+            Chaque plat publié a sa propre page comme Shop Express, accessible sur{' '}
+            <code className="shop-dash-code">/repas/nom-du-plat</code>. Catalogue public :{' '}
+            <code className="shop-dash-code">/repas</code>.
+          </p>
+          <div className="shop-dash-stats">
+            <div className="shop-dash-stat">
+              <strong>{stats.total}</strong>
+              <span>Plats</span>
+            </div>
+            <div className="shop-dash-stat">
+              <strong>{stats.published}</strong>
+              <span>Publiés</span>
+            </div>
+            <div className="shop-dash-stat shop-dash-stat--accent">
+              <strong>{stats.promoLive}</strong>
+              <span>Promos actives</span>
+            </div>
           </div>
-          <div className="shop-repas-grid">
-            {products.map((p) => (
-              <article key={p._id} className="shop-repas-card">
-                <div className="shop-repas-card-img">
-                  {p.mainImage || p.images?.[0] ? (
-                    <img src={getImageUrl(p.mainImage || p.images[0], API_URL.replace('/api', ''))} alt="" />
-                  ) : (
-                    <div className="shop-repas-card-ph">—</div>
-                  )}
-                </div>
-                <div className="shop-repas-card-body">
-                  <h3>{p.name}</h3>
-                  <p>{formatPriceXof(p.isPromoLive ? p.promoPrice : p.basePrice)}</p>
-                  <p className="shop-repas-meta">
-                    {p.category || 'Sans catégorie'} · {p.published ? 'Publié' : 'Brouillon'}
-                    {p.accompagnements?.length ? ` · ${p.accompagnements.length} acc.` : ''}
-                  </p>
-                  <div className="shop-repas-card-actions">
-                    <button type="button" className="btn-outline" onClick={() => startEdit(p)}>
-                      <FaEdit />
-                    </button>
-                    <button type="button" className="btn-outline" onClick={() => deleteProduct(p._id)}>
-                      <FaTrash />
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ))}
-            {!products.length ? <p className="shop-repas-empty">Aucun plat — créez le premier.</p> : null}
+          <div className="shop-repas-hero-links">
+            <button
+              type="button"
+              className="shop-dash-btn secondary"
+              onClick={() => navigator.clipboard?.writeText(publicUrl)}
+            >
+              <FaCopy /> Copier /repas
+            </button>
+            <a className="shop-dash-btn secondary" href="/repas" target="_blank" rel="noopener noreferrer">
+              <FaExternalLinkAlt /> Voir la boutique
+            </a>
+            <button
+              type="button"
+              className="shop-dash-btn secondary"
+              onClick={() => {
+                setShowBoutique((v) => !v);
+                setShowForm(false);
+              }}
+            >
+              <FaStore /> {showBoutique ? 'Masquer boutique' : 'Réglages boutique'}
+            </button>
           </div>
-        </>
-      ) : null}
+        </div>
+        <button type="button" className="shop-dash-btn shop-dash-btn--primary shop-dash-btn--hero" onClick={openCreate}>
+          + Nouveau plat
+        </button>
+      </section>
 
-      {tab === 'form' ? (
-        <form className="restaurant-form shop-repas-form" onSubmit={saveProduct}>
-          <div className="form-section">
-            <h2>Informations</h2>
-            <div className="form-group">
-              <label>Nom du plat</label>
-              <input required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+      {error ? <p className="shop-repas-flash shop-repas-flash--err">{error}</p> : null}
+      {ok ? <p className="shop-repas-flash shop-repas-flash--ok">{ok}</p> : null}
+
+      {showBoutique && settings ? (
+        <div className="shop-dash-card shop-dash-form">
+          <header className="shop-dash-form-header">
+            <div>
+              <h3 className="shop-dash-form-title">Réglages boutique</h3>
+              <p className="shop-dash-form-sub">Carrousel, catégories, livraison et bannière promo du catalogue /repas.</p>
             </div>
-            <div className="form-group">
-              <label>Slug (optionnel)</label>
-              <input value={form.slug} onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))} />
-            </div>
-            <div className="form-group">
-              <label>Description courte</label>
-              <textarea
-                rows={2}
-                value={form.shortDescription}
-                onChange={(e) => setForm((f) => ({ ...f, shortDescription: e.target.value }))}
-              />
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Prix (FCFA)</label>
+            <button type="button" className="shop-dash-btn secondary" onClick={() => setShowBoutique(false)}>
+              Fermer
+            </button>
+          </header>
+
+          <section className="shop-dash-form-block">
+            <ShopFormSectionHead step="1" title="Livraison & catégories" subtitle="Frais globaux et filtres du catalogue." />
+            <div className="shop-dash-grid">
+              <div>
+                <label>Frais de livraison (FCFA)</label>
                 <input
-                  required
+                  className="shop-dash-input"
                   type="number"
                   min={0}
+                  value={settings.deliveryFee ?? 500}
+                  onChange={(e) => setSettings((s) => ({ ...s, deliveryFee: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label>Catégories (séparées par des virgules)</label>
+                <input
+                  className="shop-dash-input"
+                  value={(settings.categories || []).join(', ')}
+                  onChange={(e) =>
+                    setSettings((s) => ({
+                      ...s,
+                      categories: e.target.value
+                        .split(',')
+                        .map((x) => x.trim())
+                        .filter(Boolean),
+                    }))
+                  }
+                  placeholder="Entrées, Plats, Desserts, Boissons"
+                />
+              </div>
+            </div>
+            <button
+              type="button"
+              className="shop-dash-btn shop-dash-btn--primary"
+              disabled={saving}
+              onClick={() =>
+                saveSettings({
+                  deliveryFee: Number(settings.deliveryFee) || 0,
+                  categories: settings.categories,
+                })
+              }
+            >
+              Enregistrer
+            </button>
+          </section>
+
+          <section className="shop-dash-form-block">
+            <ShopFormSectionHead step="2" title="Carrousel hero" subtitle="Images et textes du bandeau d’accueil." />
+            {(settings.heroSlides || []).map((slide, idx) => (
+              <div key={idx} className="shop-repas-slide-card">
+                {slide.imageUrl ? (
+                  <img src={getImageUrl(slide.imageUrl, null, BASE_URL)} alt="" className="shop-repas-slide-img" />
+                ) : null}
+                <div className="shop-dash-grid">
+                  <div>
+                    <label>Titre</label>
+                    <input
+                      className="shop-dash-input"
+                      value={slide.title || ''}
+                      onChange={(e) => {
+                        const heroSlides = [...(settings.heroSlides || [])];
+                        heroSlides[idx] = { ...heroSlides[idx], title: e.target.value };
+                        setSettings((s) => ({ ...s, heroSlides }));
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label>Sous-titre</label>
+                    <input
+                      className="shop-dash-input"
+                      value={slide.subtitle || ''}
+                      onChange={(e) => {
+                        const heroSlides = [...(settings.heroSlides || [])];
+                        heroSlides[idx] = { ...heroSlides[idx], subtitle: e.target.value };
+                        setSettings((s) => ({ ...s, heroSlides }));
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="shop-repas-slide-actions">
+                  <label className="shop-dash-btn secondary shop-repas-file-btn">
+                    Image
+                    <input
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          const url = await uploadSlide(file);
+                          const heroSlides = [...(settings.heroSlides || [])];
+                          heroSlides[idx] = { ...heroSlides[idx], imageUrl: url };
+                          setSettings((s) => ({ ...s, heroSlides }));
+                        } catch (err) {
+                          setError(err.response?.data?.message || err.message);
+                        }
+                      }}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="shop-dash-btn secondary"
+                    onClick={() =>
+                      setSettings((s) => ({
+                        ...s,
+                        heroSlides: (s.heroSlides || []).filter((_, i) => i !== idx),
+                      }))
+                    }
+                  >
+                    Retirer
+                  </button>
+                </div>
+              </div>
+            ))}
+            <div className="shop-repas-slide-actions">
+              <button
+                type="button"
+                className="shop-dash-btn secondary"
+                onClick={() =>
+                  setSettings((s) => ({
+                    ...s,
+                    heroSlides: [
+                      ...(s.heroSlides || []),
+                      { imageUrl: '', title: '', subtitle: '', ctaLabel: 'Commander', ctaHref: '#meal-products' },
+                    ],
+                  }))
+                }
+              >
+                + Slide
+              </button>
+              <button
+                type="button"
+                className="shop-dash-btn shop-dash-btn--primary"
+                disabled={saving}
+                onClick={() => saveSettings({ heroSlides: settings.heroSlides })}
+              >
+                Enregistrer le carrousel
+              </button>
+            </div>
+          </section>
+
+          <section className="shop-dash-form-block shop-dash-form-block--promo">
+            <ShopFormSectionHead step="3" title="Bannière promo" subtitle="Affichée sous la grille de plats." />
+            <label className="shop-dash-check">
+              <input
+                type="checkbox"
+                checked={!!settings.promoBanner?.active}
+                onChange={(e) =>
+                  setSettings((s) => ({
+                    ...s,
+                    promoBanner: { ...s.promoBanner, active: e.target.checked },
+                  }))
+                }
+              />
+              Bannière active
+            </label>
+            <div className="shop-dash-grid">
+              <div>
+                <label>Titre</label>
+                <input
+                  className="shop-dash-input"
+                  value={settings.promoBanner?.title || ''}
+                  onChange={(e) =>
+                    setSettings((s) => ({
+                      ...s,
+                      promoBanner: { ...s.promoBanner, title: e.target.value },
+                    }))
+                  }
+                />
+              </div>
+              <div>
+                <label>Sous-titre</label>
+                <input
+                  className="shop-dash-input"
+                  value={settings.promoBanner?.subtitle || ''}
+                  onChange={(e) =>
+                    setSettings((s) => ({
+                      ...s,
+                      promoBanner: { ...s.promoBanner, subtitle: e.target.value },
+                    }))
+                  }
+                />
+              </div>
+            </div>
+            <button
+              type="button"
+              className="shop-dash-btn shop-dash-btn--primary"
+              disabled={saving}
+              onClick={() => saveSettings({ promoBanner: settings.promoBanner })}
+            >
+              Enregistrer la bannière
+            </button>
+          </section>
+        </div>
+      ) : null}
+
+      {showForm ? (
+        <form className="shop-dash-card shop-dash-form" onSubmit={saveProduct}>
+          <header className="shop-dash-form-header">
+            <div>
+              <h3 className="shop-dash-form-title">{editingId ? 'Modifier le plat' : 'Nouveau plat'}</h3>
+              <p className="shop-dash-form-sub">
+                Configurez la fiche publique <code className="shop-dash-code">/repas/…</code>, les images et les
+                accompagnements.
+              </p>
+            </div>
+            <div className="shop-dash-form-header-actions">
+              <SectionRefreshButton onRefresh={refreshPage} loading={refreshing} />
+              <button type="button" className="shop-dash-btn secondary" onClick={resetForm}>
+                Fermer
+              </button>
+            </div>
+          </header>
+
+          <section className="shop-dash-form-block">
+            <ShopFormSectionHead
+              step="1"
+              title="Informations plat"
+              subtitle="Nom, prix, catégorie et visibilité."
+              onRefresh={refreshPage}
+              refreshing={refreshing}
+            />
+            <div className="shop-dash-grid">
+              <div>
+                <label>Nom du plat *</label>
+                <input
+                  className="shop-dash-input"
+                  required
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label>Slug URL (optionnel)</label>
+                <input
+                  className="shop-dash-input"
+                  value={form.slug}
+                  onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                  placeholder="auto depuis le nom"
+                />
+              </div>
+              <div>
+                <label>Prix (FCFA) *</label>
+                <input
+                  className="shop-dash-input"
+                  type="number"
+                  min={0}
+                  required
                   value={form.basePrice}
                   onChange={(e) => setForm((f) => ({ ...f, basePrice: e.target.value }))}
                 />
               </div>
-              <div className="form-group">
+              <div>
                 <label>Catégorie</label>
                 <input
+                  className="shop-dash-input"
                   list="meal-cats"
                   value={form.category}
                   onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
@@ -352,56 +647,93 @@ export default function ShopRepasDashboard() {
                 </datalist>
               </div>
             </div>
-            <label className="shop-repas-check">
+            <div className="shop-dash-field">
+              <label>Description courte</label>
+              <textarea
+                className="shop-dash-textarea"
+                rows={2}
+                value={form.shortDescription}
+                onChange={(e) => setForm((f) => ({ ...f, shortDescription: e.target.value }))}
+              />
+            </div>
+            <label className="shop-dash-check">
               <input
                 type="checkbox"
                 checked={form.published}
                 onChange={(e) => setForm((f) => ({ ...f, published: e.target.checked }))}
               />
-              Publié sur /repas
+              Publié sur /repas/{'{slug}'}
             </label>
-          </div>
+            {formPromoPreview.isPromoLive ? (
+              <p className="shop-dash-hint">
+                Prix affiché : <strong>{formatPriceXof(formPromoPreview.promoPrice)}</strong>
+                {formPromoPreview.discountPercent > 0 ? ` (−${formPromoPreview.discountPercent}%)` : null}
+              </p>
+            ) : null}
+          </section>
 
-          <div className="form-section">
-            <h2>Images</h2>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={async (e) => {
-                if (!e.target.files?.length) return;
-                try {
-                  const urls = await uploadImages(e.target.files);
-                  setForm((f) => ({
-                    ...f,
-                    images: [...f.images, ...urls],
-                    mainImage: f.mainImage || urls[0] || '',
-                  }));
-                } catch (err) {
-                  setError(err.response?.data?.message || err.message);
-                }
-              }}
+          <section className="shop-dash-form-block">
+            <ShopFormSectionHead
+              step="2"
+              title="Galerie"
+              subtitle="Cliquez une vignette pour la définir en image principale."
+              onRefresh={refreshPage}
+              refreshing={refreshing}
             />
+            <label className="shop-dash-btn secondary shop-repas-file-btn">
+              Ajouter des images
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                hidden
+                onChange={async (e) => {
+                  if (!e.target.files?.length) return;
+                  try {
+                    const urls = await uploadImages(e.target.files);
+                    setForm((f) => {
+                      const next = [...(f.mainImage ? [f.mainImage, ...f.images] : f.images), ...urls];
+                      const unique = [...new Set(next.filter(Boolean))];
+                      return { ...f, mainImage: unique[0] || '', images: unique.slice(1) };
+                    });
+                  } catch (err) {
+                    setError(err.response?.data?.message || err.message);
+                  }
+                  e.target.value = '';
+                }}
+              />
+            </label>
             <div className="shop-repas-thumbs">
-              {form.images.map((url) => (
+              {galleryList.map((url) => (
                 <button
                   key={url}
                   type="button"
                   className={`shop-repas-thumb${form.mainImage === url ? ' is-main' : ''}`}
-                  onClick={() => setForm((f) => ({ ...f, mainImage: url }))}
+                  onClick={() =>
+                    setForm((f) => {
+                      const all = galleryList.filter((u) => u !== url);
+                      return { ...f, mainImage: url, images: all };
+                    })
+                  }
                 >
-                  <img src={getImageUrl(url, API_URL.replace('/api', ''))} alt="" />
+                  <img src={getImageUrl(url, null, BASE_URL)} alt="" />
                 </button>
               ))}
             </div>
-          </div>
+          </section>
 
-          <div className="form-section">
-            <h2>Accompagnements</h2>
-            <p className="plats-subhint">Précisez le nom, le prix, et si le choix est obligatoire.</p>
+          <section className="shop-dash-form-block">
+            <ShopFormSectionHead
+              step="3"
+              title="Accompagnements"
+              subtitle="Nom, prix, et si le choix est obligatoire sur la fiche produit."
+              onRefresh={refreshPage}
+              refreshing={refreshing}
+            />
             {form.accompagnements.map((a, idx) => (
               <div key={idx} className="shop-repas-acc-row">
                 <input
+                  className="shop-dash-input"
                   placeholder="Nom"
                   value={a.name}
                   onChange={(e) =>
@@ -413,6 +745,7 @@ export default function ShopRepasDashboard() {
                   }
                 />
                 <input
+                  className="shop-dash-input"
                   type="number"
                   min={0}
                   placeholder="Prix"
@@ -425,7 +758,7 @@ export default function ShopRepasDashboard() {
                     })
                   }
                 />
-                <label>
+                <label className="shop-dash-check shop-repas-acc-check">
                   <input
                     type="checkbox"
                     checked={!!a.required}
@@ -441,7 +774,7 @@ export default function ShopRepasDashboard() {
                 </label>
                 <button
                   type="button"
-                  className="btn-outline"
+                  className="shop-dash-icon-btn shop-dash-icon-btn--danger"
                   onClick={() =>
                     setForm((f) => ({
                       ...f,
@@ -455,16 +788,22 @@ export default function ShopRepasDashboard() {
             ))}
             <button
               type="button"
-              className="btn-outline"
+              className="shop-dash-btn secondary"
               onClick={() => setForm((f) => ({ ...f, accompagnements: [...f.accompagnements, emptyAcc()] }))}
             >
               + Accompagnement
             </button>
-          </div>
+          </section>
 
-          <div className="form-section">
-            <h2>Promo</h2>
-            <label className="shop-repas-check">
+          <section className="shop-dash-form-block shop-dash-form-block--promo">
+            <ShopFormSectionHead
+              step="4"
+              title="Promo"
+              subtitle="Réduction et livraison gratuite."
+              onRefresh={refreshPage}
+              refreshing={refreshing}
+            />
+            <label className="shop-dash-check">
               <input
                 type="checkbox"
                 checked={form.promo.active}
@@ -472,19 +811,22 @@ export default function ShopRepasDashboard() {
               />
               Promo active
             </label>
-            <div className="form-group">
-              <label>Réduction %</label>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                value={form.promo.discountPercent}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, promo: { ...f.promo, discountPercent: e.target.value } }))
-                }
-              />
+            <div className="shop-dash-grid">
+              <div>
+                <label>Réduction %</label>
+                <input
+                  className="shop-dash-input"
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={form.promo.discountPercent}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, promo: { ...f.promo, discountPercent: e.target.value } }))
+                  }
+                />
+              </div>
             </div>
-            <label className="shop-repas-check">
+            <label className="shop-dash-check">
               <input
                 type="checkbox"
                 checked={form.promo.freeDelivery}
@@ -494,183 +836,109 @@ export default function ShopRepasDashboard() {
               />
               Livraison gratuite (commande)
             </label>
-          </div>
+          </section>
 
-          <div className="shop-repas-form-footer">
-            <button type="button" className="btn-outline" onClick={() => setTab('plats')}>
-              Annuler
-            </button>
-            <button type="submit" className="btn-primary" disabled={saving}>
+          <div className="shop-dash-form-footer">
+            <button type="submit" className="shop-dash-btn shop-dash-btn--primary" disabled={saving}>
               {saving ? 'Enregistrement…' : 'Enregistrer'}
+            </button>
+            <button type="button" className="shop-dash-btn secondary" onClick={resetForm}>
+              Annuler
             </button>
           </div>
         </form>
       ) : null}
 
-      {tab === 'boutique' && settings ? (
-        <div className="restaurant-form shop-repas-form">
-          <div className="form-section">
-            <h2>Frais de livraison (commande)</h2>
-            <div className="form-group">
-              <input
-                type="number"
-                min={0}
-                value={settings.deliveryFee ?? 500}
-                onChange={(e) => setSettings((s) => ({ ...s, deliveryFee: e.target.value }))}
-              />
-            </div>
-            <button
-              type="button"
-              className="btn-primary"
-              disabled={saving}
-              onClick={() => saveSettings({ deliveryFee: Number(settings.deliveryFee) || 0 })}
-            >
-              Enregistrer les frais
-            </button>
-          </div>
-
-          <div className="form-section">
-            <h2>Catégories affichées</h2>
-            <div className="form-group">
-              <input
-                value={(settings.categories || []).join(', ')}
-                onChange={(e) =>
-                  setSettings((s) => ({
-                    ...s,
-                    categories: e.target.value.split(',').map((x) => x.trim()).filter(Boolean),
-                  }))
-                }
-                placeholder="Entrées, Plats, Desserts, Boissons"
-              />
-            </div>
-            <button type="button" className="btn-primary" disabled={saving} onClick={() => saveSettings({ categories: settings.categories })}>
-              Enregistrer les catégories
-            </button>
-          </div>
-
-          <div className="form-section">
-            <h2>Carrousel hero</h2>
-            {(settings.heroSlides || []).map((slide, idx) => (
-              <div key={idx} className="shop-repas-slide">
-                {slide.imageUrl ? (
-                  <img src={getImageUrl(slide.imageUrl, API_URL.replace('/api', ''))} alt="" />
-                ) : null}
-                <input
-                  placeholder="Titre"
-                  value={slide.title || ''}
-                  onChange={(e) => {
-                    const heroSlides = [...(settings.heroSlides || [])];
-                    heroSlides[idx] = { ...heroSlides[idx], title: e.target.value };
-                    setSettings((s) => ({ ...s, heroSlides }));
-                  }}
-                />
-                <input
-                  placeholder="Sous-titre"
-                  value={slide.subtitle || ''}
-                  onChange={(e) => {
-                    const heroSlides = [...(settings.heroSlides || [])];
-                    heroSlides[idx] = { ...heroSlides[idx], subtitle: e.target.value };
-                    setSettings((s) => ({ ...s, heroSlides }));
-                  }}
-                />
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    try {
-                      const url = await uploadSlide(file);
-                      const heroSlides = [...(settings.heroSlides || [])];
-                      heroSlides[idx] = { ...heroSlides[idx], imageUrl: url };
-                      setSettings((s) => ({ ...s, heroSlides }));
-                    } catch (err) {
-                      setError(err.response?.data?.message || err.message);
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  className="btn-outline"
-                  onClick={() =>
-                    setSettings((s) => ({
-                      ...s,
-                      heroSlides: (s.heroSlides || []).filter((_, i) => i !== idx),
-                    }))
-                  }
-                >
-                  Retirer
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              className="btn-outline"
-              onClick={() =>
-                setSettings((s) => ({
-                  ...s,
-                  heroSlides: [...(s.heroSlides || []), { imageUrl: '', title: '', subtitle: '', ctaLabel: 'Commander', ctaHref: '#meal-products' }],
-                }))
-              }
-            >
-              + Slide
-            </button>
-            <button
-              type="button"
-              className="btn-primary"
-              style={{ marginLeft: 8 }}
-              disabled={saving}
-              onClick={() => saveSettings({ heroSlides: settings.heroSlides })}
-            >
-              Enregistrer le carrousel
-            </button>
-          </div>
-
-          <div className="form-section">
-            <h2>Bannière promo</h2>
-            <label className="shop-repas-check">
-              <input
-                type="checkbox"
-                checked={!!settings.promoBanner?.active}
-                onChange={(e) =>
-                  setSettings((s) => ({
-                    ...s,
-                    promoBanner: { ...s.promoBanner, active: e.target.checked },
-                  }))
-                }
-              />
-              Active
-            </label>
-            <div className="form-group">
-              <label>Titre</label>
-              <input
-                value={settings.promoBanner?.title || ''}
-                onChange={(e) =>
-                  setSettings((s) => ({
-                    ...s,
-                    promoBanner: { ...s.promoBanner, title: e.target.value },
-                  }))
-                }
-              />
-            </div>
-            <div className="form-group">
-              <label>Sous-titre</label>
-              <input
-                value={settings.promoBanner?.subtitle || ''}
-                onChange={(e) =>
-                  setSettings((s) => ({
-                    ...s,
-                    promoBanner: { ...s.promoBanner, subtitle: e.target.value },
-                  }))
-                }
-              />
-            </div>
-            <button type="button" className="btn-primary" disabled={saving} onClick={() => saveSettings({ promoBanner: settings.promoBanner })}>
-              Enregistrer la bannière
-            </button>
-          </div>
+      <div className="shop-dash-card">
+        <div className="shop-dash-list-head">
+          <h3 className="shop-dash-list-title">
+            Plats <span className="shop-dash-count">{products.length}</span>
+          </h3>
+          <SectionRefreshButton onRefresh={refreshPage} loading={refreshing} />
         </div>
-      ) : null}
+        <div className="shop-dash-product-grid">
+          {products.map((p) => {
+            const promo = getShopPromoState(p);
+            const pubUrl = `${publicOrigin}/repas/${p.slug}`;
+            return (
+              <article
+                key={p._id}
+                className={`shop-dash-product-card${p.published ? '' : ' shop-dash-product-card--draft'}`}
+              >
+                <div className="shop-dash-product-card-img-wrap">
+                  <img src={getImageUrl(p.mainImage || p.images?.[0], null, BASE_URL)} alt="" />
+                  {promo.isPromoLive ? <span className="shop-dash-product-card-promo">Promo</span> : null}
+                  {!p.published ? <span className="shop-dash-product-card-draft">Brouillon</span> : null}
+                </div>
+                <div className="shop-dash-product-card-body">
+                  <h4>{p.name}</h4>
+                  <p className="shop-dash-product-card-slug">
+                    <FaEye aria-hidden /> /repas/{p.slug}
+                  </p>
+                  <p className="shop-dash-product-card-price">
+                    {promo.isPromoLive ? (
+                      <>
+                        <span className="shop-dash-price-old">{formatPriceXof(promo.basePrice)}</span>
+                        <span className="shop-dash-price-promo">{formatPriceXof(promo.promoPrice)}</span>
+                      </>
+                    ) : (
+                      formatPriceXof(p.basePrice)
+                    )}
+                  </p>
+                  {p.category ? <span className="shop-dash-tag">{p.category}</span> : null}
+                  {(p.accompagnements || []).length ? (
+                    <span className="shop-dash-tag">{p.accompagnements.length} acc.</span>
+                  ) : null}
+                  <a className="shop-dash-link" href={pubUrl} target="_blank" rel="noopener noreferrer">
+                    <FaExternalLinkAlt size={11} /> Voir la fiche
+                  </a>
+                  <div className="shop-dash-actions shop-dash-actions--card">
+                    <button type="button" className="shop-dash-icon-btn" title="Copier le lien" onClick={() => copyLink(p.slug)}>
+                      <FaCopy />
+                    </button>
+                    <button type="button" className="shop-dash-icon-btn" title="Modifier" onClick={() => openEdit(p)}>
+                      <FaEdit />
+                    </button>
+                    <button
+                      type="button"
+                      className="shop-dash-icon-btn shop-dash-icon-btn--accent"
+                      title="Lancer promo"
+                      onClick={() => launchPromo(p)}
+                    >
+                      <FaRocket />
+                    </button>
+                    {p.promo?.active ? (
+                      <button type="button" className="shop-dash-icon-btn" title="Arrêter promo" onClick={() => stopPromo(p)}>
+                        <FaStop />
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="shop-dash-icon-btn shop-dash-icon-btn--danger"
+                      title="Supprimer"
+                      onClick={() => deleteProduct(p)}
+                    >
+                      <FaTrash />
+                    </button>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+          {products.length === 0 ? (
+            <div className="shop-dash-empty">
+              <div className="shop-dash-empty-icon" aria-hidden>
+                <FaUtensils />
+              </div>
+              <h4>Aucun plat</h4>
+              <p>Créez votre premier plat : il aura automatiquement une page /repas/nom-du-plat.</p>
+              <button type="button" className="shop-dash-btn shop-dash-btn--primary" onClick={openCreate}>
+                + Créer un plat
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }

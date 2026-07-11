@@ -1,62 +1,51 @@
+/* Catalogue Shop Repas — aligné Shop Express (blanc, Montserrat, ambre) */
 .meal-shop {
-  --meal-bg: #f7f4ef;
-  --meal-ink: #1a1410;
-  --meal-muted: #6b5e54;
+  --meal-gutter: clamp(18px, 5vw, 28px);
   min-height: 100vh;
-  background: var(--meal-bg);
-  color: var(--meal-ink);
+  background: #fff;
+  color: var(--rf-text-dark);
   font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  padding-bottom: 88px;
+  padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
-.meal-shop-top {
-  position: sticky;
-  top: 0;
-  z-index: 30;
+.meal-shop-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 18px;
-  background: rgba(247, 244, 239, 0.92);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(26, 20, 16, 0.06);
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 8px var(--meal-gutter) 0;
 }
 
-.meal-shop-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  color: var(--meal-ink);
+.meal-shop-toolbar-label {
+  margin: 0;
+  font-size: 0.72rem;
   font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rf-amber);
 }
 
-.meal-shop-brand img {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  object-fit: contain;
-}
-
-.meal-shop-cart-btn {
+.meal-shop-cart-link {
   position: relative;
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
   color: var(--rf-amber);
-  box-shadow: 0 4px 14px rgba(26, 20, 16, 0.08);
   text-decoration: none;
+  border: 1px solid var(--rf-border);
+  background: #fff;
 }
 
-.meal-shop-cart-badge {
+.meal-shop-cart-link span {
   position: absolute;
-  top: -2px;
-  right: -2px;
+  top: -4px;
+  right: -4px;
   min-width: 18px;
   height: 18px;
   border-radius: 999px;
@@ -72,33 +61,44 @@
 
 .meal-shop-hero {
   display: grid;
-  gap: 24px;
-  padding: 28px 18px 20px;
+  gap: 28px;
   max-width: 1100px;
   margin: 0 auto;
+  padding: 20px var(--meal-gutter) 28px;
 }
 
-@media (min-width: 860px) {
+@media (min-width: 900px) {
   .meal-shop-hero {
     grid-template-columns: 1.05fr 0.95fr;
     align-items: center;
-    padding: 40px 24px 28px;
+    gap: 48px;
+    padding: 36px var(--meal-gutter) 40px;
   }
 }
 
+.meal-shop-eyebrow {
+  margin: 0 0 10px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rf-amber);
+}
+
 .meal-shop-hero-copy h1 {
-  margin: 0 0 12px;
-  font-size: clamp(1.75rem, 4vw, 2.6rem);
+  margin: 0 0 14px;
+  font-size: clamp(1.7rem, 4.2vw, 2.55rem);
   font-weight: 900;
   letter-spacing: -0.03em;
-  line-height: 1.15;
+  line-height: 1.12;
 }
 
 .meal-shop-hero-copy p {
-  margin: 0 0 20px;
-  color: var(--meal-muted);
+  margin: 0 0 22px;
+  color: var(--rf-text-muted);
   line-height: 1.55;
-  max-width: 36ch;
+  max-width: 38ch;
+  font-size: 0.98rem;
 }
 
 .meal-shop-hero-ctas {
@@ -111,15 +111,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   border: none;
   border-radius: 999px;
-  padding: 12px 20px;
+  padding: 13px 20px;
   font-weight: 800;
   font-family: inherit;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   text-decoration: none;
   cursor: pointer;
+  letter-spacing: 0.01em;
 }
 
 .meal-shop-btn--primary {
@@ -130,8 +131,8 @@
 
 .meal-shop-btn--ghost {
   background: #fff;
-  color: var(--meal-ink);
-  border: 1px solid rgba(26, 20, 16, 0.12);
+  color: var(--rf-text-dark);
+  border: 1px solid var(--rf-border-strong);
 }
 
 .meal-shop-btn--block {
@@ -140,18 +141,18 @@
 
 .meal-shop-hero-visual {
   position: relative;
-  border-radius: 24px;
+  border-radius: 22px;
   overflow: hidden;
-  min-height: 240px;
-  background: linear-gradient(145deg, #efe6d8, #e2d4c2);
-  box-shadow: 0 20px 50px rgba(26, 20, 16, 0.1);
+  min-height: 260px;
+  background: linear-gradient(145deg, #f7f0e6, #efe2d0);
+  box-shadow: 0 18px 48px rgba(26, 20, 16, 0.1);
 }
 
 .meal-shop-hero-visual img,
 .meal-shop-hero-ph {
   width: 100%;
   height: 100%;
-  min-height: 240px;
+  min-height: 260px;
   object-fit: cover;
   display: block;
 }
@@ -160,7 +161,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 12px;
+  bottom: 14px;
   display: flex;
   justify-content: center;
   gap: 6px;
@@ -171,103 +172,45 @@
   height: 8px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.55);
   cursor: pointer;
   padding: 0;
 }
 
 .meal-shop-hero-dots button.is-active {
   background: #fff;
-  width: 20px;
+  width: 22px;
   border-radius: 999px;
 }
 
-.meal-shop-trust {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+.meal-shop-cats {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 8px 18px 28px;
-}
-
-@media (min-width: 800px) {
-  .meal-shop-trust {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-.meal-shop-trust-item {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  background: #fff;
-  border-radius: 14px;
-  padding: 14px;
-  border: 1px solid rgba(26, 20, 16, 0.06);
-}
-
-.meal-shop-trust-item svg {
-  color: var(--rf-amber);
-  margin-top: 2px;
-  flex-shrink: 0;
-}
-
-.meal-shop-trust-item strong {
-  display: block;
-  font-size: 0.82rem;
-}
-
-.meal-shop-trust-item span {
-  font-size: 0.72rem;
-  color: var(--meal-muted);
-}
-
-.meal-shop-section-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.meal-shop-section-head h2 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 900;
-  letter-spacing: -0.02em;
-}
-
-.meal-shop-section-head span {
-  font-size: 0.8rem;
-  color: var(--meal-muted);
-  font-weight: 600;
-}
-
-.meal-shop-cats,
-.meal-shop-products {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 8px 18px 28px;
+  padding: 0 var(--meal-gutter) 8px;
 }
 
 .meal-shop-cats-row {
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding-bottom: 4px;
+  padding-bottom: 6px;
+  scrollbar-width: none;
+}
+
+.meal-shop-cats-row::-webkit-scrollbar {
+  display: none;
 }
 
 .meal-shop-cat {
   flex-shrink: 0;
-  border: 1px solid rgba(26, 20, 16, 0.1);
+  border: 1px solid var(--rf-border);
   background: #fff;
   border-radius: 999px;
   padding: 10px 16px;
   font-weight: 700;
   font-size: 0.82rem;
   cursor: pointer;
-  color: var(--meal-muted);
+  color: var(--rf-text-muted);
   font-family: inherit;
 }
 
@@ -277,26 +220,64 @@
   border-color: transparent;
 }
 
+.meal-shop-products {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 18px var(--meal-gutter) 32px;
+}
+
+.meal-shop-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.meal-shop-section-head h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.meal-shop-section-head span {
+  font-size: 0.8rem;
+  color: var(--rf-text-muted);
+  font-weight: 600;
+}
+
 .meal-shop-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 18px;
 }
 
 .meal-shop-card {
   background: #fff;
   border-radius: 18px;
   overflow: hidden;
-  border: 1px solid rgba(26, 20, 16, 0.06);
-  box-shadow: 0 8px 24px rgba(26, 20, 16, 0.05);
+  border: 1px solid var(--rf-border);
   display: flex;
   flex-direction: column;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.meal-shop-card:hover {
+  border-color: rgba(199, 109, 46, 0.35);
+  box-shadow: 0 12px 32px rgba(26, 20, 16, 0.08);
+  transform: translateY(-2px);
 }
 
 .meal-shop-card-media {
   position: relative;
   aspect-ratio: 1;
-  background: #efe8df;
+  background: #f5efe6;
+  display: block;
+  overflow: hidden;
 }
 
 .meal-shop-card-media img,
@@ -319,24 +300,39 @@
 }
 
 .meal-shop-card-body {
-  padding: 12px 14px 14px;
+  padding: 14px 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   flex: 1;
+}
+
+.meal-shop-card-cat {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rf-amber);
 }
 
 .meal-shop-card-body h3 {
   margin: 0;
-  font-size: 0.98rem;
+  font-size: 1.02rem;
   font-weight: 800;
   letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.meal-shop-card-body h3 a {
+  color: inherit;
+  text-decoration: none;
 }
 
 .meal-shop-card-desc {
   margin: 0;
-  font-size: 0.78rem;
-  color: var(--meal-muted);
+  font-size: 0.8rem;
+  color: var(--rf-text-muted);
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -348,54 +344,108 @@
   display: flex;
   align-items: baseline;
   gap: 8px;
-  margin-top: auto;
+  margin-top: 4px;
 }
 
 .meal-shop-card-price strong {
   color: var(--rf-amber);
-  font-size: 1rem;
+  font-size: 1.05rem;
+  font-weight: 900;
 }
 
 .meal-shop-card-price s {
-  color: var(--meal-muted);
+  color: var(--rf-text-muted);
   font-size: 0.82rem;
+}
+
+.meal-shop-card-acc {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--rf-text-muted);
+}
+
+.meal-shop-card-body .meal-shop-btn {
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+.meal-shop-trust {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 8px var(--meal-gutter) 36px;
+}
+
+@media (min-width: 800px) {
+  .meal-shop-trust {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.meal-shop-trust-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: #faf7f2;
+  border-radius: 14px;
+  padding: 14px;
+  border: 1px solid var(--rf-border);
+}
+
+.meal-shop-trust-item svg {
+  color: var(--rf-amber);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.meal-shop-trust-item strong {
+  display: block;
+  font-size: 0.82rem;
+}
+
+.meal-shop-trust-item span {
+  font-size: 0.72rem;
+  color: var(--rf-text-muted);
 }
 
 .meal-shop-banner {
   max-width: 1100px;
-  margin: 0 auto 28px;
+  margin: 0 auto 32px;
   padding: 28px 24px;
   border-radius: 20px;
-  background: linear-gradient(135deg, #f3e4c8 0%, #e8c98a 100%);
-  width: calc(100% - 36px);
+  background: linear-gradient(135deg, #f6e7c8 0%, #e8c98a 100%);
+  width: calc(100% - 2 * var(--meal-gutter));
   box-sizing: border-box;
 }
 
 .meal-shop-banner h2 {
   margin: 0 0 8px;
-  font-size: 1.5rem;
+  font-size: 1.45rem;
   font-weight: 900;
 }
 
 .meal-shop-banner p {
   margin: 0 0 16px;
-  color: var(--meal-muted);
+  color: var(--rf-text-muted);
 }
 
 .meal-shop-footer {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 24px 18px 40px;
+  padding: 24px var(--meal-gutter) 48px;
   display: flex;
   justify-content: space-between;
   gap: 16px;
   align-items: flex-start;
-  border-top: 1px solid rgba(26, 20, 16, 0.08);
+  border-top: 1px solid var(--rf-border);
 }
 
 .meal-shop-footer p {
   margin: 6px 0 0;
-  color: var(--meal-muted);
+  color: var(--rf-text-muted);
   font-size: 0.85rem;
 }
 
@@ -408,161 +458,11 @@
   text-decoration: none;
 }
 
-.meal-shop-fab {
-  position: fixed;
-  right: 16px;
-  bottom: 16px;
-  z-index: 40;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: linear-gradient(165deg, var(--rf-amber) 0%, #a85a24 100%);
-  color: #fff;
-  text-decoration: none;
-  font-weight: 800;
-  padding: 14px 18px;
-  border-radius: 999px;
-  box-shadow: 0 10px 28px rgba(199, 109, 46, 0.4);
-}
-
-.meal-shop-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-@media (min-width: 640px) {
-  .meal-shop-modal {
-    align-items: center;
-  }
-}
-
-.meal-shop-modal-backdrop {
-  position: absolute;
-  inset: 0;
-  border: none;
-  background: rgba(26, 20, 16, 0.45);
-  cursor: pointer;
-}
-
-.meal-shop-modal-panel {
-  position: relative;
-  width: 100%;
-  max-width: 420px;
-  max-height: 90vh;
-  overflow: auto;
-  background: #fff;
-  border-radius: 20px 20px 0 0;
-  padding: 22px 18px 24px;
-  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.15);
-}
-
-@media (min-width: 640px) {
-  .meal-shop-modal-panel {
-    border-radius: 20px;
-  }
-}
-
-.meal-shop-modal-panel h3 {
-  margin: 0 0 6px;
-  font-size: 1.2rem;
-  font-weight: 900;
-}
-
-.meal-shop-modal-price {
-  margin: 0 0 16px;
-  color: var(--rf-amber);
-  font-weight: 800;
-}
-
-.meal-shop-qty {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 700;
-  margin-bottom: 14px;
-}
-
-.meal-shop-qty-ctrl {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 6px;
-  background: var(--meal-bg);
-  border-radius: 999px;
-  padding: 4px;
-}
-
-.meal-shop-qty-ctrl button {
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 50%;
-  background: #fff;
-  font-size: 1.1rem;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-.meal-shop-qty-ctrl span {
-  min-width: 24px;
-  text-align: center;
-  font-weight: 800;
-}
-
-.meal-shop-acc {
-  margin-bottom: 16px;
-}
-
-.meal-shop-acc h4 {
-  margin: 0 0 10px;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--rf-amber);
-}
-
-.meal-shop-acc-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(26, 20, 16, 0.06);
-}
-
-.meal-shop-acc-row strong {
-  display: block;
-  font-size: 0.9rem;
-}
-
-.meal-shop-acc-row span {
-  font-size: 0.78rem;
-  color: var(--meal-muted);
-}
-
-.meal-shop-toast {
-  position: fixed;
-  left: 50%;
-  bottom: 90px;
-  transform: translateX(-50%);
-  z-index: 60;
-  background: var(--meal-ink);
-  color: #fff;
-  padding: 10px 16px;
-  border-radius: 999px;
-  font-weight: 700;
-  font-size: 0.85rem;
-}
-
 .meal-shop-empty,
 .meal-shop-error {
   text-align: center;
-  color: var(--meal-muted);
-  padding: 24px;
+  color: var(--rf-text-muted);
+  padding: 28px 16px;
 }
 
 .meal-shop-error {

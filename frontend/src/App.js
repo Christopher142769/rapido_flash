@@ -53,6 +53,7 @@ import ShopProductLanding from './pages/shop/ShopProductLanding';
 import ShopOrderConfirmation from './pages/shop/ShopOrderConfirmation';
 import MealShopPage from './pages/repas/MealShopPage';
 import MealCartPage from './pages/repas/MealCartPage';
+import MealProductLanding from './pages/repas/MealProductLanding';
 import MealOrderConfirmation from './pages/repas/MealOrderConfirmation';
 import CommercialOverviewPage from './pages/commercial/CommercialOverviewPage';
 import CommercialCommandesPage from './pages/commercial/CommercialCommandesPage';
@@ -171,8 +172,10 @@ function AppRoutes() {
         <Route path="/restaurant/:id" element={<RestaurantDetail />} />
         <Route path="/shop/:slug/commande" element={<ShopOrderConfirmation />} />
         <Route path="/shop/:slug" element={<ShopProductLanding />} />
+        <Route path="/repas/:slug/commande" element={<MealOrderConfirmation />} />
         <Route path="/repas/commande" element={<MealOrderConfirmation />} />
         <Route path="/repas/panier" element={<MealCartPage />} />
+        <Route path="/repas/:slug" element={<MealProductLanding />} />
         <Route path="/repas" element={<MealShopPage />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<PrivateRoute><Checkout /></PrivateRoute>} />
