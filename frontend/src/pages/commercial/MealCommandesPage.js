@@ -4,25 +4,25 @@ import axios from 'axios';
 import PageLoader from '../../components/PageLoader';
 import ShopOrderSpecsModal from '../../components/commercial/ShopOrderSpecsModal';
 import { useModal } from '../../context/ModalContext';
-import { formatPriceXof } from '../../utils/shopPromo';
+import { formatPrice } from '../../utils/commercialApi';
+import {
+  exportShopOrdersToExcel,
+  exportShopOrdersToPdf,
+  prepareShopOrdersExport,
+  SHOP_STATUT_LABELS,
+} from '../../utils/exportShopOrders';
+import { exportShopOrdersToWord } from '../../utils/exportCommandesWord';
+import { formatDeliveryDateShort } from '../../utils/shopDeliveryDate';
 import CommandesFilterStats from '../../components/commercial/CommandesFilterStats';
 import { sumMealOrdersQuantity } from '../../utils/commandesFilterStats';
 import { CITY_FILTER_LABELS, POINTS_CITIES } from '../../utils/pointsByCity';
-import { formatDeliveryDateShort } from '../../utils/shopDeliveryDate';
 import '../restaurant/RestaurantCommandes.css';
 import './commercial.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const SHOP_ORDER_TZ = 'Africa/Porto-Novo';
 
-const STATUT_LABELS = {
-  en_attente: 'En attente',
-  confirmee: 'Confirmée',
-  en_preparation: 'En préparation',
-  en_livraison: 'En livraison',
-  livree: 'Livrée',
-  annulee: 'Annulée',
-};
+const STATUT_LABELS = SHOP_STATUT_LABELS;
 
 const STATUT_COLORS = {
   en_attente: '#FFA500',
@@ -42,9 +42,10 @@ function defaultDateRange() {
   const end = new Date();
   const start = new Date();
   start.setDate(start.getDate() - 30);
-  const fmt = (d) =>
-    new Intl.DateTimeFormat('en-CA', { timeZone: SHOP_ORDER_TZ }).format(d);
-  return { dateFrom: fmt(start), dateTo: fmt(end) };
+  return {
+    dateFrom: start.toISOString().slice(0, 10),
+    dateTo: end.toISOString().slice(0, 10),
+  };
 }
 
 function orderDayKey(order) {
@@ -59,11 +60,6 @@ function formatOrderDate(order) {
   const raw = order.orderDate || order.createdAt;
   if (!raw) return '—';
   return new Date(raw).toLocaleString('fr-FR');
-}
-
-function customerName(c) {
-  if (!c) return '—';
-  return `${c.firstName || ''} ${c.lastName || ''}`.trim() || '—';
 }
 
 function renderPhoneLink(phone) {
@@ -89,11 +85,7 @@ function filterMealOrders(orders, { dateFrom, dateTo, statut, productKey, city }
         const id = String(it.mealProduct?._id || it.mealProduct || '');
         const slug = it.slug || '';
         const name = it.productName || '';
-        return (
-          id === productKey ||
-          `slug:${slug}` === productKey ||
-          `name:${name}` === productKey
-        );
+        return id === productKey || `slug:${slug}` === productKey || `name:${name}` === productKey;
       });
       if (!hit) return false;
     }
@@ -115,18 +107,57 @@ function getMealProductOptions(orders) {
       map.set(key, it.productName || key);
     }
   }
-  return [...map.entries()].map(([key, label]) => ({ key, label })).sort((a, b) => a.label.localeCompare(b.label, 'fr'));
+  return [...map.entries()]
+    .map(([key, label]) => ({ key, label }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'fr'));
 }
 
-function escapeCsv(v) {
-  const s = String(v ?? '');
-  if (s.includes('"') || s.includes(',') || s.includes('\n')) {
-    return `"${s.replace(/"/g, '""')}"`;
-  }
-  return s;
+/** Aplatit une commande repas pour réutiliser les exports Shop (Excel / PDF / Word). */
+function mealOrderToShopExportShape(order) {
+  const items = order.items || [];
+  const qty = items.reduce((s, it) => s + (Number(it.quantity) || 0), 0);
+  const productName =
+    items.map((it) => `${it.productName}×${it.quantity}`).join(', ') || '—';
+  const accNote = items
+    .flatMap((it) =>
+      (it.accompagnements || []).map((a) => `${a.name}×${a.quantity}`)
+    )
+    .join(', ');
+  return {
+    _id: order._id,
+    orderNumber: order.orderNumber,
+    orderDate: order.orderDate || order.createdAt,
+    createdAt: order.createdAt,
+    confirmedAt: order.confirmedAt,
+    deliveredAt: order.deliveredAt,
+    statut: order.statut,
+    commercialStatus: order.commercialStatus,
+    productName,
+    slug: items[0]?.slug || '',
+    quantity: qty,
+    quantityLabel: String(qty),
+    quantityUnit: 'unit',
+    unitPrice: items.length === 1 ? Number(items[0].unitPrice) || 0 : 0,
+    subtotalPrice: Number(order.subtotalPrice) || 0,
+    deliveryFee: Number(order.deliveryFee) || 0,
+    eviscerationCleaning: false,
+    eviscerationFee: 0,
+    totalPrice: Number(order.totalPrice) || 0,
+    freeDelivery: !!order.freeDelivery,
+    isPromoLive: items.some((it) => it.isPromoLive),
+    discountPercent: items.find((it) => it.discountPercent)?.discountPercent || 0,
+    customer: order.customer,
+    clientSpecifications: [order.clientSpecifications, accNote ? `Acc.: ${accNote}` : '']
+      .filter(Boolean)
+      .join('\n'),
+    requestedDeliveryAt: order.requestedDeliveryAt,
+    scheduledDeliveryAt: null,
+    isOffPlatform: false,
+    paymentMode: 'livraison',
+  };
 }
 
-/** Page Commandes Repas — même disposition / workflow que Commandes Shop. */
+/** Page Commandes Repas — clone UI / fonctionnalités de Commandes Shop. */
 export default function MealCommandesPage() {
   const { showSuccess, showError } = useModal();
   const [orders, setOrders] = useState([]);
@@ -174,21 +205,67 @@ export default function MealCommandesPage() {
   }, [orders, filter, productFilter, cityFilter, dateFrom, dateTo]);
 
   const selectedProductLabel =
-    productOptions.find((p) => p.key === productFilter)?.label || 'Tous les plats';
+    productOptions.find((p) => p.key === productFilter)?.label || 'Tous les produits';
   const selectedStatutLabel = filter ? STATUT_LABELS[filter] || filter : 'Tous les statuts';
   const selectedCityLabel = CITY_FILTER_LABELS[cityFilter] || 'Toutes les villes';
 
-  const filterStats = useMemo(() => {
-    const totalAmount = filteredOrders.reduce(
-      (s, o) => s + (o.statut === 'annulee' ? 0 : Number(o.totalPrice) || 0),
-      0
-    );
-    return {
+  const exportData = useMemo(
+    () =>
+      prepareShopOrdersExport(filteredOrders.map(mealOrderToShopExportShape), {
+        dateFrom,
+        dateTo,
+        statutFilter: filter,
+        statutLabel: selectedStatutLabel,
+        productFilter,
+        productLabel: selectedProductLabel,
+        cityFilter,
+        cityLabel: selectedCityLabel,
+      }),
+    [
+      filteredOrders,
+      dateFrom,
+      dateTo,
+      filter,
+      productFilter,
+      cityFilter,
+      selectedProductLabel,
+      selectedStatutLabel,
+      selectedCityLabel,
+    ]
+  );
+
+  const filterStats = useMemo(
+    () => ({
       orderCount: filteredOrders.length,
       totalQuantity: sumMealOrdersQuantity(filteredOrders),
-      totalAmount,
-    };
-  }, [filteredOrders]);
+      totalAmount: exportData.totalAmount,
+    }),
+    [filteredOrders, exportData.totalAmount]
+  );
+
+  const handleExportExcel = () => {
+    if (!exportData.orders.length) {
+      showError('Aucune commande à exporter pour cette période et ce filtre.');
+      return;
+    }
+    exportShopOrdersToExcel(exportData);
+  };
+
+  const handleExportPdf = () => {
+    if (!exportData.orders.length) {
+      showError('Aucune commande à exporter pour cette période et ce filtre.');
+      return;
+    }
+    exportShopOrdersToPdf(exportData);
+  };
+
+  const handleExportWord = () => {
+    if (!exportData.orders.length) {
+      showError('Aucune commande à exporter pour cette période et ce filtre.');
+      return;
+    }
+    exportShopOrdersToWord(exportData);
+  };
 
   const run = async (fn, msg) => {
     setBusy(true);
@@ -234,39 +311,6 @@ export default function MealCommandesPage() {
     }
   };
 
-  const handleExportCsv = () => {
-    if (!filteredOrders.length) {
-      showError('Aucune commande à exporter pour cette période et ce filtre.');
-      return;
-    }
-    const rows = [
-      ['Réf', 'Date', 'Statut', 'Client', 'Téléphone', 'Ville', 'Adresse', 'Plats', 'Sous-total', 'Livraison', 'Total'],
-      ...filteredOrders.map((o) => [
-        o.orderNumber || '',
-        formatOrderDate(o),
-        STATUT_LABELS[o.statut] || o.statut,
-        customerName(o.customer),
-        o.customer?.phone || '',
-        o.customer?.city || '',
-        o.customer?.addressDescription || '',
-        (o.items || [])
-          .map((i) => `${i.productName}×${i.quantity}`)
-          .join(' | '),
-        o.subtotalPrice,
-        o.deliveryFee,
-        o.totalPrice,
-      ]),
-    ];
-    const csv = rows.map((r) => r.map(escapeCsv).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `commandes-repas-${dateFrom}_${dateTo}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <>
       <ShopOrderSpecsModal
@@ -289,7 +333,11 @@ export default function MealCommandesPage() {
               <div className="commercial-filters">
                 <label>
                   Du
-                  <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                  />
                 </label>
                 <label>
                   Au
@@ -299,17 +347,18 @@ export default function MealCommandesPage() {
                   Statut
                   <select value={filter} onChange={(e) => setFilter(e.target.value)}>
                     <option value="">Tous les statuts</option>
-                    {Object.entries(STATUT_LABELS).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
+                    <option value="en_attente">En attente</option>
+                    <option value="confirmee">Confirmée</option>
+                    <option value="en_preparation">En préparation</option>
+                    <option value="en_livraison">En livraison</option>
+                    <option value="livree">Livrée</option>
+                    <option value="annulee">Annulée</option>
                   </select>
                 </label>
                 <label>
-                  Plat
+                  Produit
                   <select value={productFilter} onChange={(e) => setProductFilter(e.target.value)}>
-                    <option value="">Tous les plats</option>
+                    <option value="">Tous les produits</option>
                     {productOptions.map((p) => (
                       <option key={p.key} value={p.key}>
                         {p.label}
@@ -345,31 +394,48 @@ export default function MealCommandesPage() {
                 statutLabel={selectedStatutLabel}
                 productLabel={selectedProductLabel}
                 cityLabel={selectedCityLabel}
-                formatPrice={formatPriceXof}
-                quantityLabel="Quantité plats"
+                formatPrice={formatPrice}
+                quantityLabel="Quantité produits"
               />
 
               <div className="shop-commandes-export-bar">
                 <p className="shop-commandes-export-summary">
-                  <strong>{filterStats.orderCount}</strong> commande
-                  {filterStats.orderCount > 1 ? 's' : ''} · Total {formatPriceXof(filterStats.totalAmount)}
+                  <strong>{exportData.orderCount}</strong> commande
+                  {exportData.orderCount > 1 ? 's' : ''} · Total {formatPrice(exportData.totalAmount)}
                 </p>
                 <div className="commercial-filters" style={{ marginBottom: 0 }}>
                   <button
                     type="button"
                     className="commercial-btn commercial-btn--primary"
-                    onClick={handleExportCsv}
-                    disabled={!filteredOrders.length}
+                    onClick={handleExportExcel}
+                    disabled={!exportData.orders.length}
                   >
-                    Exporter CSV
+                    Exporter Excel
+                  </button>
+                  <button
+                    type="button"
+                    className="commercial-btn commercial-btn--outline"
+                    onClick={handleExportPdf}
+                    disabled={!exportData.orders.length}
+                  >
+                    Exporter PDF
+                  </button>
+                  <button
+                    type="button"
+                    className="commercial-btn commercial-btn--outline"
+                    onClick={handleExportWord}
+                    disabled={!exportData.orders.length}
+                  >
+                    Exporter Word
                   </button>
                 </div>
               </div>
             </div>
 
             <p className="commandes-shop-hint">
-              Filtrez par <strong>date de commande</strong>, statut, plat et ville. Même processus
-              opérationnel que Commandes Shop : confirmer, préparation, livraison, livrée.
+              Filtrez par <strong>date de commande</strong>, statut, produit et ville, puis exportez le
+              détail complet en PDF, Excel ou Word. Même processus opérationnel : confirmer,
+              préparation, livraison, livrée.
             </p>
 
             {filteredOrders.length === 0 ? (
@@ -382,7 +448,9 @@ export default function MealCommandesPage() {
             ) : (
               <div className="commandes-list">
                 {filteredOrders.map((order) => {
-                  const name = customerName(order.customer);
+                  const name = [order.customer?.firstName, order.customer?.lastName]
+                    .filter(Boolean)
+                    .join(' ');
                   const addressLine = [order.customer?.city, order.customer?.addressDescription]
                     .filter(Boolean)
                     .join(' — ');
@@ -406,7 +474,11 @@ export default function MealCommandesPage() {
                               <>
                                 {' '}
                                 ·{' '}
-                                <Link to={`/repas/${firstSlug}`} target="_blank" rel="noopener noreferrer">
+                                <Link
+                                  to={`/repas/${firstSlug}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
                                   Voir la fiche
                                 </Link>
                               </>
@@ -438,24 +510,24 @@ export default function MealCommandesPage() {
                       <div className="commande-client">
                         <h4>Client:</h4>
                         <p>
-                          <strong>{name}</strong>
+                          <strong>{name || '—'}</strong>
                         </p>
                         {order.customer?.phone ? <p>📞 {order.customer.phone}</p> : null}
                       </div>
 
                       <div className="commande-plats">
-                        <h4>Plats:</h4>
+                        <h4>Produit Shop:</h4>
                         {(order.items || []).map((it, idx) => (
                           <div key={it._id || idx} className="plat-item">
                             <span>
-                              {it.productName} · ×{it.quantity}
+                              {it.productName} · {it.quantity}
                               {(it.accompagnements || []).length
                                 ? ` (+ ${(it.accompagnements || [])
                                     .map((a) => `${a.name}×${a.quantity}`)
                                     .join(', ')})`
                                 : ''}
                             </span>
-                            <span>{formatPriceXof(it.lineTotal)}</span>
+                            <span>{Number(it.lineTotal || 0).toFixed(0)} FCFA</span>
                           </div>
                         ))}
                         {order.freeDelivery ? (
@@ -472,8 +544,12 @@ export default function MealCommandesPage() {
                             {renderPhoneLink(order.customer?.phone)}
                           </div>
                           <div className="commande-livraison-row commande-livraison-instructions">
-                            <span className="commande-livraison-label">Spécifications / instructions</span>
-                            <span className="commande-livraison-instructions-text">{specs || '—'}</span>
+                            <span className="commande-livraison-label">
+                              Spécifications / instructions
+                            </span>
+                            <span className="commande-livraison-instructions-text">
+                              {specs || '—'}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -481,14 +557,14 @@ export default function MealCommandesPage() {
                       <div className="commande-total">
                         {Number(order.subtotalPrice) > 0 && Number(order.deliveryFee) > 0 ? (
                           <span className="commande-shop-payment">
-                            Sous-total {formatPriceXof(order.subtotalPrice)}
+                            Sous-total {Number(order.subtotalPrice).toLocaleString('fr-FR')} FCFA
                             {' · '}
-                            Livraison {formatPriceXof(order.deliveryFee)}
+                            Livraison {Number(order.deliveryFee).toLocaleString('fr-FR')} FCFA
                           </span>
                         ) : order.freeDelivery ? (
                           <span className="commande-shop-payment">Livraison gratuite</span>
                         ) : null}
-                        <strong>Total: {formatPriceXof(order.totalPrice)}</strong>
+                        <strong>Total: {Number(order.totalPrice || 0).toFixed(0)} FCFA</strong>
                         <span className="commande-shop-payment">Paiement à la livraison</span>
                       </div>
 

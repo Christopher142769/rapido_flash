@@ -669,22 +669,55 @@ export default function ShopRepasDashboard() {
                 {(slide.imageUrls || []).length ? (
                   <div className="shop-repas-thumbs">
                     {(slide.imageUrls || []).map((url) => (
-                      <button
-                        key={url}
-                        type="button"
-                        className={`shop-repas-thumb${slide.imageUrl === url ? ' is-main' : ''}`}
-                        title="Définir comme image principale du slide"
-                        onClick={() => {
-                          const rest = (slide.imageUrls || []).filter((u) => u !== url);
-                          patchSlide(idx, { imageUrl: url, imageUrls: [url, ...rest] });
-                        }}
-                      >
-                        <img src={getImageUrl(url, null, BASE_URL)} alt="" />
-                      </button>
+                      <div key={url} className="shop-repas-thumb-wrap">
+                        <button
+                          type="button"
+                          className={`shop-repas-thumb${slide.imageUrl === url ? ' is-main' : ''}`}
+                          title="Définir comme image principale du slide"
+                          onClick={() => {
+                            const rest = (slide.imageUrls || []).filter((u) => u !== url);
+                            patchSlide(idx, { imageUrl: url, imageUrls: [url, ...rest] });
+                          }}
+                        >
+                          <img src={getImageUrl(url, null, BASE_URL)} alt="" />
+                        </button>
+                        <button
+                          type="button"
+                          className="shop-repas-thumb-remove"
+                          title="Supprimer cette photo"
+                          aria-label="Supprimer cette photo"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const nextUrls = (slide.imageUrls || []).filter((u) => u !== url);
+                            const nextMain =
+                              slide.imageUrl === url ? nextUrls[0] || '' : slide.imageUrl || nextUrls[0] || '';
+                            patchSlide(idx, {
+                              imageUrl: nextMain,
+                              imageUrls: nextMain
+                                ? [nextMain, ...nextUrls.filter((u) => u !== nextMain)]
+                                : nextUrls,
+                            });
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
                     ))}
                   </div>
                 ) : slide.imageUrl ? (
-                  <img src={getImageUrl(slide.imageUrl, null, BASE_URL)} alt="" className="shop-repas-slide-img" />
+                  <div className="shop-repas-thumb-wrap shop-repas-thumb-wrap--wide">
+                    <img src={getImageUrl(slide.imageUrl, null, BASE_URL)} alt="" className="shop-repas-slide-img" />
+                    <button
+                      type="button"
+                      className="shop-repas-thumb-remove"
+                      title="Supprimer cette photo"
+                      aria-label="Supprimer cette photo"
+                      onClick={() => patchSlide(idx, { imageUrl: '', imageUrls: [] })}
+                    >
+                      ×
+                    </button>
+                  </div>
                 ) : null}
                 <div className="shop-dash-grid">
                   <div>
@@ -1101,19 +1134,37 @@ export default function ShopRepasDashboard() {
             </label>
             <div className="shop-repas-thumbs">
               {galleryList.map((url) => (
-                <button
-                  key={url}
-                  type="button"
-                  className={`shop-repas-thumb${form.mainImage === url ? ' is-main' : ''}`}
-                  onClick={() =>
-                    setForm((f) => {
-                      const all = galleryList.filter((u) => u !== url);
-                      return { ...f, mainImage: url, images: all };
-                    })
-                  }
-                >
-                  <img src={getImageUrl(url, null, BASE_URL)} alt="" />
-                </button>
+                <div key={url} className="shop-repas-thumb-wrap">
+                  <button
+                    type="button"
+                    className={`shop-repas-thumb${form.mainImage === url ? ' is-main' : ''}`}
+                    title="Définir comme image principale"
+                    onClick={() =>
+                      setForm((f) => {
+                        const all = galleryList.filter((u) => u !== url);
+                        return { ...f, mainImage: url, images: all };
+                      })
+                    }
+                  >
+                    <img src={getImageUrl(url, null, BASE_URL)} alt="" />
+                  </button>
+                  <button
+                    type="button"
+                    className="shop-repas-thumb-remove"
+                    title="Supprimer cette photo"
+                    aria-label="Supprimer cette photo"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setForm((f) => {
+                        const all = [f.mainImage, ...(f.images || [])].filter((u) => u && u !== url);
+                        return { ...f, mainImage: all[0] || '', images: all.slice(1) };
+                      });
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
               ))}
             </div>
           </section>
