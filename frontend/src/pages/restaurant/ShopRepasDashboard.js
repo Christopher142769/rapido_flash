@@ -9,8 +9,15 @@ import {
   DEFAULT_BOOST_HOURS,
   getShopPromoState,
 } from '../../utils/shopPromo';
+import { emptyCopyBlock, normalizeCopyBlockForForm } from '../../utils/shopProductMedia';
+import {
+  mealUrgencyPayloadFromForm,
+  DEFAULT_MEAL_COUNTDOWN_HOURS,
+} from '../../utils/mealShopUrgency';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
 import ShopFormSectionHead from '../../components/shop/ShopFormSectionHead';
+import ShopCopyBlockEditor from '../../components/shop/ShopCopyBlockEditor';
+import ShopBusyOverlay from '../../components/shop/ShopBusyOverlay';
 import SectionRefreshButton from '../../components/dashboard/SectionRefreshButton';
 import { useRegisterDashboardRefresh } from '../../context/DashboardRefreshContext';
 import {
@@ -23,6 +30,7 @@ import {
   FaStore,
   FaRocket,
   FaStop,
+  FaFire,
 } from 'react-icons/fa';
 import '../../components/dashboard/section-refresh.css';
 import './ShopDashboard.css';
@@ -33,6 +41,26 @@ const BASE_URL = API_URL.replace('/api', '');
 
 const emptyAcc = () => ({ name: '', price: '', required: false, maxQuantity: 5 });
 
+const emptySlide = () => ({
+  imageUrl: '',
+  imageUrls: [],
+  title: '',
+  subtitle: '',
+  ctaLabel: 'Commander',
+  ctaHref: '#meal-products',
+});
+
+const emptyUrgency = () => ({
+  enabled: false,
+  active: false,
+  label: 'Offre limitée — commandez vite',
+  expectedOrders: 0,
+  durationHours: DEFAULT_MEAL_COUNTDOWN_HOURS,
+  runUntilStopped: true,
+  startsAt: null,
+  endsAt: null,
+});
+
 const emptyForm = () => ({
   name: '',
   slug: '',
@@ -42,6 +70,7 @@ const emptyForm = () => ({
   published: false,
   mainImage: '',
   images: [],
+  copySections: [emptyCopyBlock('text')],
   accompagnements: [],
   promo: {
     active: false,
@@ -61,6 +90,38 @@ function authHeaders() {
   return { headers: token ? { Authorization: `Bearer ${token}` } : {} };
 }
 
+function normalizeSlide(slide) {
+  const urls = Array.isArray(slide?.imageUrls)
+    ? slide.imageUrls.map((u) => String(u || '').trim()).filter(Boolean)
+    : [];
+  const primary = String(slide?.imageUrl || '').trim() || urls[0] || '';
+  const imageUrls = primary ? [primary, ...urls.filter((u) => u !== primary)] : urls;
+  return {
+    imageUrl: primary,
+    imageUrls,
+    title: slide?.title || '',
+    subtitle: slide?.subtitle || '',
+    ctaLabel: slide?.ctaLabel || 'Commander',
+    ctaHref: slide?.ctaHref || '#meal-products',
+    _id: slide?._id,
+  };
+}
+
+function applyUrgencyBoostDefaults(urgency, hours = DEFAULT_MEAL_COUNTDOWN_HOURS) {
+  const h = Math.min(720, Math.max(1, Number(hours) || DEFAULT_MEAL_COUNTDOWN_HOURS));
+  const now = new Date();
+  const end = new Date(now.getTime() + h * 3600 * 1000);
+  return {
+    ...urgency,
+    enabled: true,
+    active: true,
+    durationHours: h,
+    runUntilStopped: urgency?.runUntilStopped !== false,
+    startsAt: now.toISOString(),
+    endsAt: end.toISOString(),
+  };
+}
+
 export default function ShopRepasDashboard() {
   const [products, setProducts] = useState([]);
   const [settings, setSettings] = useState(null);
@@ -73,6 +134,8 @@ export default function ShopRepasDashboard() {
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [busyMessage, setBusyMessage] = useState(null);
+  const [uploadingBlockIndex, setUploadingBlockIndex] = useState(null);
 
   const publicOrigin = typeof window !== 'undefined' ? window.location.origin : '';
   const publicUrl = `${publicOrigin}/repas`;
@@ -85,7 +148,12 @@ export default function ShopRepasDashboard() {
         axios.get(`${API_URL}/meal-shop`, authHeaders()),
       ]);
       setProducts(Array.isArray(pRes.data) ? pRes.data : []);
-      setSettings(sRes.data);
+      const raw = sRes.data || {};
+      setSettings({
+        ...raw,
+        heroSlides: (raw.heroSlides || []).map(normalizeSlide),
+        urgency: { ...emptyUrgency(), ...(raw.urgency || {}) },
+      });
     } catch (e) {
       setError(e.response?.data?.message || e.message || 'Erreur de chargement');
     }
@@ -122,6 +190,7 @@ export default function ShopRepasDashboard() {
     setForm(emptyForm());
     setOk('');
     setError('');
+    setUploadingBlockIndex(null);
   };
 
   const openCreate = () => {
@@ -145,6 +214,10 @@ export default function ShopRepasDashboard() {
       published: !!p.published,
       mainImage: p.mainImage || '',
       images: Array.isArray(p.images) ? p.images : [],
+      copySections:
+        Array.isArray(p.copySections) && p.copySections.length > 0
+          ? p.copySections.map((s) => normalizeCopyBlockForForm(s))
+          : [emptyCopyBlock('text')],
       accompagnements: (p.accompagnements || []).map((a) => ({
         name: a.name,
         price: a.price,
@@ -181,6 +254,18 @@ export default function ShopRepasDashboard() {
     return res.data.urls || [];
   };
 
+  const uploadSlideImages = async (files) => {
+    const fd = new FormData();
+    [...files].forEach((f) => fd.append('images', f));
+    const res = await axios.post(`${API_URL}/meal-shop/upload-slide`, fd, {
+      ...authHeaders(),
+      headers: { ...authHeaders().headers, 'Content-Type': 'multipart/form-data' },
+    });
+    if (Array.isArray(res.data?.urls) && res.data.urls.length) return res.data.urls;
+    if (res.data?.url) return [res.data.url];
+    return [];
+  };
+
   const galleryList = useMemo(() => {
     const urls = [];
     if (form.mainImage) urls.push(form.mainImage);
@@ -190,9 +275,59 @@ export default function ShopRepasDashboard() {
     return urls;
   }, [form.mainImage, form.images]);
 
+  const handleBlockImageUpload = async (blockIndex, files) => {
+    if (!files?.length) return;
+    setUploadingBlockIndex(blockIndex);
+    setBusyMessage('Import de l’image…');
+    setError('');
+    try {
+      const urls = await uploadImages(files);
+      const path = urls[0];
+      if (!path) {
+        setError('Aucune image valide.');
+        return;
+      }
+      setForm((f) => {
+        const copySections = [...(f.copySections || [])];
+        copySections[blockIndex] = { ...copySections[blockIndex], mediaUrl: path };
+        return { ...f, copySections };
+      });
+    } catch (err) {
+      setError(err.response?.data?.message || err.message);
+    } finally {
+      setUploadingBlockIndex(null);
+      setBusyMessage(null);
+    }
+  };
+
+  const addSection = () => {
+    setForm((f) => ({
+      ...f,
+      copySections: [...(f.copySections || []), emptyCopyBlock('text')],
+    }));
+  };
+
+  const removeSection = (index) => {
+    setForm((f) => ({
+      ...f,
+      copySections: (f.copySections || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const moveSection = (index, dir) => {
+    setForm((f) => {
+      const next = [...(f.copySections || [])];
+      const j = index + dir;
+      if (j < 0 || j >= next.length) return f;
+      [next[index], next[j]] = [next[j], next[index]];
+      return { ...f, copySections: next };
+    });
+  };
+
   const saveProduct = async (e) => {
     e.preventDefault();
     setSaving(true);
+    setBusyMessage(editingId ? 'Mise à jour du plat…' : 'Création du plat…');
     setError('');
     setOk('');
     try {
@@ -208,6 +343,7 @@ export default function ShopRepasDashboard() {
         published: form.published,
         mainImage: galleryList[0] || '',
         images: galleryList.slice(1),
+        copySections: Array.isArray(form.copySections) ? form.copySections : [],
         accompagnements: form.accompagnements
           .filter((a) => a.name?.trim())
           .map((a) => ({
@@ -232,16 +368,20 @@ export default function ShopRepasDashboard() {
       setError(err.response?.data?.message || err.message);
     } finally {
       setSaving(false);
+      setBusyMessage(null);
     }
   };
 
   const deleteProduct = async (p) => {
     if (!window.confirm(`Supprimer « ${p.name} » ?`)) return;
+    setBusyMessage('Suppression…');
     try {
       await axios.delete(`${API_URL}/meal-products/${p._id}`, authHeaders());
       await load();
     } catch (err) {
       alert(err.response?.data?.message || err.message);
+    } finally {
+      setBusyMessage(null);
     }
   };
 
@@ -255,6 +395,7 @@ export default function ShopRepasDashboard() {
       { ...(p.promo || {}), active: true, discountPercent: p.promo?.discountPercent || 10 },
       DEFAULT_BOOST_HOURS
     );
+    setBusyMessage('Lancement de la promo…');
     try {
       await axios.patch(
         `${API_URL}/meal-products/${p._id}/promo`,
@@ -264,10 +405,13 @@ export default function ShopRepasDashboard() {
       await load();
     } catch (err) {
       alert(err.response?.data?.message || 'Erreur promo');
+    } finally {
+      setBusyMessage(null);
     }
   };
 
   const stopPromo = async (p) => {
+    setBusyMessage('Arrêt de la promo…');
     try {
       await axios.patch(
         `${API_URL}/meal-products/${p._id}/promo`,
@@ -277,37 +421,125 @@ export default function ShopRepasDashboard() {
       await load();
     } catch (err) {
       alert(err.response?.data?.message || 'Erreur');
+    } finally {
+      setBusyMessage(null);
     }
   };
 
   const saveSettings = async (patch) => {
     setSaving(true);
+    setBusyMessage('Enregistrement boutique…');
     setError('');
     try {
       const res = await axios.put(`${API_URL}/meal-shop`, { ...settings, ...patch }, authHeaders());
-      setSettings(res.data);
+      const raw = res.data || {};
+      setSettings({
+        ...raw,
+        heroSlides: (raw.heroSlides || []).map(normalizeSlide),
+        urgency: { ...emptyUrgency(), ...(raw.urgency || {}) },
+      });
       setOk('Boutique mise à jour');
     } catch (err) {
       setError(err.response?.data?.message || err.message);
     } finally {
       setSaving(false);
+      setBusyMessage(null);
     }
   };
 
-  const uploadSlide = async (file) => {
-    const fd = new FormData();
-    fd.append('image', file);
-    const res = await axios.post(`${API_URL}/meal-shop/upload-slide`, fd, {
-      ...authHeaders(),
-      headers: { ...authHeaders().headers, 'Content-Type': 'multipart/form-data' },
+  const patchSlide = (idx, patch) => {
+    setSettings((s) => {
+      const heroSlides = [...(s.heroSlides || [])];
+      heroSlides[idx] = normalizeSlide({ ...heroSlides[idx], ...patch });
+      return { ...s, heroSlides };
     });
-    return res.data.url;
+  };
+
+  const appendImagesToSlide = async (idx, files) => {
+    if (!files?.length) return;
+    setBusyMessage('Import des images du slide…');
+    setError('');
+    try {
+      const urls = await uploadSlideImages(files);
+      if (!urls.length) {
+        setError('Aucune image valide.');
+        return;
+      }
+      setSettings((s) => {
+        const heroSlides = [...(s.heroSlides || [])];
+        const slide = normalizeSlide(heroSlides[idx] || emptySlide());
+        const merged = [...slide.imageUrls];
+        for (const u of urls) {
+          if (u && !merged.includes(u)) merged.push(u);
+        }
+        heroSlides[idx] = normalizeSlide({
+          ...slide,
+          imageUrl: merged[0] || '',
+          imageUrls: merged,
+        });
+        return { ...s, heroSlides };
+      });
+    } catch (err) {
+      setError(err.response?.data?.message || err.message);
+    } finally {
+      setBusyMessage(null);
+    }
+  };
+
+  const addSlidesFromImages = async (files) => {
+    if (!files?.length) return;
+    setBusyMessage('Création des slides…');
+    setError('');
+    try {
+      const urls = await uploadSlideImages(files);
+      if (!urls.length) {
+        setError('Aucune image valide.');
+        return;
+      }
+      setSettings((s) => ({
+        ...s,
+        heroSlides: [
+          ...(s.heroSlides || []),
+          ...urls.map((url) =>
+            normalizeSlide({
+              ...emptySlide(),
+              imageUrl: url,
+              imageUrls: [url],
+            })
+          ),
+        ],
+      }));
+    } catch (err) {
+      setError(err.response?.data?.message || err.message);
+    } finally {
+      setBusyMessage(null);
+    }
+  };
+
+  const launchCatalogueUrgency = async () => {
+    if (!settings) return;
+    const hours = Number(settings.urgency?.durationHours) || DEFAULT_MEAL_COUNTDOWN_HOURS;
+    const boosted = applyUrgencyBoostDefaults(settings.urgency || emptyUrgency(), hours);
+    const urgency = mealUrgencyPayloadFromForm(boosted);
+    setSettings((s) => ({ ...s, urgency: { ...emptyUrgency(), ...urgency } }));
+    await saveSettings({ urgency });
+  };
+
+  const stopCatalogueUrgency = async () => {
+    if (!settings) return;
+    const urgency = mealUrgencyPayloadFromForm({
+      ...(settings.urgency || emptyUrgency()),
+      active: false,
+    });
+    setSettings((s) => ({ ...s, urgency: { ...emptyUrgency(), ...urgency } }));
+    await saveSettings({ urgency });
   };
 
   if (loading) return <PageLoader />;
 
   return (
     <div className="shop-dash shop-repas-dash">
+      <ShopBusyOverlay open={!!busyMessage} message={busyMessage || 'Chargement…'} />
       <ShopBrandHeader variant="dashboard" />
 
       <section className="shop-dash-hero">
@@ -371,7 +603,9 @@ export default function ShopRepasDashboard() {
           <header className="shop-dash-form-header">
             <div>
               <h3 className="shop-dash-form-title">Réglages boutique</h3>
-              <p className="shop-dash-form-sub">Carrousel, catégories, livraison et bannière promo du catalogue /repas.</p>
+              <p className="shop-dash-form-sub">
+                Carrousel, catégories, livraison, urgence et bannière promo du catalogue /repas.
+              </p>
             </div>
             <button type="button" className="shop-dash-btn secondary" onClick={() => setShowBoutique(false)}>
               Fermer
@@ -425,10 +659,31 @@ export default function ShopRepasDashboard() {
           </section>
 
           <section className="shop-dash-form-block">
-            <ShopFormSectionHead step="2" title="Carrousel hero" subtitle="Images et textes du bandeau d’accueil." />
+            <ShopFormSectionHead
+              step="2"
+              title="Carrousel hero"
+              subtitle="Images et textes du bandeau d’accueil. Plusieurs images par slide possibles."
+            />
             {(settings.heroSlides || []).map((slide, idx) => (
-              <div key={idx} className="shop-repas-slide-card">
-                {slide.imageUrl ? (
+              <div key={slide._id || idx} className="shop-repas-slide-card">
+                {(slide.imageUrls || []).length ? (
+                  <div className="shop-repas-thumbs">
+                    {(slide.imageUrls || []).map((url) => (
+                      <button
+                        key={url}
+                        type="button"
+                        className={`shop-repas-thumb${slide.imageUrl === url ? ' is-main' : ''}`}
+                        title="Définir comme image principale du slide"
+                        onClick={() => {
+                          const rest = (slide.imageUrls || []).filter((u) => u !== url);
+                          patchSlide(idx, { imageUrl: url, imageUrls: [url, ...rest] });
+                        }}
+                      >
+                        <img src={getImageUrl(url, null, BASE_URL)} alt="" />
+                      </button>
+                    ))}
+                  </div>
+                ) : slide.imageUrl ? (
                   <img src={getImageUrl(slide.imageUrl, null, BASE_URL)} alt="" className="shop-repas-slide-img" />
                 ) : null}
                 <div className="shop-dash-grid">
@@ -437,11 +692,7 @@ export default function ShopRepasDashboard() {
                     <input
                       className="shop-dash-input"
                       value={slide.title || ''}
-                      onChange={(e) => {
-                        const heroSlides = [...(settings.heroSlides || [])];
-                        heroSlides[idx] = { ...heroSlides[idx], title: e.target.value };
-                        setSettings((s) => ({ ...s, heroSlides }));
-                      }}
+                      onChange={(e) => patchSlide(idx, { title: e.target.value })}
                     />
                   </div>
                   <div>
@@ -449,32 +700,23 @@ export default function ShopRepasDashboard() {
                     <input
                       className="shop-dash-input"
                       value={slide.subtitle || ''}
-                      onChange={(e) => {
-                        const heroSlides = [...(settings.heroSlides || [])];
-                        heroSlides[idx] = { ...heroSlides[idx], subtitle: e.target.value };
-                        setSettings((s) => ({ ...s, heroSlides }));
-                      }}
+                      onChange={(e) => patchSlide(idx, { subtitle: e.target.value })}
                     />
                   </div>
                 </div>
                 <div className="shop-repas-slide-actions">
                   <label className="shop-dash-btn secondary shop-repas-file-btn">
-                    Image
+                    Ajouter des images
                     <input
                       type="file"
                       accept="image/*"
+                      multiple
                       hidden
                       onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        try {
-                          const url = await uploadSlide(file);
-                          const heroSlides = [...(settings.heroSlides || [])];
-                          heroSlides[idx] = { ...heroSlides[idx], imageUrl: url };
-                          setSettings((s) => ({ ...s, heroSlides }));
-                        } catch (err) {
-                          setError(err.response?.data?.message || err.message);
-                        }
+                        const files = e.target.files;
+                        if (!files?.length) return;
+                        await appendImagesToSlide(idx, files);
+                        e.target.value = '';
                       }}
                     />
                   </label>
@@ -500,15 +742,27 @@ export default function ShopRepasDashboard() {
                 onClick={() =>
                   setSettings((s) => ({
                     ...s,
-                    heroSlides: [
-                      ...(s.heroSlides || []),
-                      { imageUrl: '', title: '', subtitle: '', ctaLabel: 'Commander', ctaHref: '#meal-products' },
-                    ],
+                    heroSlides: [...(s.heroSlides || []), emptySlide()],
                   }))
                 }
               >
                 + Slide
               </button>
+              <label className="shop-dash-btn secondary shop-repas-file-btn">
+                Ajouter plusieurs slides
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  hidden
+                  onChange={async (e) => {
+                    const files = e.target.files;
+                    if (!files?.length) return;
+                    await addSlidesFromImages(files);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
               <button
                 type="button"
                 className="shop-dash-btn shop-dash-btn--primary"
@@ -521,7 +775,145 @@ export default function ShopRepasDashboard() {
           </section>
 
           <section className="shop-dash-form-block shop-dash-form-block--promo">
-            <ShopFormSectionHead step="3" title="Bannière promo" subtitle="Affichée sous la grille de plats." />
+            <ShopFormSectionHead
+              step="3"
+              title="Urgence catalogue"
+              subtitle="Compteur et quota affichés sur /repas (indépendant des promos par plat)."
+            />
+            <label className="shop-dash-check">
+              <input
+                type="checkbox"
+                checked={!!settings.urgency?.enabled}
+                onChange={(e) =>
+                  setSettings((s) => ({
+                    ...s,
+                    urgency: { ...emptyUrgency(), ...s.urgency, enabled: e.target.checked },
+                  }))
+                }
+              />
+              Module urgence activé
+            </label>
+            <label className="shop-dash-check">
+              <input
+                type="checkbox"
+                checked={!!settings.urgency?.active}
+                onChange={(e) =>
+                  setSettings((s) => ({
+                    ...s,
+                    urgency: { ...emptyUrgency(), ...s.urgency, active: e.target.checked },
+                  }))
+                }
+              />
+              Urgence en cours (active)
+            </label>
+            <div className="shop-dash-grid">
+              <div>
+                <label>Libellé</label>
+                <input
+                  className="shop-dash-input"
+                  value={settings.urgency?.label || ''}
+                  onChange={(e) =>
+                    setSettings((s) => ({
+                      ...s,
+                      urgency: { ...emptyUrgency(), ...s.urgency, label: e.target.value },
+                    }))
+                  }
+                  placeholder="Offre limitée — commandez vite"
+                />
+              </div>
+              <div>
+                <label>Commandes attendues (quota)</label>
+                <input
+                  className="shop-dash-input"
+                  type="number"
+                  min={0}
+                  value={settings.urgency?.expectedOrders ?? 0}
+                  onChange={(e) =>
+                    setSettings((s) => ({
+                      ...s,
+                      urgency: {
+                        ...emptyUrgency(),
+                        ...s.urgency,
+                        expectedOrders: e.target.value,
+                      },
+                    }))
+                  }
+                />
+              </div>
+              <div>
+                <label>Durée (heures)</label>
+                <input
+                  className="shop-dash-input"
+                  type="number"
+                  min={1}
+                  max={720}
+                  value={settings.urgency?.durationHours ?? DEFAULT_MEAL_COUNTDOWN_HOURS}
+                  onChange={(e) =>
+                    setSettings((s) => ({
+                      ...s,
+                      urgency: {
+                        ...emptyUrgency(),
+                        ...s.urgency,
+                        durationHours: e.target.value,
+                      },
+                    }))
+                  }
+                />
+              </div>
+            </div>
+            <label className="shop-dash-check">
+              <input
+                type="checkbox"
+                checked={settings.urgency?.runUntilStopped !== false}
+                onChange={(e) =>
+                  setSettings((s) => ({
+                    ...s,
+                    urgency: {
+                      ...emptyUrgency(),
+                      ...s.urgency,
+                      runUntilStopped: e.target.checked,
+                    },
+                  }))
+                }
+              />
+              Tourner jusqu’à arrêt manuel
+            </label>
+            <div className="shop-repas-slide-actions">
+              <button
+                type="button"
+                className="shop-dash-btn shop-dash-btn--primary"
+                disabled={saving}
+                onClick={launchCatalogueUrgency}
+              >
+                <FaFire /> Lancer l’urgence
+              </button>
+              {settings.urgency?.active ? (
+                <button
+                  type="button"
+                  className="shop-dash-btn secondary"
+                  disabled={saving}
+                  onClick={stopCatalogueUrgency}
+                >
+                  <FaStop /> Arrêter l’urgence
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="shop-dash-btn secondary"
+                disabled={saving}
+                onClick={() =>
+                  saveSettings({
+                    urgency: mealUrgencyPayloadFromForm(settings.urgency || emptyUrgency()),
+                  })
+                }
+              >
+                Enregistrer l’urgence
+              </button>
+            </div>
+          </section>
+
+          <section className="shop-dash-form-block shop-dash-form-block--promo">
+            <ShopFormSectionHead step="4" title="Bannière promo" subtitle="Affichée sous la grille de plats." />
             <label className="shop-dash-check">
               <input
                 type="checkbox"
@@ -581,8 +973,8 @@ export default function ShopRepasDashboard() {
             <div>
               <h3 className="shop-dash-form-title">{editingId ? 'Modifier le plat' : 'Nouveau plat'}</h3>
               <p className="shop-dash-form-sub">
-                Configurez la fiche publique <code className="shop-dash-code">/repas/…</code>, les images et les
-                accompagnements.
+                Configurez la fiche publique <code className="shop-dash-code">/repas/…</code>, les images, le
+                contenu et les accompagnements.
               </p>
             </div>
             <div className="shop-dash-form-header-actions">
@@ -689,6 +1081,8 @@ export default function ShopRepasDashboard() {
                 hidden
                 onChange={async (e) => {
                   if (!e.target.files?.length) return;
+                  setBusyMessage('Import des images…');
+                  setError('');
                   try {
                     const urls = await uploadImages(e.target.files);
                     setForm((f) => {
@@ -698,6 +1092,8 @@ export default function ShopRepasDashboard() {
                     });
                   } catch (err) {
                     setError(err.response?.data?.message || err.message);
+                  } finally {
+                    setBusyMessage(null);
                   }
                   e.target.value = '';
                 }}
@@ -725,6 +1121,36 @@ export default function ShopRepasDashboard() {
           <section className="shop-dash-form-block">
             <ShopFormSectionHead
               step="3"
+              title="Contenu de la page"
+              subtitle="Textes, images, vidéos et FAQ sous la fiche produit."
+              onRefresh={refreshPage}
+              refreshing={refreshing}
+            />
+            <div className="shop-dash-form-section shop-dash-form-section--flat">
+              <p className="shop-dash-hint">
+                Composez la page comme une landing : titres, visuels et questions fréquentes. Gras et
+                italique via la barre de l’éditeur de texte.
+              </p>
+              <ShopCopyBlockEditor
+                sections={
+                  Array.isArray(form.copySections) && form.copySections.length
+                    ? form.copySections
+                    : [emptyCopyBlock('text')]
+                }
+                onChange={(copySections) => setForm((f) => ({ ...f, copySections }))}
+                onPickMedia={() => {}}
+                onUploadImage={handleBlockImageUpload}
+                uploadingBlockIndex={uploadingBlockIndex}
+                onRemove={removeSection}
+                onAdd={addSection}
+                onMove={moveSection}
+              />
+            </div>
+          </section>
+
+          <section className="shop-dash-form-block">
+            <ShopFormSectionHead
+              step="4"
               title="Accompagnements"
               subtitle="Nom, prix, et si le choix est obligatoire sur la fiche produit."
               onRefresh={refreshPage}
@@ -797,7 +1223,7 @@ export default function ShopRepasDashboard() {
 
           <section className="shop-dash-form-block shop-dash-form-block--promo">
             <ShopFormSectionHead
-              step="4"
+              step="5"
               title="Promo"
               subtitle="Réduction et livraison gratuite."
               onRefresh={refreshPage}

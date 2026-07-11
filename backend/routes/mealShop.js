@@ -76,13 +76,21 @@ router.put('/', auth, isRestaurant, async (req, res) => {
 
     if (body.heroSlides != null) {
       const slides = Array.isArray(body.heroSlides) ? body.heroSlides : [];
-      doc.heroSlides = slides.map((s) => ({
-        imageUrl: String(s.imageUrl || '').trim(),
-        title: String(s.title || '').trim(),
-        subtitle: String(s.subtitle || '').trim(),
-        ctaLabel: String(s.ctaLabel || '').trim(),
-        ctaHref: String(s.ctaHref || '#meal-products').trim(),
-      }));
+      doc.heroSlides = slides.map((s) => {
+        const urls = Array.isArray(s.imageUrls)
+          ? s.imageUrls.map((u) => String(u || '').trim()).filter(Boolean)
+          : [];
+        const primary = String(s.imageUrl || urls[0] || '').trim();
+        const imageUrls = primary ? [primary, ...urls.filter((u) => u !== primary)] : urls;
+        return {
+          imageUrl: primary,
+          imageUrls,
+          title: String(s.title || '').trim(),
+          subtitle: String(s.subtitle || '').trim(),
+          ctaLabel: String(s.ctaLabel || '').trim(),
+          ctaHref: String(s.ctaHref || '#meal-products').trim(),
+        };
+      });
     }
     if (body.trustItems != null) {
       doc.trustItems = (Array.isArray(body.trustItems) ? body.trustItems : []).map((t) => ({
@@ -124,6 +132,19 @@ router.put('/', auth, isRestaurant, async (req, res) => {
         maxOrders: Math.max(0, Math.round(Number(lim.maxOrders) || 0)),
       };
     }
+    if (body.urgency != null) {
+      const u = body.urgency;
+      doc.urgency = {
+        enabled: !!u.enabled,
+        active: !!u.active,
+        label: String(u.label || 'Offre limitée — commandez vite').trim(),
+        expectedOrders: Math.max(0, Math.round(Number(u.expectedOrders) || 0)),
+        durationHours: Math.min(720, Math.max(1, Number(u.durationHours) || 48)),
+        runUntilStopped: u.runUntilStopped !== false && u.runUntilStopped !== 'false',
+        startsAt: u.startsAt ? new Date(u.startsAt) : null,
+        endsAt: u.endsAt ? new Date(u.endsAt) : null,
+      };
+    }
 
     await doc.save();
     const ordersToday = await countTodayMealOrders();
@@ -133,10 +154,15 @@ router.put('/', auth, isRestaurant, async (req, res) => {
   }
 });
 
-router.post('/upload-slide', auth, isRestaurant, upload.single('image'), async (req, res) => {
+router.post('/upload-slide', auth, isRestaurant, upload.array('images', 12), async (req, res) => {
   try {
-    if (!req.file?.path) return res.status(400).json({ message: 'Image requise' });
-    res.json({ url: req.file.path });
+    const files = req.files || [];
+    if (!files.length && req.file?.path) {
+      return res.json({ url: req.file.path, urls: [req.file.path] });
+    }
+    if (!files.length) return res.status(400).json({ message: 'Image(s) requise(s)' });
+    const urls = files.map((f) => f.path).filter(Boolean);
+    res.json({ url: urls[0], urls });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

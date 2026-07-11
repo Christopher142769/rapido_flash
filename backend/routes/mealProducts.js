@@ -4,6 +4,7 @@ const { auth, isRestaurant } = require('../middleware/auth');
 const upload = require('../middleware/uploadMealProduct');
 const { uniqueSlug } = require('../utils/slugify');
 const { normalizeAccompagnements, serializeMealProduct } = require('../utils/mealPricing');
+const { normalizeCopySections } = require('../utils/normalizeShopCopySections');
 
 const router = express.Router();
 
@@ -127,6 +128,7 @@ router.post('/', auth, isRestaurant, upload.fields([
       name,
       slug,
       shortDescription: String(req.body.shortDescription || ''),
+      copySections: normalizeCopySections(parseJsonField(req.body.copySections, [])),
       images,
       mainImage,
       basePrice: Math.round(basePrice),
@@ -154,6 +156,9 @@ router.put('/:id', auth, isRestaurant, upload.fields([
 
     if (req.body.name != null) product.name = String(req.body.name).trim();
     if (req.body.shortDescription != null) product.shortDescription = String(req.body.shortDescription);
+    if (req.body.copySections != null) {
+      product.copySections = normalizeCopySections(parseJsonField(req.body.copySections, []));
+    }
     if (req.body.basePrice != null) {
       const basePrice = Number(req.body.basePrice);
       if (!Number.isFinite(basePrice) || basePrice < 0) {

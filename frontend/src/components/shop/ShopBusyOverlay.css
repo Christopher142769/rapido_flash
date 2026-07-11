@@ -1,0 +1,45 @@
+.shop-busy-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(26, 20, 16, 0.45);
+  backdrop-filter: blur(4px);
+  padding: 24px;
+}
+
+.shop-busy-overlay-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  min-width: min(280px, 90vw);
+  padding: 28px 32px;
+  border-radius: 18px;
+  background: #fffefb;
+  border: 1px solid rgba(199, 109, 46, 0.25);
+  box-shadow: 0 24px 60px rgba(26, 20, 16, 0.28);
+  text-align: center;
+}
+
+.shop-busy-overlay-card p {
+  margin: 0;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #1a1410;
+}
+
+.shop-busy-overlay-spin {
+  font-size: 1.75rem;
+  color: #c76d2e;
+  animation: shop-busy-spin 0.85s linear infinite;
+}
+
+@keyframes shop-busy-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

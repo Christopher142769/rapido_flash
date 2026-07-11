@@ -16,11 +16,17 @@ import {
   validateCustomerForm,
   getShopWhatsAppDigits,
 } from '../../utils/shopOrder';
-import { getShopPromoState, formatPriceXof } from '../../utils/shopPromo';
+import {
+  formatPriceXof,
+} from '../../utils/shopPromo';
+import {
+  getMealProductPromoState,
+} from '../../utils/mealShopUrgency';
 import {
   saveMealOrder,
   submitMealOrderToApi,
 } from '../../utils/mealOrder';
+import ShopContentBlocks from '../../components/shop/ShopContentBlocks';
 import '../shop/shopTypography.css';
 import '../shop/ShopProductLanding.css';
 import './MealProductLanding.css';
@@ -98,7 +104,7 @@ export default function MealProductLanding() {
   }, [product]);
 
   const promoState = useMemo(
-    () => (product ? getShopPromoState(product, new Date(promoClock)) : null),
+    () => (product ? getMealProductPromoState(product, new Date(promoClock)) : null),
     [product, promoClock]
   );
 
@@ -165,9 +171,10 @@ export default function MealProductLanding() {
     () => [
       { id: 'shop-section-product', label: 'Plat' },
       { id: 'shop-section-order', label: 'Commander' },
+      ...(product?.copySections?.length ? [{ id: 'meal-section-content', label: 'Détails' }] : []),
       { id: 'shop-section-trust', label: 'Avantages' },
     ],
-    []
+    [product?.copySections?.length]
   );
 
   const handleFieldChange = (field, value) => {
@@ -453,6 +460,12 @@ export default function MealProductLanding() {
           </form>
         </div>
       </div>
+
+      {product.copySections?.length ? (
+        <div id="meal-section-content" className="shop-pdp-story-wrap">
+          <ShopContentBlocks sections={product.copySections} baseUrl={BASE_URL} />
+        </div>
+      ) : null}
 
       <ShopTrustCards whatsappNumber={getShopWhatsAppDigits()} />
 

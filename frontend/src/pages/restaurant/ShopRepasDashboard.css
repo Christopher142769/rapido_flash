@@ -100,6 +100,35 @@
   margin-top: 10px;
 }
 
+.shop-repas-slide-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.shop-repas-slide-thumbs button {
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 2px solid var(--rf-border);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--rf-surface-muted);
+}
+
+.shop-repas-slide-thumbs button.is-main {
+  border-color: var(--rf-amber);
+}
+
+.shop-repas-slide-thumbs img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 @media (max-width: 640px) {
   .shop-repas-acc-row {
     grid-template-columns: 1fr;

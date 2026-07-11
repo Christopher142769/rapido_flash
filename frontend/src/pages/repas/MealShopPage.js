@@ -9,20 +9,45 @@ import {
   FaHeadset,
   FaStar,
   FaArrowRight,
+  FaFire,
 } from 'react-icons/fa';
 import PageLoader from '../../components/PageLoader';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
+import ShopCountdown from '../../components/shop/ShopCountdown';
 import { getImageUrl } from '../../utils/imagePlaceholder';
 import { formatPriceXof } from '../../utils/shopPromo';
 import { getShopWhatsAppDigits } from '../../utils/shopOrder';
+import { getMealCatalogueUrgency } from '../../utils/mealShopUrgency';
 import { loadMealCart, mealCartCount } from '../../utils/mealCart';
 import '../shop/shopTypography.css';
 import './MealShopPage.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const BASE_URL = API_URL.replace('/api', '');
+const RAPIDO_LOGO = '/images/logo.png';
 
 const DEFAULT_TRUST_ICONS = [FaShippingFast, FaMoneyBillWave, FaStar, FaHeadset];
+
+function scrollToMealSection(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const topBar =
+    document.querySelector('.meal-shop-urgency') ||
+    document.querySelector('.shop-brand-header');
+  const offset = (topBar?.offsetHeight || 0) + 14;
+  const top = el.getBoundingClientRect().top + window.scrollY - offset;
+  window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+}
+
+function slideImageList(slide) {
+  if (!slide) return [];
+  const urls = [];
+  if (slide.imageUrl) urls.push(slide.imageUrl);
+  for (const u of slide.imageUrls || []) {
+    if (u && !urls.includes(u)) urls.push(u);
+  }
+  return urls;
+}
 
 export default function MealShopPage() {
   const [products, setProducts] = useState([]);
@@ -31,7 +56,9 @@ export default function MealShopPage() {
   const [error, setError] = useState('');
   const [category, setCategory] = useState('all');
   const [heroIdx, setHeroIdx] = useState(0);
+  const [slideImgIdx, setSlideImgIdx] = useState(0);
   const [cartCount, setCartCount] = useState(() => mealCartCount());
+  const [urgencyClock, setUrgencyClock] = useState(() => Date.now());
 
   const refreshCart = useCallback(() => setCartCount(mealCartCount(loadMealCart())), []);
 
@@ -45,19 +72,22 @@ export default function MealShopPage() {
     };
   }, [refreshCart]);
 
+  const loadPublic = useCallback(() => {
+    return Promise.all([
+      axios.get(`${API_URL}/meal-products/public`, { params: { _t: Date.now() } }),
+      axios.get(`${API_URL}/meal-shop/public`, { params: { _t: Date.now() } }),
+    ]).then(([pRes, sRes]) => {
+      setProducts(Array.isArray(pRes.data) ? pRes.data : []);
+      setSettings(sRes.data);
+      setError('');
+      return sRes.data;
+    });
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    Promise.all([
-      axios.get(`${API_URL}/meal-products/public`),
-      axios.get(`${API_URL}/meal-shop/public`),
-    ])
-      .then(([pRes, sRes]) => {
-        if (cancelled) return;
-        setProducts(Array.isArray(pRes.data) ? pRes.data : []);
-        setSettings(sRes.data);
-        setError('');
-      })
+    loadPublic()
       .catch((e) => {
         if (!cancelled) setError(e.response?.data?.message || 'Impossible de charger la boutique');
       })
@@ -67,22 +97,34 @@ export default function MealShopPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadPublic]);
 
   useEffect(() => {
     document.title = 'Shop Repas | Rapido Flash';
   }, []);
 
   const slides = useMemo(
-    () => (settings?.heroSlides || []).filter((s) => s.imageUrl),
+    () => (settings?.heroSlides || []).filter((s) => slideImageList(s).length > 0),
     [settings]
   );
 
   useEffect(() => {
     if (slides.length < 2) return undefined;
-    const id = setInterval(() => setHeroIdx((i) => (i + 1) % slides.length), 5500);
+    const id = setInterval(() => {
+      setHeroIdx((i) => (i + 1) % slides.length);
+      setSlideImgIdx(0);
+    }, 5500);
     return () => clearInterval(id);
   }, [slides.length]);
+
+  const activeSlide = slides[heroIdx] || slides[0];
+  const activeImages = useMemo(() => slideImageList(activeSlide), [activeSlide]);
+
+  useEffect(() => {
+    if (activeImages.length < 2) return undefined;
+    const id = setInterval(() => setSlideImgIdx((i) => (i + 1) % activeImages.length), 3200);
+    return () => clearInterval(id);
+  }, [activeImages.length, heroIdx]);
 
   const categories = useMemo(() => {
     const fromSettings = settings?.categories || [];
@@ -96,6 +138,20 @@ export default function MealShopPage() {
     return products.filter((p) => p.category === category);
   }, [products, category]);
 
+  const urgency = useMemo(
+    () => getMealCatalogueUrgency(settings, new Date(urgencyClock)),
+    [settings, urgencyClock]
+  );
+
+  useEffect(() => {
+    if (!urgency.isLive || !urgency.endsAt || !urgency.runUntilStopped) return undefined;
+    const endMs = new Date(urgency.endsAt).getTime();
+    if (!Number.isFinite(endMs)) return undefined;
+    const delay = Math.max(0, endMs - Date.now() + 80);
+    const id = setTimeout(() => setUrgencyClock(Date.now()), delay);
+    return () => clearTimeout(id);
+  }, [urgency.isLive, urgency.endsAt, urgency.runUntilStopped]);
+
   const waDigits = getShopWhatsAppDigits();
   const trustItems = settings?.trustItems?.length
     ? settings.trustItems
@@ -106,20 +162,52 @@ export default function MealShopPage() {
         { title: 'Support WhatsApp', subtitle: 'Suivi de commande facile' },
       ];
 
-  const slide = slides[heroIdx] || slides[0];
   const navSections = [
-    { id: 'meal-products', label: 'Plats' },
+    { id: 'meal-products', label: 'Nos plats' },
     { id: 'meal-trust', label: 'Avantages' },
   ];
+
+  const heroImage = activeImages[slideImgIdx] || activeImages[0];
 
   if (loading) return <PageLoader />;
 
   return (
     <div className="meal-shop">
+      {urgency.isLive ? (
+        <div className="meal-shop-urgency" role="region" aria-live="polite">
+          <div className="meal-shop-urgency-inner">
+            <p className="meal-shop-urgency-label">
+              <FaFire aria-hidden /> {urgency.label}
+            </p>
+            {urgency.endsAtIso ? (
+              <ShopCountdown
+                endsAt={urgency.endsAtIso}
+                variant="urgent"
+                autoRestart={urgency.runUntilStopped}
+                onComplete={() => setUrgencyClock(Date.now())}
+              />
+            ) : null}
+            {urgency.expectedOrders > 0 ? (
+              <p className="meal-shop-urgency-quota">
+                {urgency.remainingOrders > 0 ? (
+                  <>
+                    Plus que <strong>{urgency.remainingOrders}</strong> commande
+                    {urgency.remainingOrders > 1 ? 's' : ''} attendue
+                    {urgency.remainingOrders > 1 ? 's' : ''} aujourd&apos;hui
+                  </>
+                ) : (
+                  <>Quota du jour presque atteint — commandez maintenant</>
+                )}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       <ShopBrandHeader sections={navSections} />
 
       <header className="meal-shop-toolbar">
-        <p className="meal-shop-toolbar-label">Boutique multi-plats</p>
+        <img src={RAPIDO_LOGO} alt="Rapido Flash" className="meal-shop-toolbar-logo" />
         <Link to="/repas/panier" className="meal-shop-cart-link" aria-label="Panier">
           <FaShoppingBag />
           {cartCount > 0 ? <span>{cartCount}</span> : null}
@@ -131,25 +219,16 @@ export default function MealShopPage() {
       <section className="meal-shop-hero">
         <div className="meal-shop-hero-copy">
           <p className="meal-shop-eyebrow">Rapido Repas</p>
-          <h1>{slide?.title || 'Des plats prêts à commander'}</h1>
-          <p>
-            {slide?.subtitle ||
+          <h1>Des plats prêts à commander</h1>
+          <p className="meal-shop-hero-lead">
+            {activeSlide?.subtitle ||
               'Choisissez votre plat, ajoutez les accompagnements, et commandez en quelques secondes.'}
           </p>
-          <div className="meal-shop-hero-ctas">
-            <a className="meal-shop-btn meal-shop-btn--primary" href="#meal-products">
-              Voir les plats <FaArrowRight aria-hidden />
-            </a>
-            {settings?.promoBanner?.active ? (
-              <a className="meal-shop-btn meal-shop-btn--ghost" href="#meal-promo">
-                Offres du moment
-              </a>
-            ) : null}
-          </div>
         </div>
+
         <div className="meal-shop-hero-visual">
-          {slide?.imageUrl ? (
-            <img src={getImageUrl(slide.imageUrl, BASE_URL)} alt="" />
+          {heroImage ? (
+            <img src={getImageUrl(heroImage, null, BASE_URL)} alt="" key={`${heroIdx}-${slideImgIdx}`} />
           ) : (
             <div className="meal-shop-hero-ph" aria-hidden />
           )}
@@ -161,11 +240,33 @@ export default function MealShopPage() {
                   type="button"
                   className={i === heroIdx ? 'is-active' : ''}
                   aria-label={`Slide ${i + 1}`}
-                  onClick={() => setHeroIdx(i)}
+                  onClick={() => {
+                    setHeroIdx(i);
+                    setSlideImgIdx(0);
+                  }}
                 />
               ))}
             </div>
           ) : null}
+        </div>
+
+        <div className="meal-shop-hero-ctas">
+          <button
+            type="button"
+            className="meal-shop-btn meal-shop-btn--primary meal-shop-btn--xl"
+            onClick={() => scrollToMealSection('meal-products')}
+          >
+            Voir nos plats <FaArrowRight aria-hidden />
+          </button>
+          <button
+            type="button"
+            className="meal-shop-btn meal-shop-btn--ghost meal-shop-btn--xl"
+            onClick={() =>
+              scrollToMealSection(settings?.promoBanner?.active ? 'meal-promo' : 'meal-products')
+            }
+          >
+            Offres du moment
+          </button>
         </div>
       </section>
 
@@ -201,7 +302,7 @@ export default function MealShopPage() {
             return (
               <article key={p._id} className="meal-shop-card">
                 <Link to={href} className="meal-shop-card-media">
-                  {img ? <img src={getImageUrl(img, BASE_URL)} alt={p.name} /> : <div className="meal-shop-card-ph" />}
+                  {img ? <img src={getImageUrl(img, null, BASE_URL)} alt={p.name} /> : <div className="meal-shop-card-ph" />}
                   {p.isPromoLive && p.discountPercent ? (
                     <span className="meal-shop-badge">-{p.discountPercent}%</span>
                   ) : null}
@@ -253,9 +354,13 @@ export default function MealShopPage() {
           <div>
             <h2>{settings.promoBanner.title || 'Offre spéciale'}</h2>
             <p>{settings.promoBanner.subtitle}</p>
-            <a className="meal-shop-btn meal-shop-btn--primary" href="#meal-products">
+            <button
+              type="button"
+              className="meal-shop-btn meal-shop-btn--primary"
+              onClick={() => scrollToMealSection('meal-products')}
+            >
               {settings.promoBanner.ctaLabel || 'Voir les plats'}
-            </a>
+            </button>
           </div>
         </section>
       ) : null}

@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const heroSlideSchema = new mongoose.Schema(
   {
     imageUrl: { type: String, trim: true, default: '' },
+    /** Galerie multi-images pour une slide (imageUrl = première). */
+    imageUrls: { type: [String], default: [] },
     title: { type: String, trim: true, default: '' },
     subtitle: { type: String, trim: true, default: '' },
     ctaLabel: { type: String, trim: true, default: '' },
@@ -43,6 +45,20 @@ const mealShopSettingsSchema = new mongoose.Schema(
     dailyOrderLimit: {
       enabled: { type: Boolean, default: false },
       maxOrders: { type: Number, default: 0, min: 0 },
+    },
+    /**
+     * Compteur / urgence de la page catalogue /repas uniquement.
+     * Indépendant des promos Shop Express et des promos par plat.
+     */
+    urgency: {
+      enabled: { type: Boolean, default: false },
+      active: { type: Boolean, default: false },
+      label: { type: String, default: 'Offre limitée — commandez vite', trim: true },
+      expectedOrders: { type: Number, default: 0, min: 0 },
+      durationHours: { type: Number, default: 48, min: 1, max: 720 },
+      runUntilStopped: { type: Boolean, default: true },
+      startsAt: { type: Date, default: null },
+      endsAt: { type: Date, default: null },
     },
   },
   { timestamps: true }
