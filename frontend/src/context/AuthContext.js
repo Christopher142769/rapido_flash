@@ -23,40 +23,70 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token'));
 
   useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchUser();
-    } else {
+    if (!token) {
+      delete axios.defaults.headers.common.Authorization;
       setLoading(false);
+      return undefined;
     }
+
+    let cancelled = false;
+    axios.defaults.headers.common.Authorization = `Bearer ${token}`;
+
+    (async () => {
+      try {
+        const res = await axios.get(`${API_URL}/auth/me`, { timeout: 10000 });
+        if (!cancelled) setUser(res.data.user);
+      } catch (error) {
+        if (cancelled) return;
+        if (
+          error.code === 'ECONNABORTED' ||
+          error.code === 'ERR_NETWORK' ||
+          error.message === 'Network Error' ||
+          error.code === 'ERR_CONNECTION_REFUSED'
+        ) {
+          console.warn('Serveur non disponible. Session locale conservée.');
+          setUser(null);
+        } else if (error.response?.status === 401) {
+          localStorage.removeItem('token');
+          delete axios.defaults.headers.common.Authorization;
+          setToken(null);
+          setUser(null);
+        } else {
+          console.error('Erreur lors de la récupération de l’utilisateur:', error);
+          setUser(null);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [token]);
 
   const fetchUser = async () => {
     try {
       const res = await axios.get(`${API_URL}/auth/me`, {
-        timeout: 10000 // Timeout de 10 secondes
+        timeout: 10000,
       });
       setUser(res.data.user);
     } catch (error) {
-      // Si c'est une erreur de connexion (serveur non disponible), ne pas supprimer le token
-      // L'utilisateur pourra réessayer plus tard
-      if (error.code === 'ECONNABORTED' || 
-          error.code === 'ERR_NETWORK' || 
-          error.message === 'Network Error' ||
-          error.code === 'ERR_CONNECTION_REFUSED') {
-        console.warn('⚠️ Serveur non disponible. L\'utilisateur reste connecté localement.');
-        // Ne pas supprimer le token, l'utilisateur pourra réessayer
-        // On garde l'utilisateur null mais on ne supprime pas le token
+      if (
+        error.code === 'ECONNABORTED' ||
+        error.code === 'ERR_NETWORK' ||
+        error.message === 'Network Error' ||
+        error.code === 'ERR_CONNECTION_REFUSED'
+      ) {
+        console.warn('Serveur non disponible. Session locale conservée.');
         setUser(null);
       } else if (error.response?.status === 401) {
-        // Token invalide ou expiré
-        console.log('Token invalide ou expiré');
         localStorage.removeItem('token');
+        delete axios.defaults.headers.common.Authorization;
         setToken(null);
         setUser(null);
       } else {
-        // Autre erreur
-        console.error('Erreur lors de la récupération de l\'utilisateur:', error);
+        console.error('Erreur lors de la récupération de l’utilisateur:', error);
         setUser(null);
       }
     } finally {

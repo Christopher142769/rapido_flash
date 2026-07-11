@@ -23,6 +23,7 @@ import {
   FaUserTie,
   FaBullseye,
   FaMotorcycle,
+  FaUtensils,
 } from 'react-icons/fa';
 
 export const DASHBOARD_HOME_SECTION = 'dashboard_home';
@@ -46,6 +47,13 @@ function buildCommercialNavItems({ isAdmin, t }) {
       path: '/dashboard/commercial-commandes',
       section: COMMERCIAL_NAV_SECTION,
       Icon: FaShoppingBag,
+    },
+    {
+      id: 'commercial-commandes-repas',
+      label: 'Commandes Repas',
+      path: '/dashboard/commercial-commandes-repas',
+      section: COMMERCIAL_NAV_SECTION,
+      Icon: FaUtensils,
     },
     {
       id: 'commercial-bilan',
@@ -123,6 +131,7 @@ export function buildDashboardNavItems({
     { id: 'categories', label: t('dashNav', 'categories'), path: '/dashboard/categories', section: ADMIN_NAV_SECTION, Icon: FaTags },
     { id: 'plats', label: t('dashNav', 'plats'), path: '/dashboard/plats', section: ADMIN_NAV_SECTION, Icon: FaBoxOpen },
     { id: 'shop', label: t('dashNav', 'shop'), path: '/dashboard/shop', section: ADMIN_NAV_SECTION, Icon: FaShoppingBag },
+    { id: 'shop-repas', label: 'Shop repas', path: '/dashboard/shop-repas', section: ADMIN_NAV_SECTION, Icon: FaUtensils },
   ];
 
   const gestion = [

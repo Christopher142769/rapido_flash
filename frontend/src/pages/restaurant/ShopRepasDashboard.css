@@ -1,0 +1,202 @@
+.shop-repas-dash-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.shop-repas-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 20px;
+  flex-wrap: wrap;
+}
+
+.shop-repas-tabs button {
+  border: 1px solid var(--rf-border);
+  background: #fff;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: var(--rf-text-muted);
+}
+
+.shop-repas-tabs button.is-active {
+  background: linear-gradient(165deg, var(--rf-amber) 0%, #a85a24 100%);
+  color: #fff;
+  border-color: transparent;
+}
+
+.shop-repas-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--rf-text-muted);
+}
+
+.shop-repas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.shop-repas-card {
+  background: var(--rf-surface);
+  border: 1px solid var(--rf-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.shop-repas-card-img {
+  aspect-ratio: 4/3;
+  background: var(--rf-surface-muted);
+}
+
+.shop-repas-card-img img,
+.shop-repas-card-ph {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.shop-repas-card-ph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rf-text-muted);
+}
+
+.shop-repas-card-body {
+  padding: 12px 14px 14px;
+}
+
+.shop-repas-card-body h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.shop-repas-card-body p {
+  margin: 0;
+  font-weight: 700;
+  color: var(--rf-amber);
+}
+
+.shop-repas-meta {
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  color: var(--rf-text-muted) !important;
+  margin-top: 4px !important;
+}
+
+.shop-repas-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.shop-repas-empty {
+  grid-column: 1 / -1;
+  color: var(--rf-text-muted);
+}
+
+.shop-repas-msg {
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.shop-repas-msg--err {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.shop-repas-msg--ok {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.shop-repas-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.shop-repas-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  margin: 8px 0;
+}
+
+.shop-repas-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.shop-repas-thumb {
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  background: none;
+}
+
+.shop-repas-thumb.is-main {
+  border-color: var(--rf-amber);
+}
+
+.shop-repas-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.shop-repas-acc-row {
+  display: grid;
+  grid-template-columns: 1fr 100px auto auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.shop-repas-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.shop-repas-slide {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--rf-border);
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+
+.shop-repas-slide img {
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+@media (max-width: 640px) {
+  .shop-repas-form .form-row,
+  .shop-repas-acc-row {
+    grid-template-columns: 1fr;
+  }
+}

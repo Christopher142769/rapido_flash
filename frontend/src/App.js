@@ -47,11 +47,16 @@ import DashboardOverviewPage from './pages/restaurant/DashboardOverviewPage';
 import PromoOffersDashboard from './pages/restaurant/PromoOffersDashboard';
 import PromoUsersDashboard from './pages/restaurant/PromoUsersDashboard';
 import ShopDashboard from './pages/restaurant/ShopDashboard';
+import ShopRepasDashboard from './pages/restaurant/ShopRepasDashboard';
 import PushNotificationsDashboard from './pages/restaurant/PushNotificationsDashboard';
 import ShopProductLanding from './pages/shop/ShopProductLanding';
 import ShopOrderConfirmation from './pages/shop/ShopOrderConfirmation';
+import MealShopPage from './pages/repas/MealShopPage';
+import MealCartPage from './pages/repas/MealCartPage';
+import MealOrderConfirmation from './pages/repas/MealOrderConfirmation';
 import CommercialOverviewPage from './pages/commercial/CommercialOverviewPage';
 import CommercialCommandesPage from './pages/commercial/CommercialCommandesPage';
+import MealCommandesPage from './pages/commercial/MealCommandesPage';
 import CommercialBilanPage from './pages/commercial/CommercialBilanPage';
 import CommercialRelancesPage from './pages/commercial/CommercialRelancesPage';
 import CommerciauxDashboard from './pages/commercial/CommerciauxDashboard';
@@ -166,6 +171,9 @@ function AppRoutes() {
         <Route path="/restaurant/:id" element={<RestaurantDetail />} />
         <Route path="/shop/:slug/commande" element={<ShopOrderConfirmation />} />
         <Route path="/shop/:slug" element={<ShopProductLanding />} />
+        <Route path="/repas/commande" element={<MealOrderConfirmation />} />
+        <Route path="/repas/panier" element={<MealCartPage />} />
+        <Route path="/repas" element={<MealShopPage />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<PrivateRoute><Checkout /></PrivateRoute>} />
         <Route path="/ordered/:paymentMode" element={<PrivateRoute><Checkout /></PrivateRoute>} />
@@ -185,6 +193,7 @@ function AppRoutes() {
           <Route path="categories-domaine" element={<CategoriesDomaine />} />
           <Route path="plats" element={<RestaurantPlats />} />
           <Route path="shop" element={<ShopDashboard />} />
+          <Route path="shop-repas" element={<ShopRepasDashboard />} />
           <Route path="categories" element={<Categories />} />
           <Route path="commandes" element={<RestaurantCommandes />} />
           <Route path="bannieres" element={<Bannieres />} />
@@ -200,6 +209,7 @@ function AppRoutes() {
           <Route path="demandes-compte" element={<AccountRequestsDashboard />} />
           <Route path="commercial" element={<CommercialOverviewPage />} />
           <Route path="commercial-commandes" element={<CommercialCommandesPage />} />
+          <Route path="commercial-commandes-repas" element={<MealCommandesPage />} />
           <Route path="commercial-bilan" element={<CommercialBilanPage />} />
           <Route path="commercial-relances" element={<CommercialRelancesPage />} />
           <Route path="commercial-points" element={<CommercialPointsPage />} />
