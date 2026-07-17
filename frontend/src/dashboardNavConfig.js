@@ -24,6 +24,7 @@ import {
   FaBullseye,
   FaMotorcycle,
   FaUtensils,
+  FaFire,
 } from 'react-icons/fa';
 
 export const DASHBOARD_HOME_SECTION = 'dashboard_home';
@@ -31,6 +32,19 @@ export const ADMIN_NAV_SECTION = 'administration';
 export const GESTION_NAV_SECTION = 'gestion';
 export const PLATFORM_NAV_SECTION = 'plateforme';
 export const COMMERCIAL_NAV_SECTION = 'commercial';
+export const KITCHEN_NAV_SECTION = 'cuisine';
+
+function buildKitchenNavItems() {
+  return [
+    {
+      id: 'kitchen-commandes',
+      label: 'Commandes Repas',
+      path: '/dashboard/cuisine',
+      section: KITCHEN_NAV_SECTION,
+      Icon: FaFire,
+    },
+  ];
+}
 
 function buildCommercialNavItems({ isAdmin, t }) {
   const items = [
@@ -92,6 +106,13 @@ function buildCommercialNavItems({ isAdmin, t }) {
       section: COMMERCIAL_NAV_SECTION,
       Icon: FaMotorcycle,
     });
+    items.push({
+      id: 'cuisiniers',
+      label: 'Cuisiniers',
+      path: '/dashboard/cuisiniers',
+      section: COMMERCIAL_NAV_SECTION,
+      Icon: FaUtensils,
+    });
   }
   return items;
 }
@@ -99,10 +120,16 @@ function buildCommercialNavItems({ isAdmin, t }) {
 export function buildDashboardNavItems({
   isAdmin,
   isCommercial = false,
+  isCuisinier = false,
   t,
   canManageMaintenance = false,
 }) {
   const commercialItems = buildCommercialNavItems({ isAdmin, t });
+  const kitchenItems = buildKitchenNavItems();
+
+  if (isCuisinier) {
+    return kitchenItems;
+  }
 
   if (isCommercial) {
     return commercialItems;
@@ -193,6 +220,7 @@ export function navBadgeCount(itemId, pendingOrders, unreadMessages, todayRelanc
   if (itemId === 'commercial-commandes') return Number(pendingOrders || 0);
   if (itemId === 'messages') return Number(unreadMessages || 0);
   if (itemId === 'commercial-relances') return Number(todayRelances || 0);
+  if (itemId === 'kitchen-commandes') return Number(pendingOrders || 0);
   return 0;
 }
 

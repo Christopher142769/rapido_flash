@@ -3,7 +3,7 @@ const User = require('../models/User');
 const MealProduct = require('../models/MealProduct');
 const MealOrder = require('../models/MealOrder');
 const MealShopSettings = require('../models/MealShopSettings');
-const { auth, isCommercialStaff } = require('../middleware/auth');
+const { auth, isKitchenStaff } = require('../middleware/auth');
 const { generateMealOrderNumber } = require('../utils/mealOrderNumber');
 const { buildMealOrderLine, computeMealOrderTotals } = require('../utils/mealPricing');
 const { getShopClosureState } = require('../utils/shopClosure');
@@ -36,12 +36,33 @@ function validateCustomer(customer) {
 
 async function getStaffUserIds() {
   const staff = await User.find({
-    role: { $in: ['restaurant', 'gestionnaire', 'commercial'] },
+    role: { $in: ['restaurant', 'gestionnaire', 'commercial', 'cuisinier'] },
     banned: { $ne: true },
   })
     .select('_id')
     .lean();
   return staff.map((u) => String(u._id));
+}
+
+async function getKitchenUserIds() {
+  const staff = await User.find({
+    role: { $in: ['restaurant', 'gestionnaire', 'cuisinier'] },
+    banned: { $ne: true },
+  })
+    .select('_id')
+    .lean();
+  return staff.map((u) => String(u._id));
+}
+
+const CUISINIER_STATUT_TRANSITIONS = {
+  en_attente: ['confirmee'],
+  confirmee: ['en_preparation'],
+  en_preparation: ['en_livraison'],
+};
+
+function assertCuisinierStatutTransition(currentStatut, nextStatut) {
+  const allowed = CUISINIER_STATUT_TRANSITIONS[currentStatut] || [];
+  return allowed.includes(nextStatut);
 }
 
 async function getSettings() {
@@ -135,6 +156,7 @@ router.post('/', async (req, res) => {
     await order.save();
 
     const staffIds = await getStaffUserIds();
+    const kitchenIds = await getKitchenUserIds();
     if (staffIds.length) {
       const summary = builtItems.map((i) => `${i.productName} ×${i.quantity}`).join(', ');
       void sendToUserIds(staffIds, {
@@ -142,6 +164,15 @@ router.post('/', async (req, res) => {
         body: summary.slice(0, 120),
         url: '/dashboard/commercial-commandes-repas',
         tag: `rapido-meal-order-${order._id}`,
+      }).catch(() => {});
+    }
+    if (kitchenIds.length) {
+      const summary = builtItems.map((i) => `${i.productName} ×${i.quantity}`).join(', ');
+      void sendToUserIds(kitchenIds, {
+        title: 'Cuisine — Nouvelle commande repas',
+        body: summary.slice(0, 120),
+        url: '/dashboard/cuisine',
+        tag: `rapido-kitchen-order-${order._id}`,
       }).catch(() => {});
     }
 
@@ -172,7 +203,7 @@ router.post('/:id/whatsapp-confirmation', async (req, res) => {
   }
 });
 
-router.get('/', auth, isCommercialStaff, async (req, res) => {
+router.get('/', auth, isKitchenStaff, async (req, res) => {
   try {
     const filter = {};
     if (req.query.statut) filter.statut = req.query.statut;
@@ -187,12 +218,28 @@ router.get('/', auth, isCommercialStaff, async (req, res) => {
   }
 });
 
-router.put('/:id/statut', auth, isCommercialStaff, async (req, res) => {
+router.put('/:id/statut', auth, isKitchenStaff, async (req, res) => {
   try {
     const order = await MealOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Commande introuvable' });
 
     const { statut, commercialStatus, clientSpecifications } = req.body || {};
+    const isCuisinierRole = req.user.role === 'cuisinier';
+
+    if (isCuisinierRole) {
+      if (commercialStatus) {
+        return res.status(403).json({ message: 'Modification du statut commercial non autorisée' });
+      }
+      if (statut === 'annulee' || statut === 'livree') {
+        return res.status(403).json({ message: 'Action non autorisée pour la cuisine' });
+      }
+      if (statut && !assertCuisinierStatutTransition(order.statut, statut)) {
+        return res.status(403).json({ message: 'Transition de statut non autorisée' });
+      }
+    } else if (!['restaurant', 'gestionnaire', 'commercial'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+
     if (statut) {
       order.statut = statut;
       if (statut === 'en_attente') {

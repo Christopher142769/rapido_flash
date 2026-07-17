@@ -62,6 +62,8 @@ import CommercialBilanPage from './pages/commercial/CommercialBilanPage';
 import CommercialRelancesPage from './pages/commercial/CommercialRelancesPage';
 import CommerciauxDashboard from './pages/commercial/CommerciauxDashboard';
 import ChampionsDashboard from './pages/commercial/ChampionsDashboard';
+import CuisinierCommandesPage from './pages/kitchen/CuisinierCommandesPage';
+import CuisiniersDashboard from './pages/kitchen/CuisiniersDashboard';
 import CommercialPointsPage from './pages/commercial/CommercialPointsPage';
 import ChatThread from './pages/client/ChatThread';
 import ChatsInbox from './pages/client/ChatsInbox';
@@ -217,6 +219,8 @@ function AppRoutes() {
           <Route path="commercial-relances" element={<CommercialRelancesPage />} />
           <Route path="commercial-points" element={<CommercialPointsPage />} />
           <Route path="commerciaux" element={<CommerciauxDashboard />} />
+          <Route path="cuisine" element={<CuisinierCommandesPage />} />
+          <Route path="cuisiniers" element={<CuisiniersDashboard />} />
           <Route path="champions" element={<ChampionsDashboard />} />
         </Route>
         <Route path="/dashboard/*" element={<DashboardLegacyRedirect />} />

@@ -11,6 +11,7 @@ import {
   GESTION_NAV_SECTION,
   PLATFORM_NAV_SECTION,
   COMMERCIAL_NAV_SECTION,
+  KITCHEN_NAV_SECTION,
   buildDashboardNavItems,
   navBadgeCount,
 } from '../../dashboardNavConfig';
@@ -100,6 +101,7 @@ export default function DashboardSidebarPremium({ onNavigate, className = '' }) 
       buildDashboardNavItems({
         isAdmin: user?.role === 'restaurant',
         isCommercial: user?.role === 'commercial',
+        isCuisinier: user?.role === 'cuisinier',
         t,
         canManageMaintenance: !!user?.canManageMaintenance,
       }),
@@ -107,10 +109,11 @@ export default function DashboardSidebarPremium({ onNavigate, className = '' }) 
   );
   const homeItems = items.filter((i) => i.section === DASHBOARD_HOME_SECTION);
   const commercialItems = items.filter((i) => i.section === COMMERCIAL_NAV_SECTION);
+  const kitchenItems = items.filter((i) => i.section === KITCHEN_NAV_SECTION);
   const adminItems = items.filter((i) => i.section === ADMIN_NAV_SECTION);
   const gestionItems = items.filter((i) => i.section === GESTION_NAV_SECTION);
   const plateformeItems = items.filter((i) => i.section === PLATFORM_NAV_SECTION);
-  const isCommercialOnly = user?.role === 'commercial';
+  const isRestrictedRole = user?.role === 'commercial' || user?.role === 'cuisinier';
 
   return (
     <div
@@ -145,7 +148,7 @@ export default function DashboardSidebarPremium({ onNavigate, className = '' }) 
       </div>
 
       <nav className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
-        {!isCommercialOnly && homeItems.length > 0 ? (
+        {!isRestrictedRole && homeItems.length > 0 ? (
           <>
             <p
               className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.14em]"
@@ -193,7 +196,31 @@ export default function DashboardSidebarPremium({ onNavigate, className = '' }) 
           </>
         ) : null}
 
-        {!isCommercialOnly ? (
+        {kitchenItems.length > 0 ? (
+          <>
+            <p
+              className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.14em]"
+              style={{ color: 'var(--rf-sidebar-section)' }}
+            >
+              Cuisine
+            </p>
+            <motion.ul className="mb-6 space-y-1" initial="hidden" animate="visible" variants={containerVariants}>
+              {kitchenItems.map((item) => (
+                <NavItem
+                  key={item.id}
+                  item={item}
+                  pendingOrders={pendingOrders}
+                  unreadMessages={unreadMessages}
+                  todayRelances={todayRelances}
+                  onNavigate={onNavigate}
+                  reduce={reduce}
+                />
+              ))}
+            </motion.ul>
+          </>
+        ) : null}
+
+        {!isRestrictedRole ? (
           <>
             <p
               className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.14em]"

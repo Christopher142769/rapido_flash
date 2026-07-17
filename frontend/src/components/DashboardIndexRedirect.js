@@ -4,11 +4,14 @@ import AuthContext from '../context/AuthContext';
 import { toDashboardPath } from '../config/dashboardPath';
 import Dashboard from '../pages/restaurant/Dashboard';
 
-/** Redirige les commerciaux vers leur espace dédié. */
+/** Redirige les commerciaux et cuisiniers vers leur espace dédié. */
 export default function DashboardIndexRedirect() {
   const { user } = useContext(AuthContext);
   if (user?.role === 'commercial') {
     return <Navigate to={toDashboardPath('/commercial')} replace />;
+  }
+  if (user?.role === 'cuisinier') {
+    return <Navigate to={toDashboardPath('/cuisine')} replace />;
   }
   return <Dashboard />;
 }

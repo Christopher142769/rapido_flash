@@ -135,6 +135,7 @@ app.use('/api/meal-shop', require('./routes/mealShop'));
 app.use('/api/meal-orders', require('./routes/mealOrders'));
 app.use('/api/whatsapp/webhook', require('./routes/whatsappWebhook'));
 app.use('/api/commercial', require('./routes/commercial'));
+app.use('/api/kitchen', require('./routes/kitchen'));
 app.use('/api/champions', require('./routes/champions'));
 app.use('/api/custom-forms', require('./routes/customForms'));
 

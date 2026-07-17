@@ -54,4 +54,26 @@ const isLivreur = (req, res, next) => {
   next();
 };
 
-module.exports = { auth, isRestaurant, isCommercialStaff, isRestaurantAdmin, isLivreur };
+const isKitchenStaff = (req, res, next) => {
+  if (!['restaurant', 'gestionnaire', 'commercial', 'cuisinier'].includes(req.user.role)) {
+    return res.status(403).json({ message: 'Accès refusé - Espace cuisine requis' });
+  }
+  next();
+};
+
+const isCuisinier = (req, res, next) => {
+  if (req.user.role !== 'cuisinier') {
+    return res.status(403).json({ message: 'Accès refusé - Espace cuisinier requis' });
+  }
+  next();
+};
+
+module.exports = {
+  auth,
+  isRestaurant,
+  isCommercialStaff,
+  isRestaurantAdmin,
+  isLivreur,
+  isKitchenStaff,
+  isCuisinier,
+};
