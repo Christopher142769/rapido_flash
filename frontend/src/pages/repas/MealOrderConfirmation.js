@@ -73,6 +73,14 @@ export default function MealOrderConfirmation() {
                       ×{it.quantity} — {formatPriceXof(platSubtotal)}
                     </dd>
                   </div>
+                  {(it.options || []).map((o, oi) => (
+                    <div key={`${it._id || idx}-opt-${oi}`} className="shop-confirm-item-acc">
+                      <dt>
+                        • {o.groupName}: {o.choiceLabel}
+                      </dt>
+                      <dd>{Number(o.price) > 0 ? formatPriceXof(o.price) : 'Inclus'}</dd>
+                    </div>
+                  ))}
                   {(it.accompagnements || []).map((a, ai) => (
                     <div key={`${it._id || idx}-acc-${ai}`} className="shop-confirm-item-acc">
                       <dt>
@@ -81,6 +89,12 @@ export default function MealOrderConfirmation() {
                       <dd>{formatPriceXof((Number(a.price) || 0) * (Number(a.quantity) || 0))}</dd>
                     </div>
                   ))}
+                  {it.specifications ? (
+                    <div className="shop-confirm-item-acc">
+                      <dt>📝 {it.specifications}</dt>
+                      <dd />
+                    </div>
+                  ) : null}
                 </React.Fragment>
               );
             })}

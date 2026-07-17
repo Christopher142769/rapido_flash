@@ -172,12 +172,21 @@ export default function MealCartPage() {
                     {formatPriceXof(it.unitPrice)} / plat
                     {it.isPromoLive && it.discountPercent ? ` (−${it.discountPercent}%)` : ''}
                   </span>
+                  {(it.options || []).map((o, i) => (
+                    <span key={`opt-${i}`} className="meal-cart-acc">
+                      • {o.groupName}: {o.choiceLabel}
+                      {Number(o.price) > 0 ? ` — ${formatPriceXof(o.price)}` : ''}
+                    </span>
+                  ))}
                   {(it.accompagnements || []).map((a, i) => (
                     <span key={i} className="meal-cart-acc">
                       + {a.name} ×{a.quantity}
                       {a.price != null ? ` — ${formatPriceXof(a.price * a.quantity)}` : ''}
                     </span>
                   ))}
+                  {it.specifications ? (
+                    <span className="meal-cart-spec">📝 {it.specifications}</span>
+                  ) : null}
                   <div className="meal-cart-line-footer">
                     <div className="meal-cart-line-ctrl">
                       <button

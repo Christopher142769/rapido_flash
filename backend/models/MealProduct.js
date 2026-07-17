@@ -11,6 +11,26 @@ const accompagnementSchema = new mongoose.Schema(
   { _id: true }
 );
 
+const optionChoiceSchema = new mongoose.Schema(
+  {
+    label: { type: String, required: true, trim: true },
+    price: { type: Number, default: 0, min: 0 },
+  },
+  { _id: true }
+);
+
+const optionGroupSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    /** single = choix unique (radio) ; multiple = choix multiples (cases). */
+    selectionType: { type: String, enum: ['single', 'multiple'], default: 'single' },
+    /** Si true, le client doit sélectionner au moins un choix. */
+    required: { type: Boolean, default: false },
+    choices: { type: [optionChoiceSchema], default: [] },
+  },
+  { _id: true }
+);
+
 const faqItemSchema = new mongoose.Schema(
   {
     question: { type: String, trim: true, default: '' },
@@ -54,6 +74,10 @@ const mealProductSchema = new mongoose.Schema(
     showDeliveryNotice: { type: Boolean, default: true },
     sortOrder: { type: Number, default: 0 },
     accompagnements: { type: [accompagnementSchema], default: [] },
+    /** Groupes d'options (choix unique/multiple, payants ou gratuits). */
+    optionGroups: { type: [optionGroupSchema], default: [] },
+    /** Autoriser le client à saisir une spécification de son plat. */
+    allowSpecifications: { type: Boolean, default: true },
     promo: {
       active: { type: Boolean, default: false },
       priceMode: { type: String, enum: ['percent', 'manual'], default: 'percent' },

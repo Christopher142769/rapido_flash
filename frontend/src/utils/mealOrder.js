@@ -39,6 +39,13 @@ export async function submitMealOrderToApi(cartItems, customer, options = {}) {
           name: a.name,
           quantity: a.quantity,
         })),
+        options: (it.options || []).map((o) => ({
+          groupId: o.groupId,
+          groupName: o.groupName,
+          choiceId: o.choiceId,
+          choiceLabel: o.choiceLabel,
+        })),
+        specifications: it.specifications || '',
       })),
       customer,
       requestedDeliveryAt: options.requestedDeliveryAt,
@@ -66,12 +73,19 @@ export function buildMealWhatsAppMessage(order) {
     if (it.isPromoLive && it.discountPercent) {
       lines.push('', `*Promo :* -${it.discountPercent}%`);
     }
+    (it.options || []).forEach((o) => {
+      const suffix = Number(o.price) > 0 ? ` (${formatPriceXof(o.price)})` : '';
+      lines.push('', `*${o.groupName} :* ${o.choiceLabel}${suffix}`);
+    });
     (it.accompagnements || []).forEach((a) => {
       lines.push(
         '',
         `*Accompagnement :* ${a.name} ×${a.quantity} (${formatPriceXof(a.price * a.quantity)})`
       );
     });
+    if (it.specifications) {
+      lines.push('', `*Spécifications :* ${it.specifications}`);
+    }
     lines.push('', `*Sous-total ligne :* ${formatPriceXof(it.lineTotal)}`);
   });
 

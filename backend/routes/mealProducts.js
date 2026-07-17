@@ -3,7 +3,7 @@ const MealProduct = require('../models/MealProduct');
 const { auth, isRestaurant } = require('../middleware/auth');
 const upload = require('../middleware/uploadMealProduct');
 const { uniqueSlug } = require('../utils/slugify');
-const { normalizeAccompagnements, serializeMealProduct } = require('../utils/mealPricing');
+const { normalizeAccompagnements, normalizeOptionGroups, serializeMealProduct } = require('../utils/mealPricing');
 const { normalizeCopySections } = require('../utils/normalizeShopCopySections');
 
 const router = express.Router();
@@ -139,6 +139,9 @@ router.post('/', auth, isRestaurant, upload.fields([
         req.body.showDeliveryNotice !== false && req.body.showDeliveryNotice !== 'false',
       sortOrder: Number(req.body.sortOrder) || 0,
       accompagnements: normalizeAccompagnements(parseJsonField(req.body.accompagnements, [])),
+      optionGroups: normalizeOptionGroups(parseJsonField(req.body.optionGroups, [])),
+      allowSpecifications:
+        req.body.allowSpecifications !== false && req.body.allowSpecifications !== 'false',
       promo: buildPromoFromBody(req.body),
     });
     await product.save();
@@ -182,6 +185,13 @@ router.put('/:id', auth, isRestaurant, upload.fields([
     if (req.body.sortOrder != null) product.sortOrder = Number(req.body.sortOrder) || 0;
     if (req.body.accompagnements != null) {
       product.accompagnements = normalizeAccompagnements(parseJsonField(req.body.accompagnements, []));
+    }
+    if (req.body.optionGroups != null) {
+      product.optionGroups = normalizeOptionGroups(parseJsonField(req.body.optionGroups, []));
+    }
+    if (req.body.allowSpecifications != null) {
+      product.allowSpecifications =
+        req.body.allowSpecifications === true || req.body.allowSpecifications === 'true';
     }
     if (req.body.promo != null) product.promo = buildPromoFromBody(req.body);
 

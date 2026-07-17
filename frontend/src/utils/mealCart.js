@@ -26,12 +26,26 @@ export function mealCartCount(items = loadMealCart()) {
   return items.reduce((n, it) => n + Math.max(0, Number(it.quantity) || 0), 0);
 }
 
+function normalizeOptions(options = []) {
+  return (Array.isArray(options) ? options : [])
+    .map((o) => ({
+      groupId: o.groupId || '',
+      groupName: o.groupName || '',
+      choiceId: o.choiceId || '',
+      choiceLabel: o.choiceLabel || '',
+      price: Number(o.price) || 0,
+    }))
+    .filter((o) => o.choiceLabel);
+}
+
 /**
  * @param {object} product
  * @param {number} quantity
  * @param {{ id: string, name: string, price: number, quantity: number }[]} accompagnements
+ * @param {{ groupId, groupName, choiceId, choiceLabel, price }[]} options
+ * @param {string} specifications
  */
-export function addMealToCart(product, quantity, accompagnements = []) {
+export function addMealToCart(product, quantity, accompagnements = [], options = [], specifications = '') {
   const cart = loadMealCart();
   const qty = Math.max(1, Math.round(Number(quantity) || 1));
   const normalizedAcc = accompagnements
@@ -42,11 +56,19 @@ export function addMealToCart(product, quantity, accompagnements = []) {
       price: Number(a.price) || 0,
       quantity: Math.max(1, Math.round(Number(a.quantity) || 1)),
     }));
+  const normalizedOpts = normalizeOptions(options);
+  const spec = String(specifications || '').trim().slice(0, 500);
+
   const accKey = normalizedAcc
     .map((a) => `${a.id || a.name}:${a.quantity}`)
     .sort()
     .join('|');
-  const lineKey = `${product._id}::${accKey}`;
+  const optKey = normalizedOpts
+    .map((o) => `${o.groupId || o.groupName}=${o.choiceId || o.choiceLabel}`)
+    .sort()
+    .join('|');
+  const specKey = spec ? `s:${spec}` : '';
+  const lineKey = `${product._id}::${accKey}::${optKey}::${specKey}`;
 
   const existing = cart.find((it) => it.lineKey === lineKey);
   if (existing) {
@@ -77,6 +99,8 @@ export function addMealToCart(product, quantity, accompagnements = []) {
       discountPercent: product.discountPercent || 0,
       quantity: qty,
       accompagnements: normalizedAcc,
+      options: normalizedOpts,
+      specifications: spec,
     });
   }
   saveMealCart(cart);
@@ -88,7 +112,10 @@ export function lineMealSubtotal(it) {
     (s, a) => s + Number(a.price || 0) * Number(a.quantity || 0),
     0
   );
-  return Math.round(Number(it.unitPrice || 0) * Number(it.quantity || 0) + acc);
+  const optPerUnit = (it.options || []).reduce((s, o) => s + Number(o.price || 0), 0);
+  return Math.round(
+    (Number(it.unitPrice || 0) + optPerUnit) * Number(it.quantity || 0) + acc
+  );
 }
 
 export function updateMealCartLine(lineKey, patch) {

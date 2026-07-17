@@ -1,5 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { formatPriceXof } from '../../utils/shopPromo';
+import MealOptionGroups from './MealOptionGroups';
+import {
+  buildOptionSelection,
+  toggleOptionChoice,
+  selectedOptionsList,
+  optionsPerUnitTotal,
+  validateOptionSelection,
+} from '../../utils/mealOptions';
 import './MealAddToCartModal.css';
 
 function buildAccDraft(options, initialQty = {}) {
@@ -20,16 +28,23 @@ export default function MealAddToCartModal({
 }) {
   const options = product?.accompagnements || [];
   const hasAcc = options.length > 0;
+  const optionGroups = product?.optionGroups || [];
+  const hasOptions = optionGroups.length > 0;
+  const allowSpec = product?.allowSpecifications !== false;
   const unitPrice = product?.isPromoLive ? product.promoPrice : product?.basePrice;
 
   const [quantity, setQuantity] = useState(1);
   const [accDraft, setAccDraft] = useState(() => buildAccDraft(options));
+  const [optSelection, setOptSelection] = useState(() => buildOptionSelection(optionGroups));
+  const [specifications, setSpecifications] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!open || !product) return;
     setQuantity(1);
     setAccDraft(buildAccDraft(product.accompagnements || []));
+    setOptSelection(buildOptionSelection(product.optionGroups || []));
+    setSpecifications('');
     setError('');
   }, [open, product]);
 
@@ -63,14 +78,25 @@ export default function MealAddToCartModal({
       .filter(Boolean);
   }, [options, accDraft]);
 
+  const selectedOptions = useMemo(
+    () => selectedOptionsList(optionGroups, optSelection),
+    [optionGroups, optSelection]
+  );
+  const optPerUnit = optionsPerUnitTotal(selectedOptions);
+
   const accTotal = selectedAcc.reduce((s, a) => s + a.price * a.quantity, 0);
-  const linePreview = (Number(unitPrice) || 0) * quantity + accTotal;
+  const linePreview = ((Number(unitPrice) || 0) + optPerUnit) * quantity + accTotal;
 
   if (!open || !product) return null;
 
   const setAccQty = (key, next, maxQuantity) => {
     const max = Math.max(1, Number(maxQuantity) || 10);
     setAccDraft((d) => ({ ...d, [key]: Math.min(max, Math.max(0, next)) }));
+    setError('');
+  };
+
+  const handleToggleOption = (group, choice) => {
+    setOptSelection((s) => toggleOptionChoice(s, group, choice));
     setError('');
   };
 
@@ -83,7 +109,17 @@ export default function MealAddToCartModal({
       setError('Choisissez au moins un accompagnement pour ce plat.');
       return;
     }
-    onConfirm({ quantity, accompagnements: selectedAcc });
+    const optError = validateOptionSelection(optionGroups, optSelection);
+    if (optError) {
+      setError(optError);
+      return;
+    }
+    onConfirm({
+      quantity,
+      accompagnements: selectedAcc,
+      options: selectedOptions,
+      specifications: specifications.trim(),
+    });
   };
 
   return (
@@ -154,6 +190,31 @@ export default function MealAddToCartModal({
                 </div>
               );
             })}
+          </div>
+        ) : null}
+
+        {hasOptions ? (
+          <div className="meal-atc-options">
+            <h3>Options</h3>
+            <MealOptionGroups
+              groups={optionGroups}
+              selection={optSelection}
+              onToggle={handleToggleOption}
+            />
+          </div>
+        ) : null}
+
+        {allowSpec ? (
+          <div className="meal-spec-field">
+            <label htmlFor="meal-atc-spec">Spécifications du plat (facultatif)</label>
+            <textarea
+              id="meal-atc-spec"
+              value={specifications}
+              maxLength={500}
+              placeholder="Ex : bien cuit, sans oignon, peu épicé…"
+              onChange={(e) => setSpecifications(e.target.value)}
+            />
+            <p className="meal-spec-hint">Précisez vos préférences pour ce plat.</p>
           </div>
         ) : null}
 

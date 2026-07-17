@@ -122,6 +122,46 @@
   white-space: nowrap;
 }
 
+.shop-repas-opt-group {
+  border: 1px solid var(--rf-border, #e8dfd4);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 14px;
+  background: #faf8f5;
+}
+
+.shop-repas-opt-group-head {
+  display: grid;
+  grid-template-columns: 1fr 150px auto auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.shop-repas-opt-choices {
+  padding-left: 12px;
+  border-left: 3px solid #e8dfd4;
+}
+
+.shop-repas-opt-choice-row {
+  display: grid;
+  grid-template-columns: 1fr 140px auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.shop-repas-opt-add-choice {
+  margin-top: 4px;
+}
+
+@media (max-width: 640px) {
+  .shop-repas-opt-group-head,
+  .shop-repas-opt-choice-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .shop-repas-slide-card {
   padding: 14px;
   margin-bottom: 12px;

@@ -123,6 +123,13 @@ function mealOrderToShopExportShape(order) {
       (it.accompagnements || []).map((a) => `${a.name}×${a.quantity}`)
     )
     .join(', ');
+  const optNote = items
+    .flatMap((it) => (it.options || []).map((o) => `${o.groupName}: ${o.choiceLabel}`))
+    .join(', ');
+  const specNote = items
+    .map((it) => it.specifications)
+    .filter(Boolean)
+    .join(' | ');
   return {
     _id: order._id,
     orderNumber: order.orderNumber,
@@ -147,7 +154,12 @@ function mealOrderToShopExportShape(order) {
     isPromoLive: items.some((it) => it.isPromoLive),
     discountPercent: items.find((it) => it.discountPercent)?.discountPercent || 0,
     customer: order.customer,
-    clientSpecifications: [order.clientSpecifications, accNote ? `Acc.: ${accNote}` : '']
+    clientSpecifications: [
+      order.clientSpecifications,
+      optNote ? `Options: ${optNote}` : '',
+      accNote ? `Acc.: ${accNote}` : '',
+      specNote ? `Spéc.: ${specNote}` : '',
+    ]
       .filter(Boolean)
       .join('\n'),
     requestedDeliveryAt: order.requestedDeliveryAt,
@@ -564,11 +576,19 @@ export default function MealCommandesPage({ variant = 'commercial', refreshKey =
                           <div key={it._id || idx} className="plat-item">
                             <span>
                               {it.productName} · {it.quantity}
+                              {(it.options || []).length
+                                ? ` [${(it.options || [])
+                                    .map((o) => `${o.groupName}: ${o.choiceLabel}`)
+                                    .join(', ')}]`
+                                : ''}
                               {(it.accompagnements || []).length
                                 ? ` (+ ${(it.accompagnements || [])
                                     .map((a) => `${a.name}×${a.quantity}`)
                                     .join(', ')})`
                                 : ''}
+                              {it.specifications ? (
+                                <em className="plat-item-spec"> — 📝 {it.specifications}</em>
+                              ) : null}
                             </span>
                             <span>{Number(it.lineTotal || 0).toFixed(0)} FCFA</span>
                           </div>

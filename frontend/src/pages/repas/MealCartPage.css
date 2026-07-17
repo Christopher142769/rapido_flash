@@ -112,6 +112,14 @@
   font-weight: 600;
 }
 
+.meal-cart-spec {
+  display: block;
+  font-size: 0.75rem !important;
+  color: #6b5e52 !important;
+  font-style: italic;
+  margin-top: 2px;
+}
+
 .meal-cart-line-footer {
   display: flex;
   align-items: center;

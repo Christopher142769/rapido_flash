@@ -35,6 +35,28 @@
   color: var(--rf-text-muted);
 }
 
+.meal-pdp-options {
+  margin: 8px 0 18px;
+  padding: 14px 0 4px;
+  border-top: 1px solid var(--rf-border);
+}
+
+.meal-pdp-opt-error {
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.meal-pdp-spec {
+  margin: 8px 0 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rf-border);
+}
+
 .meal-pdp-acc-row {
   display: flex;
   align-items: center;

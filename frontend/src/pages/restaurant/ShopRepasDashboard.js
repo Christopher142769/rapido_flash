@@ -41,6 +41,14 @@ const BASE_URL = API_URL.replace('/api', '');
 
 const emptyAcc = () => ({ name: '', price: '', required: false, maxQuantity: 5 });
 
+const emptyOptionChoice = () => ({ label: '', price: '' });
+const emptyOptionGroup = () => ({
+  name: '',
+  selectionType: 'single',
+  required: false,
+  choices: [emptyOptionChoice()],
+});
+
 const emptySlide = () => ({
   imageUrl: '',
   imageUrls: [],
@@ -72,6 +80,8 @@ const emptyForm = () => ({
   images: [],
   copySections: [emptyCopyBlock('text')],
   accompagnements: [],
+  optionGroups: [],
+  allowSpecifications: true,
   showDeliveryNotice: true,
   promo: {
     active: false,
@@ -227,6 +237,18 @@ export default function ShopRepasDashboard() {
         maxQuantity: a.maxQuantity || 5,
         _id: a._id,
       })),
+      optionGroups: (p.optionGroups || []).map((g) => ({
+        name: g.name || '',
+        selectionType: g.selectionType === 'multiple' ? 'multiple' : 'single',
+        required: !!g.required,
+        _id: g._id,
+        choices: (g.choices || []).map((c) => ({
+          label: c.label || '',
+          price: c.price ?? '',
+          _id: c._id,
+        })),
+      })),
+      allowSpecifications: p.allowSpecifications !== false,
       promo: {
         active: !!p.promo?.active,
         priceMode: p.promo?.priceMode || 'percent',
@@ -355,6 +377,20 @@ export default function ShopRepasDashboard() {
             required: !!a.required,
             maxQuantity: Math.max(1, Number(a.maxQuantity) || 5),
           })),
+        optionGroups: (form.optionGroups || [])
+          .map((g) => ({
+            name: (g.name || '').trim(),
+            selectionType: g.selectionType === 'multiple' ? 'multiple' : 'single',
+            required: !!g.required,
+            choices: (g.choices || [])
+              .filter((c) => c.label?.trim())
+              .map((c) => ({
+                label: c.label.trim(),
+                price: Math.max(0, Number(c.price) || 0),
+              })),
+          }))
+          .filter((g) => g.name && g.choices.length),
+        allowSpecifications: form.allowSpecifications !== false,
         promo,
       };
 
@@ -1336,9 +1372,166 @@ export default function ShopRepasDashboard() {
             </button>
           </section>
 
-          <section className="shop-dash-form-block shop-dash-form-block--promo">
+          <section className="shop-dash-form-block">
             <ShopFormSectionHead
               step="5"
+              title="Options"
+              subtitle="Groupes d'options (choix unique ou multiple, payant ou gratuit) que le client sélectionne à la commande."
+              onRefresh={refreshPage}
+              refreshing={refreshing}
+            />
+            {(form.optionGroups || []).map((g, gi) => (
+              <div key={gi} className="shop-repas-opt-group">
+                <div className="shop-repas-opt-group-head">
+                  <input
+                    className="shop-dash-input"
+                    placeholder="Nom du groupe (ex : Cuisson, Suppléments…)"
+                    value={g.name}
+                    onChange={(e) =>
+                      setForm((f) => {
+                        const next = [...f.optionGroups];
+                        next[gi] = { ...next[gi], name: e.target.value };
+                        return { ...f, optionGroups: next };
+                      })
+                    }
+                  />
+                  <select
+                    className="shop-dash-input"
+                    value={g.selectionType}
+                    onChange={(e) =>
+                      setForm((f) => {
+                        const next = [...f.optionGroups];
+                        next[gi] = { ...next[gi], selectionType: e.target.value };
+                        return { ...f, optionGroups: next };
+                      })
+                    }
+                  >
+                    <option value="single">Choix unique</option>
+                    <option value="multiple">Choix multiples</option>
+                  </select>
+                  <label className="shop-dash-check shop-repas-acc-check">
+                    <input
+                      type="checkbox"
+                      checked={!!g.required}
+                      onChange={(e) =>
+                        setForm((f) => {
+                          const next = [...f.optionGroups];
+                          next[gi] = { ...next[gi], required: e.target.checked };
+                          return { ...f, optionGroups: next };
+                        })
+                      }
+                    />
+                    Requis
+                  </label>
+                  <button
+                    type="button"
+                    className="shop-dash-icon-btn shop-dash-icon-btn--danger"
+                    onClick={() =>
+                      setForm((f) => ({
+                        ...f,
+                        optionGroups: f.optionGroups.filter((_, i) => i !== gi),
+                      }))
+                    }
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="shop-repas-opt-choices">
+                  {(g.choices || []).map((c, ci) => (
+                    <div key={ci} className="shop-repas-opt-choice-row">
+                      <input
+                        className="shop-dash-input"
+                        placeholder="Libellé du choix"
+                        value={c.label}
+                        onChange={(e) =>
+                          setForm((f) => {
+                            const next = [...f.optionGroups];
+                            const choices = [...next[gi].choices];
+                            choices[ci] = { ...choices[ci], label: e.target.value };
+                            next[gi] = { ...next[gi], choices };
+                            return { ...f, optionGroups: next };
+                          })
+                        }
+                      />
+                      <input
+                        className="shop-dash-input"
+                        type="number"
+                        min={0}
+                        placeholder="Prix (0 = gratuit)"
+                        value={c.price}
+                        onChange={(e) =>
+                          setForm((f) => {
+                            const next = [...f.optionGroups];
+                            const choices = [...next[gi].choices];
+                            choices[ci] = { ...choices[ci], price: e.target.value };
+                            next[gi] = { ...next[gi], choices };
+                            return { ...f, optionGroups: next };
+                          })
+                        }
+                      />
+                      <button
+                        type="button"
+                        className="shop-dash-icon-btn shop-dash-icon-btn--danger"
+                        onClick={() =>
+                          setForm((f) => {
+                            const next = [...f.optionGroups];
+                            next[gi] = {
+                              ...next[gi],
+                              choices: next[gi].choices.filter((_, i) => i !== ci),
+                            };
+                            return { ...f, optionGroups: next };
+                          })
+                        }
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className="shop-dash-btn secondary shop-repas-opt-add-choice"
+                    onClick={() =>
+                      setForm((f) => {
+                        const next = [...f.optionGroups];
+                        next[gi] = {
+                          ...next[gi],
+                          choices: [...(next[gi].choices || []), emptyOptionChoice()],
+                        };
+                        return { ...f, optionGroups: next };
+                      })
+                    }
+                  >
+                    + Choix
+                  </button>
+                </div>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="shop-dash-btn secondary"
+              onClick={() =>
+                setForm((f) => ({ ...f, optionGroups: [...(f.optionGroups || []), emptyOptionGroup()] }))
+              }
+            >
+              + Groupe d'options
+            </button>
+
+            <label className="shop-dash-check" style={{ marginTop: '1rem' }}>
+              <input
+                type="checkbox"
+                checked={form.allowSpecifications !== false}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, allowSpecifications: e.target.checked }))
+                }
+              />
+              Autoriser le client à saisir une spécification de son plat
+            </label>
+          </section>
+
+          <section className="shop-dash-form-block shop-dash-form-block--promo">
+            <ShopFormSectionHead
+              step="6"
               title="Promo"
               subtitle="Réduction et livraison gratuite."
               onRefresh={refreshPage}

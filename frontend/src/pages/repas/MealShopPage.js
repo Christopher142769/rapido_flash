@@ -146,9 +146,9 @@ export default function MealShopPage() {
     setAtcProduct(p);
   };
 
-  const confirmAddToCart = ({ quantity, accompagnements }) => {
+  const confirmAddToCart = ({ quantity, accompagnements, options, specifications }) => {
     if (!atcProduct) return;
-    addMealToCart(atcProduct, quantity, accompagnements);
+    addMealToCart(atcProduct, quantity, accompagnements, options, specifications);
     setAtcProduct(null);
     setToast(`${atcProduct.name} ajouté au panier`);
   };

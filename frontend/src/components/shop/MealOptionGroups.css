@@ -1,0 +1,152 @@
+.meal-opt-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.meal-opt-group {
+  border: 1px solid #e8dfd4;
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #faf8f5;
+}
+
+.meal-opt-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.meal-opt-group-head strong {
+  font-size: 0.92rem;
+  color: #1a1410;
+}
+
+.meal-opt-req {
+  color: #c0392b;
+}
+
+.meal-opt-hint {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9a8b7c;
+}
+
+.meal-opt-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.meal-opt-choice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e2d7c9;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.meal-opt-choice.is-selected {
+  border-color: rgba(199, 109, 46, 0.55);
+  background: #fff8f1;
+}
+
+.meal-opt-mark {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #d4c8ba;
+  position: relative;
+}
+
+.meal-opt-mark.is-check {
+  border-radius: 6px;
+}
+
+.meal-opt-choice.is-selected .meal-opt-mark {
+  border-color: #c76d2e;
+  background: #c76d2e;
+}
+
+.meal-opt-choice.is-selected .meal-opt-mark::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 8px;
+  height: 8px;
+  border-radius: inherit;
+  background: #fff;
+}
+
+.meal-opt-choice.is-selected .meal-opt-mark.is-check::after {
+  width: 6px;
+  height: 10px;
+  border-radius: 0;
+  background: transparent;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: translateY(-1px) rotate(45deg);
+}
+
+.meal-opt-label {
+  flex: 1 1 auto;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1a1410;
+}
+
+.meal-opt-price {
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #c76d2e;
+}
+
+/* Champ spécifications */
+.meal-spec-field {
+  margin-top: 14px;
+}
+
+.meal-spec-field label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1a1410;
+  margin-bottom: 6px;
+}
+
+.meal-spec-field textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e2d7c9;
+  background: #fff;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: #1a1410;
+}
+
+.meal-spec-field textarea:focus {
+  outline: none;
+  border-color: #c76d2e;
+}
+
+.meal-spec-hint {
+  margin: 4px 0 0;
+  font-size: 0.75rem;
+  color: #9a8b7c;
+}

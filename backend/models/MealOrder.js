@@ -22,6 +22,17 @@ const mealAccompagnementLineSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const mealOptionLineSchema = new mongoose.Schema(
+  {
+    groupId: { type: String, default: '' },
+    groupName: { type: String, required: true, trim: true },
+    choiceId: { type: String, default: '' },
+    choiceLabel: { type: String, required: true, trim: true },
+    price: { type: Number, required: true, min: 0, default: 0 },
+  },
+  { _id: false }
+);
+
 const mealOrderItemSchema = new mongoose.Schema(
   {
     mealProduct: {
@@ -37,6 +48,8 @@ const mealOrderItemSchema = new mongoose.Schema(
     isPromoLive: { type: Boolean, default: false },
     discountPercent: { type: Number, default: 0 },
     accompagnements: { type: [mealAccompagnementLineSchema], default: [] },
+    options: { type: [mealOptionLineSchema], default: [] },
+    specifications: { type: String, default: '', trim: true },
     lineTotal: { type: Number, required: true, min: 0 },
   },
   { _id: true }

@@ -175,6 +175,19 @@
   color: #c76d2e;
 }
 
+.meal-atc-options {
+  margin-bottom: 14px;
+}
+
+.meal-atc-options h3 {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #c76d2e;
+}
+
 .meal-atc-summary {
   display: flex;
   justify-content: space-between;

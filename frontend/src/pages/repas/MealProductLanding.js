@@ -9,6 +9,7 @@ import ShopDeliveryNotice from '../../components/shop/ShopDeliveryNotice';
 import ShopQuantityPicker from '../../components/shop/ShopQuantityPicker';
 import ShopQuantityModal from '../../components/shop/ShopQuantityModal';
 import MealAccompagnementModal from '../../components/shop/MealAccompagnementModal';
+import MealOptionGroups from '../../components/shop/MealOptionGroups';
 import ShopTrustCards from '../../components/shop/ShopTrustCards';
 import ShopContentBlocks from '../../components/shop/ShopContentBlocks';
 import { getProductGallery } from '../../utils/shopProductMedia';
@@ -27,6 +28,13 @@ import {
   submitMealOrderToApi,
 } from '../../utils/mealOrder';
 import { loadMealCart, mealCartCount } from '../../utils/mealCart';
+import {
+  buildOptionSelection,
+  toggleOptionChoice,
+  selectedOptionsList,
+  optionsPerUnitTotal,
+  validateOptionSelection,
+} from '../../utils/mealOptions';
 import '../shop/shopTypography.css';
 import '../shop/ShopProductLanding.css';
 import './MealProductLanding.css';
@@ -52,6 +60,9 @@ export default function MealProductLanding() {
   const [highlightQty, setHighlightQty] = useState(false);
   const [highlightAcc, setHighlightAcc] = useState(false);
   const [accQty, setAccQty] = useState({});
+  const [optSelection, setOptSelection] = useState({});
+  const [specifications, setSpecifications] = useState('');
+  const [optError, setOptError] = useState('');
   const [promoClock, setPromoClock] = useState(() => Date.now());
   const [urgencyClock, setUrgencyClock] = useState(() => Date.now());
   const [cartCount, setCartCount] = useState(() => mealCartCount());
@@ -81,6 +92,8 @@ export default function MealProductLanding() {
           init[a._id || a.name] = a.required ? 1 : 0;
         });
         setAccQty(init);
+        setOptSelection(buildOptionSelection(res.data.optionGroups || []));
+        setSpecifications('');
         return res.data;
       })
       .catch((err) => {
@@ -193,8 +206,16 @@ export default function MealProductLanding() {
   }, [product, accQty]);
 
   const accTotal = selectedAcc.reduce((s, a) => s + a.price * a.quantity, 0);
-  const subtotalPrice = hasQuantity ? (unitPrice || 0) * quantity + accTotal : 0;
-  const totalBasePrice = hasQuantity ? unitBasePrice * quantity + accTotal : 0;
+
+  const optionGroups = product?.optionGroups || [];
+  const selectedOptions = useMemo(
+    () => selectedOptionsList(optionGroups, optSelection),
+    [optionGroups, optSelection]
+  );
+  const optPerUnit = optionsPerUnitTotal(selectedOptions);
+
+  const subtotalPrice = hasQuantity ? ((unitPrice || 0) + optPerUnit) * quantity + accTotal : 0;
+  const totalBasePrice = hasQuantity ? (unitBasePrice + optPerUnit) * quantity + accTotal : 0;
   const grandTotal = hasQuantity ? subtotalPrice + deliveryFee : 0;
 
   const navSections = useMemo(
@@ -266,6 +287,15 @@ export default function MealProductLanding() {
       }
     }
 
+    const optError = validateOptionSelection(product?.optionGroups || [], optSelection);
+    if (optError) {
+      setOptError(optError);
+      document
+        .getElementById('meal-options-section')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
     setSubmitting(true);
     try {
       const saved = await submitMealOrderToApi(
@@ -274,6 +304,8 @@ export default function MealProductLanding() {
             mealProductId: product._id,
             quantity: orderQuantity,
             accompagnements: accList,
+            options: selectedOptions,
+            specifications: specifications.trim(),
           },
         ],
         customer
@@ -505,6 +537,38 @@ export default function MealProductLanding() {
                     </div>
                   );
                 })}
+              </div>
+            ) : null}
+
+            {optionGroups.length ? (
+              <div id="meal-options-section" className="meal-pdp-options">
+                <h3 className="meal-pdp-acc-title">Options</h3>
+                <p className="meal-pdp-acc-lead">
+                  Personnalisez votre plat selon vos envies.
+                </p>
+                <MealOptionGroups
+                  groups={optionGroups}
+                  selection={optSelection}
+                  onToggle={(group, choice) => {
+                    setOptSelection((s) => toggleOptionChoice(s, group, choice));
+                    setOptError('');
+                  }}
+                />
+                {optError ? <p className="meal-pdp-opt-error">{optError}</p> : null}
+              </div>
+            ) : null}
+
+            {product.allowSpecifications !== false ? (
+              <div className="meal-pdp-spec meal-spec-field">
+                <label htmlFor="meal-pdp-spec-input">Spécifications du plat (facultatif)</label>
+                <textarea
+                  id="meal-pdp-spec-input"
+                  value={specifications}
+                  maxLength={500}
+                  placeholder="Ex : bien cuit, sans oignon, peu épicé…"
+                  onChange={(e) => setSpecifications(e.target.value)}
+                />
+                <p className="meal-spec-hint">Précisez vos préférences pour ce plat.</p>
               </div>
             ) : null}
 

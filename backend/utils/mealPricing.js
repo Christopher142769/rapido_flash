@@ -17,6 +17,77 @@ function normalizeAccompagnements(list) {
     .filter((a) => a.name);
 }
 
+function normalizeOptionGroups(list) {
+  if (!Array.isArray(list)) return [];
+  return list
+    .map((g) => ({
+      name: String(g?.name || '').trim(),
+      selectionType: g?.selectionType === 'multiple' ? 'multiple' : 'single',
+      required: !!g?.required,
+      choices: (Array.isArray(g?.choices) ? g.choices : [])
+        .map((c) => ({
+          label: String(c?.label || '').trim(),
+          price: Math.max(0, Math.round(Number(c?.price) || 0)),
+          _id: c?._id ? String(c._id) : undefined,
+        }))
+        .filter((c) => c.label),
+      _id: g?._id ? String(g._id) : undefined,
+    }))
+    .filter((g) => g.name && g.choices.length);
+}
+
+/**
+ * Valide les options choisies et calcule le supplément par plat.
+ * @returns {{ error?: string, options?: Array, perUnitTotal?: number }}
+ */
+function resolveMealOptions(product, line) {
+  const groups = product.optionGroups || [];
+  if (!groups.length) return { options: [], perUnitTotal: 0 };
+
+  const selected = Array.isArray(line?.options) ? line.options : [];
+  const resultOptions = [];
+  let perUnitTotal = 0;
+
+  for (const group of groups) {
+    const groupId = String(group._id || '');
+    const picks = selected.filter(
+      (s) =>
+        (s.groupId && String(s.groupId) === groupId) ||
+        String(s.groupName || '').trim().toLowerCase() === String(group.name).trim().toLowerCase()
+    );
+
+    if (group.selectionType === 'single' && picks.length > 1) {
+      return { error: `Un seul choix autorisé pour « ${group.name} »` };
+    }
+    if (group.required && picks.length < 1) {
+      return { error: `Choix requis : ${group.name}` };
+    }
+
+    for (const pick of picks) {
+      const choice = (group.choices || []).find(
+        (c) =>
+          (pick.choiceId && String(c._id) === String(pick.choiceId)) ||
+          String(c.label || '').trim().toLowerCase() ===
+            String(pick.choiceLabel || '').trim().toLowerCase()
+      );
+      if (!choice) {
+        return { error: `Option inconnue pour « ${group.name} »` };
+      }
+      const price = Math.max(0, Math.round(Number(choice.price) || 0));
+      resultOptions.push({
+        groupId,
+        groupName: group.name,
+        choiceId: String(choice._id || ''),
+        choiceLabel: choice.label,
+        price,
+      });
+      perUnitTotal += price;
+    }
+  }
+
+  return { options: resultOptions, perUnitTotal };
+}
+
 function getMealUnitPrice(product, now = new Date()) {
   const promoState = getShopPromoState(product, now);
   return {
@@ -83,7 +154,14 @@ function buildMealOrderLine(product, line) {
     return { error: 'Choisissez au moins un accompagnement pour ce plat' };
   }
 
-  const lineTotal = Math.round(unitPrice * quantity + accTotal);
+  const optionResult = resolveMealOptions(product, line);
+  if (optionResult.error) return { error: optionResult.error };
+  const options = optionResult.options || [];
+  const optionsPerUnit = optionResult.perUnitTotal || 0;
+
+  const specifications = String(line?.specifications || '').trim().slice(0, 500);
+
+  const lineTotal = Math.round(unitPrice * quantity + optionsPerUnit * quantity + accTotal);
 
   return {
     item: {
@@ -96,6 +174,8 @@ function buildMealOrderLine(product, line) {
       isPromoLive: promoState.isPromoLive,
       discountPercent: promoState.discountPercent,
       accompagnements,
+      options,
+      specifications,
       lineTotal,
     },
     promoState,
@@ -119,11 +199,14 @@ function serializeMealProduct(product) {
     ...doc,
     ...promoState,
     accompagnements: normalizeAccompagnements(doc.accompagnements),
+    optionGroups: normalizeOptionGroups(doc.optionGroups),
+    allowSpecifications: doc.allowSpecifications !== false,
   };
 }
 
 module.exports = {
   normalizeAccompagnements,
+  normalizeOptionGroups,
   getMealUnitPrice,
   buildMealOrderLine,
   computeMealOrderTotals,
