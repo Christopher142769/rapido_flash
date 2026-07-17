@@ -6,6 +6,7 @@ import {
   fetchKitchenAccounts,
   updateKitchenAccount,
 } from '../../utils/kitchenApi';
+import CuisineInstallPanel from '../../components/kitchen/CuisineInstallPanel';
 import '../commercial/commercial.css';
 
 const emptyForm = { nom: '', email: '', telephone: '', password: '' };
@@ -68,6 +69,10 @@ export default function CuisiniersDashboard() {
       </p>
 
       <div className="commercial-card">
+        <CuisineInstallPanel />
+      </div>
+
+      <div className="commercial-card">
         <h2 style={{ margin: '0 0 1rem', fontSize: '1.05rem' }}>Nouveau cuisinier</h2>
         <form onSubmit={handleCreate}>
           <div className="commercial-form-grid">
@@ -115,6 +120,7 @@ export default function CuisiniersDashboard() {
             Créer le compte
           </button>
         </form>
+        <CuisineInstallPanel compact />
       </div>
 
       <div className="commercial-card">

@@ -1,0 +1,140 @@
+.cuisine-install-panel {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--rf-border, #e8e0d8);
+}
+
+.cuisine-install-panel__head h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.cuisine-install-panel__head p {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  color: var(--rf-text-muted, #666);
+  line-height: 1.45;
+}
+
+.cuisine-install-panel__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  align-items: flex-start;
+}
+
+.cuisine-install-panel__qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #fff;
+  border: 1px solid var(--rf-border, #e8e0d8);
+  border-radius: 14px;
+}
+
+.cuisine-install-panel__qr-hint {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #888;
+  text-align: center;
+}
+
+.cuisine-install-panel__actions {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.cuisine-install-panel__url {
+  margin: 0 0 0.25rem;
+  padding: 0.55rem 0.65rem;
+  background: #faf8f5;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  word-break: break-all;
+  color: #555;
+}
+
+.cuisine-install-panel__help {
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  background: rgba(199, 109, 46, 0.08);
+  border-radius: 12px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.cuisine-install-panel__help ol {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.cuisine-install-panel--compact .cuisine-install-panel__head p {
+  display: none;
+}
+
+.cuisine-notif-banner {
+  margin: 0 12px 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #fff8ee, #fff3e0);
+  border: 1px solid #eadfce;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cuisine-notif-banner p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: #444;
+  flex: 1;
+  min-width: 180px;
+}
+
+.cuisine-notif-banner button {
+  border: none;
+  border-radius: 10px;
+  padding: 0.55rem 0.9rem;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  background: linear-gradient(135deg, #d4843f, #c76d2e);
+  color: #fff;
+}
+
+.cuisine-notif-banner button.secondary {
+  background: #fff;
+  color: #c76d2e;
+  border: 1px solid #e0c9b0;
+}
+
+.cuisine-topbar__install {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  height: 42px;
+  padding: 0 10px;
+  border-radius: 12px;
+  border: 1px solid #eadfce;
+  background: #fff;
+  color: #c76d2e;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+@media (min-width: 768px) {
+  .cuisine-notif-banner {
+    margin: 0 24px 12px;
+  }
+}

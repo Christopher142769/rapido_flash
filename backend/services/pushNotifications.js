@@ -280,6 +280,7 @@ async function sendToUserId(userId, payload) {
       body: payload.body || '',
       url: payload.url || '/home',
       tag: payload.tag || 'rapido',
+      sound: payload.sound || 'default',
     });
     for (const doc of subs) {
       const sub = {

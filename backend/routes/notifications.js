@@ -4,6 +4,7 @@ const { auth } = require('../middleware/auth');
 const Restaurant = require('../models/Restaurant');
 const Commande = require('../models/Commande');
 const ShopOrder = require('../models/ShopOrder');
+const MealOrder = require('../models/MealOrder');
 const Conversation = require('../models/Conversation');
 
 const router = express.Router();
@@ -58,6 +59,17 @@ router.get('/summary', auth, async (req, res) => {
         unreadMessages,
         todayRelances,
         total: pendingOrders + unreadMessages + todayRelances,
+      });
+    }
+
+    if (user.role === 'cuisinier') {
+      const pendingOrders = await MealOrder.countDocuments({ statut: 'en_attente' });
+      return res.json({
+        role: 'cuisinier',
+        pendingOrders,
+        unreadMessages: 0,
+        todayRelances: 0,
+        total: pendingOrders,
       });
     }
 

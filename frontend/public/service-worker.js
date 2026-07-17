@@ -2,13 +2,34 @@
 /**
  * Cache léger + notifications push Web (affichage hors onglet).
  */
-const CACHE_VERSION = 'rapido-flash-v4-push';
+const CACHE_VERSION = 'rapido-flash-v5-cuisine-push';
+
+const MEAL_SOUND = '/sounds/meal-order-notification.wav';
+const DEFAULT_SOUND = '/sounds/shopify-sales-notification.mp3';
+
+function isMealKitchenPayload(payload) {
+  if (payload?.sound === 'meal') return true;
+  const tag = String(payload?.tag || '');
+  return tag.startsWith('rapido-kitchen-order') || tag.startsWith('rapido-meal-order');
+}
+
+function notifyClients(payload) {
+  return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+    clients.forEach((client) => {
+      client.postMessage({ type: 'RAPIDO_PUSH', payload });
+    });
+  });
+}
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_VERSION).then((cache) =>
-      Promise.allSettled([cache.add('/').catch(() => null), cache.add('/manifest.json').catch(() => null)])
+      Promise.allSettled([
+        cache.add('/').catch(() => null),
+        cache.add('/manifest.json').catch(() => null),
+        cache.add('/cuisine-manifest.json').catch(() => null),
+      ])
     )
   );
 });
@@ -42,16 +63,22 @@ self.addEventListener('push', (event) => {
 
   const origin = self.location.origin;
   const openPath = payload.url && String(payload.url).startsWith('/') ? payload.url : '/home';
+  const isMeal = isMealKitchenPayload(payload);
 
   event.waitUntil(
-    self.registration.showNotification(payload.title || 'Rapido', {
-      body: payload.body || '',
-      icon: '/images/logo.png',
-      badge: '/images/logo.png',
-      tag: payload.tag || 'rapido',
-      data: { url: openPath, origin },
-      vibrate: [120, 60, 120],
-    })
+    Promise.all([
+      self.registration.showNotification(payload.title || 'Rapido', {
+        body: payload.body || '',
+        icon: '/images/logo.png',
+        badge: '/images/logo.png',
+        tag: payload.tag || 'rapido',
+        data: { url: openPath, origin, sound: isMeal ? 'meal' : 'default' },
+        vibrate: isMeal ? [180, 80, 180, 80, 240] : [120, 60, 120],
+        silent: false,
+        ...(isMeal ? { sound: MEAL_SOUND } : {}),
+      }),
+      notifyClients({ ...payload, sound: isMeal ? 'meal' : 'default' }),
+    ])
   );
 });
 

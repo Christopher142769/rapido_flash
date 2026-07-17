@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState, useCallb
 import axios from 'axios';
 import AuthContext from './AuthContext';
 import { playNotificationChime } from '../utils/notificationSound';
+import { playMealOrderChime } from '../utils/kitchenSounds';
 import { syncPushSubscriptionWithServer } from '../utils/pushSubscription';
 import {
   isCapacitorAndroid,
@@ -34,7 +35,7 @@ export function NotificationProvider({ children }) {
   const fetchSummary = useCallback(async () => {
     const token = localStorage.getItem('token');
     if (!token || !user) return;
-    if (!['restaurant', 'gestionnaire', 'commercial', 'client'].includes(user.role)) return;
+    if (!['restaurant', 'gestionnaire', 'commercial', 'client', 'cuisinier'].includes(user.role)) return;
     try {
       const res = await axios.get(`${API_URL}/notifications/summary`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -61,14 +62,23 @@ export function NotificationProvider({ children }) {
         const msgUp = next.unreadMessages > prev.unreadMessages;
         const relanceUp = next.todayRelances > prev.todayRelances;
         if (ordersUp || msgUp || relanceUp) {
-          playNotificationChime();
+          if (user.role === 'cuisinier' && ordersUp) {
+            playMealOrderChime();
+          } else {
+            playNotificationChime();
+          }
           const inForeground =
             typeof document !== 'undefined' && document.visibilityState === 'visible';
           if (!inForeground) {
-            const silentOpts = { silent: true };
+            const silentOpts = user.role === 'cuisinier' ? {} : { silent: true };
             if (isCapacitorAndroid()) {
               void (async () => {
-                if (ordersUp && user.role !== 'client') {
+                if (ordersUp && user.role === 'cuisinier') {
+                  await showRapidoAndroidTrayNotification({
+                    title: 'Rapido Cuisine — Nouvelle commande repas',
+                    body: 'Une commande repas attend en cuisine.',
+                  });
+                } else if (ordersUp && user.role !== 'client') {
                   await showRapidoAndroidTrayNotification({
                     title: 'Rapido — Nouvelle commande',
                     body: 'Une nouvelle commande est en attente de traitement.',
@@ -82,7 +92,14 @@ export function NotificationProvider({ children }) {
               })();
             } else if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
               try {
-                if (relanceUp && user.role !== 'client') {
+                if (ordersUp && user.role === 'cuisinier') {
+                  new Notification('Rapido Cuisine — Commande repas', {
+                    body: 'Une nouvelle commande repas est en attente.',
+                    icon: '/images/logo.png',
+                    tag: 'rapido-kitchen-order',
+                    ...silentOpts,
+                  });
+                } else if (relanceUp && user.role !== 'client') {
                   new Notification('Rapido — Relance livraison', {
                     body: `${next.todayRelances} livraison(s) à relancer aujourd'hui.`,
                     icon: '/images/logo.png',
@@ -135,14 +152,14 @@ export function NotificationProvider({ children }) {
   }, [user?._id]);
 
   useEffect(() => {
-    if (!user || !['restaurant', 'gestionnaire', 'commercial', 'client'].includes(user.role)) return undefined;
+    if (!user || !['restaurant', 'gestionnaire', 'commercial', 'client', 'cuisinier'].includes(user.role)) return undefined;
     fetchSummary();
     const id = setInterval(fetchSummary, POLL_MS);
     return () => clearInterval(id);
   }, [user, fetchSummary]);
 
   useEffect(() => {
-    if (!user || !['restaurant', 'gestionnaire', 'commercial', 'client'].includes(user.role)) return undefined;
+    if (!user || !['restaurant', 'gestionnaire', 'commercial', 'client', 'cuisinier'].includes(user.role)) return undefined;
     if (isCapacitorAndroid()) {
       void requestAndroidNativeNotificationPermissions()
         .then(() => registerCapacitorFcmAndSync())

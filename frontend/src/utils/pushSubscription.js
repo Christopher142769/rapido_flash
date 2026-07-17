@@ -13,10 +13,12 @@ export function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
-/** En prod uniquement : enregistre le SW (nécessaire pour recevoir les push hors onglet). */
-export async function registerServiceWorkerForPush() {
+/** En prod (ou espace /cuisine) : enregistre le SW pour push hors onglet. */
+export async function registerServiceWorkerForPush(options = {}) {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return null;
-  if (process.env.NODE_ENV !== 'production') return null;
+  const onCuisine =
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/cuisine');
+  if (process.env.NODE_ENV !== 'production' && !onCuisine && !options.force) return null;
   try {
     const reg = await navigator.serviceWorker.register('/service-worker.js', { updateViaCache: 'none' });
     await reg.update();

@@ -173,6 +173,7 @@ router.post('/', async (req, res) => {
         body: summary.slice(0, 120),
         url: '/cuisine/app',
         tag: `rapido-kitchen-order-${order._id}`,
+        sound: 'meal',
       }).catch(() => {});
     }
 
