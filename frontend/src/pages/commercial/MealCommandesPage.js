@@ -157,8 +157,10 @@ function mealOrderToShopExportShape(order) {
   };
 }
 
-/** Page Commandes Repas — clone UI / fonctionnalités de Commandes Shop. */
-export default function MealCommandesPage() {
+/** Page Commandes Repas — clone UI / fonctionnalités de Commandes Shop.
+ *  variant="kitchen" : vue cuisinier (workflow Accepter → En cuisine → Prêt). */
+export default function MealCommandesPage({ variant = 'commercial' }) {
+  const isKitchen = variant === 'kitchen';
   const { showSuccess, showError } = useModal();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -569,87 +571,126 @@ export default function MealCommandesPage() {
                       </div>
 
                       <div className="commande-actions">
-                        <button
-                          type="button"
-                          className="btn btn-outline"
-                          disabled={busy}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setSpecsOrder(order);
-                          }}
-                        >
-                          Spécifications
-                        </button>
-                        {order.statut === 'en_attente' ? (
-                          <>
-                            <button
-                              type="button"
-                              className="btn btn-primary"
-                              disabled={busy}
-                              onClick={() => updateStatut(order, 'confirmee')}
-                            >
-                              Confirmer
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-outline"
-                              disabled={busy}
-                              onClick={() => updateStatut(order, 'annulee')}
-                            >
-                              Annuler
-                            </button>
-                          </>
-                        ) : null}
-                        {order.statut === 'confirmee' ? (
-                          <>
-                            <button
-                              type="button"
-                              className="btn btn-primary"
-                              disabled={busy}
-                              onClick={() => updateStatut(order, 'en_preparation')}
-                            >
-                              En préparation
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-outline"
-                              disabled={busy}
-                              onClick={() => {
-                                if (
-                                  !window.confirm(
-                                    'Annuler la confirmation de cette commande ? Elle repassera en attente.'
-                                  )
-                                ) {
-                                  return;
-                                }
-                                updateStatut(order, 'en_attente');
-                              }}
-                            >
-                              Annuler la confirmation
-                            </button>
-                          </>
-                        ) : null}
-                        {order.statut === 'en_preparation' ? (
+                        {!isKitchen ? (
                           <button
                             type="button"
-                            className="btn btn-primary"
+                            className="btn btn-outline"
                             disabled={busy}
-                            onClick={() => updateStatut(order, 'en_livraison')}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSpecsOrder(order);
+                            }}
                           >
-                            En livraison
+                            Spécifications
                           </button>
                         ) : null}
-                        {order.statut === 'en_livraison' ? (
-                          <button
-                            type="button"
-                            className="btn btn-primary"
-                            disabled={busy}
-                            onClick={() => updateStatut(order, 'livree')}
-                          >
-                            Marquer comme livrée
-                          </button>
-                        ) : null}
+                        {isKitchen ? (
+                          <>
+                            {order.statut === 'en_attente' ? (
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                disabled={busy}
+                                onClick={() => updateStatut(order, 'confirmee')}
+                              >
+                                Accepter
+                              </button>
+                            ) : null}
+                            {order.statut === 'confirmee' ? (
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                disabled={busy}
+                                onClick={() => updateStatut(order, 'en_preparation')}
+                              >
+                                Lancer en cuisine
+                              </button>
+                            ) : null}
+                            {order.statut === 'en_preparation' ? (
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                disabled={busy}
+                                onClick={() => updateStatut(order, 'en_livraison')}
+                              >
+                                Plat prêt
+                              </button>
+                            ) : null}
+                          </>
+                        ) : (
+                          <>
+                            {order.statut === 'en_attente' ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className="btn btn-primary"
+                                  disabled={busy}
+                                  onClick={() => updateStatut(order, 'confirmee')}
+                                >
+                                  Confirmer
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-outline"
+                                  disabled={busy}
+                                  onClick={() => updateStatut(order, 'annulee')}
+                                >
+                                  Annuler
+                                </button>
+                              </>
+                            ) : null}
+                            {order.statut === 'confirmee' ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className="btn btn-primary"
+                                  disabled={busy}
+                                  onClick={() => updateStatut(order, 'en_preparation')}
+                                >
+                                  En préparation
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-outline"
+                                  disabled={busy}
+                                  onClick={() => {
+                                    if (
+                                      !window.confirm(
+                                        'Annuler la confirmation de cette commande ? Elle repassera en attente.'
+                                      )
+                                    ) {
+                                      return;
+                                    }
+                                    updateStatut(order, 'en_attente');
+                                  }}
+                                >
+                                  Annuler la confirmation
+                                </button>
+                              </>
+                            ) : null}
+                            {order.statut === 'en_preparation' ? (
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                disabled={busy}
+                                onClick={() => updateStatut(order, 'en_livraison')}
+                              >
+                                En livraison
+                              </button>
+                            ) : null}
+                            {order.statut === 'en_livraison' ? (
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                disabled={busy}
+                                onClick={() => updateStatut(order, 'livree')}
+                              >
+                                Marquer comme livrée
+                              </button>
+                            ) : null}
+                          </>
+                        )}
                       </div>
                     </div>
                   );
