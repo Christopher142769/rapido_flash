@@ -39,7 +39,7 @@ function buildKitchenNavItems() {
     {
       id: 'kitchen-commandes',
       label: 'Commandes Repas',
-      path: '/dashboard/cuisine',
+      path: '/cuisine/app',
       section: KITCHEN_NAV_SECTION,
       Icon: FaFire,
     },

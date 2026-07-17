@@ -64,6 +64,8 @@ import CommerciauxDashboard from './pages/commercial/CommerciauxDashboard';
 import ChampionsDashboard from './pages/commercial/ChampionsDashboard';
 import CuisinierCommandesPage from './pages/kitchen/CuisinierCommandesPage';
 import CuisiniersDashboard from './pages/kitchen/CuisiniersDashboard';
+import CuisineGate from './pages/kitchen/CuisineGate';
+import CuisineAppLayout from './pages/kitchen/CuisineAppLayout';
 import CommercialPointsPage from './pages/commercial/CommercialPointsPage';
 import ChatThread from './pages/client/ChatThread';
 import ChatsInbox from './pages/client/ChatsInbox';
@@ -119,7 +121,8 @@ function AppRoutes() {
   const isRecrutement =
     location.pathname.startsWith('/recrutement') ||
     location.pathname.startsWith('/form') ||
-    location.pathname.startsWith('/champion');
+    location.pathname.startsWith('/champion') ||
+    location.pathname.startsWith('/cuisine');
 
   return (
     <MaintenanceGate>
@@ -153,6 +156,14 @@ function AppRoutes() {
         <Route path="/champion/avis/:missionId" element={<ChampionReviewPage />} />
         <Route path="/champion/app" element={<ChampionGate />}>
           <Route index element={<ChampionApp />} />
+        </Route>
+
+        {/* Espace cuisiniers */}
+        <Route path="/cuisine" element={<Navigate to="/cuisine/app" replace />} />
+        <Route path="/cuisine/app" element={<CuisineGate />}>
+          <Route element={<CuisineAppLayout />}>
+            <Route index element={<CuisinierCommandesPage />} />
+          </Route>
         </Route>
 
         {/* Home public : découverte sans connexion */}
@@ -219,7 +230,7 @@ function AppRoutes() {
           <Route path="commercial-relances" element={<CommercialRelancesPage />} />
           <Route path="commercial-points" element={<CommercialPointsPage />} />
           <Route path="commerciaux" element={<CommerciauxDashboard />} />
-          <Route path="cuisine" element={<CuisinierCommandesPage />} />
+          <Route path="cuisine" element={<Navigate to="/cuisine/app" replace />} />
           <Route path="cuisiniers" element={<CuisiniersDashboard />} />
           <Route path="champions" element={<ChampionsDashboard />} />
         </Route>

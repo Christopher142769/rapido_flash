@@ -63,8 +63,8 @@ export default function CuisiniersDashboard() {
     <div className="commercial-page">
       <h1>Comptes cuisiniers</h1>
       <p className="commercial-lead">
-        Créez des accès pour votre équipe cuisine. Les cuisiniers reçoivent toutes les commandes
-        repas sur leur tableau de bord dédié.
+        Créez des accès pour votre équipe cuisine. Les cuisiniers se connectent sur{' '}
+        <strong>/cuisine/app</strong> et reçoivent toutes les commandes repas.
       </p>
 
       <div className="commercial-card">

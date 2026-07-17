@@ -159,7 +159,7 @@ function mealOrderToShopExportShape(order) {
 
 /** Page Commandes Repas — clone UI / fonctionnalités de Commandes Shop.
  *  variant="kitchen" : vue cuisinier (workflow Accepter → En cuisine → Prêt). */
-export default function MealCommandesPage({ variant = 'commercial' }) {
+export default function MealCommandesPage({ variant = 'commercial', refreshKey = 0 }) {
   const isKitchen = variant === 'kitchen';
   const { showSuccess, showError } = useModal();
   const [orders, setOrders] = useState([]);
@@ -171,23 +171,35 @@ export default function MealCommandesPage({ variant = 'commercial' }) {
   const [dateTo, setDateTo] = useState(() => defaultDateRange().dateTo);
   const [specsOrder, setSpecsOrder] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const res = await axios.get(`${API_URL}/meal-orders`, { headers: authHeaders() });
       setOrders(Array.isArray(res.data) ? res.data : []);
     } catch (e) {
       console.error(e);
-      showError(e.response?.data?.message || e.message || 'Erreur de chargement');
+      if (!silent) showError(e.response?.data?.message || e.message || 'Erreur de chargement');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [showError]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!refreshKey) return;
+    load(true);
+  }, [refreshKey, load]);
+
+  useEffect(() => {
+    if (!isKitchen) return undefined;
+    const id = setInterval(() => load(true), 30000);
+    return () => clearInterval(id);
+  }, [isKitchen, load]);
 
   const productOptions = useMemo(() => getMealProductOptions(orders), [orders]);
 
@@ -274,7 +286,7 @@ export default function MealCommandesPage({ variant = 'commercial' }) {
     try {
       await fn();
       showSuccess(msg);
-      await load();
+      await load(isKitchen);
     } catch (e) {
       showError(e.response?.data?.message || e.message);
     } finally {
@@ -305,7 +317,7 @@ export default function MealCommandesPage({ variant = 'commercial' }) {
       );
       showSuccess('Spécifications enregistrées');
       setSpecsOrder(null);
-      await load();
+      await load(isKitchen);
     } catch (e) {
       showError(e.response?.data?.message || e.message);
     } finally {
@@ -325,13 +337,37 @@ export default function MealCommandesPage({ variant = 'commercial' }) {
       {loading ? (
         <PageLoader message="Chargement des commandes Repas..." />
       ) : (
-        <div className="commandes-page">
+        <div className={`commandes-page${isKitchen ? ' commandes-page--cuisine' : ''}`}>
           <div className="commandes-content">
-            <div className="commandes-header">
-              <h1>Commandes Repas</h1>
-            </div>
+            {!isKitchen ? (
+              <div className="commandes-header">
+                <h1>Commandes Repas</h1>
+              </div>
+            ) : null}
 
             <div className="commercial-card shop-commandes-filters">
+              {isKitchen ? (
+                <button
+                  type="button"
+                  className="cuisine-filters-toggle"
+                  onClick={() => setFiltersOpen((o) => !o)}
+                  aria-expanded={filtersOpen}
+                >
+                  <span>
+                    Filtres & statistiques
+                    <span className="cuisine-filters-toggle__meta">
+                      {filterStats.orderCount} commande{filterStats.orderCount > 1 ? 's' : ''}
+                      {filter ? ` · ${selectedStatutLabel}` : ''}
+                    </span>
+                  </span>
+                  <span className={`cuisine-filters-toggle__chevron${filtersOpen ? ' is-open' : ''}`}>
+                    ▾
+                  </span>
+                </button>
+              ) : null}
+              <div
+                className={`cuisine-filters-panel${isKitchen && !filtersOpen ? ' is-collapsed' : ''}`}
+              >
               <div className="commercial-filters">
                 <label>
                   Du
@@ -382,7 +418,7 @@ export default function MealCommandesPage({ variant = 'commercial' }) {
                 <button
                   type="button"
                   className="commercial-btn commercial-btn--outline"
-                  onClick={load}
+                  onClick={() => load(isKitchen)}
                   disabled={busy}
                 >
                   Actualiser
@@ -400,6 +436,7 @@ export default function MealCommandesPage({ variant = 'commercial' }) {
                 quantityLabel="Quantité produits"
               />
 
+              {!isKitchen ? (
               <div className="shop-commandes-export-bar">
                 <p className="shop-commandes-export-summary">
                   <strong>{exportData.orderCount}</strong> commande
@@ -432,13 +469,17 @@ export default function MealCommandesPage({ variant = 'commercial' }) {
                   </button>
                 </div>
               </div>
+              ) : null}
+              </div>
             </div>
 
+            {!isKitchen ? (
             <p className="commandes-shop-hint">
               Filtrez par <strong>date de commande</strong>, statut, produit et ville, puis exportez le
               détail complet en PDF, Excel ou Word. Même processus opérationnel : confirmer,
               préparation, livraison, livrée.
             </p>
+            ) : null}
 
             {filteredOrders.length === 0 ? (
               <div className="no-commandes">

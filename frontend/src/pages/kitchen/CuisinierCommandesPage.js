@@ -1,7 +1,9 @@
 import React from 'react';
+import { useOutletContext } from 'react-router-dom';
 import MealCommandesPage from '../commercial/MealCommandesPage';
 
-/** Espace cuisinier : la page Commandes Repas avec le workflow cuisine. */
+/** Espace cuisinier : Commandes Repas dans l’app /cuisine/app */
 export default function CuisinierCommandesPage() {
-  return <MealCommandesPage variant="kitchen" />;
+  const { refreshKey } = useOutletContext() || {};
+  return <MealCommandesPage variant="kitchen" refreshKey={refreshKey} />;
 }

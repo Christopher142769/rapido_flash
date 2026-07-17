@@ -37,7 +37,7 @@ const Login = () => {
       if (user.role === 'restaurant' || user.role === 'gestionnaire' || user.role === 'commercial') {
         navigate(user.role === 'commercial' ? toDashboardPath('/commercial') : toDashboardPath());
       } else if (user.role === 'cuisinier') {
-        navigate(toDashboardPath('/cuisine'));
+        navigate('/cuisine/app');
       } else if (user.role === 'livreur') {
         navigate(safeNext.startsWith('/champion') ? safeNext : '/champion/app');
       } else {

@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useContext, useEffect, useState } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import AuthContext from '../../context/AuthContext';
 import { DashboardRefreshProvider } from '../../context/DashboardRefreshContext';
 import DashboardSidebarPremium from './DashboardSidebarPremium';
 import DashboardHeaderPremium from './DashboardHeaderPremium';
@@ -10,6 +11,7 @@ import './dashboard-shell.css';
 export default function DashboardLayout() {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const location = useLocation();
+  const { user } = useContext(AuthContext);
 
   useEffect(() => {
     setMobileDrawerOpen(false);
@@ -19,6 +21,10 @@ export default function DashboardLayout() {
     document.body.classList.add('dashboard-layout-active');
     return () => document.body.classList.remove('dashboard-layout-active');
   }, []);
+
+  if (user?.role === 'cuisinier') {
+    return <Navigate to="/cuisine/app" replace />;
+  }
 
   return (
     <DashboardRefreshProvider>

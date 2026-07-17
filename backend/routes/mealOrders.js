@@ -171,7 +171,7 @@ router.post('/', async (req, res) => {
       void sendToUserIds(kitchenIds, {
         title: 'Cuisine — Nouvelle commande repas',
         body: summary.slice(0, 120),
-        url: '/dashboard/cuisine',
+        url: '/cuisine/app',
         tag: `rapido-kitchen-order-${order._id}`,
       }).catch(() => {});
     }
