@@ -350,7 +350,8 @@ export function prepareShopOrdersExport(orders, meta = {}) {
     eviscerationFilter: meta.eviscerationFilter || '',
     eviscerationLabel: meta.eviscerationLabel || 'Toutes',
     maxKgLabel: meta.maxKgLabel || '',
-    splitLivreurLists: !!meta.splitLivreurLists || lists.length > 1,
+    filenameTag: meta.filenameTag || '',
+    splitLivreurLists: !!meta.splitLivreurLists && lists.length > 1,
     lists,
     orders: rows,
     orderCount: rows.length,
@@ -360,6 +361,17 @@ export function prepareShopOrdersExport(orders, meta = {}) {
     totalAmount,
     totalKg,
   };
+}
+
+function shopExportFilename(exportData, ext) {
+  const parts = ['commandes-shop'];
+  if (exportData.filenameTag) parts.push(safeFilenamePart(exportData.filenameTag));
+  parts.push(
+    safeFilenamePart(exportData.cityFilter || 'toutes-villes'),
+    safeFilenamePart(exportData.statutLabel),
+    String(Date.now())
+  );
+  return `${parts.join('-')}.${ext}`;
 }
 
 function exportMetaLine(exportData) {
@@ -526,7 +538,7 @@ export function exportShopOrdersToExcel(exportData) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `commandes-shop-${safeFilenamePart(exportData.cityFilter || 'toutes-villes')}-${safeFilenamePart(exportData.statutLabel)}-${Date.now()}.xls`;
+  a.download = shopExportFilename(exportData, 'xls');
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -756,5 +768,5 @@ export function exportShopOrdersToPdf(exportData) {
 
   drawPageFooter();
 
-  pdf.save(`commandes-shop-${safeFilenamePart(exportData.cityFilter || 'toutes-villes')}-${safeFilenamePart(exportData.statutLabel)}-${Date.now()}.pdf`);
+  pdf.save(shopExportFilename(exportData, 'pdf'));
 }

@@ -197,6 +197,18 @@
   padding-bottom: 0;
 }
 
+.shop-export-choice-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.5rem;
+}
+
+.shop-export-choice-actions .shop-specs-modal-btn {
+  width: 100%;
+  text-align: center;
+}
+
 .btn-danger-outline {
   border-color: #d32f2f !important;
   color: #d32f2f !important;

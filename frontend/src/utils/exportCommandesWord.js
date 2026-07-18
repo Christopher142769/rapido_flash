@@ -615,10 +615,14 @@ export function exportShopOrdersToWord(exportData) {
     colgroup: COLGROUP_SHOP,
   });
 
-  downloadWord(
-    html,
-    `commandes-shop-${safeFilenamePart(cityFilter || 'toutes-villes')}-${safeFilenamePart(exportData.statutLabel)}-${Date.now()}.doc`
+  const wordNameParts = ['commandes-shop'];
+  if (exportData.filenameTag) wordNameParts.push(safeFilenamePart(exportData.filenameTag));
+  wordNameParts.push(
+    safeFilenamePart(cityFilter || 'toutes-villes'),
+    safeFilenamePart(exportData.statutLabel),
+    String(Date.now())
   );
+  downloadWord(html, `${wordNameParts.join('-')}.doc`);
 }
 
 export function exportRestaurantCommandesToWord(exportData) {
