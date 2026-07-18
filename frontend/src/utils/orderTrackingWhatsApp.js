@@ -1,8 +1,8 @@
 /**
  * Numéro de suivi (WhatsApp) — chiffres uniquement avec indicatif pays.
- * Défaut équipe Rapido : indicatif Bénin +229 + 40393994 → surcharge possible via REACT_APP_RAPIDO_WHATSAPP.
+ * Défaut équipe Rapido : +229 40 31 75 68 → surcharge possible via REACT_APP_RAPIDO_WHATSAPP.
  */
-const DEFAULT_RAPIDO_WA_DIGITS = '22940393994';
+const DEFAULT_RAPIDO_WA_DIGITS = '22940317568';
 
 export function getRapidoWhatsAppDigits() {
   const raw = process.env.REACT_APP_RAPIDO_WHATSAPP;

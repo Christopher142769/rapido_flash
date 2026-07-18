@@ -12,8 +12,8 @@ import {
 
 export const SHOP_ORDER_STORAGE_KEY = 'rapido_shop_order_pending';
 
-/** Numéro WhatsApp Shop (suivi commande, support) — local Bénin 96973890 → +229. */
-export const SHOP_WHATSAPP_LOCAL = '96973890';
+/** Numéro WhatsApp Shop (suivi commande, support) — local Bénin 40317568 → +229 40 31 75 68. */
+export const SHOP_WHATSAPP_LOCAL = '40317568';
 
 export function getShopWhatsAppDigits() {
   let digits = String(process.env.REACT_APP_SHOP_WHATSAPP || SHOP_WHATSAPP_LOCAL).replace(/\D/g, '');

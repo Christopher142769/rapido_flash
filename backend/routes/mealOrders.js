@@ -15,7 +15,7 @@ const { getDefaultDeliveryDateKey, deliveryDateKeyToDate } = require('../utils/s
 const router = express.Router();
 
 const SHOP_CITIES = ['Cotonou', 'Calavi'];
-const SHOP_WA = '22996973890';
+const SHOP_WA = '22940317568';
 
 function validateCustomer(customer) {
   const c = customer || {};

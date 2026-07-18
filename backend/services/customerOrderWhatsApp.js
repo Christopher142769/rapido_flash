@@ -6,7 +6,7 @@ const {
   sendWhatsAppTemplate,
 } = require('./whatsappCloudApi');
 
-const RAPIDO_WA_DISPLAY = '+229 40 39 39 94';
+const RAPIDO_WA_DISPLAY = '+229 40 31 75 68';
 const DELIVERY_NOTE =
   'Commande aujourd’hui → livraison demain. Restez joignable à l’adresse indiquée.';
 

@@ -2,13 +2,13 @@
 
 À chaque commande **Shop** ou **application**, le backend peut envoyer un message WhatsApp à l’équipe Rapido.
 
-**Numéro par défaut :** `+229 40 39 39 94` (`22940393994` dans `.env`).
+**Numéro par défaut :** `+229 40 31 75 68` (`22940317568` dans `.env`).
 
 ## Variables
 
 | Variable | Description |
 |----------|-------------|
-| `RAPIDO_WHATSAPP` | Destinataire (chiffres avec indicatif, ex. `22940393994`). Même valeur que `REACT_APP_RAPIDO_WHATSAPP` côté frontend. |
+| `RAPIDO_WHATSAPP` | Destinataire (chiffres avec indicatif, ex. `22940317568`). Même valeur que `REACT_APP_RAPIDO_WHATSAPP` côté frontend. |
 | `CALLMEBOT_WHATSAPP_APIKEY` | **Option simple** — clé CallMeBot liée au téléphone qui reçoit les alertes. |
 | `WHATSAPP_CLOUD_ACCESS_TOKEN` | **Option pro** — jeton API WhatsApp Business (Meta). |
 | `WHATSAPP_CLOUD_PHONE_NUMBER_ID` | ID du numéro WhatsApp Business qui envoie les messages. |
@@ -19,12 +19,12 @@ Configurer **au moins une** option d’envoi (CallMeBot ou Cloud). Sinon, le tex
 
 ## Option A — CallMeBot (recommandé pour démarrer)
 
-1. Sur le téléphone **+229 40 39 39 94**, ajoute le contact CallMeBot et envoie le message d’activation indiqué sur [callmebot.com](https://www.callmebot.com/blog/free-api-whatsapp-messages/).
+1. Sur le téléphone **+229 40 31 75 68**, ajoute le contact CallMeBot et envoie le message d’activation indiqué sur [callmebot.com](https://www.callmebot.com/blog/free-api-whatsapp-messages/).
 2. Récupère ta **apikey**.
 3. Dans `.env` (prod) :
 
 ```env
-RAPIDO_WHATSAPP=22940393994
+RAPIDO_WHATSAPP=22940317568
 CALLMEBOT_WHATSAPP_APIKEY=ta_cle
 ```
 
@@ -39,7 +39,7 @@ CALLMEBOT_WHATSAPP_APIKEY=ta_cle
 3. Dans `.env` :
 
 ```env
-RAPIDO_WHATSAPP=22940393994
+RAPIDO_WHATSAPP=22940317568
 WHATSAPP_CLOUD_ACCESS_TOKEN=EAAxxxxx
 WHATSAPP_CLOUD_PHONE_NUMBER_ID=123456789
 ```
@@ -48,6 +48,4 @@ WHATSAPP_CLOUD_PHONE_NUMBER_ID=123456789
 
 ---
 
-## E-mail
-
-Les e-mails continuent d’être envoyés via `SMTP_*` vers `PLATFORM_ADMIN_EMAIL` (voir [CONFIG_SMTP.md](./CONFIG_SMTP.md)).
+Les messages clients (confirmation après « Suivre ma commande ») utilisent la Cloud API si elle est configurée.

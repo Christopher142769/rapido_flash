@@ -14,7 +14,7 @@ export function getRapidoTelHref() {
   return `tel:+${d}`;
 }
 
-/** Affichage lisible du numéro (ex. +229 40 39 39 94). */
+/** Affichage lisible du numéro (ex. +229 40 31 75 68). */
 export function getRapidoPhoneDisplay() {
   const d = String(getRapidoWhatsAppDigits() || '').replace(/\D/g, '');
   if (d.length === 11 && d.startsWith('229')) {

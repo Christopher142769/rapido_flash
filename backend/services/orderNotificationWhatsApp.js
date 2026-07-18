@@ -29,7 +29,7 @@ async function sendViaCallMeBot(toDigits, body) {
 }
 
 /**
- * Envoie une alerte texte WhatsApp à l'équipe Rapido (+229 40393994 par défaut).
+ * Envoie une alerte texte WhatsApp à l'équipe Rapido (+229 40 31 75 68 par défaut).
  * Priorité : API Cloud Meta (WHATSAPP_CLOUD_*) puis CallMeBot (CALLMEBOT_WHATSAPP_APIKEY).
  */
 async function notifyOrderWhatsApp(body) {
