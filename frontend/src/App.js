@@ -24,6 +24,7 @@ import Factures from './pages/client/Factures';
 import ReceiptPage from './pages/client/ReceiptPage';
 import Settings from './pages/client/Settings';
 import AccountDeletion from './pages/AccountDeletion';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import RecrutementPage from './pages/RecrutementPage';
 import CustomFormsDashboard from './pages/restaurant/CustomFormsDashboard';
 import PublicCustomFormPage from './pages/public/PublicCustomFormPage';
@@ -140,6 +141,8 @@ function AppRoutes() {
         <Route path="/login" element={<Login />} />
         <Route path="/account-deletion" element={<AccountDeletion />} />
         <Route path="/suppression-compte" element={<AccountDeletion />} />
+        <Route path="/politique-confidentialite" element={<PrivacyPolicyPage />} />
+        <Route path="/privacy" element={<Navigate to="/politique-confidentialite" replace />} />
 
         {/* Recrutement : HTML statique recrutement/carrieres.html */}
         <Route path="/recrutement/merci" element={<RecrutementPage page="merci" />} />

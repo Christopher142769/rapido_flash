@@ -1,5 +1,12 @@
-/politique-confidentialite    /privacy.html   200
+# Pretty URL → HTML statique (Render / Netlify)
+/politique-confidentialite    /politique-confidentialite/index.html   200
+/politique-confidentialite/   /politique-confidentialite/index.html   200
+/privacy                      /privacy.html   200
+
+# Recrutement
 /shop/static/*    /static/:splat    200
 /recrutement/merci    /recrutement/merci.html    200
 /recrutement    /recrutement/carrieres.html    200
+
+# SPA fallback (après les fichiers statiques)
 /*    /index.html   200
