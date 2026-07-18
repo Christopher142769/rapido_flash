@@ -8,6 +8,7 @@ import {
 } from '../../utils/shopOrder';
 import { formatPriceXof } from '../../utils/shopPromo';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
+import ShopPrivacyFooter from '../../components/shop/ShopPrivacyFooter';
 import '../shop/shopTypography.css';
 import '../shop/ShopOrderConfirmation.css';
 
@@ -142,6 +143,8 @@ export default function MealOrderConfirmation() {
           </Link>
         </div>
       </div>
+
+      <ShopPrivacyFooter className="shop-privacy-footer--sticky-pad" />
 
       <div className="shop-confirm-sticky">
         <button type="button" className="shop-confirm-cta shop-confirm-cta--wa" onClick={handleTrack}>

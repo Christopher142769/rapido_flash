@@ -12,6 +12,7 @@ import {
 import PageLoader from '../../components/PageLoader';
 import MealShopChrome from '../../components/shop/MealShopChrome';
 import MealAddToCartModal from '../../components/shop/MealAddToCartModal';
+import ShopPrivacyFooter from '../../components/shop/ShopPrivacyFooter';
 import { getImageUrl } from '../../utils/imagePlaceholder';
 import { formatPriceXof } from '../../utils/shopPromo';
 import { getShopWhatsAppDigits } from '../../utils/shopOrder';
@@ -291,6 +292,7 @@ export default function MealShopPage() {
           </a>
         ) : null}
       </footer>
+      <ShopPrivacyFooter className={cartCount > 0 ? 'shop-privacy-footer--sticky-pad' : ''} />
 
       {cartCount > 0 ? (
         <div className="meal-shop-float-cart">

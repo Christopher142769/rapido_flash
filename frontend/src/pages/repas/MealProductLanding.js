@@ -11,6 +11,7 @@ import ShopQuantityModal from '../../components/shop/ShopQuantityModal';
 import MealAccompagnementModal from '../../components/shop/MealAccompagnementModal';
 import MealOptionGroups from '../../components/shop/MealOptionGroups';
 import ShopTrustCards from '../../components/shop/ShopTrustCards';
+import ShopPrivacyFooter from '../../components/shop/ShopPrivacyFooter';
 import ShopContentBlocks from '../../components/shop/ShopContentBlocks';
 import { getProductGallery } from '../../utils/shopProductMedia';
 import {
@@ -356,6 +357,7 @@ export default function MealProductLanding() {
             ← Retour à la boutique repas
           </Link>
         </div>
+        <ShopPrivacyFooter />
       </div>
     );
   }
@@ -371,6 +373,7 @@ export default function MealProductLanding() {
             ← Retour à la boutique repas
           </Link>
         </div>
+        <ShopPrivacyFooter />
       </div>
     );
   }
@@ -603,6 +606,8 @@ export default function MealProductLanding() {
       <div id="shop-section-trust">
         <ShopTrustCards whatsappNumber={getShopWhatsAppDigits()} />
       </div>
+
+      <ShopPrivacyFooter className="shop-privacy-footer--sticky-pad" />
 
       <ShopQuantityModal
         open={qtyModalOpen}

@@ -17,6 +17,7 @@ import {
   getShopWhatsAppDigits,
 } from '../../utils/shopOrder';
 import ShopDeliveryNotice from '../../components/shop/ShopDeliveryNotice';
+import ShopPrivacyFooter from '../../components/shop/ShopPrivacyFooter';
 import { getShopPromoState, formatPriceXof, getShopDeliveryFee, computeShopOrderTotals } from '../../utils/shopPromo';
 import {
   formatQuantityWithUnit,
@@ -295,6 +296,7 @@ export default function ShopProductLanding() {
           <h1>Produit indisponible</h1>
           <p>{error || 'Ce lien n’est plus actif.'}</p>
         </div>
+        <ShopPrivacyFooter />
       </div>
     );
   }
@@ -486,6 +488,8 @@ export default function ShopProductLanding() {
       ) : null}
 
       <ShopTrustCards whatsappNumber={getShopWhatsAppDigits()} />
+
+      <ShopPrivacyFooter className="shop-privacy-footer--sticky-pad" />
 
       <ShopQuantityModal
         open={qtyModalOpen}

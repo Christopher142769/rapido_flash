@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import MealShopChrome from '../../components/shop/MealShopChrome';
 import ShopOrderForm from '../../components/shop/ShopOrderForm';
+import ShopPrivacyFooter from '../../components/shop/ShopPrivacyFooter';
 import { getImageUrl } from '../../utils/imagePlaceholder';
 import { formatPriceXof } from '../../utils/shopPromo';
 import {
@@ -304,6 +305,7 @@ export default function MealCartPage() {
           </div>
         </div>
       ) : null}
+      <ShopPrivacyFooter />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
+import ShopPrivacyFooter from '../../components/shop/ShopPrivacyFooter';
 import {
   formatCustomerAddress,
   formatCustomerFullName,
@@ -156,6 +157,8 @@ export default function ShopOrderConfirmation() {
           </Link>
         </div>
       </div>
+
+      <ShopPrivacyFooter className="shop-privacy-footer--sticky-pad" />
 
       <div className="shop-confirm-sticky">
         <button

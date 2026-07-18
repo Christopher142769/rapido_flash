@@ -1,5 +1,6 @@
 import React from 'react';
 import ShopBrandHeader from './ShopBrandHeader';
+import ShopPrivacyFooter from './ShopPrivacyFooter';
 import ShopCountdown from './ShopCountdown';
 import { formatClosureDateTime, formatDailyTime } from '../../utils/shopClosure';
 import { FaStore, FaClock, FaShoppingBag } from 'react-icons/fa';
@@ -76,6 +77,7 @@ export default function ShopClosedPage({ product, closureState, onReopen }) {
           </p>
         </div>
       </main>
+      <ShopPrivacyFooter />
     </div>
   );
 }
