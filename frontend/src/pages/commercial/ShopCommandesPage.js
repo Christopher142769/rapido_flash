@@ -94,10 +94,6 @@ export default function ShopCommandesPage() {
   const [cityFilter, setCityFilter] = useState('');
   const [eviscerationFilter, setEviscerationFilter] = useState('');
   const [maxKg, setMaxKg] = useState('');
-  const [maxKgEvisc, setMaxKgEvisc] = useState('');
-  const [maxKgNonEvisc, setMaxKgNonEvisc] = useState('');
-  const [maxKgList1, setMaxKgList1] = useState('');
-  const [maxKgList2, setMaxKgList2] = useState('');
   const [splitMode, setSplitMode] = useState('');
   const [dateFrom, setDateFrom] = useState(() => defaultDateRange().dateFrom);
   const [dateTo, setDateTo] = useState(() => defaultDateRange().dateTo);
@@ -149,21 +145,8 @@ export default function ShopCommandesPage() {
         evisceration: eviscerationFilter,
         maxKg,
         splitMode,
-        maxKgEvisc,
-        maxKgNonEvisc,
-        maxKgList1,
-        maxKgList2,
       }),
-    [
-      baseFilteredOrders,
-      eviscerationFilter,
-      maxKg,
-      splitMode,
-      maxKgEvisc,
-      maxKgNonEvisc,
-      maxKgList1,
-      maxKgList2,
-    ]
+    [baseFilteredOrders, eviscerationFilter, maxKg, splitMode]
   );
 
   const filteredOrders = livreurSelection.orders;
@@ -174,29 +157,19 @@ export default function ShopCommandesPage() {
   const selectedStatutLabel = filter ? STATUT_LABELS[filter] || filter : 'Tous les statuts';
   const selectedCityLabel = CITY_FILTER_LABELS[cityFilter] || 'Toutes les villes';
   const selectedEviscerationLabel =
-    splitMode === 'evisceration'
-      ? '2 listes (éviscéré / non)'
-      : splitMode === 'mixed'
-        ? '2 listes mixtes (oui + non)'
-        : EVISCERATION_LABELS[eviscerationFilter] || 'Toutes';
+    splitMode === 'remainder'
+      ? `Sélection (${EVISCERATION_LABELS[eviscerationFilter] || 'Toutes'}) + reste`
+      : EVISCERATION_LABELS[eviscerationFilter] || 'Toutes';
 
   const maxKgLabel = useMemo(() => {
-    if (splitMode === 'evisceration') {
-      const parts = [];
-      if (Number(maxKgEvisc) > 0) parts.push(`max ${maxKgEvisc} kg éviscéré`);
-      if (Number(maxKgNonEvisc) > 0) parts.push(`max ${maxKgNonEvisc} kg non éviscéré`);
-      return parts.length ? parts.join(' · ') : 'Toutes quantités (2 listes)';
+    if (Number(maxKg) > 0) {
+      return splitMode === 'remainder'
+        ? `Liste 1 : max ${maxKg} kg · Liste 2 : reste sans doublon`
+        : `Max ${maxKg} kg (premières commandes)`;
     }
-    if (splitMode === 'mixed') {
-      const parts = [];
-      if (Number(maxKgList1) > 0) parts.push(`liste 1 : ${maxKgList1} kg`);
-      if (Number(maxKgList2) > 0) parts.push(`liste 2 : ${maxKgList2} kg`);
-      else if (Number(maxKgList1) > 0) parts.push('liste 2 : reste');
-      return parts.length ? parts.join(' · ') : '2 listes mixtes (toutes quantités)';
-    }
-    if (Number(maxKg) > 0) return `Max ${maxKg} kg (premières commandes)`;
+    if (splitMode === 'remainder') return 'Liste 1 : filtre · Liste 2 : reste sans doublon';
     return '';
-  }, [splitMode, maxKg, maxKgEvisc, maxKgNonEvisc, maxKgList1, maxKgList2]);
+  }, [splitMode, maxKg]);
 
   const exportData = useMemo(
     () =>
@@ -408,7 +381,6 @@ export default function ShopCommandesPage() {
                 <select
                   value={eviscerationFilter}
                   onChange={(e) => setEviscerationFilter(e.target.value)}
-                  disabled={splitMode === 'evisceration'}
                 >
                   <option value="">Toutes (oui + non)</option>
                   <option value="oui">Éviscéré &amp; nettoyé</option>
@@ -416,88 +388,23 @@ export default function ShopCommandesPage() {
                 </select>
               </label>
               <label>
+                Quantité max (kg)
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  placeholder="Ex. 30"
+                  value={maxKg}
+                  onChange={(e) => setMaxKg(e.target.value)}
+                />
+              </label>
+              <label>
                 Listes livreurs
-                <select
-                  value={splitMode}
-                  onChange={(e) => {
-                    const mode = e.target.value;
-                    setSplitMode(mode);
-                    if (mode === 'evisceration') setEviscerationFilter('');
-                    if (mode === 'mixed' && eviscerationFilter) {
-                      /* garde le filtre éventuel ; par défaut mixte = toutes */
-                    }
-                  }}
-                >
-                  <option value="">Liste unique</option>
-                  <option value="evisceration">2 listes (éviscéré / non)</option>
-                  <option value="mixed">2 listes mixtes (oui + non)</option>
+                <select value={splitMode} onChange={(e) => setSplitMode(e.target.value)}>
+                  <option value="">Liste unique (filtre seul)</option>
+                  <option value="remainder">2 listes (sélection + reste)</option>
                 </select>
               </label>
-              {splitMode === '' ? (
-                <label>
-                  Quantité max (kg)
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    placeholder="Ex. 30"
-                    value={maxKg}
-                    onChange={(e) => setMaxKg(e.target.value)}
-                  />
-                </label>
-              ) : null}
-              {splitMode === 'evisceration' ? (
-                <>
-                  <label>
-                    Max kg éviscéré
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      placeholder="Ex. 30"
-                      value={maxKgEvisc}
-                      onChange={(e) => setMaxKgEvisc(e.target.value)}
-                    />
-                  </label>
-                  <label>
-                    Max kg non éviscéré
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      placeholder="Ex. 30"
-                      value={maxKgNonEvisc}
-                      onChange={(e) => setMaxKgNonEvisc(e.target.value)}
-                    />
-                  </label>
-                </>
-              ) : null}
-              {splitMode === 'mixed' ? (
-                <>
-                  <label>
-                    Max kg liste 1
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      placeholder="Ex. 30"
-                      value={maxKgList1}
-                      onChange={(e) => setMaxKgList1(e.target.value)}
-                    />
-                  </label>
-                  <label>
-                    Max kg liste 2
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      placeholder="Ex. 30 (vide = reste)"
-                      value={maxKgList2}
-                      onChange={(e) => setMaxKgList2(e.target.value)}
-                    />
-                  </label>
-                </>
-              ) : null}
               <button
                 type="button"
                 className="commercial-btn commercial-btn--outline"
@@ -545,11 +452,7 @@ export default function ShopCommandesPage() {
                   ? ` · ${formatFilterQuantity(exportData.totalKg)} kg`
                   : ''}{' '}
                 · Total {formatPrice(exportData.totalAmount)}
-                {livreurSelection.split
-                  ? livreurSelection.mode === 'mixed'
-                    ? ' · 2 listes mixtes'
-                    : ' · 2 listes livreurs'
-                  : ''}
+                {livreurSelection.split ? ' · sélection + reste' : ''}
               </p>
               <div className="commercial-filters" style={{ marginBottom: 0 }}>
                 <button
@@ -581,24 +484,16 @@ export default function ShopCommandesPage() {
           </div>
 
           <p className="commandes-shop-hint">
-            Filtrez par date, statut, produit, ville et <strong>éviscération</strong>. Plafonnez en{' '}
-            <strong>kg</strong> dès les premières commandes. Listes livreurs : séparées par type
-            (éviscéré / non) ou <strong>2 listes mixtes</strong> (oui + non dans chaque lot).
+            Choisissez l’<strong>éviscération</strong> et le <strong>max kg</strong> (premières
+            commandes). En mode <strong>2 listes (sélection + reste)</strong> : liste 1 = filtre,
+            liste 2 = tout le reste (oui + non) <strong>sans doublon</strong>.
           </p>
 
           {filteredOrders.length === 0 ? (
             <div className="no-commandes">
               <p>
                 Aucune commande Shop pour cette période
-                {filter ||
-                productFilter ||
-                eviscerationFilter ||
-                maxKg ||
-                maxKgEvisc ||
-                maxKgNonEvisc ||
-                maxKgList1 ||
-                maxKgList2 ||
-                splitMode
+                {filter || productFilter || eviscerationFilter || maxKg || splitMode
                   ? ' avec ces filtres'
                   : ''}
                 .

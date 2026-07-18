@@ -186,116 +186,66 @@ export function partitionShopOrdersByEvisceration(orders) {
   return { withEvisc, withoutEvisc };
 }
 
-/**
- * Coupe la file chronologique en 2 lots kg (chaque lot peut mélanger oui/non éviscération).
- * maxKg2 vide / ≤ 0 → tout le reste après la liste 1.
- */
-export function splitShopOrdersIntoSequentialKgBatches(orders, maxKg1, maxKg2) {
-  const sorted = sortShopOrdersEarliestFirst(orders);
-  const list1 = selectShopOrdersByMaxKg(sorted, maxKg1);
-  const taken = new Set(list1.map((o) => String(o._id)));
-  const rest = sorted.filter((o) => !taken.has(String(o._id)));
-  const limit2 = Number(maxKg2);
-  const list2 =
-    Number.isFinite(limit2) && limit2 > 0 ? selectShopOrdersByMaxKg(rest, maxKg2) : [...rest];
-  return { list1, list2 };
+function eviscerationSelectionLabel(evisceration) {
+  if (evisceration === 'oui') return 'Éviscéré & nettoyé';
+  if (evisceration === 'non') return 'Non éviscéré';
+  return 'Toutes éviscérations';
 }
 
 /**
- * Sélection export / distribution livreurs :
- * - liste unique (filtre éviscération + plafond kg), ou
- * - 2 listes par type d’éviscération, ou
- * - 2 listes mixtes (oui + non) découpées par kg dans l’ordre chronologique.
+ * Sélection livreurs :
+ * - liste unique : filtre éviscération + plafond kg (premières commandes) ;
+ * - sélection + reste : liste 1 = filtre+kg, liste 2 = le reste de la période
+ *   (éviscéré ou non) sans aucune commande en double.
  */
 export function buildShopLivreurSelection(orders, opts = {}) {
   const sorted = sortShopOrdersEarliestFirst(orders);
-  const {
-    evisceration = '',
-    maxKg = '',
-    splitMode = '',
-    splitLivreurLists = false,
-    maxKgEvisc = '',
-    maxKgNonEvisc = '',
-    maxKgList1 = '',
-    maxKgList2 = '',
-  } = opts;
+  const { evisceration = '', maxKg = '', splitMode = '' } = opts;
 
-  const mode =
-    splitMode ||
-    (splitLivreurLists ? 'evisceration' : '');
+  const useRemainder =
+    splitMode === 'remainder' ||
+    splitMode === 'selection_rest' ||
+    splitMode === 'mixed' ||
+    splitMode === 'evisceration';
 
-  let pool = sorted;
-  if (evisceration === 'oui') pool = pool.filter((o) => !!o.eviscerationCleaning);
-  if (evisceration === 'non') pool = pool.filter((o) => !o.eviscerationCleaning);
+  let filteredPool = sorted;
+  if (evisceration === 'oui') filteredPool = filteredPool.filter((o) => !!o.eviscerationCleaning);
+  if (evisceration === 'non') filteredPool = filteredPool.filter((o) => !o.eviscerationCleaning);
 
-  if (mode === 'mixed') {
-    let kg1 = maxKgList1 || maxKg;
-    let kg2 = maxKgList2;
-    if (!(Number(kg1) > 0) && !(Number(kg2) > 0)) {
-      const totalKg = sumShopOrdersQuantityKg(pool);
-      kg1 = totalKg > 0 ? totalKg / 2 : '';
-      kg2 = '';
-    }
-    const { list1, list2 } = splitShopOrdersIntoSequentialKgBatches(pool, kg1, kg2);
+  const selected = selectShopOrdersByMaxKg(filteredPool, maxKg);
+  const eviscLabel = eviscerationSelectionLabel(evisceration);
+  const kgBit =
+    Number(maxKg) > 0
+      ? ` · ${Number(maxKg).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} kg`
+      : '';
+
+  if (useRemainder) {
+    const taken = new Set(selected.map((o) => String(o._id)));
+    const remainder = sorted.filter((o) => !taken.has(String(o._id)));
     const lists = [
       {
-        key: 'lot1',
-        label: 'Liste livreur 1 — Mixte (éviscéré + non)',
-        orders: list1,
-        totalKg: sumShopOrdersQuantityKg(list1),
+        key: 'selection',
+        label: `Liste 1 — ${eviscLabel}${kgBit}`,
+        orders: selected,
+        totalKg: sumShopOrdersQuantityKg(selected),
       },
       {
-        key: 'lot2',
-        label: 'Liste livreur 2 — Mixte (éviscéré + non)',
-        orders: list2,
-        totalKg: sumShopOrdersQuantityKg(list2),
+        key: 'reste',
+        label: 'Liste 2 — Reste (éviscéré + non, sans doublon)',
+        orders: remainder,
+        totalKg: sumShopOrdersQuantityKg(remainder),
       },
     ];
-    const all = [...list1, ...list2];
+    const all = [...selected, ...remainder];
     return {
       split: true,
-      mode: 'mixed',
+      mode: 'remainder',
       lists,
       orders: all,
       totalKg: sumShopOrdersQuantityKg(all),
     };
   }
 
-  if (mode === 'evisceration') {
-    const { withEvisc, withoutEvisc } = partitionShopOrdersByEvisceration(pool);
-    const eviscOrders = selectShopOrdersByMaxKg(withEvisc, maxKgEvisc);
-    const nonEviscOrders = selectShopOrdersByMaxKg(withoutEvisc, maxKgNonEvisc);
-    const lists = [
-      {
-        key: 'evisc',
-        label: 'Liste livreur — Éviscéré & nettoyé',
-        orders: eviscOrders,
-        totalKg: sumShopOrdersQuantityKg(eviscOrders),
-      },
-      {
-        key: 'non',
-        label: 'Liste livreur — Non éviscéré',
-        orders: nonEviscOrders,
-        totalKg: sumShopOrdersQuantityKg(nonEviscOrders),
-      },
-    ];
-    const all = [...eviscOrders, ...nonEviscOrders];
-    return {
-      split: true,
-      mode: 'evisceration',
-      lists,
-      orders: all,
-      totalKg: sumShopOrdersQuantityKg(all),
-    };
-  }
-
-  const selected = selectShopOrdersByMaxKg(pool, maxKg);
-  const eviscLabel =
-    evisceration === 'oui'
-      ? 'Éviscéré & nettoyé'
-      : evisceration === 'non'
-        ? 'Non éviscéré'
-        : 'Toutes éviscérations (oui + non)';
   return {
     split: false,
     mode: '',
