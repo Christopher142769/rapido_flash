@@ -185,6 +185,18 @@
   color: #8b4513;
 }
 
+.shop-edit-meal-item {
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid #f0e8dc;
+}
+
+.shop-edit-meal-item:last-of-type {
+  border-bottom: none;
+  margin-bottom: 0.35rem;
+  padding-bottom: 0;
+}
+
 .btn-danger-outline {
   border-color: #d32f2f !important;
   color: #d32f2f !important;

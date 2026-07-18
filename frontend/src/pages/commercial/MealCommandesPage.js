@@ -1,10 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import PageLoader from '../../components/PageLoader';
 import ShopOrderSpecsModal from '../../components/commercial/ShopOrderSpecsModal';
+import MealOrderEditModal from '../../components/commercial/MealOrderEditModal';
 import { useModal } from '../../context/ModalContext';
-import { formatPrice } from '../../utils/commercialApi';
+import AuthContext from '../../context/AuthContext';
+import { deleteMealOrder, formatPrice, updateMealOrder } from '../../utils/commercialApi';
 import {
   exportShopOrdersToExcel,
   exportShopOrdersToPdf,
@@ -173,6 +175,8 @@ function mealOrderToShopExportShape(order) {
  *  variant="kitchen" : mêmes écrans + workflow Accepter → En cuisine → Prêt. */
 export default function MealCommandesPage({ variant = 'commercial', refreshKey = 0 }) {
   const isKitchen = variant === 'kitchen';
+  const { user } = useContext(AuthContext);
+  const isAdmin = !isKitchen && user?.role === 'restaurant';
   const { showSuccess, showError } = useModal();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -182,6 +186,7 @@ export default function MealCommandesPage({ variant = 'commercial', refreshKey =
   const [dateFrom, setDateFrom] = useState(() => defaultDateRange().dateFrom);
   const [dateTo, setDateTo] = useState(() => defaultDateRange().dateTo);
   const [specsOrder, setSpecsOrder] = useState(null);
+  const [editOrder, setEditOrder] = useState(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async (silent = false) => {
@@ -336,12 +341,46 @@ export default function MealCommandesPage({ variant = 'commercial', refreshKey =
     }
   };
 
+  const handleSaveEdit = async (payload) => {
+    if (!editOrder || !isAdmin) return;
+    setBusy(true);
+    try {
+      await updateMealOrder(editOrder._id, payload);
+      showSuccess('Commande repas modifiée');
+      setEditOrder(null);
+      await load(isKitchen);
+    } catch (e) {
+      showError(e.response?.data?.message || e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDeleteOrder = (order) => {
+    if (!isAdmin || !order) return;
+    const label = order.orderNumber || order._id?.slice(-6) || '';
+    if (
+      !window.confirm(
+        `Supprimer définitivement la commande repas #${label} ?\nCette action est irréversible.`
+      )
+    ) {
+      return;
+    }
+    run(() => deleteMealOrder(order._id), 'Commande repas supprimée');
+  };
+
   return (
     <>
       <ShopOrderSpecsModal
         order={specsOrder}
         onClose={() => !busy && setSpecsOrder(null)}
         onSave={handleSaveSpecs}
+        saving={busy}
+      />
+      <MealOrderEditModal
+        order={editOrder}
+        onClose={() => !busy && setEditOrder(null)}
+        onSave={handleSaveEdit}
         saving={busy}
       />
 
@@ -624,6 +663,34 @@ export default function MealCommandesPage({ variant = 'commercial', refreshKey =
                           >
                             Spécifications
                           </button>
+                        ) : null}
+                        {isAdmin ? (
+                          <>
+                            <button
+                              type="button"
+                              className="btn btn-outline"
+                              disabled={busy}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setEditOrder(order);
+                              }}
+                            >
+                              Modifier
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-outline btn-danger-outline"
+                              disabled={busy}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDeleteOrder(order);
+                              }}
+                            >
+                              Supprimer
+                            </button>
+                          </>
                         ) : null}
                         {isKitchen ? (
                           <>

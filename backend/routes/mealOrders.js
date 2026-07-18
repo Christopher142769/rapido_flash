@@ -3,7 +3,7 @@ const User = require('../models/User');
 const MealProduct = require('../models/MealProduct');
 const MealOrder = require('../models/MealOrder');
 const MealShopSettings = require('../models/MealShopSettings');
-const { auth, isKitchenStaff } = require('../middleware/auth');
+const { auth, isKitchenStaff, isRestaurantAdmin } = require('../middleware/auth');
 const { generateMealOrderNumber } = require('../utils/mealOrderNumber');
 const { buildMealOrderLine, computeMealOrderTotals } = require('../utils/mealPricing');
 const { getShopClosureState } = require('../utils/shopClosure');
@@ -219,6 +219,27 @@ router.get('/', auth, isKitchenStaff, async (req, res) => {
   }
 });
 
+function parseDateInput(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function recomputeMealLineTotal(item) {
+  const qty = Math.max(1, Math.round(Number(item.quantity) || 1));
+  const unitPrice = Math.max(0, Math.round(Number(item.unitPrice) || 0));
+  const optionsPerUnit = (item.options || []).reduce(
+    (s, o) => s + Math.max(0, Math.round(Number(o.price) || 0)),
+    0
+  );
+  const accTotal = (item.accompagnements || []).reduce(
+    (s, a) =>
+      s + Math.max(0, Math.round(Number(a.price) || 0)) * Math.max(1, Math.round(Number(a.quantity) || 1)),
+    0
+  );
+  return Math.round(unitPrice * qty + optionsPerUnit * qty + accTotal);
+}
+
 router.put('/:id/statut', auth, isKitchenStaff, async (req, res) => {
   try {
     const order = await MealOrder.findById(req.params.id);
@@ -264,6 +285,116 @@ router.put('/:id/statut', auth, isKitchenStaff, async (req, res) => {
 
     await order.save();
     res.json(order);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+/** Admin uniquement — modification commande repas. */
+router.patch('/:id', auth, isRestaurantAdmin, async (req, res) => {
+  try {
+    const order = await MealOrder.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Commande introuvable' });
+
+    const body = req.body || {};
+
+    if (body.customer) {
+      const customerError = validateCustomer(body.customer);
+      if (customerError) return res.status(400).json({ message: customerError });
+      const c = body.customer;
+      order.customer = {
+        firstName: String(c.firstName || '').trim(),
+        lastName: String(c.lastName || '').trim(),
+        phone: String(c.phone || '').trim(),
+        email: String(c.email || '').trim().toLowerCase(),
+        city: String(c.city || '').trim(),
+        addressDescription: String(c.addressDescription || '').trim(),
+      };
+    }
+
+    if (body.deliveryFee != null) {
+      const deliveryFee = Number(body.deliveryFee);
+      if (!Number.isFinite(deliveryFee) || deliveryFee < 0) {
+        return res.status(400).json({ message: 'Frais de livraison invalides' });
+      }
+      order.deliveryFee = Math.round(deliveryFee);
+      if (deliveryFee > 0) order.freeDelivery = false;
+    }
+
+    if (body.clientSpecifications != null) {
+      order.clientSpecifications = String(body.clientSpecifications).trim().slice(0, 2000);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(body, 'requestedDeliveryAt')) {
+      order.requestedDeliveryAt = body.requestedDeliveryAt
+        ? parseDateInput(body.requestedDeliveryAt)
+        : null;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(body, 'orderDate')) {
+      const orderDate = parseDateInput(body.orderDate);
+      if (orderDate) order.orderDate = orderDate;
+    }
+
+    if (Array.isArray(body.items) && body.items.length) {
+      const byId = new Map(order.items.map((it) => [String(it._id), it]));
+      for (const patch of body.items) {
+        const id = String(patch._id || patch.id || '');
+        const item = byId.get(id);
+        if (!item) continue;
+
+        if (patch.productName != null) {
+          const name = String(patch.productName).trim();
+          if (name) item.productName = name;
+        }
+        if (patch.quantity != null) {
+          const quantity = Math.round(Number(patch.quantity));
+          if (!Number.isFinite(quantity) || quantity < 1) {
+            return res.status(400).json({ message: 'Quantité plat invalide' });
+          }
+          item.quantity = quantity;
+        }
+        if (patch.unitPrice != null) {
+          const unitPrice = Number(patch.unitPrice);
+          if (!Number.isFinite(unitPrice) || unitPrice < 0) {
+            return res.status(400).json({ message: 'Prix unitaire invalide' });
+          }
+          item.unitPrice = Math.round(unitPrice);
+        }
+        if (patch.specifications != null) {
+          item.specifications = String(patch.specifications).trim().slice(0, 500);
+        }
+        item.lineTotal = recomputeMealLineTotal(item);
+      }
+    }
+
+    const totals = computeMealOrderTotals(order.items, order.deliveryFee, order.freeDelivery);
+    order.subtotalPrice = totals.subtotalPrice;
+    order.deliveryFee = totals.deliveryFee;
+    order.totalPrice = totals.totalPrice;
+
+    await order.save();
+    const populated = await MealOrder.findById(order._id)
+      .populate('items.mealProduct', 'name slug mainImage')
+      .lean();
+    res.json(populated || order);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+/** Admin uniquement — suppression définitive commande repas. */
+router.delete('/:id', auth, isRestaurantAdmin, async (req, res) => {
+  try {
+    const order = await MealOrder.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Commande introuvable' });
+
+    await order.deleteOne();
+    res.json({
+      message: 'Commande repas supprimée',
+      id: String(order._id),
+      orderNumber: order.orderNumber || null,
+    });
   } catch (e) {
     res.status(500).json({ message: e.message });
   }

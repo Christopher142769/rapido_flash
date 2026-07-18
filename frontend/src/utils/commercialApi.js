@@ -108,6 +108,18 @@ export async function updateShopOrderStatut(id, statut) {
   return res.data;
 }
 
+/** Admin restaurant uniquement — modification commande repas. */
+export async function updateMealOrder(id, payload) {
+  const res = await axios.patch(`${API_URL}/meal-orders/${id}`, payload, authHeaders());
+  return res.data;
+}
+
+/** Admin restaurant uniquement — suppression définitive commande repas. */
+export async function deleteMealOrder(id) {
+  const res = await axios.delete(`${API_URL}/meal-orders/${id}`, authHeaders());
+  return res.data;
+}
+
 export async function createOffPlatformOrder(payload) {
   const res = await axios.post(`${API_URL}/commercial/bilan/off-platform`, payload, authHeaders());
   return res.data;
