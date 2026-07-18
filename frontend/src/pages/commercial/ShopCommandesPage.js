@@ -1,5 +1,6 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import PageLoader from '../../components/PageLoader';
 import ShopOrderSpecsModal from '../../components/commercial/ShopOrderSpecsModal';
 import ShopOrderEditModal from '../../components/commercial/ShopOrderEditModal';
@@ -233,27 +234,46 @@ export default function ShopCommandesPage() {
     [exportMetaBase]
   );
 
-  const runFormatExport = useCallback((format, data) => {
-    if (format === 'excel') exportShopOrdersToExcel(data);
-    else if (format === 'pdf') exportShopOrdersToPdf(data);
-    else if (format === 'word') exportShopOrdersToWord(data);
-  }, []);
+  const runFormatExport = useCallback(
+    (format, data) => {
+      if (!data?.orders?.length) {
+        throw new Error('Aucune commande à exporter.');
+      }
+      if (format === 'excel') exportShopOrdersToExcel(data);
+      else if (format === 'pdf') exportShopOrdersToPdf(data);
+      else if (format === 'word') exportShopOrdersToWord(data);
+      else throw new Error('Format d’export inconnu.');
+    },
+    []
+  );
 
   const requestExport = (format) => {
-    if (!exportData.orders.length && !livreurSelection.split) {
-      showError('Aucune commande à exporter pour cette période et ce filtre.');
-      return;
-    }
-    if (livreurSelection.split) {
-      const hasAny = livreurSelection.lists.some((l) => l.orders.length > 0);
-      if (!hasAny) {
+    try {
+      const nonEmptyLists = livreurSelection.lists.filter((l) => l.orders.length > 0);
+      if (livreurSelection.split) {
+        if (!nonEmptyLists.length) {
+          showError('Aucune commande à exporter pour cette période et ce filtre.');
+          return;
+        }
+        // Une seule liste remplie → export direct (pas de modal inutile)
+        if (nonEmptyLists.length === 1) {
+          const only = nonEmptyLists[0];
+          const tag = only.key === 'reste' ? 'liste-2' : 'liste-1';
+          runFormatExport(format, buildListExportData(only, tag));
+          return;
+        }
+        setExportChoice(format);
+        return;
+      }
+      if (!exportData.orders.length) {
         showError('Aucune commande à exporter pour cette période et ce filtre.');
         return;
       }
-      setExportChoice(format);
-      return;
+      runFormatExport(format, exportData);
+    } catch (e) {
+      console.error(e);
+      showError(e.message || 'Échec de l’export.');
     }
-    runFormatExport(format, exportData);
   };
 
   const handleExportChoice = async (choice) => {
@@ -261,46 +281,47 @@ export default function ShopCommandesPage() {
     setExportChoice(null);
     if (!format) return;
 
-    const lists = livreurSelection.lists.filter((l) => l.orders.length > 0);
-    const list1 = lists.find((l) => l.key === 'selection') || lists[0];
-    const list2 = lists.find((l) => l.key === 'reste') || lists[1];
+    try {
+      const list1 = livreurSelection.lists.find((l) => l.key === 'selection');
+      const list2 = livreurSelection.lists.find((l) => l.key === 'reste');
 
-    if (choice === 'list1') {
-      if (!list1?.orders.length) {
-        showError('La liste 1 est vide.');
-        return;
-      }
-      runFormatExport(format, buildListExportData(list1, 'liste-1'));
-      return;
-    }
-    if (choice === 'list2') {
-      if (!list2?.orders.length) {
-        showError('La liste 2 (reste) est vide.');
-        return;
-      }
-      runFormatExport(format, buildListExportData(list2, 'liste-2'));
-      return;
-    }
-    if (choice === 'all') {
-      const toExport = [
-        list1?.orders.length ? { list: list1, tag: 'liste-1' } : null,
-        list2?.orders.length ? { list: list2, tag: 'liste-2' } : null,
-      ].filter(Boolean);
-      if (!toExport.length) {
-        showError('Aucune commande à exporter.');
-        return;
-      }
-      for (let i = 0; i < toExport.length; i += 1) {
-        runFormatExport(format, buildListExportData(toExport[i].list, toExport[i].tag));
-        if (i < toExport.length - 1) {
-          await new Promise((r) => setTimeout(r, 450));
+      if (choice === 'list1') {
+        if (!list1?.orders.length) {
+          showError('La liste 1 est vide.');
+          return;
         }
+        runFormatExport(format, buildListExportData(list1, 'liste-1'));
+        return;
       }
-      showSuccess(
-        toExport.length > 1
-          ? '2 fichiers téléchargés (liste 1 et liste 2).'
-          : 'Fichier téléchargé.'
-      );
+      if (choice === 'list2') {
+        if (!list2?.orders.length) {
+          showError('La liste 2 (reste) est vide.');
+          return;
+        }
+        runFormatExport(format, buildListExportData(list2, 'liste-2'));
+        return;
+      }
+      if (choice === 'all') {
+        const toExport = [
+          list1?.orders.length ? { list: list1, tag: 'liste-1' } : null,
+          list2?.orders.length ? { list: list2, tag: 'liste-2' } : null,
+        ].filter(Boolean);
+        if (!toExport.length) {
+          showError('Aucune commande à exporter.');
+          return;
+        }
+        for (let i = 0; i < toExport.length; i += 1) {
+          runFormatExport(format, buildListExportData(toExport[i].list, toExport[i].tag));
+        }
+        showSuccess(
+          toExport.length > 1
+            ? '2 fichiers téléchargés (liste 1 et liste 2).'
+            : 'Fichier téléchargé.'
+        );
+      }
+    } catch (e) {
+      console.error(e);
+      showError(e.message || 'Échec de l’export.');
     }
   };
 
@@ -383,61 +404,65 @@ export default function ShopCommandesPage() {
         saving={busy}
       />
 
-      {exportChoice ? (
-        <div
-          className="shop-specs-modal-overlay"
-          role="presentation"
-          onClick={() => setExportChoice(null)}
-        >
-          <div
-            className="shop-specs-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="shop-export-choice-title"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              className="shop-specs-modal-close"
-              aria-label="Fermer"
+      {exportChoice
+        ? createPortal(
+            <div
+              className="shop-specs-modal-overlay"
+              role="presentation"
               onClick={() => setExportChoice(null)}
             >
-              ×
-            </button>
-            <h3 id="shop-export-choice-title">
-              Exporter {exportChoice === 'excel' ? 'Excel' : exportChoice === 'pdf' ? 'PDF' : 'Word'}
-            </h3>
-            <p className="shop-specs-modal-lead">
-              Quelle liste voulez-vous télécharger ?
-            </p>
-            <div className="shop-export-choice-actions">
-              <button
-                type="button"
-                className="shop-specs-modal-btn shop-specs-modal-btn--outline"
-                disabled={!livreurSelection.lists.find((l) => l.key === 'selection')?.orders.length}
-                onClick={() => handleExportChoice('list1')}
+              <div
+                className="shop-specs-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="shop-export-choice-title"
+                onClick={(e) => e.stopPropagation()}
               >
-                Liste 1 (sélection)
-              </button>
-              <button
-                type="button"
-                className="shop-specs-modal-btn shop-specs-modal-btn--outline"
-                disabled={!livreurSelection.lists.find((l) => l.key === 'reste')?.orders.length}
-                onClick={() => handleExportChoice('list2')}
-              >
-                Liste 2 (reste)
-              </button>
-              <button
-                type="button"
-                className="shop-specs-modal-btn shop-specs-modal-btn--primary"
-                onClick={() => handleExportChoice('all')}
-              >
-                Tout (2 fichiers)
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+                <button
+                  type="button"
+                  className="shop-specs-modal-close"
+                  aria-label="Fermer"
+                  onClick={() => setExportChoice(null)}
+                >
+                  ×
+                </button>
+                <h3 id="shop-export-choice-title">
+                  Exporter{' '}
+                  {exportChoice === 'excel' ? 'Excel' : exportChoice === 'pdf' ? 'PDF' : 'Word'}
+                </h3>
+                <p className="shop-specs-modal-lead">Quelle liste voulez-vous télécharger ?</p>
+                <div className="shop-export-choice-actions">
+                  <button
+                    type="button"
+                    className="shop-specs-modal-btn shop-specs-modal-btn--outline"
+                    disabled={
+                      !livreurSelection.lists.find((l) => l.key === 'selection')?.orders.length
+                    }
+                    onClick={() => handleExportChoice('list1')}
+                  >
+                    Liste 1 (sélection)
+                  </button>
+                  <button
+                    type="button"
+                    className="shop-specs-modal-btn shop-specs-modal-btn--outline"
+                    disabled={!livreurSelection.lists.find((l) => l.key === 'reste')?.orders.length}
+                    onClick={() => handleExportChoice('list2')}
+                  >
+                    Liste 2 (reste)
+                  </button>
+                  <button
+                    type="button"
+                    className="shop-specs-modal-btn shop-specs-modal-btn--primary"
+                    onClick={() => handleExportChoice('all')}
+                  >
+                    Tout (2 fichiers)
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
 
       {loading ? (
         <PageLoader message="Chargement des commandes Shop..." />

@@ -269,6 +269,7 @@ export function mapShopOrderToExportRow(order) {
       ? Number(order.subtotalPrice)
       : Number(order.unitPrice || 0) * Number(order.quantity || 0);
   return {
+    __shopExportRow: true,
     id: String(order._id),
     orderNumber: order.orderNumber || '—',
     orderDate: order.orderDate || order.createdAt,
@@ -320,9 +321,7 @@ export function prepareShopOrdersExport(orders, meta = {}) {
   const lists = (meta.lists || [])
     .map((list) => {
       const listRows = (list.orders || []).map((o) =>
-        o && typeof o === 'object' && 'orderNumber' in o && 'eviscerationLabel' in o
-          ? o
-          : mapShopOrderToExportRow(o)
+        isShopExportRow(o) ? o : mapShopOrderToExportRow(o)
       );
       return {
         key: list.key || 'list',
@@ -372,6 +371,29 @@ function shopExportFilename(exportData, ext) {
     String(Date.now())
   );
   return `${parts.join('-')}.${ext}`;
+}
+
+function triggerBrowserDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.rel = 'noopener';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
+function isShopExportRow(o) {
+  return (
+    o &&
+    typeof o === 'object' &&
+    o.__shopExportRow === true &&
+    'eviscerationLabel' in o &&
+    'quantityKg' in o
+  );
 }
 
 function exportMetaLine(exportData) {
@@ -535,12 +557,7 @@ export function exportShopOrdersToExcel(exportData) {
 </html>`;
 
   const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = shopExportFilename(exportData, 'xls');
-  a.click();
-  URL.revokeObjectURL(url);
+  triggerBrowserDownload(blob, shopExportFilename(exportData, 'xls'));
 }
 
 export function exportShopOrdersToPdf(exportData) {

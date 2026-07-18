@@ -278,7 +278,12 @@ export default function MealCommandesPage({ variant = 'commercial', refreshKey =
       showError('Aucune commande à exporter pour cette période et ce filtre.');
       return;
     }
-    exportShopOrdersToExcel(exportData);
+    try {
+      exportShopOrdersToExcel(exportData);
+    } catch (e) {
+      console.error(e);
+      showError(e.message || 'Échec de l’export Excel.');
+    }
   };
 
   const handleExportPdf = () => {
@@ -286,7 +291,12 @@ export default function MealCommandesPage({ variant = 'commercial', refreshKey =
       showError('Aucune commande à exporter pour cette période et ce filtre.');
       return;
     }
-    exportShopOrdersToPdf(exportData);
+    try {
+      exportShopOrdersToPdf(exportData);
+    } catch (e) {
+      console.error(e);
+      showError(e.message || 'Échec de l’export PDF.');
+    }
   };
 
   const handleExportWord = () => {
@@ -294,7 +304,12 @@ export default function MealCommandesPage({ variant = 'commercial', refreshKey =
       showError('Aucune commande à exporter pour cette période et ce filtre.');
       return;
     }
-    exportShopOrdersToWord(exportData);
+    try {
+      exportShopOrdersToWord(exportData);
+    } catch (e) {
+      console.error(e);
+      showError(e.message || 'Échec de l’export Word.');
+    }
   };
 
   const run = async (fn, msg) => {
