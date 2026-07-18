@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import { inferShopOrderCity, matchesDeliveryCity } from './pointsByCity';
+import { quantityToKg } from './shopEvisceration';
 
 const SHOP_ORDER_TZ = 'Africa/Porto-Novo';
 
@@ -123,17 +124,133 @@ function matchesShopProduct(order, productKey) {
   return shopProductKey(order) === productKey;
 }
 
-export function filterShopOrders(orders, { dateFrom, dateTo, statut, productKey, city } = {}) {
+export function shopOrderQuantityKg(order) {
+  return quantityToKg(order?.quantity, order?.quantityUnit || 'unit');
+}
+
+export function sumShopOrdersQuantityKg(orders) {
+  return (orders || []).reduce((sum, order) => sum + shopOrderQuantityKg(order), 0);
+}
+
+export function filterShopOrders(
+  orders,
+  { dateFrom, dateTo, statut, productKey, city, evisceration } = {}
+) {
   return (orders || []).filter((o) => {
     if (statut && o.statut !== statut) return false;
     if (!matchesShopProduct(o, productKey)) return false;
     if (!matchesDeliveryCity(o, city, inferShopOrderCity)) return false;
+    if (evisceration === 'oui' && !o.eviscerationCleaning) return false;
+    if (evisceration === 'non' && o.eviscerationCleaning) return false;
     const key = orderDayKey(o);
     if (!key) return false;
     if (dateFrom && key < dateFrom) return false;
     if (dateTo && key > dateTo) return false;
     return true;
   });
+}
+
+function sortShopOrdersEarliestFirst(orders) {
+  return [...(orders || [])].sort((a, b) => {
+    const ta = new Date(a.createdAt || a.orderDate || 0).getTime();
+    const tb = new Date(b.createdAt || b.orderDate || 0).getTime();
+    if (ta !== tb) return ta - tb;
+    return String(a._id || '').localeCompare(String(b._id || ''));
+  });
+}
+
+/**
+ * Prend les commandes les plus anciennes jusqu’à atteindre maxKg (commande entière incluse).
+ * maxKg vide / ≤ 0 → toutes les commandes.
+ */
+export function selectShopOrdersByMaxKg(orders, maxKg) {
+  const limit = Number(maxKg);
+  if (!Number.isFinite(limit) || limit <= 0) return [...(orders || [])];
+  const selected = [];
+  let sum = 0;
+  for (const order of orders || []) {
+    if (sum >= limit) break;
+    selected.push(order);
+    sum += shopOrderQuantityKg(order);
+  }
+  return selected;
+}
+
+export function partitionShopOrdersByEvisceration(orders) {
+  const withEvisc = [];
+  const withoutEvisc = [];
+  for (const order of orders || []) {
+    if (order.eviscerationCleaning) withEvisc.push(order);
+    else withoutEvisc.push(order);
+  }
+  return { withEvisc, withoutEvisc };
+}
+
+/**
+ * Sélection export / distribution livreurs :
+ * - filtre éviscération + plafond kg (liste unique), ou
+ * - 2 listes (éviscéré / non) avec plafonds kg indépendants, dès les premières commandes.
+ */
+export function buildShopLivreurSelection(orders, opts = {}) {
+  const sorted = sortShopOrdersEarliestFirst(orders);
+  const {
+    evisceration = '',
+    maxKg = '',
+    splitLivreurLists = false,
+    maxKgEvisc = '',
+    maxKgNonEvisc = '',
+  } = opts;
+
+  if (splitLivreurLists) {
+    const { withEvisc, withoutEvisc } = partitionShopOrdersByEvisceration(sorted);
+    const eviscOrders = selectShopOrdersByMaxKg(withEvisc, maxKgEvisc);
+    const nonEviscOrders = selectShopOrdersByMaxKg(withoutEvisc, maxKgNonEvisc);
+    const lists = [
+      {
+        key: 'evisc',
+        label: 'Liste livreur — Éviscéré & nettoyé',
+        orders: eviscOrders,
+        totalKg: sumShopOrdersQuantityKg(eviscOrders),
+      },
+      {
+        key: 'non',
+        label: 'Liste livreur — Non éviscéré',
+        orders: nonEviscOrders,
+        totalKg: sumShopOrdersQuantityKg(nonEviscOrders),
+      },
+    ];
+    const all = [...eviscOrders, ...nonEviscOrders];
+    return {
+      split: true,
+      lists,
+      orders: all,
+      totalKg: sumShopOrdersQuantityKg(all),
+    };
+  }
+
+  let pool = sorted;
+  if (evisceration === 'oui') pool = pool.filter((o) => !!o.eviscerationCleaning);
+  if (evisceration === 'non') pool = pool.filter((o) => !o.eviscerationCleaning);
+  const selected = selectShopOrdersByMaxKg(pool, maxKg);
+  const eviscLabel =
+    evisceration === 'oui'
+      ? 'Éviscéré & nettoyé'
+      : evisceration === 'non'
+        ? 'Non éviscéré'
+        : 'Toutes éviscérations';
+  return {
+    split: false,
+    lists: [
+      {
+        key: 'all',
+        label: `Liste commandes — ${eviscLabel}`,
+        orders: selected,
+        totalKg: sumShopOrdersQuantityKg(selected),
+      },
+    ],
+    orders: selected,
+    totalKg: sumShopOrdersQuantityKg(selected),
+  };
 }
 
 export function mapShopOrderToExportRow(order) {
@@ -156,6 +273,7 @@ export function mapShopOrderToExportRow(order) {
     quantity: order.quantity,
     quantityUnit: order.quantityUnit || 'unit',
     quantityLabel: order.quantityLabel || String(order.quantity ?? '—'),
+    quantityKg: shopOrderQuantityKg(order),
     unitPrice: Number(order.unitPrice || 0),
     subtotalPrice: subtotal,
     deliveryFee: Number(order.deliveryFee || 0),
@@ -188,6 +306,28 @@ export function prepareShopOrdersExport(orders, meta = {}) {
   const totalDelivery = rows.reduce((s, r) => s + r.deliveryFee, 0);
   const totalEvisceration = rows.reduce((s, r) => s + r.eviscerationFee, 0);
   const totalAmount = rows.reduce((s, r) => s + r.totalPrice, 0);
+  const totalKg = rows.reduce((s, r) => s + Number(r.quantityKg || 0), 0);
+
+  const lists = (meta.lists || [])
+    .map((list) => {
+      const listRows = (list.orders || []).map((o) =>
+        o && typeof o === 'object' && 'orderNumber' in o && 'eviscerationLabel' in o
+          ? o
+          : mapShopOrderToExportRow(o)
+      );
+      return {
+        key: list.key || 'list',
+        label: list.label || 'Liste',
+        orders: listRows,
+        orderCount: listRows.length,
+        totalSubtotal: listRows.reduce((s, r) => s + r.subtotalPrice, 0),
+        totalDelivery: listRows.reduce((s, r) => s + r.deliveryFee, 0),
+        totalEvisceration: listRows.reduce((s, r) => s + r.eviscerationFee, 0),
+        totalAmount: listRows.reduce((s, r) => s + r.totalPrice, 0),
+        totalKg: listRows.reduce((s, r) => s + Number(r.quantityKg || 0), 0),
+      };
+    })
+    .filter((list) => list.orders.length > 0);
 
   return {
     dateFrom: meta.dateFrom || '',
@@ -198,13 +338,65 @@ export function prepareShopOrdersExport(orders, meta = {}) {
     productLabel: meta.productLabel || 'Tous les produits',
     cityFilter: meta.cityFilter || '',
     cityLabel: meta.cityLabel || 'Toutes les villes',
+    eviscerationFilter: meta.eviscerationFilter || '',
+    eviscerationLabel: meta.eviscerationLabel || 'Toutes',
+    maxKgLabel: meta.maxKgLabel || '',
+    splitLivreurLists: !!meta.splitLivreurLists || lists.length > 1,
+    lists,
     orders: rows,
     orderCount: rows.length,
     totalSubtotal,
     totalDelivery,
     totalEvisceration,
     totalAmount,
+    totalKg,
   };
+}
+
+function exportMetaLine(exportData) {
+  const parts = [
+    `Période : ${fmtDateShort(exportData.dateFrom)} → ${fmtDateShort(exportData.dateTo)}`,
+    `Statut : ${exportData.statutLabel}`,
+    `Produit : ${exportData.productLabel}`,
+    `Ville : ${exportData.cityLabel}`,
+    `Éviscération : ${exportData.eviscerationLabel || 'Toutes'}`,
+  ];
+  if (exportData.maxKgLabel) parts.push(exportData.maxKgLabel);
+  if (exportData.splitLivreurLists) parts.push('2 listes livreurs');
+  parts.push(`${exportData.orderCount} commande(s)`);
+  if (exportData.totalKg > 0) {
+    parts.push(`${Number(exportData.totalKg).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} kg`);
+  }
+  return parts.join(' · ');
+}
+
+function excelTableForRows(rows, totals) {
+  const body = rows
+    .map(
+      (r) => `
+    <tr>
+      ${rowToExcelCells(r)
+        .map((c) => `<td>${escapeCsv(c)}</td>`)
+        .join('')}
+    </tr>`
+    )
+    .join('');
+
+  return `<table>
+    <thead><tr>${EXCEL_HEADERS.map((h) => `<th>${h}</th>`).join('')}</tr></thead>
+    <tbody>
+      ${body}
+      <tr class="total">
+        <td colspan="8">TOTAL</td>
+        <td>${totals.totalSubtotal}</td>
+        <td>${totals.totalDelivery}</td>
+        <td></td>
+        <td>${totals.totalEvisceration}</td>
+        <td>${totals.totalAmount}</td>
+        <td colspan="${EXCEL_HEADERS.length - 12}"></td>
+      </tr>
+    </tbody>
+  </table>`;
 }
 
 const EXCEL_HEADERS = [
@@ -270,16 +462,32 @@ function rowToExcelCells(r) {
 export function exportShopOrdersToExcel(exportData) {
   if (!exportData?.orders?.length) return;
 
-  const period = `${fmtDateShort(exportData.dateFrom)} → ${fmtDateShort(exportData.dateTo)}`;
-  const rows = exportData.orders
-    .map(
-      (r) => `
-    <tr>
-      ${rowToExcelCells(r)
-        .map((c) => `<td>${escapeCsv(c)}</td>`)
-        .join('')}
-    </tr>`
-    )
+  const lists =
+    exportData.splitLivreurLists && exportData.lists?.length
+      ? exportData.lists
+      : [
+          {
+            label: 'Commandes Shop',
+            orders: exportData.orders,
+            totalSubtotal: exportData.totalSubtotal,
+            totalDelivery: exportData.totalDelivery,
+            totalEvisceration: exportData.totalEvisceration,
+            totalAmount: exportData.totalAmount,
+            totalKg: exportData.totalKg,
+            orderCount: exportData.orderCount,
+          },
+        ];
+
+  const sections = lists
+    .map((list) => {
+      const kgLabel =
+        list.totalKg > 0
+          ? ` · ${Number(list.totalKg).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} kg`
+          : '';
+      return `
+  <h2>${escapeCsv(list.label)} (${list.orderCount} cmd${kgLabel})</h2>
+  ${excelTableForRows(list.orders, list)}`;
+    })
     .join('');
 
   const html = `<!DOCTYPE html>
@@ -288,8 +496,9 @@ export function exportShopOrdersToExcel(exportData) {
 <style>
   body { font-family: Calibri, Arial, sans-serif; }
   h1 { color: #8B4513; font-size: 18pt; }
+  h2 { color: #c76d2e; font-size: 13pt; margin: 18px 0 8px; }
   .meta { color: #666; font-size: 10pt; margin-bottom: 12px; }
-  table { border-collapse: collapse; width: 100%; font-size: 9pt; }
+  table { border-collapse: collapse; width: 100%; font-size: 9pt; margin-bottom: 8px; }
   th { background: #8B4513; color: #fff; padding: 8px 6px; text-align: left; border: 1px solid #6d3610; }
   td { padding: 6px; border: 1px solid #ddd; vertical-align: top; }
   tr:nth-child(even) td { background: #fff9f5; }
@@ -298,22 +507,8 @@ export function exportShopOrdersToExcel(exportData) {
 </head>
 <body>
   <h1>RAPIDO — Commandes Shop</h1>
-  <p class="meta">Période : ${period} · Statut : ${escapeCsv(exportData.statutLabel)} · Produit : ${escapeCsv(exportData.productLabel)} · Ville : ${escapeCsv(exportData.cityLabel)} · ${exportData.orderCount} commande(s)</p>
-  <table>
-    <thead><tr>${EXCEL_HEADERS.map((h) => `<th>${h}</th>`).join('')}</tr></thead>
-    <tbody>
-      ${rows}
-      <tr class="total">
-        <td colspan="8">TOTAL</td>
-        <td>${exportData.totalSubtotal}</td>
-        <td>${exportData.totalDelivery}</td>
-        <td></td>
-        <td>${exportData.totalEvisceration}</td>
-        <td>${exportData.totalAmount}</td>
-        <td colspan="${EXCEL_HEADERS.length - 12}"></td>
-      </tr>
-    </tbody>
-  </table>
+  <p class="meta">${escapeCsv(exportMetaLine(exportData))}</p>
+  ${sections}
   <p class="meta">Généré le ${new Date().toLocaleString('fr-FR')} — Rapido Flash</p>
 </body>
 </html>`;
@@ -372,18 +567,16 @@ export function exportShopOrdersToPdf(exportData) {
   pdf.text('RAPIDO — Commandes Shop', margin, 12);
 
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(9);
+  pdf.setFontSize(8);
   setText(BRAND.goldLight);
-  pdf.text(`Export détaillé · ${exportData.statutLabel} · ${exportData.productLabel} · ${exportData.cityLabel}`, margin, 19);
+  const headerMeta = pdf.splitTextToSize(exportMetaLine(exportData), contentW - 70);
+  pdf.text(headerMeta[0] || '', margin, 19);
 
   pdf.setFontSize(8);
-  pdf.text(
-    `Période : ${fmtDateShort(exportData.dateFrom)} → ${fmtDateShort(exportData.dateTo)}`,
-    pageW - margin,
-    12,
-    { align: 'right' }
-  );
-  pdf.text(`Généré le ${new Date().toLocaleString('fr-FR')}`, pageW - margin, 19, { align: 'right' });
+  pdf.text(`Généré le ${new Date().toLocaleString('fr-FR')}`, pageW - margin, 12, { align: 'right' });
+  if (headerMeta[1]) {
+    pdf.text(headerMeta[1], pageW - margin, 19, { align: 'right' });
+  }
 
   y = 34;
 
@@ -416,84 +609,122 @@ export function exportShopOrdersToPdf(exportData) {
 
   y += kpiH + 8;
 
-  exportData.orders.forEach((r, idx) => {
-    const specsLines = pdf.splitTextToSize(`Spécifications : ${r.clientSpecifications}`, contentW - 14);
-    const addrLines = pdf.splitTextToSize(`Adresse : ${r.fullAddress}`, contentW - 14);
-    const cardH = 38 + specsLines.length * 3.2 + Math.max(0, addrLines.length - 1) * 3.2;
-    addPageIfNeeded(cardH + 4);
+  const pdfLists =
+    exportData.splitLivreurLists && exportData.lists?.length
+      ? exportData.lists
+      : [{ label: null, orders: exportData.orders }];
 
-    setFill(BRAND.white);
-    setDraw(BRAND.goldLight);
-    pdf.setLineWidth(0.15);
-    pdf.roundedRect(margin, y, contentW, cardH, 1.5, 1.5, 'FD');
-    setFill(BRAND.gold);
-    pdf.rect(margin, y, 3, cardH, 'F');
+  let globalIdx = 0;
+  pdfLists.forEach((list) => {
+    if (list.label) {
+      addPageIfNeeded(12);
+      setFill(BRAND.brown);
+      pdf.roundedRect(margin, y, contentW, 9, 1.5, 1.5, 'F');
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9);
+      setText(BRAND.white);
+      const kgBit =
+        list.totalKg > 0
+          ? ` · ${Number(list.totalKg).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} kg`
+          : '';
+      pdf.text(
+        `${list.label} (${list.orderCount || list.orders.length} cmd${kgBit})`,
+        margin + 4,
+        y + 6
+      );
+      y += 12;
+    }
 
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(9);
-    setText(BRAND.brown);
-    pdf.text(`${idx + 1}. N° ${r.orderNumber}`, margin + 6, y + 5.5);
+    list.orders.forEach((r) => {
+      globalIdx += 1;
+      const specsLines = pdf.splitTextToSize(`Spécifications : ${r.clientSpecifications}`, contentW - 14);
+      const addrLines = pdf.splitTextToSize(`Adresse : ${r.fullAddress}`, contentW - 14);
+      const cardH = 38 + specsLines.length * 3.2 + Math.max(0, addrLines.length - 1) * 3.2;
+      addPageIfNeeded(cardH + 4);
 
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(7);
-    setText(BRAND.muted);
-    pdf.text(`${r.statutLabel} · Commande ${fmtDateShort(r.orderDate)}`, margin + 45, y + 5.5);
+      setFill(BRAND.white);
+      setDraw(BRAND.goldLight);
+      pdf.setLineWidth(0.15);
+      pdf.roundedRect(margin, y, contentW, cardH, 1.5, 1.5, 'FD');
+      setFill(BRAND.gold);
+      pdf.rect(margin, y, 3, cardH, 'F');
 
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(9);
-    setText(BRAND.gold);
-    pdf.text(fmtMoney(r.totalPrice), pageW - margin - 4, y + 5.5, { align: 'right' });
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9);
+      setText(BRAND.brown);
+      pdf.text(`${globalIdx}. N° ${r.orderNumber}`, margin + 6, y + 5.5);
 
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(8);
-    setText(BRAND.text);
-    pdf.text(`${r.productName} · ${r.quantityLabel}`, margin + 6, y + 11);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7);
+      setText(BRAND.muted);
+      pdf.text(
+        `${r.statutLabel} · Commande ${fmtDateShort(r.orderDate)} · Évisc. ${r.eviscerationLabel || 'Non'}`,
+        margin + 45,
+        y + 5.5
+      );
 
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(7);
-    setText(BRAND.text);
-    pdf.text(`${r.firstName} ${r.lastName} · ${r.phone}`, margin + 6, y + 15.5);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9);
+      setText(BRAND.gold);
+      pdf.text(fmtMoney(r.totalPrice), pageW - margin - 4, y + 5.5, { align: 'right' });
 
-    let lineY = y + 19.5;
-    addrLines.forEach((line) => {
-      pdf.text(line, margin + 6, lineY);
-      lineY += 3.2;
-    });
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(8);
+      setText(BRAND.text);
+      pdf.text(`${r.productName} · ${r.quantityLabel}`, margin + 6, y + 11);
 
-    const priceLine = [
-      `Unitaire : ${fmtMoney(r.unitPrice)}`,
-      `Sous-total : ${fmtMoney(r.subtotalPrice)}`,
-      r.deliveryFee > 0 ? `Livraison : ${fmtMoney(r.deliveryFee)}` : r.freeDelivery ? 'Livraison gratuite' : null,
-      r.eviscerationFee > 0 ? `Éviscération : ${fmtMoney(r.eviscerationFee)}` : r.eviscerationCleaning === false && r.quantityUnit && ['kg', 'g', 'tonne'].includes(r.quantityUnit) ? 'Éviscération : Non' : null,
-      r.isPromoLive ? `Promo -${r.discountPercent}%` : null,
-    ]
-      .filter(Boolean)
-      .join('  ·  ');
-    pdf.text(priceLine, margin + 6, lineY);
-    lineY += 3.5;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7);
+      setText(BRAND.text);
+      pdf.text(`${r.firstName} ${r.lastName} · ${r.phone}`, margin + 6, y + 15.5);
 
-    if (r.confirmedAt || r.requestedDeliveryAt || r.scheduledDeliveryAt) {
-      const dates = [
-        r.confirmedAt ? `Confirmée : ${fmtDateShort(r.confirmedAt)}` : null,
-        r.requestedDeliveryAt ? `Livraison demandée : ${fmtDateShort(r.requestedDeliveryAt)}` : null,
-        r.scheduledDeliveryAt ? `Relance : ${fmtDateShort(r.scheduledDeliveryAt)}` : null,
+      let lineY = y + 19.5;
+      addrLines.forEach((line) => {
+        pdf.text(line, margin + 6, lineY);
+        lineY += 3.2;
+      });
+
+      const priceLine = [
+        `Unitaire : ${fmtMoney(r.unitPrice)}`,
+        `Sous-total : ${fmtMoney(r.subtotalPrice)}`,
+        r.deliveryFee > 0 ? `Livraison : ${fmtMoney(r.deliveryFee)}` : r.freeDelivery ? 'Livraison gratuite' : null,
+        r.eviscerationFee > 0
+          ? `Éviscération : ${fmtMoney(r.eviscerationFee)}`
+          : r.eviscerationCleaning === false &&
+              r.quantityUnit &&
+              ['kg', 'g', 'tonne'].includes(r.quantityUnit)
+            ? 'Éviscération : Non'
+            : null,
+        r.isPromoLive ? `Promo -${r.discountPercent}%` : null,
       ]
         .filter(Boolean)
         .join('  ·  ');
-      pdf.text(dates, margin + 6, lineY);
+      pdf.text(priceLine, margin + 6, lineY);
       lineY += 3.5;
-    }
 
-    specsLines.forEach((line) => {
-      pdf.text(line, margin + 6, lineY);
-      lineY += 3.2;
+      if (r.confirmedAt || r.requestedDeliveryAt || r.scheduledDeliveryAt) {
+        const dates = [
+          r.confirmedAt ? `Confirmée : ${fmtDateShort(r.confirmedAt)}` : null,
+          r.requestedDeliveryAt ? `Livraison demandée : ${fmtDateShort(r.requestedDeliveryAt)}` : null,
+          r.scheduledDeliveryAt ? `Relance : ${fmtDateShort(r.scheduledDeliveryAt)}` : null,
+        ]
+          .filter(Boolean)
+          .join('  ·  ');
+        pdf.text(dates, margin + 6, lineY);
+        lineY += 3.5;
+      }
+
+      specsLines.forEach((line) => {
+        pdf.text(line, margin + 6, lineY);
+        lineY += 3.2;
+      });
+
+      pdf.setFontSize(7);
+      setText(BRAND.muted);
+      pdf.text(r.paymentMode, margin + 6, y + cardH - 2);
+
+      y += cardH + 3;
     });
-
-    pdf.setFontSize(7);
-    setText(BRAND.muted);
-    pdf.text(r.paymentMode, margin + 6, y + cardH - 2);
-
-    y += cardH + 3;
   });
 
   addPageIfNeeded(14);
@@ -503,8 +734,12 @@ export function exportShopOrdersToPdf(exportData) {
   pdf.setFontSize(10);
   setText(BRAND.white);
   pdf.text('TOTAL EXPORT', margin + 5, y + 7);
+  const totalKgBit =
+    exportData.totalKg > 0
+      ? ` · ${Number(exportData.totalKg).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} kg`
+      : '';
   pdf.text(
-    `${exportData.orderCount} cmd  ·  ${fmtMoney(exportData.totalAmount)}`,
+    `${exportData.orderCount} cmd${totalKgBit}  ·  ${fmtMoney(exportData.totalAmount)}`,
     pageW - margin - 5,
     y + 7,
     { align: 'right' }

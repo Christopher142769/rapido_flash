@@ -20,10 +20,38 @@ const {
   BILAN_START_DATE,
 } = require('../utils/commercialBilan');
 const { sendToUserIds } = require('../services/pushNotifications');
+const DeliveryMission = require('../models/DeliveryMission');
+const { computeShopOrderTotals } = require('../utils/shopPromo');
+const { formatQuantityWithUnit } = require('../utils/shopQuantityLabel');
+const { normalizeShopQuantityUnit } = require('../utils/shopQuantityUnit');
 
 const router = express.Router();
 
 const COMMERCIAL_STATUSES = ['commande', 'confirme', 'relance', 'livree', 'annulee'];
+const SHOP_CITIES = ['Cotonou', 'Calavi'];
+
+function validateShopCustomerPatch(customer) {
+  const c = customer || {};
+  const firstName = String(c.firstName || '').trim();
+  const lastName = String(c.lastName || '').trim();
+  const phone = String(c.phone || '').trim();
+  const city = String(c.city || '').trim();
+  const addressDescription = String(c.addressDescription || '').trim();
+  const phoneDigits = phone.replace(/\D/g, '');
+
+  if (!firstName) return 'Le prénom est requis';
+  if (!lastName) return 'Le nom est requis';
+  if (phoneDigits.length < 8) return 'Un numéro joignable est requis';
+  if (!SHOP_CITIES.includes(city)) return 'Choisissez Cotonou ou Calavi';
+  if (!addressDescription) return 'L’adresse complète de livraison est requise';
+
+  const email = String(c.email || '').trim().toLowerCase();
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return 'Adresse email invalide';
+  }
+
+  return null;
+}
 
 async function getCommercialStaffIds() {
   const staff = await User.find({
@@ -381,6 +409,144 @@ router.put('/orders/:id/specifications', auth, isCommercialStaff, async (req, re
     order.clientSpecifications = String(req.body?.clientSpecifications ?? '').trim().slice(0, 2000);
     await order.save();
     res.json(order);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+/** Admin uniquement — modification des champs commande Shop. */
+router.patch('/orders/:id', auth, isRestaurantAdmin, async (req, res) => {
+  try {
+    const order = await ShopOrder.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
+
+    const body = req.body || {};
+
+    if (body.productName != null) {
+      const productName = String(body.productName).trim();
+      if (!productName) return res.status(400).json({ message: 'Le nom du produit est requis' });
+      order.productName = productName;
+    }
+
+    if (body.slug != null) {
+      const slug = String(body.slug).trim().toLowerCase();
+      if (slug) order.slug = slug;
+    }
+
+    if (body.quantity != null) {
+      const quantity = Number(body.quantity);
+      if (!Number.isFinite(quantity) || quantity < 0.001) {
+        return res.status(400).json({ message: 'Quantité invalide' });
+      }
+      order.quantity = quantity;
+    }
+
+    if (body.quantityUnit != null) {
+      order.quantityUnit = normalizeShopQuantityUnit(body.quantityUnit);
+    }
+
+    if (body.unitPrice != null) {
+      const unitPrice = Number(body.unitPrice);
+      if (!Number.isFinite(unitPrice) || unitPrice < 0) {
+        return res.status(400).json({ message: 'Prix unitaire invalide' });
+      }
+      order.unitPrice = unitPrice;
+    }
+
+    if (body.deliveryFee != null) {
+      const deliveryFee = Number(body.deliveryFee);
+      if (!Number.isFinite(deliveryFee) || deliveryFee < 0) {
+        return res.status(400).json({ message: 'Frais de livraison invalides' });
+      }
+      order.deliveryFee = Math.round(deliveryFee);
+      if (deliveryFee > 0) order.freeDelivery = false;
+    }
+
+    if (body.eviscerationCleaning != null) {
+      order.eviscerationCleaning = !!body.eviscerationCleaning;
+    }
+
+    if (body.clientSpecifications != null) {
+      order.clientSpecifications = String(body.clientSpecifications).trim().slice(0, 2000);
+    }
+
+    if (body.whatsappNumber != null) {
+      order.whatsappNumber = String(body.whatsappNumber).trim();
+    }
+
+    if (body.offPlatformLocation != null && order.isOffPlatform) {
+      order.offPlatformLocation = String(body.offPlatformLocation).trim();
+    }
+
+    if (Object.prototype.hasOwnProperty.call(body, 'requestedDeliveryAt')) {
+      order.requestedDeliveryAt = body.requestedDeliveryAt
+        ? parseDateInput(body.requestedDeliveryAt)
+        : null;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(body, 'orderDate')) {
+      const orderDate = parseDateInput(body.orderDate);
+      if (orderDate) order.orderDate = orderDate;
+    }
+
+    if (body.customer && !order.isOffPlatform) {
+      const customerError = validateShopCustomerPatch(body.customer);
+      if (customerError) return res.status(400).json({ message: customerError });
+      const c = body.customer;
+      order.customer = {
+        firstName: String(c.firstName || '').trim(),
+        lastName: String(c.lastName || '').trim(),
+        phone: String(c.phone || '').trim(),
+        email: String(c.email || '').trim().toLowerCase(),
+        city: String(c.city || '').trim(),
+        addressDescription: String(c.addressDescription || '').trim(),
+      };
+    } else if (body.customer && order.isOffPlatform) {
+      const c = body.customer || {};
+      order.customer = {
+        firstName: String(c.firstName || order.customer?.firstName || 'Client').trim() || 'Client',
+        lastName: String(c.lastName || order.customer?.lastName || 'Hors plateforme').trim() || 'Hors plateforme',
+        phone: String(c.phone || order.customer?.phone || '').trim(),
+        email: String(c.email || order.customer?.email || '').trim().toLowerCase(),
+        city: String(c.city || order.customer?.city || 'Cotonou').trim() || 'Cotonou',
+        addressDescription: String(
+          c.addressDescription || order.customer?.addressDescription || order.offPlatformLocation || ''
+        ).trim(),
+      };
+    }
+
+    const totals = computeShopOrderTotals(order.unitPrice, order.quantity, order.deliveryFee, {
+      eviscerationCleaning: order.eviscerationCleaning,
+      quantityUnit: order.quantityUnit || 'unit',
+    });
+    order.subtotalPrice = totals.subtotalPrice;
+    order.deliveryFee = totals.deliveryFee;
+    order.eviscerationCleaning = totals.eviscerationCleaning;
+    order.eviscerationFee = totals.eviscerationFee;
+    order.totalPrice = totals.totalPrice;
+    order.quantityLabel = formatQuantityWithUnit(order.quantity, order.quantityUnit || 'unit');
+
+    await order.save();
+    res.json(order);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+/** Admin uniquement — suppression définitive d’une commande Shop. */
+router.delete('/orders/:id', auth, isRestaurantAdmin, async (req, res) => {
+  try {
+    const order = await ShopOrder.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
+
+    await DeliveryMission.deleteMany({ shopOrderId: order._id });
+    await order.deleteOne();
+
+    res.json({
+      message: 'Commande supprimée',
+      id: String(order._id),
+      orderNumber: order.orderNumber || null,
+    });
   } catch (e) {
     res.status(500).json({ message: e.message });
   }

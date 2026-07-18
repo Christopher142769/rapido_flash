@@ -85,6 +85,18 @@ export async function updateOrderSpecifications(id, clientSpecifications) {
   return res.data;
 }
 
+/** Admin restaurant uniquement — modification champs commande Shop. */
+export async function updateShopOrder(id, payload) {
+  const res = await axios.patch(`${API_URL}/commercial/orders/${id}`, payload, authHeaders());
+  return res.data;
+}
+
+/** Admin restaurant uniquement — suppression définitive. */
+export async function deleteShopOrder(id) {
+  const res = await axios.delete(`${API_URL}/commercial/orders/${id}`, authHeaders());
+  return res.data;
+}
+
 export async function cancelCommercialOrder(id) {
   const res = await axios.put(`${API_URL}/commercial/orders/${id}/cancel`, {}, authHeaders());
   return res.data;

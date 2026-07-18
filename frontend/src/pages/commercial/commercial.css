@@ -291,6 +291,59 @@
   font-size: 1.05rem;
 }
 
+.shop-commandes-selection-hint {
+  margin: 0.65rem 0 0;
+  font-size: 0.82rem;
+  color: var(--rf-text-muted, #666);
+  line-height: 1.4;
+}
+
+.shop-commandes-split-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.shop-commandes-split-toggle input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--rf-amber, #c8860a);
+  cursor: pointer;
+}
+
+.shop-livreur-list {
+  margin-bottom: 1.5rem;
+}
+
+.shop-livreur-list__header {
+  margin: 0.5rem 0 0.85rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--rf-amber, #c8860a);
+}
+
+.shop-livreur-list__header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--primary-brown, #8b4513);
+}
+
+.shop-livreur-list__header p {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--rf-text-muted, #666);
+}
+
+.commande-shop-badge--evisc {
+  margin-left: 8px;
+  background: #2e7d32;
+}
+
+.commande-shop-badge--raw {
+  margin-left: 8px;
+  background: #6d5a4a;
+}
+
 .commandes-filter-stats {
   margin: 1rem 0 0;
 }

@@ -1,34 +1,46 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PageLoader from '../../components/PageLoader';
 import ShopOrderSpecsModal from '../../components/commercial/ShopOrderSpecsModal';
+import ShopOrderEditModal from '../../components/commercial/ShopOrderEditModal';
 import { useModal } from '../../context/ModalContext';
+import AuthContext from '../../context/AuthContext';
 import {
   confirmCommercialOrder,
+  deleteShopOrder,
   fetchPointsProducts,
   fetchShopOrders,
   formatPrice,
   unconfirmCommercialOrder,
   updateOrderSpecifications,
+  updateShopOrder,
   updateShopOrderStatut,
 } from '../../utils/commercialApi';
 import {
+  buildShopLivreurSelection,
   exportShopOrdersToExcel,
   exportShopOrdersToPdf,
   filterShopOrders,
   getShopProductFilterOptions,
   prepareShopOrdersExport,
+  sumShopOrdersQuantityKg,
   SHOP_STATUT_LABELS,
 } from '../../utils/exportShopOrders';
 import { exportShopOrdersToWord } from '../../utils/exportCommandesWord';
 import { formatDeliveryDateShort } from '../../utils/shopDeliveryDate';
 import CommandesFilterStats from '../../components/commercial/CommandesFilterStats';
-import { sumShopOrdersQuantity } from '../../utils/commandesFilterStats';
+import { formatFilterQuantity, sumShopOrdersQuantity } from '../../utils/commandesFilterStats';
 import { CITY_FILTER_LABELS, POINTS_CITIES } from '../../utils/pointsByCity';
 import '../restaurant/RestaurantCommandes.css';
 import './commercial.css';
 
 const STATUT_LABELS = SHOP_STATUT_LABELS;
+
+const EVISCERATION_LABELS = {
+  '': 'Toutes',
+  oui: 'Éviscéré & nettoyé',
+  non: 'Non éviscéré',
+};
 
 const STATUT_COLORS = {
   en_attente: '#FFA500',
@@ -71,6 +83,8 @@ function renderPhoneLink(phone) {
 
 /** Page unique Commandes Shop — admin et commercial, cartes alignées sur Commandes. */
 export default function ShopCommandesPage() {
+  const { user } = useContext(AuthContext);
+  const isAdmin = user?.role === 'restaurant';
   const { showSuccess, showError } = useModal();
   const [orders, setOrders] = useState([]);
   const [catalogProducts, setCatalogProducts] = useState([]);
@@ -78,9 +92,15 @@ export default function ShopCommandesPage() {
   const [filter, setFilter] = useState('');
   const [productFilter, setProductFilter] = useState('');
   const [cityFilter, setCityFilter] = useState('');
+  const [eviscerationFilter, setEviscerationFilter] = useState('');
+  const [maxKg, setMaxKg] = useState('');
+  const [maxKgEvisc, setMaxKgEvisc] = useState('');
+  const [maxKgNonEvisc, setMaxKgNonEvisc] = useState('');
+  const [splitLivreurLists, setSplitLivreurLists] = useState(false);
   const [dateFrom, setDateFrom] = useState(() => defaultDateRange().dateFrom);
   const [dateTo, setDateTo] = useState(() => defaultDateRange().dateTo);
   const [specsOrder, setSpecsOrder] = useState(null);
+  const [editOrder, setEditOrder] = useState(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -108,7 +128,7 @@ export default function ShopCommandesPage() {
     [catalogProducts, orders]
   );
 
-  const filteredOrders = useMemo(() => {
+  const baseFilteredOrders = useMemo(() => {
     const list = filterShopOrders(orders, {
       dateFrom,
       dateTo,
@@ -121,11 +141,46 @@ export default function ShopCommandesPage() {
     );
   }, [orders, filter, productFilter, cityFilter, dateFrom, dateTo]);
 
+  const livreurSelection = useMemo(
+    () =>
+      buildShopLivreurSelection(baseFilteredOrders, {
+        evisceration: eviscerationFilter,
+        maxKg,
+        splitLivreurLists,
+        maxKgEvisc,
+        maxKgNonEvisc,
+      }),
+    [
+      baseFilteredOrders,
+      eviscerationFilter,
+      maxKg,
+      splitLivreurLists,
+      maxKgEvisc,
+      maxKgNonEvisc,
+    ]
+  );
+
+  const filteredOrders = livreurSelection.orders;
+
   const selectedProductLabel =
     productOptions.find((p) => p.key === productFilter)?.label || 'Tous les produits';
 
   const selectedStatutLabel = filter ? STATUT_LABELS[filter] || filter : 'Tous les statuts';
   const selectedCityLabel = CITY_FILTER_LABELS[cityFilter] || 'Toutes les villes';
+  const selectedEviscerationLabel = splitLivreurLists
+    ? '2 listes (éviscéré / non)'
+    : EVISCERATION_LABELS[eviscerationFilter] || 'Toutes';
+
+  const maxKgLabel = useMemo(() => {
+    if (splitLivreurLists) {
+      const parts = [];
+      if (Number(maxKgEvisc) > 0) parts.push(`max ${maxKgEvisc} kg éviscéré`);
+      if (Number(maxKgNonEvisc) > 0) parts.push(`max ${maxKgNonEvisc} kg non éviscéré`);
+      return parts.length ? parts.join(' · ') : 'Toutes quantités (2 listes)';
+    }
+    if (Number(maxKg) > 0) return `Max ${maxKg} kg (premières commandes)`;
+    return '';
+  }, [splitLivreurLists, maxKg, maxKgEvisc, maxKgNonEvisc]);
 
   const exportData = useMemo(
     () =>
@@ -138,14 +193,34 @@ export default function ShopCommandesPage() {
         productLabel: selectedProductLabel,
         cityFilter,
         cityLabel: selectedCityLabel,
+        eviscerationFilter,
+        eviscerationLabel: selectedEviscerationLabel,
+        maxKgLabel,
+        splitLivreurLists: livreurSelection.split,
+        lists: livreurSelection.lists,
       }),
-    [filteredOrders, dateFrom, dateTo, filter, productFilter, cityFilter, selectedProductLabel, selectedCityLabel]
+    [
+      filteredOrders,
+      dateFrom,
+      dateTo,
+      filter,
+      productFilter,
+      cityFilter,
+      eviscerationFilter,
+      selectedProductLabel,
+      selectedCityLabel,
+      selectedEviscerationLabel,
+      maxKgLabel,
+      livreurSelection.split,
+      livreurSelection.lists,
+    ]
   );
 
   const filterStats = useMemo(
     () => ({
       orderCount: filteredOrders.length,
       totalQuantity: sumShopOrdersQuantity(filteredOrders),
+      totalKg: sumShopOrdersQuantityKg(filteredOrders),
       totalAmount: exportData.totalAmount,
     }),
     [filteredOrders, exportData.totalAmount]
@@ -207,12 +282,46 @@ export default function ShopCommandesPage() {
     }
   };
 
+  const handleSaveEdit = async (payload) => {
+    if (!editOrder || !isAdmin) return;
+    setBusy(true);
+    try {
+      await updateShopOrder(editOrder._id, payload);
+      showSuccess('Commande modifiée');
+      setEditOrder(null);
+      await load();
+    } catch (e) {
+      showError(e.response?.data?.message || e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDeleteOrder = (order) => {
+    if (!isAdmin || !order) return;
+    const label = order.orderNumber || order._id?.slice(-6) || '';
+    if (
+      !window.confirm(
+        `Supprimer définitivement la commande #${label} ?\nCette action est irréversible.`
+      )
+    ) {
+      return;
+    }
+    run(() => deleteShopOrder(order._id), 'Commande supprimée');
+  };
+
   return (
     <>
       <ShopOrderSpecsModal
         order={specsOrder}
         onClose={() => !busy && setSpecsOrder(null)}
         onSave={handleSaveSpecs}
+        saving={busy}
+      />
+      <ShopOrderEditModal
+        order={editOrder}
+        onClose={() => !busy && setEditOrder(null)}
+        onSave={handleSaveEdit}
         saving={busy}
       />
 
@@ -278,6 +387,68 @@ export default function ShopCommandesPage() {
                   ))}
                 </select>
               </label>
+              <label>
+                Éviscération
+                <select
+                  value={eviscerationFilter}
+                  onChange={(e) => setEviscerationFilter(e.target.value)}
+                  disabled={splitLivreurLists}
+                >
+                  <option value="">Toutes</option>
+                  <option value="oui">Éviscéré &amp; nettoyé</option>
+                  <option value="non">Non éviscéré</option>
+                </select>
+              </label>
+              {!splitLivreurLists ? (
+                <label>
+                  Quantité max (kg)
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    placeholder="Ex. 30"
+                    value={maxKg}
+                    onChange={(e) => setMaxKg(e.target.value)}
+                  />
+                </label>
+              ) : (
+                <>
+                  <label>
+                    Max kg éviscéré
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      placeholder="Ex. 30"
+                      value={maxKgEvisc}
+                      onChange={(e) => setMaxKgEvisc(e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Max kg non éviscéré
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      placeholder="Ex. 30"
+                      value={maxKgNonEvisc}
+                      onChange={(e) => setMaxKgNonEvisc(e.target.value)}
+                    />
+                  </label>
+                </>
+              )}
+              <label className="shop-commandes-split-toggle">
+                <span>2 listes livreurs</span>
+                <input
+                  type="checkbox"
+                  checked={splitLivreurLists}
+                  onChange={(e) => {
+                    const on = e.target.checked;
+                    setSplitLivreurLists(on);
+                    if (on) setEviscerationFilter('');
+                  }}
+                />
+              </label>
               <button
                 type="button"
                 className="commercial-btn commercial-btn--outline"
@@ -298,11 +469,34 @@ export default function ShopCommandesPage() {
               formatPrice={formatPrice}
               quantityLabel="Quantité produits"
             />
+            <p className="shop-commandes-selection-hint">
+              Sélection export : <strong>{selectedEviscerationLabel}</strong>
+              {filterStats.totalKg > 0 ? (
+                <>
+                  {' '}
+                  · <strong>{formatFilterQuantity(filterStats.totalKg)} kg</strong>
+                </>
+              ) : null}
+              {maxKgLabel ? <> · {maxKgLabel}</> : null}
+              {' '}
+              · premières commandes d’abord
+              {baseFilteredOrders.length !== filteredOrders.length ? (
+                <>
+                  {' '}
+                  ({filteredOrders.length}/{baseFilteredOrders.length} commandes filtrées)
+                </>
+              ) : null}
+            </p>
 
             <div className="shop-commandes-export-bar">
               <p className="shop-commandes-export-summary">
-                <strong>{exportData.orderCount}</strong> commande{exportData.orderCount > 1 ? 's' : ''}{' '}
+                <strong>{exportData.orderCount}</strong> commande
+                {exportData.orderCount > 1 ? 's' : ''}
+                {exportData.totalKg > 0
+                  ? ` · ${formatFilterQuantity(exportData.totalKg)} kg`
+                  : ''}{' '}
                 · Total {formatPrice(exportData.totalAmount)}
+                {livreurSelection.split ? ' · 2 listes livreurs' : ''}
               </p>
               <div className="commercial-filters" style={{ marginBottom: 0 }}>
                 <button
@@ -334,20 +528,39 @@ export default function ShopCommandesPage() {
           </div>
 
           <p className="commandes-shop-hint">
-            Filtrez par <strong>date de commande</strong>, statut, produit et ville, puis exportez le détail complet en
-            PDF, Excel ou Word. Même processus opérationnel : confirmer, préparation, livraison, livrée.
+            Filtrez par date, statut, produit, ville et <strong>éviscération</strong>. Plafonnez en{' '}
+            <strong>kg</strong> en partant des premières commandes, ou activez{' '}
+            <strong>2 listes livreurs</strong> (éviscéré / non) pour distribuer aux livreurs.
           </p>
 
           {filteredOrders.length === 0 ? (
             <div className="no-commandes">
               <p>
                 Aucune commande Shop pour cette période
-                {filter || productFilter ? ' avec ces filtres' : ''}.
+                {filter || productFilter || eviscerationFilter || maxKg || maxKgEvisc || maxKgNonEvisc
+                  ? ' avec ces filtres'
+                  : ''}
+                .
               </p>
             </div>
           ) : (
             <div className="commandes-list">
-              {filteredOrders.map((order) => {
+              {livreurSelection.lists
+                .filter((list) => list.orders.length > 0)
+                .map((list) => (
+                <div key={list.key} className="shop-livreur-list">
+                  {livreurSelection.split ? (
+                    <div className="shop-livreur-list__header">
+                      <h2>{list.label}</h2>
+                      <p>
+                        {list.orders.length} commande{list.orders.length > 1 ? 's' : ''}
+                        {list.totalKg > 0
+                          ? ` · ${formatFilterQuantity(list.totalKg)} kg`
+                          : ''}
+                      </p>
+                    </div>
+                  ) : null}
+                  {list.orders.map((order) => {
                 const name = [order.customer?.firstName, order.customer?.lastName]
                   .filter(Boolean)
                   .join(' ');
@@ -421,6 +634,15 @@ export default function ShopCommandesPage() {
                       <div className="plat-item">
                         <span>
                           {order.productName} · {order.quantityLabel || order.quantity}
+                          {order.eviscerationCleaning ? (
+                            <span className="commande-shop-badge commande-shop-badge--evisc">
+                              Éviscéré
+                            </span>
+                          ) : (
+                            <span className="commande-shop-badge commande-shop-badge--raw">
+                              Non éviscéré
+                            </span>
+                          )}
                         </span>
                         <span>{Number(order.totalPrice || 0).toFixed(0)} FCFA</span>
                       </div>
@@ -481,6 +703,34 @@ export default function ShopCommandesPage() {
                       >
                         Spécifications
                       </button>
+                      {isAdmin ? (
+                        <>
+                          <button
+                            type="button"
+                            className="btn btn-outline"
+                            disabled={busy}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setEditOrder(order);
+                            }}
+                          >
+                            Modifier
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-outline btn-danger-outline"
+                            disabled={busy}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDeleteOrder(order);
+                            }}
+                          >
+                            Supprimer
+                          </button>
+                        </>
+                      ) : null}
                       {order.statut === 'en_attente' ? (
                         <>
                           <button
@@ -558,7 +808,9 @@ export default function ShopCommandesPage() {
                     </div>
                   </div>
                 );
-              })}
+                  })}
+                </div>
+              ))}
             </div>
           )}
         </div>

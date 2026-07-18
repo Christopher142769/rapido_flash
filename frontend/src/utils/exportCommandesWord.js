@@ -136,6 +136,8 @@ function wordStyles() {
     .rf-data th, .rf-data td { border: 1px solid ${BRAND.border}; padding: 6px 5px; vertical-align: top; font-size: 9pt; word-wrap: break-word; }
     .rf-city-h td { background: ${BRAND.brown}; color: ${BRAND.white}; font-weight: bold; font-size: 10.5pt; padding: 8px 10px; border: 1px solid #6d3610; }
     .rf-city-h .city-meta { font-size: 8.5pt; font-weight: normal; color: #f5d78a; }
+    .rf-list-h td { background: ${BRAND.amber}; color: ${BRAND.white}; font-weight: bold; font-size: 11pt; padding: 10px 12px; border: 1px solid #a85a20; }
+    .rf-list-h .list-meta { font-size: 8.5pt; font-weight: normal; color: #ffe8c8; }
     .rf-col-h th { background: ${BRAND.headerBg}; color: #444; font-size: 7.5pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.04em; padding: 7px 5px; text-align: left; }
     .rf-col-h .th-money { text-align: right; background: #efe6dc; color: ${BRAND.brown}; }
     .rf-col-h .th-total { background: #e8d4c0; color: ${BRAND.brown}; }
@@ -484,34 +486,81 @@ const RESTAURANT_MONEY = {
 export function exportShopOrdersToWord(exportData) {
   if (!exportData?.orders?.length) return;
 
-  const rows = exportData.orders;
   const cityFilter = exportData.cityFilter || '';
   const cityLabel = exportData.cityLabel || 'Toutes les villes';
   const period = `${fmtDateShort(exportData.dateFrom)} → ${fmtDateShort(exportData.dateTo)}`;
   const prodLabel = productQtyLabel(exportData.productLabel, 'produit');
 
-  const totalQuantity = rows.reduce((s, r) => s + shopRowQuantity(r), 0);
-  const totalQtyLabel = formatShopQuantity(totalQuantity, rows);
+  const lists =
+    exportData.splitLivreurLists && exportData.lists?.length
+      ? exportData.lists
+      : [
+          {
+            label: null,
+            orders: exportData.orders,
+            orderCount: exportData.orderCount,
+            totalKg: exportData.totalKg,
+            totalSubtotal: exportData.totalSubtotal,
+            totalDelivery: exportData.totalDelivery,
+            totalEvisceration: exportData.totalEvisceration,
+            totalAmount: exportData.totalAmount,
+          },
+        ];
 
-  const byCity = groupRowsByCityFixed(
-    rows,
-    inferShopRowCity,
-    shopRowQuantity,
-    SHOP_MONEY,
-    cityFilter
-  );
+  const formatGroupQty = (group, fallbackRows) =>
+    formatShopQuantity(group.totalQuantity, group.rows.length ? group.rows : fallbackRows);
 
-  const formatGroupQty = (group) =>
-    formatShopQuantity(group.totalQuantity, group.rows.length ? group.rows : rows);
+  let dataTableBody = '';
+  lists.forEach((list) => {
+    const rows = list.orders || [];
+    if (!rows.length) return;
 
-  const dataTableBody = buildDataBody(byCity, shopTableRow, formatGroupQty, {
-    colCount: SHOP_COL_COUNT,
-    headers: SHOP_TABLE_HEADERS,
-    shopMode: true,
+    if (list.label) {
+      const kgLabel =
+        list.totalKg > 0
+          ? `${Number(list.totalKg).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} kg`
+          : formatShopQuantity(
+              rows.reduce((s, r) => s + shopRowQuantity(r), 0),
+              rows
+            );
+      dataTableBody += `<tr class="rf-list-h"><td colspan="${SHOP_COL_COUNT}">
+        ${escapeHtml(list.label)}
+        <span class="list-meta"> — ${list.orderCount || rows.length} cmd · Qté ${escapeHtml(kgLabel)}</span>
+      </td></tr>`;
+    }
+
+    const byCity = groupRowsByCityFixed(
+      rows,
+      inferShopRowCity,
+      shopRowQuantity,
+      SHOP_MONEY,
+      cityFilter
+    );
+    dataTableBody += buildDataBody(
+      byCity,
+      shopTableRow,
+      (group) => formatGroupQty(group, rows),
+      {
+        colCount: SHOP_COL_COUNT,
+        headers: SHOP_TABLE_HEADERS,
+        shopMode: true,
+      }
+    );
   });
-  const subtitle = cityFilter
-    ? `Feuille de tournée · ${cityLabel}`
-    : 'Feuille de tournée · Cotonou & Calavi';
+
+  const totalQuantity = exportData.orders.reduce((s, r) => s + shopRowQuantity(r), 0);
+  const totalQtyLabel =
+    exportData.totalKg > 0
+      ? `${Number(exportData.totalKg).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} kg`
+      : formatShopQuantity(totalQuantity, exportData.orders);
+
+  const subtitle = exportData.splitLivreurLists
+    ? cityFilter
+      ? `2 listes livreurs · ${cityLabel}`
+      : '2 listes livreurs · Cotonou & Calavi'
+    : cityFilter
+      ? `Feuille de tournée · ${cityLabel}`
+      : 'Feuille de tournée · Cotonou & Calavi';
 
   const html = wordShell({
     title: 'RAPIDO — Commandes Shop',
@@ -522,6 +571,23 @@ export function exportShopOrdersToWord(exportData) {
         { label: 'Statut', valueHtml: escapeHtml(exportData.statutLabel) },
         { label: 'Produit', valueHtml: escapeHtml(exportData.productLabel) },
         { label: 'Ville', valueHtml: escapeHtml(cityLabel) },
+      ],
+      [
+        {
+          label: 'Éviscération',
+          valueHtml: escapeHtml(exportData.eviscerationLabel || 'Toutes'),
+        },
+        {
+          label: 'Sélection kg',
+          valueHtml: escapeHtml(exportData.maxKgLabel || 'Toutes quantités'),
+        },
+        {
+          label: 'Mode',
+          valueHtml: escapeHtml(
+            exportData.splitLivreurLists ? '2 listes livreurs' : 'Liste unique'
+          ),
+        },
+        { label: 'Généré le', valueHtml: escapeHtml(new Date().toLocaleString('fr-FR')) },
       ],
     ],
     kpiCells: buildMoneyKpiCells({

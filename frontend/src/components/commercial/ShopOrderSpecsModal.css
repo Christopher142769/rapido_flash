@@ -112,3 +112,90 @@
 .shop-specs-modal-btn--primary:hover:not(:disabled) {
   background: #6d3610;
 }
+
+.shop-specs-modal--wide {
+  width: min(640px, 100%);
+  max-height: min(92vh, 820px);
+}
+
+.shop-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.shop-edit-fieldset {
+  margin: 0;
+  padding: 0.85rem 0.9rem 1rem;
+  border: 1px solid #eadfce;
+  border-radius: 12px;
+}
+
+.shop-edit-fieldset legend {
+  padding: 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8b4513;
+}
+
+.shop-edit-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.shop-edit-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 0.35rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.shop-edit-input:focus {
+  outline: none;
+  border-color: #c8860a;
+  box-shadow: 0 0 0 3px rgba(200, 134, 10, 0.15);
+}
+
+.shop-edit-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #444;
+  cursor: pointer;
+}
+
+.shop-edit-total {
+  margin: 0.65rem 0 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.shop-edit-total strong {
+  color: #8b4513;
+}
+
+.btn-danger-outline {
+  border-color: #d32f2f !important;
+  color: #d32f2f !important;
+}
+
+.btn-danger-outline:hover:not(:disabled) {
+  background: #fff5f5 !important;
+}
+
+@media (max-width: 560px) {
+  .shop-edit-row {
+    grid-template-columns: 1fr;
+  }
+}
