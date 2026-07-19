@@ -7,6 +7,7 @@ import {
   getShopWhatsAppDisplay,
 } from '../../utils/shopOrder';
 import { formatPriceXof } from '../../utils/shopPromo';
+import { mealCatalogPath, mealConfirmationPath, mealProductPath } from '../../utils/mealPaths';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
 import ShopPrivacyFooter from '../../components/shop/ShopPrivacyFooter';
 import '../shop/shopTypography.css';
@@ -20,11 +21,11 @@ export default function MealOrderConfirmation() {
 
   useEffect(() => {
     if (!order) {
-      navigate(slug ? `/repas/${slug}` : '/repas', { replace: true });
+      navigate(slug ? mealProductPath(slug) : mealCatalogPath(), { replace: true });
       return;
     }
     if (slug && order.slug && order.slug !== slug) {
-      navigate(`/repas/${order.slug}/commande`, { replace: true });
+      navigate(mealConfirmationPath(order.slug), { replace: true });
       return;
     }
     document.title = 'Commande confirmée | Rapido Repas';
@@ -36,7 +37,7 @@ export default function MealOrderConfirmation() {
   const fullAddress = formatCustomerAddress(order.customer);
   const city = order.customer?.city;
   const addressLine = order.customer?.addressDescription || fullAddress || '—';
-  const backHref = order.slug ? `/repas/${order.slug}` : '/repas';
+  const backHref = mealProductPath(order.slug);
 
   const handleTrack = async (e) => {
     e.preventDefault();

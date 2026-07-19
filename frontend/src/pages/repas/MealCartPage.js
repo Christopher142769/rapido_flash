@@ -22,6 +22,7 @@ import {
   submitMealOrderToApi,
   saveMealOrder,
 } from '../../utils/mealOrder';
+import { mealConfirmationPath, mealProductPath } from '../../utils/mealPaths';
 import './MealCartPage.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -125,7 +126,7 @@ export default function MealCartPage() {
       clearMealCart();
       setCheckoutOpen(false);
       const slug = order.items?.[0]?.slug || items[0]?.slug;
-      navigate(slug ? `/repas/${slug}/commande` : '/repas/commande', { replace: true });
+      navigate(mealConfirmationPath(slug), { replace: true });
     } catch (err) {
       setSubmitError(err.message || 'Erreur');
     } finally {
@@ -158,7 +159,7 @@ export default function MealCartPage() {
           <ul className="meal-cart-lines">
             {items.map((it) => (
               <li key={it.lineKey} className="meal-cart-line">
-                <Link to={`/repas/${it.slug}`} className="meal-cart-line-img">
+                <Link to={mealProductPath(it.slug)} className="meal-cart-line-img">
                   {it.image ? (
                     <img src={getImageUrl(it.image, BASE_URL)} alt="" />
                   ) : (
@@ -166,7 +167,7 @@ export default function MealCartPage() {
                   )}
                 </Link>
                 <div className="meal-cart-line-body">
-                  <Link to={`/repas/${it.slug}`} className="meal-cart-line-name">
+                  <Link to={mealProductPath(it.slug)} className="meal-cart-line-name">
                     {it.productName}
                   </Link>
                   <span>

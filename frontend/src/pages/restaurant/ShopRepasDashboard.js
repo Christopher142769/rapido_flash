@@ -14,6 +14,7 @@ import {
   mealUrgencyPayloadFromForm,
   DEFAULT_MEAL_COUNTDOWN_HOURS,
 } from '../../utils/mealShopUrgency';
+import { mealProductPath } from '../../utils/mealPaths';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
 import ShopFormSectionHead from '../../components/shop/ShopFormSectionHead';
 import ShopCopyBlockEditor from '../../components/shop/ShopCopyBlockEditor';
@@ -425,7 +426,7 @@ export default function ShopRepasDashboard() {
   };
 
   const copyLink = (slug) => {
-    const url = `${publicOrigin}/repas/${slug}`;
+    const url = `${publicOrigin}${mealProductPath(slug)}`;
     navigator.clipboard?.writeText(url).then(() => alert(`Lien copié :\n${url}`));
   };
 
@@ -589,7 +590,7 @@ export default function ShopRepasDashboard() {
           <h1>Boutique multi-plats</h1>
           <p>
             Chaque plat publié a sa propre page comme Shop Express, accessible sur{' '}
-            <code className="shop-dash-code">/repas/nom-du-plat</code>. Catalogue public :{' '}
+            <code className="shop-dash-code">/repas/commandes/nom-du-plat</code>. Catalogue public :{' '}
             <code className="shop-dash-code">/repas</code>.
           </p>
           <div className="shop-dash-stats">
@@ -1593,7 +1594,7 @@ export default function ShopRepasDashboard() {
         <div className="shop-dash-product-grid">
           {products.map((p) => {
             const promo = getShopPromoState(p);
-            const pubUrl = `${publicOrigin}/repas/${p.slug}`;
+            const pubUrl = `${publicOrigin}${mealProductPath(p.slug)}`;
             return (
               <article
                 key={p._id}
@@ -1665,7 +1666,7 @@ export default function ShopRepasDashboard() {
                 <FaUtensils />
               </div>
               <h4>Aucun plat</h4>
-              <p>Créez votre premier plat : il aura automatiquement une page /repas/nom-du-plat.</p>
+              <p>Créez votre premier plat : il aura automatiquement une page /repas/commandes/nom-du-plat.</p>
               <button type="button" className="shop-dash-btn shop-dash-btn--primary" onClick={openCreate}>
                 + Créer un plat
               </button>

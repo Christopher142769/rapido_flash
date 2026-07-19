@@ -117,6 +117,14 @@ function FormLegacyRedirect() {
   return <Navigate to={`/form/${slug}`} replace />;
 }
 
+/** Anciennes fiches /repas/:slug → /repas/commandes/:slug */
+function MealProductLegacyRedirect() {
+  const { slug } = useParams();
+  const reserved = new Set(['panier', 'commande', 'commandes']);
+  if (!slug || reserved.has(slug)) return <Navigate to="/repas" replace />;
+  return <Navigate to={`/repas/commandes/${slug}`} replace />;
+}
+
 function AppRoutes() {
   const location = useLocation();
   const isRecrutement =
@@ -188,10 +196,14 @@ function AppRoutes() {
         <Route path="/restaurant/:id" element={<RestaurantDetail />} />
         <Route path="/shop/:slug/commande" element={<ShopOrderConfirmation />} />
         <Route path="/shop/:slug" element={<ShopProductLanding />} />
+        <Route path="/repas/commandes/:slug" element={<MealProductLanding />} />
         <Route path="/repas/:slug/commande" element={<MealOrderConfirmation />} />
         <Route path="/repas/commande" element={<MealOrderConfirmation />} />
         <Route path="/repas/panier" element={<MealCartPage />} />
-        <Route path="/repas/:slug" element={<MealProductLanding />} />
+        <Route
+          path="/repas/:slug"
+          element={<MealProductLegacyRedirect />}
+        />
         <Route path="/repas" element={<MealShopPage />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<PrivateRoute><Checkout /></PrivateRoute>} />

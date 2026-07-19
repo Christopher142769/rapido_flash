@@ -18,6 +18,7 @@ import { formatPriceXof } from '../../utils/shopPromo';
 import { getShopWhatsAppDigits } from '../../utils/shopOrder';
 import { getMealCatalogueUrgency } from '../../utils/mealShopUrgency';
 import { loadMealCart, mealCartCount, addMealToCart, estimateMealCartTotals } from '../../utils/mealCart';
+import { mealProductPath } from '../../utils/mealPaths';
 import '../shop/shopTypography.css';
 import './MealShopPage.css';
 
@@ -199,7 +200,7 @@ export default function MealShopPage() {
           {filtered.map((p) => {
             const price = p.isPromoLive ? p.promoPrice : p.basePrice;
             const img = p.mainImage || p.images?.[0];
-            const href = `/repas/${p.slug}`;
+            const href = mealProductPath(p.slug);
             const hasAcc = (p.accompagnements || []).length > 0;
             return (
               <article key={p._id} className="meal-shop-card">

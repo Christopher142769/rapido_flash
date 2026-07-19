@@ -8,7 +8,7 @@ import './MealShopChrome.css';
 const RAPIDO_LOGO = '/images/logo.png';
 
 /**
- * En-tête partagé catalogue /repas et fiches /repas/:slug
+ * En-tête partagé catalogue /repas et fiches /repas/commandes/:slug
  * Urgence → brand header → toolbar (logo + panier)
  */
 export default function MealShopChrome({

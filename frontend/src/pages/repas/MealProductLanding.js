@@ -28,6 +28,7 @@ import {
   saveMealOrder,
   submitMealOrderToApi,
 } from '../../utils/mealOrder';
+import { mealConfirmationPath } from '../../utils/mealPaths';
 import { loadMealCart, mealCartCount } from '../../utils/mealCart';
 import {
   buildOptionSelection,
@@ -319,7 +320,7 @@ export default function MealProductLanding() {
       setQtyModalOpen(false);
       setAccModalOpen(false);
       setPendingOrderQty(null);
-      navigate(`/repas/${slug}/commande`);
+      navigate(mealConfirmationPath(slug));
     } catch (err) {
       alert(err.message || 'Impossible d’enregistrer la commande. Réessayez.');
     } finally {

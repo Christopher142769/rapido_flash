@@ -18,6 +18,7 @@ import { formatDeliveryDateShort } from '../../utils/shopDeliveryDate';
 import CommandesFilterStats from '../../components/commercial/CommandesFilterStats';
 import { sumMealOrdersQuantity } from '../../utils/commandesFilterStats';
 import { CITY_FILTER_LABELS, POINTS_CITIES } from '../../utils/pointsByCity';
+import { mealProductPath } from '../../utils/mealPaths';
 import '../restaurant/RestaurantCommandes.css';
 import './commercial.css';
 
@@ -563,7 +564,7 @@ export default function MealCommandesPage({ variant = 'commercial', refreshKey =
                                 {' '}
                                 ·{' '}
                                 <Link
-                                  to={`/repas/${firstSlug}`}
+                                  to={mealProductPath(firstSlug)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                 >
