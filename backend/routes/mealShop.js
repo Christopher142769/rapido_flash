@@ -127,6 +127,11 @@ router.put('/', auth, isRestaurant, async (req, res) => {
         .trim()
         .slice(0, 500);
     }
+    if (body.trackingWhatsAppNumber != null) {
+      doc.trackingWhatsAppNumber = String(body.trackingWhatsAppNumber || '')
+        .trim()
+        .slice(0, 30);
+    }
     if (body.shopClosure != null) {
       const sc = body.shopClosure;
       doc.shopClosure = {

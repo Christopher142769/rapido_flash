@@ -4,6 +4,7 @@ import {
   validateCustomerForm,
   formatCustomerFullName,
   formatCustomerAddress,
+  resolveTrackingWhatsAppDigits,
 } from './shopOrder';
 import { formatPriceXof } from './shopPromo';
 
@@ -115,7 +116,7 @@ export function buildMealWhatsAppMessage(order) {
 }
 
 export function buildMealWhatsAppOrderUrl(order) {
-  const raw = getShopWhatsAppDigits();
+  const raw = resolveTrackingWhatsAppDigits(order?.whatsappNumber);
   if (!raw) return null;
   return `https://wa.me/${raw}?text=${encodeURIComponent(buildMealWhatsAppMessage(order))}`;
 }

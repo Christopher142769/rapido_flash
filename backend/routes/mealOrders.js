@@ -17,6 +17,12 @@ const router = express.Router();
 const SHOP_CITIES = ['Cotonou', 'Calavi'];
 const SHOP_WA = '22940317568';
 
+async function getMealShopTrackingWhatsApp() {
+  const settings = await MealShopSettings.findOne({ key: 'default' });
+  const normalized = normalizeBeninPhoneDigits(settings?.trackingWhatsAppNumber);
+  return normalized || SHOP_WA;
+}
+
 function validateCustomer(customer) {
   const c = customer || {};
   const firstName = String(c.firstName || '').trim();
@@ -146,7 +152,7 @@ router.post('/', async (req, res) => {
         city: String(customer.city).trim(),
         addressDescription: String(customer.addressDescription).trim(),
       },
-      whatsappNumber: SHOP_WA,
+      whatsappNumber: await getMealShopTrackingWhatsApp(),
       statut: 'en_attente',
       commercialStatus: 'commande',
       orderDate: new Date(),

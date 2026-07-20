@@ -9,6 +9,8 @@ import {
   openShopOrderWhatsAppTrack,
   buildWhatsAppSupportUrl,
   getShopWhatsAppDisplay,
+  formatWhatsAppDisplay,
+  resolveTrackingWhatsAppDigits,
 } from '../../utils/shopOrder';
 import { formatPriceXof } from '../../utils/shopPromo';
 import { isEviscerationApplicable } from '../../utils/shopEvisceration';
@@ -32,7 +34,7 @@ export default function ShopOrderConfirmation() {
   if (!order) return null;
 
   const supportWaUrl = buildWhatsAppSupportUrl(order);
-  const shopWaDisplay = getShopWhatsAppDisplay();
+  const shopWaDisplay = formatWhatsAppDisplay(order?.whatsappNumber);
   const fullName = formatCustomerFullName(order.customer);
   const fullAddress = formatCustomerAddress(order.customer);
   const city = order.customer.city || order.customer.address;

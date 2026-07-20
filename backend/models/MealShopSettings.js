@@ -56,6 +56,8 @@ const mealShopSettingsSchema = new mongoose.Schema(
       enabled: { type: Boolean, default: false },
       maxOrders: { type: Number, default: 0, min: 0 },
     },
+    /** WhatsApp ouvert via « Suivre ma commande » (Shop Repas). */
+    trackingWhatsAppNumber: { type: String, default: '', trim: true },
     /**
      * Compteur / urgence de la page catalogue /repas uniquement.
      * Indépendant des promos Shop Express et des promos par plat.

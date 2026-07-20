@@ -1459,22 +1459,26 @@ export default function ShopDashboard() {
           <section className="shop-dash-form-block">
             <ShopFormSectionHead
               step="5"
-              title="Contact & commande"
-              subtitle="WhatsApp pour recevoir les commandes clients."
+              title="Suivre ma commande"
+              subtitle="Numéro WhatsApp ouvert quand le client clique sur « Suivre ma commande » après validation."
               onRefresh={refreshPage}
               refreshing={refreshingPage}
             />
           <div className="shop-dash-grid">
             <div>
-              <label>WhatsApp (229…)</label>
+              <label>WhatsApp suivi commande</label>
               <input
                 className="shop-dash-input"
                 value={form.whatsappNumber}
                 onChange={(e) => setForm((f) => ({ ...f, whatsappNumber: e.target.value }))}
+                placeholder="Ex. 40 31 75 68 ou 22940317568"
               />
+              <p className="shop-dash-hint">
+                Laisser vide pour le numéro Rapido par défaut. Ce numéro reçoit le récapitulatif WhatsApp du client.
+              </p>
             </div>
             <div>
-              <label>Téléphone</label>
+              <label>Téléphone affiché (optionnel)</label>
               <input
                 className="shop-dash-input"
                 value={form.contactPhone}

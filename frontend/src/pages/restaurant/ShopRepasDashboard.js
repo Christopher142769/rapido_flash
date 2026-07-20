@@ -744,10 +744,41 @@ export default function ShopRepasDashboard() {
                   deliveryFee: Number(settings.deliveryFee) || 0,
                   categories: settings.categories,
                   deliveryNoticeMessage: settings.deliveryNoticeMessage || '',
+                  trackingWhatsAppNumber: settings.trackingWhatsAppNumber || '',
                 })
               }
             >
               Enregistrer
+            </button>
+          </section>
+
+          <section className="shop-dash-form-block">
+            <ShopFormSectionHead
+              step="1b"
+              title="Suivre ma commande"
+              subtitle="Numéro WhatsApp ouvert quand le client clique sur « Suivre ma commande » après validation."
+            />
+            <div>
+              <label>WhatsApp suivi commande</label>
+              <input
+                className="shop-dash-input"
+                value={settings.trackingWhatsAppNumber ?? ''}
+                onChange={(e) => setSettings((s) => ({ ...s, trackingWhatsAppNumber: e.target.value }))}
+                placeholder="Ex. 40 31 75 68 ou 22940317568"
+              />
+              <p className="shop-dash-hint">
+                Laisser vide pour utiliser le numéro Rapido par défaut (+229 40 31 75 68). Un seul numéro pour
+                toute la boutique repas.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="shop-dash-btn shop-dash-btn--primary"
+              style={{ marginTop: 12 }}
+              disabled={saving}
+              onClick={() => saveSettings({ trackingWhatsAppNumber: settings.trackingWhatsAppNumber || '' })}
+            >
+              Enregistrer le WhatsApp suivi
             </button>
           </section>
 

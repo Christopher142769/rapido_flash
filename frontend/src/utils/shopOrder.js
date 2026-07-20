@@ -22,6 +22,30 @@ export function getShopWhatsAppDigits() {
   return digits || `229${SHOP_WHATSAPP_LOCAL}`;
 }
 
+/** Normalise un numéro saisi (8 chiffres locaux, 0…, 229…) en digits wa.me. */
+export function normalizeWhatsAppDigits(raw) {
+  let digits = String(raw || '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.startsWith('00')) digits = digits.slice(2);
+  if (digits.length === 8) digits = `229${digits}`;
+  else if (digits.length === 9 && digits.startsWith('0')) digits = `229${digits.slice(1)}`;
+  else if (digits.length === 10 && digits.startsWith('0')) digits = `229${digits.slice(1)}`;
+  return digits;
+}
+
+/** Numéro du bouton « Suivre ma commande » : shop > défaut Rapido. */
+export function resolveTrackingWhatsAppDigits(preferred) {
+  return normalizeWhatsAppDigits(preferred) || getShopWhatsAppDigits();
+}
+
+export function formatWhatsAppDisplay(digits) {
+  const d = resolveTrackingWhatsAppDigits(digits);
+  if (d.length === 11 && d.startsWith('229')) {
+    return `+229 ${d.slice(3, 5)} ${d.slice(5, 7)} ${d.slice(7, 9)} ${d.slice(9)}`;
+  }
+  return d ? `+${d}` : getShopWhatsAppDisplay();
+}
+
 export function getShopWhatsAppDisplay() {
   const d = getShopWhatsAppDigits();
   if (d.length === 11 && d.startsWith('229')) {
@@ -94,7 +118,7 @@ export function buildShopOrderPayload(product, promoState, quantity, customer, o
     isPromoLive: !!promoState?.isPromoLive,
     discountPercent: promoState?.discountPercent || 0,
     freeDelivery: !!promoState?.freeDelivery,
-    whatsappNumber: getShopWhatsAppDigits(),
+    whatsappNumber: resolveTrackingWhatsAppDigits(product.whatsappNumber),
     ctaLabel: product.ctaLabel || 'Commander',
     customer: {
       firstName: String(customer.firstName || '').trim(),
@@ -212,7 +236,7 @@ export async function openShopOrderWhatsAppTrack(order) {
 }
 
 export function buildWhatsAppSupportUrl(order) {
-  const raw = getShopWhatsAppDigits();
+  const raw = resolveTrackingWhatsAppDigits(order?.whatsappNumber);
   if (!raw) return null;
   const ref =
     order?.orderNumber ||
@@ -272,7 +296,7 @@ export function buildWhatsAppOrderMessage(order) {
 }
 
 export function buildWhatsAppOrderUrl(order) {
-  const raw = getShopWhatsAppDigits();
+  const raw = resolveTrackingWhatsAppDigits(order?.whatsappNumber);
   if (!raw) return null;
   const text = encodeURIComponent(buildWhatsAppOrderMessage(order));
   return `https://wa.me/${raw}?text=${text}`;

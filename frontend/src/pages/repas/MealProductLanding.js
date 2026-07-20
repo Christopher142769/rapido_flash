@@ -18,6 +18,7 @@ import {
   emptyCustomerForm,
   validateCustomerForm,
   getShopWhatsAppDigits,
+  resolveTrackingWhatsAppDigits,
 } from '../../utils/shopOrder';
 import { formatPriceXof } from '../../utils/shopPromo';
 import {
@@ -605,7 +606,7 @@ export default function MealProductLanding() {
       ) : null}
 
       <div id="shop-section-trust">
-        <ShopTrustCards whatsappNumber={getShopWhatsAppDigits()} />
+        <ShopTrustCards whatsappNumber={resolveTrackingWhatsAppDigits(shopSettings?.trackingWhatsAppNumber)} />
       </div>
 
       <ShopPrivacyFooter className="shop-privacy-footer--sticky-pad" />

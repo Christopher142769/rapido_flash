@@ -19,6 +19,11 @@ const { scheduleShopOrderWhatsAppConfirmation } = require('../services/shopOrder
 const router = express.Router();
 
 const SHOP_CITIES = ['Cotonou', 'Calavi'];
+const DEFAULT_SHOP_WA = '22940317568';
+
+function resolveProductTrackingWhatsApp(product) {
+  return normalizeBeninPhoneDigits(product?.whatsappNumber) || DEFAULT_SHOP_WA;
+}
 
 function validateShopCustomer(customer) {
   const c = customer || {};
@@ -133,7 +138,7 @@ router.post('/', async (req, res) => {
         city: String(customer.city).trim(),
         addressDescription: String(customer.addressDescription).trim(),
       },
-      whatsappNumber: product.whatsappNumber || '',
+      whatsappNumber: resolveProductTrackingWhatsApp(product),
       statut: 'en_attente',
       commercialStatus: 'commande',
       orderDate: new Date(),

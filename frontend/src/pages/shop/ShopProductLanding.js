@@ -15,6 +15,7 @@ import {
   submitShopOrderToApi,
   validateCustomerForm,
   getShopWhatsAppDigits,
+  resolveTrackingWhatsAppDigits,
 } from '../../utils/shopOrder';
 import ShopDeliveryNotice from '../../components/shop/ShopDeliveryNotice';
 import ShopPrivacyFooter from '../../components/shop/ShopPrivacyFooter';
@@ -487,7 +488,7 @@ export default function ShopProductLanding() {
         </div>
       ) : null}
 
-      <ShopTrustCards whatsappNumber={getShopWhatsAppDigits()} />
+      <ShopTrustCards whatsappNumber={resolveTrackingWhatsAppDigits(product?.whatsappNumber)} />
 
       <ShopPrivacyFooter className="shop-privacy-footer--sticky-pad" />
 

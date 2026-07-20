@@ -4,7 +4,7 @@ import { loadMealOrder, openMealOrderWhatsAppTrack } from '../../utils/mealOrder
 import {
   formatCustomerFullName,
   formatCustomerAddress,
-  getShopWhatsAppDisplay,
+  formatWhatsAppDisplay,
 } from '../../utils/shopOrder';
 import { formatPriceXof } from '../../utils/shopPromo';
 import { mealCatalogPath, mealConfirmationPath, mealProductPath } from '../../utils/mealPaths';
@@ -17,7 +17,7 @@ export default function MealOrderConfirmation() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const order = useMemo(() => loadMealOrder(), []);
-  const shopWaDisplay = getShopWhatsAppDisplay();
+  const shopWaDisplay = formatWhatsAppDisplay(order?.whatsappNumber);
 
   useEffect(() => {
     if (!order) {

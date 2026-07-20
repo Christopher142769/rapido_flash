@@ -15,7 +15,7 @@ import MealAddToCartModal from '../../components/shop/MealAddToCartModal';
 import ShopPrivacyFooter from '../../components/shop/ShopPrivacyFooter';
 import { getImageUrl } from '../../utils/imagePlaceholder';
 import { formatPriceXof } from '../../utils/shopPromo';
-import { getShopWhatsAppDigits } from '../../utils/shopOrder';
+import { resolveTrackingWhatsAppDigits } from '../../utils/shopOrder';
 import { getMealCatalogueUrgency } from '../../utils/mealShopUrgency';
 import { loadMealCart, mealCartCount, addMealToCart, estimateMealCartTotals } from '../../utils/mealCart';
 import { mealProductPath } from '../../utils/mealPaths';
@@ -123,7 +123,7 @@ export default function MealShopPage() {
     [cartItems, settings?.deliveryFee]
   );
 
-  const waDigits = getShopWhatsAppDigits();
+  const waDigits = resolveTrackingWhatsAppDigits(settings?.trackingWhatsAppNumber);
   const trustItems = settings?.trustItems?.length
     ? settings.trustItems
     : [
