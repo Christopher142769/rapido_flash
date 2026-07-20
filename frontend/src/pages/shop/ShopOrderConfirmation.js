@@ -8,9 +8,7 @@ import {
   loadShopOrder,
   openShopOrderWhatsAppTrack,
   buildWhatsAppSupportUrl,
-  getShopWhatsAppDisplay,
   formatWhatsAppDisplay,
-  resolveTrackingWhatsAppDigits,
 } from '../../utils/shopOrder';
 import { formatPriceXof } from '../../utils/shopPromo';
 import { isEviscerationApplicable } from '../../utils/shopEvisceration';
