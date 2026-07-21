@@ -37,7 +37,8 @@ const mealShopSettingsSchema = new mongoose.Schema(
     deliveryFee: { type: Number, default: 500, min: 0 },
     /**
      * Message NB livraison affiché sur les fiches produits où showDeliveryNotice est actif.
-     * Utiliser {date} pour la date de livraison calculée.
+     * Shop Repas : livraison dans les prochaines 24 h (pas J+1).
+     * Utiliser {date} pour la date du jour de commande si besoin.
      */
     deliveryNoticeMessage: {
       type: String,

@@ -15,7 +15,12 @@ function addDaysToDateKey(dateKey, days) {
   return beninDateKey(dt);
 }
 
-/** Lendemain (fuseau Bénin) — ex. commande lundi → livraison mardi. */
+/** Jour de commande (fuseau Bénin) — Shop Repas (livraison dans les 24 h). */
+export function getTodayDateKey(now = new Date()) {
+  return beninDateKey(now);
+}
+
+/** Lendemain (fuseau Bénin) — Shop Express : commande lundi → livraison mardi. */
 export function getDefaultDeliveryDateKey(now = new Date()) {
   return addDaysToDateKey(beninDateKey(now), 1);
 }

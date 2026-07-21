@@ -4,8 +4,12 @@ import axios from 'axios';
 import MealShopChrome from '../../components/shop/MealShopChrome';
 import ShopOrderForm from '../../components/shop/ShopOrderForm';
 import ShopPrivacyFooter from '../../components/shop/ShopPrivacyFooter';
+import ShopDeliveryNotice, {
+  DEFAULT_MEAL_DELIVERY_NOTICE_MESSAGE,
+} from '../../components/shop/ShopDeliveryNotice';
 import { getImageUrl } from '../../utils/imagePlaceholder';
 import { formatPriceXof } from '../../utils/shopPromo';
+import { getTodayDateKey } from '../../utils/shopDeliveryDate';
 import {
   loadMealCart,
   saveMealCart,
@@ -291,6 +295,10 @@ export default function MealCartPage() {
             <p className="meal-cart-modal-lead">
               Total à payer : <strong>{formatPriceXof(totals.totalPrice)}</strong>
             </p>
+            <ShopDeliveryNotice
+              defaultMessage={DEFAULT_MEAL_DELIVERY_NOTICE_MESSAGE}
+              dateKey={getTodayDateKey()}
+            />
             <form onSubmit={checkout}>
               <ShopOrderForm
                 customer={customer}

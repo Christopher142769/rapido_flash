@@ -10,6 +10,10 @@ import { formatPriceXof } from '../../utils/shopPromo';
 import { mealCatalogPath, mealConfirmationPath, mealProductPath } from '../../utils/mealPaths';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
 import ShopPrivacyFooter from '../../components/shop/ShopPrivacyFooter';
+import ShopDeliveryNotice, {
+  DEFAULT_MEAL_DELIVERY_NOTICE_MESSAGE,
+} from '../../components/shop/ShopDeliveryNotice';
+import { getTodayDateKey } from '../../utils/shopDeliveryDate';
 import '../shop/shopTypography.css';
 import '../shop/ShopOrderConfirmation.css';
 
@@ -57,6 +61,12 @@ export default function MealOrderConfirmation() {
           </div>
           <h1 className="shop-confirm-title">Commande confirmée</h1>
         </header>
+
+        <ShopDeliveryNotice
+          variant="confirm"
+          defaultMessage={DEFAULT_MEAL_DELIVERY_NOTICE_MESSAGE}
+          dateKey={getTodayDateKey()}
+        />
 
         <article className="shop-confirm-card">
           <div className="shop-confirm-card-head">

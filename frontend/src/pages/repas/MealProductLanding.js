@@ -5,7 +5,10 @@ import PageLoader from '../../components/PageLoader';
 import MealShopChrome from '../../components/shop/MealShopChrome';
 import ShopProductGallery from '../../components/shop/ShopProductGallery';
 import ShopOrderForm from '../../components/shop/ShopOrderForm';
-import ShopDeliveryNotice from '../../components/shop/ShopDeliveryNotice';
+import ShopDeliveryNotice, {
+  DEFAULT_MEAL_DELIVERY_NOTICE_MESSAGE,
+} from '../../components/shop/ShopDeliveryNotice';
+import { getTodayDateKey } from '../../utils/shopDeliveryDate';
 import ShopQuantityPicker from '../../components/shop/ShopQuantityPicker';
 import ShopQuantityModal from '../../components/shop/ShopQuantityModal';
 import MealAccompagnementModal from '../../components/shop/MealAccompagnementModal';
@@ -410,7 +413,13 @@ export default function MealProductLanding() {
             {product.shortDescription ? <p className="shop-pdp-buybox-sub">{product.shortDescription}</p> : null}
 
             {product.showDeliveryNotice !== false ? (
-              <ShopDeliveryNotice message={shopSettings?.deliveryNoticeMessage} />
+              <ShopDeliveryNotice
+                message={shopSettings?.deliveryNoticeMessage}
+                defaultMessage={
+                  shopSettings?.deliveryNoticeMessageDefault || DEFAULT_MEAL_DELIVERY_NOTICE_MESSAGE
+                }
+                dateKey={getTodayDateKey()}
+              />
             ) : null}
 
             <div className={`shop-pdp-buybox-price${!hasQuantity ? ' shop-pdp-buybox-price--empty' : ''}`}>

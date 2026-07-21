@@ -16,6 +16,9 @@ const DEFAULT_TRUST = [
 ];
 
 const DEFAULT_DELIVERY_NOTICE =
+  'Commandez aujourd’hui — livraison dans les prochaines 24 h. Soyez joignable à l’adresse indiquée.';
+
+const LEGACY_DELIVERY_NOTICE =
   'Commandez aujourd’hui, livraison un jour après, le {date}. Soyez joignable à l’adresse indiquée.';
 
 async function getOrCreateSettings() {
@@ -45,10 +48,11 @@ function serializeSettings(doc, ordersToday = 0) {
     ordersToday
   );
   const availability = mergeClosureWithOrderLimit(closureState, limitState, new Date());
+  const notice = String(raw.deliveryNoticeMessage || '').trim();
   return {
     ...raw,
     trustItems: raw.trustItems?.length ? raw.trustItems : DEFAULT_TRUST,
-    deliveryNoticeMessage: String(raw.deliveryNoticeMessage || '').trim(),
+    deliveryNoticeMessage: notice === LEGACY_DELIVERY_NOTICE ? '' : notice,
     deliveryNoticeMessageDefault: DEFAULT_DELIVERY_NOTICE,
     ...availability,
     ordersToday,

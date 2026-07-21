@@ -692,12 +692,13 @@ export default function ShopRepasDashboard() {
                 onChange={(e) => setSettings((s) => ({ ...s, deliveryNoticeMessage: e.target.value }))}
                 placeholder={
                   settings.deliveryNoticeMessageDefault ||
-                  'Commandez aujourd’hui, livraison un jour après, le {date}. Soyez joignable à l’adresse indiquée.'
+                  'Commandez aujourd’hui — livraison dans les prochaines 24 h. Soyez joignable à l’adresse indiquée.'
                 }
               />
               <p className="shop-dash-hint">
-                Utilisez <code>{'{date}'}</code> pour la date de livraison. Ce message s’affiche sur les plats où le NB
-                est activé.
+                Par défaut : livraison dans les prochaines 24 h (pas le lendemain). Utilisez{' '}
+                <code>{'{date}'}</code> pour la date du jour de commande. Ce message s’affiche sur les
+                plats où le NB est activé.
               </p>
             </div>
             {products.length ? (

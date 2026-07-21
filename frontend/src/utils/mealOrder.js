@@ -99,6 +99,9 @@ export function buildMealWhatsAppMessage(order) {
   lines.push('', `*Total à payer :* ${formatPriceXof(order.totalPrice)}`);
   lines.push(
     '',
+    '*Livraison :* dans les prochaines 24 h',
+    'Restez joignable à l’adresse indiquée.',
+    '',
     '',
     '*Mes coordonnées :*',
     '',

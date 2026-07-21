@@ -15,6 +15,10 @@ function addDaysToDateKey(dateKey, days) {
   return beninDateKey(dt);
 }
 
+function getTodayDateKey(now = new Date()) {
+  return beninDateKey(now);
+}
+
 function getDefaultDeliveryDateKey(now = new Date()) {
   return addDaysToDateKey(beninDateKey(now), 1);
 }
@@ -38,4 +42,5 @@ module.exports = {
   deliveryDateKeyToDate,
   isAllowedDeliveryDate,
   getDefaultDeliveryDateKey,
+  getTodayDateKey,
 };

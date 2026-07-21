@@ -70,7 +70,7 @@ const mealProductSchema = new mongoose.Schema(
     category: { type: String, default: '', trim: true },
     currency: { type: String, default: 'XOF' },
     published: { type: Boolean, default: false },
-    /** Afficher le NB « livraison un jour après » sur la fiche produit. */
+    /** Afficher le NB « livraison dans les prochaines 24 h » sur la fiche produit. */
     showDeliveryNotice: { type: Boolean, default: true },
     sortOrder: { type: Number, default: 0 },
     accompagnements: { type: [accompagnementSchema], default: [] },

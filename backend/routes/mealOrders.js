@@ -10,7 +10,7 @@ const { getShopClosureState } = require('../utils/shopClosure');
 const { getShopOrderLimitState, mergeClosureWithOrderLimit } = require('../utils/shopOrderLimit');
 const { sendToUserIds } = require('../services/pushNotifications');
 const { normalizeBeninPhoneDigits } = require('../utils/phoneDigits');
-const { getDefaultDeliveryDateKey, deliveryDateKeyToDate } = require('../utils/shopDeliveryDate');
+const { getTodayDateKey, deliveryDateKeyToDate } = require('../utils/shopDeliveryDate');
 
 const router = express.Router();
 
@@ -130,11 +130,12 @@ router.post('/', async (req, res) => {
     const totals = computeMealOrderTotals(builtItems, shopDelivery, anyFreeDelivery);
     const orderNumber = await generateMealOrderNumber();
 
+    // Shop Repas : livraison dans les prochaines 24 h (jour de commande), pas J+1.
     let requestedDeliveryAt = req.body?.requestedDeliveryAt
       ? new Date(req.body.requestedDeliveryAt)
-      : deliveryDateKeyToDate(getDefaultDeliveryDateKey());
+      : deliveryDateKeyToDate(getTodayDateKey());
     if (!requestedDeliveryAt || Number.isNaN(requestedDeliveryAt.getTime())) {
-      requestedDeliveryAt = deliveryDateKeyToDate(getDefaultDeliveryDateKey());
+      requestedDeliveryAt = deliveryDateKeyToDate(getTodayDateKey());
     }
 
     const order = new MealOrder({
