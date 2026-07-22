@@ -70,6 +70,8 @@ import CuisinierCommandesPage from './pages/kitchen/CuisinierCommandesPage';
 import CuisiniersDashboard from './pages/kitchen/CuisiniersDashboard';
 import CuisineGate from './pages/kitchen/CuisineGate';
 import CuisineAppLayout from './pages/kitchen/CuisineAppLayout';
+import ResponsableGate from './pages/responsable/ResponsableGate';
+import ResponsableAppLayout from './pages/responsable/ResponsableAppLayout';
 import CommercialPointsPage from './pages/commercial/CommercialPointsPage';
 import ChatThread from './pages/client/ChatThread';
 import ChatsInbox from './pages/client/ChatsInbox';
@@ -134,7 +136,8 @@ function AppRoutes() {
     location.pathname.startsWith('/recrutement') ||
     location.pathname.startsWith('/form') ||
     location.pathname.startsWith('/champion') ||
-    location.pathname.startsWith('/cuisine');
+    location.pathname.startsWith('/cuisine') ||
+    location.pathname.startsWith('/responsables');
 
   return (
     <MaintenanceGate>
@@ -177,6 +180,15 @@ function AppRoutes() {
         <Route path="/cuisine/app" element={<CuisineGate />}>
           <Route element={<CuisineAppLayout />}>
             <Route index element={<CuisinierCommandesPage />} />
+          </Route>
+        </Route>
+
+        {/* Espace responsables délégués */}
+        <Route path="/responsables" element={<ResponsableGate />}>
+          <Route element={<ResponsableAppLayout />}>
+            <Route index element={<Navigate to="commandes" replace />} />
+            <Route path="commandes" element={<CommercialCommandesPage />} />
+            <Route path="commandes-repas" element={<MealCommandesPage />} />
           </Route>
         </Route>
 

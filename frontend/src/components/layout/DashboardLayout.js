@@ -25,6 +25,9 @@ export default function DashboardLayout() {
   if (user?.role === 'cuisinier') {
     return <Navigate to="/cuisine/app" replace />;
   }
+  if (user?.role === 'responsable') {
+    return <Navigate to="/responsables" replace />;
+  }
 
   return (
     <DashboardRefreshProvider>

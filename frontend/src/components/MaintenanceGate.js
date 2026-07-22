@@ -9,7 +9,7 @@ import { hostnameMatchesDnsSourceDomain } from '../utils/dnsNoticeUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-const ALLOWED_PREFIXES = ['/dashboard', DASHBOARD_BASE_PATH, '/shop', '/recrutement', '/form', '/formulaire', '/champion', '/cuisine'];
+const ALLOWED_PREFIXES = ['/dashboard', DASHBOARD_BASE_PATH, '/shop', '/recrutement', '/form', '/formulaire', '/champion', '/cuisine', '/responsables'];
 const ALLOWED_EXACT = [
   '/login',
   '/register',

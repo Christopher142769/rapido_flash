@@ -38,13 +38,15 @@ const Login = () => {
         navigate(user.role === 'commercial' ? toDashboardPath('/commercial') : toDashboardPath());
       } else if (user.role === 'cuisinier') {
         navigate('/cuisine/app');
+      } else if (user.role === 'responsable') {
+        navigate(safeNext.startsWith('/responsables') ? safeNext : '/responsables');
       } else if (user.role === 'livreur') {
         navigate(safeNext.startsWith('/champion') ? safeNext : '/champion/app');
       } else {
         navigate(afterAuthPath);
       }
     }
-  }, [isAuthenticated, user, navigate, afterAuthPath]);
+  }, [isAuthenticated, user, navigate, afterAuthPath, safeNext]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
