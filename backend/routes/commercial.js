@@ -6,6 +6,7 @@ const ShopProduct = require('../models/ShopProduct');
 const { auth, isCommercialStaff, isRestaurantAdmin } = require('../middleware/auth');
 const { generateShopOrderNumber, startOfDay, endOfDay } = require('../utils/shopOrderNumber');
 const { unconfirmShopOrder } = require('../utils/shopOrderStatus');
+const { assertResponsableCityAccess, responsableListFilter } = require('../utils/responsableAccess');
 const {
   bilanBaseQuery,
   bilanRowFromOrder,
@@ -320,7 +321,7 @@ router.get('/overview', auth, isCommercialStaff, async (req, res) => {
 
 router.get('/orders', auth, isCommercialStaff, async (req, res) => {
   try {
-    let orders = await ShopOrder.find()
+    let orders = await ShopOrder.find(responsableListFilter(req.user))
       .populate('shopProduct', 'name slug mainImage')
       .sort({ createdAt: 1, _id: 1 })
       .lean();
@@ -347,6 +348,9 @@ router.put('/orders/:id/confirm', auth, isCommercialStaff, async (req, res) => {
   try {
     const order = await ShopOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
+
+    const cityErr = assertResponsableCityAccess(req.user, order);
+    if (cityErr) return res.status(403).json({ message: cityErr });
 
     if (!order.orderDate) {
       order.orderDate = order.createdAt || new Date();
@@ -375,6 +379,9 @@ router.put('/orders/:id/unconfirm', auth, isCommercialStaff, async (req, res) =>
     const order = await ShopOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
 
+    const cityErr = assertResponsableCityAccess(req.user, order);
+    if (cityErr) return res.status(403).json({ message: cityErr });
+
     const unconfirmErr = unconfirmShopOrder(order);
     if (unconfirmErr) return res.status(400).json({ message: unconfirmErr });
 
@@ -389,6 +396,9 @@ router.put('/orders/:id/deliver', auth, isCommercialStaff, async (req, res) => {
   try {
     const order = await ShopOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
+
+    const cityErr = assertResponsableCityAccess(req.user, order);
+    if (cityErr) return res.status(403).json({ message: cityErr });
 
     order.statut = 'livree';
     order.commercialStatus = 'livree';
@@ -405,6 +415,9 @@ router.put('/orders/:id/specifications', auth, isCommercialStaff, async (req, re
   try {
     const order = await ShopOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
+
+    const cityErr = assertResponsableCityAccess(req.user, order);
+    if (cityErr) return res.status(403).json({ message: cityErr });
 
     order.clientSpecifications = String(req.body?.clientSpecifications ?? '').trim().slice(0, 2000);
     await order.save();
@@ -557,6 +570,9 @@ router.put('/orders/:id/cancel', auth, isCommercialStaff, async (req, res) => {
     const order = await ShopOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
 
+    const cityErr = assertResponsableCityAccess(req.user, order);
+    if (cityErr) return res.status(403).json({ message: cityErr });
+
     const status = resolveCommercialStatus(order);
     if (status === 'livree') {
       return res.status(400).json({ message: 'Une commande livrée ne peut pas être annulée' });
@@ -588,6 +604,9 @@ router.put('/orders/:id/relance', auth, isCommercialStaff, async (req, res) => {
 
     const order = await ShopOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
+
+    const cityErr = assertResponsableCityAccess(req.user, order);
+    if (cityErr) return res.status(403).json({ message: cityErr });
 
     order.commercialStatus = 'relance';
     order.scheduledDeliveryAt = scheduledDeliveryAt;

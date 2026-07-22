@@ -11,6 +11,7 @@ const { getShopOrderLimitState, mergeClosureWithOrderLimit } = require('../utils
 const { sendToUserIds } = require('../services/pushNotifications');
 const { normalizeBeninPhoneDigits } = require('../utils/phoneDigits');
 const { getTodayDateKey, deliveryDateKeyToDate } = require('../utils/shopDeliveryDate');
+const { assertResponsableCityAccess, responsableListFilter } = require('../utils/responsableAccess');
 
 const router = express.Router();
 
@@ -213,7 +214,9 @@ router.post('/:id/whatsapp-confirmation', async (req, res) => {
 
 router.get('/', auth, isKitchenStaff, async (req, res) => {
   try {
-    const filter = {};
+    const filter = {
+      ...responsableListFilter(req.user),
+    };
     if (req.query.statut) filter.statut = req.query.statut;
     if (req.query.commercialStatus) filter.commercialStatus = req.query.commercialStatus;
     const orders = await MealOrder.find(filter)
@@ -265,9 +268,12 @@ router.put('/:id/statut', auth, isKitchenStaff, async (req, res) => {
       if (statut && !assertCuisinierStatutTransition(order.statut, statut)) {
         return res.status(403).json({ message: 'Transition de statut non autorisée' });
       }
-    } else if (!['restaurant', 'gestionnaire', 'commercial'].includes(req.user.role)) {
+    } else if (!['restaurant', 'gestionnaire', 'commercial', 'responsable'].includes(req.user.role)) {
       return res.status(403).json({ message: 'Accès refusé' });
     }
+
+    const cityErr = assertResponsableCityAccess(req.user, order);
+    if (cityErr) return res.status(403).json({ message: cityErr });
 
     if (statut) {
       order.statut = statut;

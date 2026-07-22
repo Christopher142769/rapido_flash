@@ -15,6 +15,7 @@ const { unconfirmShopOrder } = require('../utils/shopOrderStatus');
 const { isEviscerationApplicable } = require('../utils/shopEvisceration');
 const { normalizeBeninPhoneDigits } = require('../utils/phoneDigits');
 const { scheduleShopOrderWhatsAppConfirmation } = require('../services/shopOrderWhatsAppConfirmation');
+const { assertResponsableCityAccess, responsableListFilter } = require('../utils/responsableAccess');
 
 const router = express.Router();
 
@@ -190,10 +191,11 @@ router.post('/:id/whatsapp-confirmation', async (req, res) => {
   }
 });
 
-/** Liste des commandes Shop (dashboard restaurant / gestionnaire). */
+/** Liste des commandes Shop (dashboard restaurant / gestionnaire / responsable). */
 router.get('/', auth, isCommercialStaff, async (req, res) => {
   try {
-    const orders = await ShopOrder.find()
+    const filter = responsableListFilter(req.user);
+    const orders = await ShopOrder.find(filter)
       .populate('shopProduct', 'name slug mainImage')
       .sort({ createdAt: 1, _id: 1 })
       .lean();
@@ -213,6 +215,9 @@ router.put('/:id/statut', auth, isCommercialStaff, async (req, res) => {
 
     const order = await ShopOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
+
+    const cityErr = assertResponsableCityAccess(req.user, order);
+    if (cityErr) return res.status(403).json({ message: cityErr });
 
     if (statut === 'en_attente') {
       const unconfirmErr = unconfirmShopOrder(order);

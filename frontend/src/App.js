@@ -64,6 +64,7 @@ import MealCommandesPage from './pages/commercial/MealCommandesPage';
 import CommercialBilanPage from './pages/commercial/CommercialBilanPage';
 import CommercialRelancesPage from './pages/commercial/CommercialRelancesPage';
 import CommerciauxDashboard from './pages/commercial/CommerciauxDashboard';
+import ResponsablesDashboard from './pages/commercial/ResponsablesDashboard';
 import ChampionsDashboard from './pages/commercial/ChampionsDashboard';
 import CuisinierCommandesPage from './pages/kitchen/CuisinierCommandesPage';
 import CuisiniersDashboard from './pages/kitchen/CuisiniersDashboard';
@@ -250,6 +251,7 @@ function AppRoutes() {
           <Route path="commercial-relances" element={<CommercialRelancesPage />} />
           <Route path="commercial-points" element={<CommercialPointsPage />} />
           <Route path="commerciaux" element={<CommerciauxDashboard />} />
+          <Route path="responsables" element={<ResponsablesDashboard />} />
           <Route path="cuisine" element={<Navigate to="/cuisine/app" replace />} />
           <Route path="cuisiniers" element={<CuisiniersDashboard />} />
           <Route path="champions" element={<ChampionsDashboard />} />

@@ -101,6 +101,7 @@ export default function DashboardSidebarPremium({ onNavigate, className = '' }) 
       buildDashboardNavItems({
         isAdmin: user?.role === 'restaurant',
         isCommercial: user?.role === 'commercial',
+        isResponsable: user?.role === 'responsable',
         isCuisinier: user?.role === 'cuisinier',
         t,
         canManageMaintenance: !!user?.canManageMaintenance,
@@ -113,7 +114,8 @@ export default function DashboardSidebarPremium({ onNavigate, className = '' }) 
   const adminItems = items.filter((i) => i.section === ADMIN_NAV_SECTION);
   const gestionItems = items.filter((i) => i.section === GESTION_NAV_SECTION);
   const plateformeItems = items.filter((i) => i.section === PLATFORM_NAV_SECTION);
-  const isRestrictedRole = user?.role === 'commercial' || user?.role === 'cuisinier';
+  const isRestrictedRole =
+    user?.role === 'commercial' || user?.role === 'cuisinier' || user?.role === 'responsable';
 
   return (
     <div

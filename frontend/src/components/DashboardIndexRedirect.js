@@ -10,6 +10,9 @@ export default function DashboardIndexRedirect() {
   if (user?.role === 'commercial') {
     return <Navigate to={toDashboardPath('/commercial')} replace />;
   }
+  if (user?.role === 'responsable') {
+    return <Navigate to={toDashboardPath('/commercial-commandes')} replace />;
+  }
   if (user?.role === 'cuisinier') {
     return <Navigate to="/cuisine/app" replace />;
   }

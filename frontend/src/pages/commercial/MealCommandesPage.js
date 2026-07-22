@@ -41,9 +41,17 @@ function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-function defaultDateRange() {
+function todayDateKey() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: SHOP_ORDER_TZ }).format(new Date());
+}
+
+function defaultDateRange(fromToday = false) {
   const end = new Date();
   const start = new Date();
+  if (fromToday) {
+    const key = todayDateKey();
+    return { dateFrom: key, dateTo: key };
+  }
   start.setDate(start.getDate() - 30);
   return {
     dateFrom: start.toISOString().slice(0, 10),
@@ -178,17 +186,23 @@ export default function MealCommandesPage({ variant = 'commercial', refreshKey =
   const isKitchen = variant === 'kitchen';
   const { user } = useContext(AuthContext);
   const isAdmin = !isKitchen && user?.role === 'restaurant';
+  const isResponsable = !isKitchen && user?.role === 'responsable';
+  const lockedCity = isResponsable ? String(user?.assignedCity || '').trim() : '';
   const { showSuccess, showError } = useModal();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [productFilter, setProductFilter] = useState('');
-  const [cityFilter, setCityFilter] = useState('');
-  const [dateFrom, setDateFrom] = useState(() => defaultDateRange().dateFrom);
-  const [dateTo, setDateTo] = useState(() => defaultDateRange().dateTo);
+  const [cityFilter, setCityFilter] = useState(() => lockedCity || '');
+  const [dateFrom, setDateFrom] = useState(() => defaultDateRange(isResponsable).dateFrom);
+  const [dateTo, setDateTo] = useState(() => defaultDateRange(isResponsable).dateTo);
   const [specsOrder, setSpecsOrder] = useState(null);
   const [editOrder, setEditOrder] = useState(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (lockedCity) setCityFilter(lockedCity);
+  }, [lockedCity]);
 
   const load = useCallback(async (silent = false) => {
     try {
@@ -407,6 +421,11 @@ export default function MealCommandesPage({ variant = 'commercial', refreshKey =
           <div className="commandes-content">
             <div className="commandes-header">
               <h1>Commandes Repas</h1>
+              {isResponsable && lockedCity ? (
+                <p className="commercial-lead" style={{ marginTop: 8 }}>
+                  Responsable délégué — {lockedCity} (commandes à partir d’aujourd’hui)
+                </p>
+              ) : null}
             </div>
 
             <div className="commercial-card shop-commandes-filters">
@@ -448,9 +467,13 @@ export default function MealCommandesPage({ variant = 'commercial', refreshKey =
                 </label>
                 <label>
                   Ville
-                  <select value={cityFilter} onChange={(e) => setCityFilter(e.target.value)}>
-                    <option value="">Toutes les villes</option>
-                    {POINTS_CITIES.map((c) => (
+                  <select
+                    value={cityFilter}
+                    onChange={(e) => setCityFilter(e.target.value)}
+                    disabled={!!lockedCity}
+                  >
+                    {!lockedCity ? <option value="">Toutes les villes</option> : null}
+                    {(lockedCity ? [lockedCity] : POINTS_CITIES).map((c) => (
                       <option key={c} value={c}>
                         {c}
                       </option>

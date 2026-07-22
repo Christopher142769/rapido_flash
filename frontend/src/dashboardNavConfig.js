@@ -46,7 +46,26 @@ function buildKitchenNavItems() {
   ];
 }
 
-function buildCommercialNavItems({ isAdmin, t }) {
+function buildCommercialNavItems({ isAdmin, isResponsable = false, t }) {
+  if (isResponsable) {
+    return [
+      {
+        id: 'commercial-commandes',
+        label: 'Commandes Shop',
+        path: '/dashboard/commercial-commandes',
+        section: COMMERCIAL_NAV_SECTION,
+        Icon: FaShoppingBag,
+      },
+      {
+        id: 'commercial-commandes-repas',
+        label: 'Commandes Repas',
+        path: '/dashboard/commercial-commandes-repas',
+        section: COMMERCIAL_NAV_SECTION,
+        Icon: FaUtensils,
+      },
+    ];
+  }
+
   const items = [
     {
       id: 'commercial-overview',
@@ -100,6 +119,13 @@ function buildCommercialNavItems({ isAdmin, t }) {
       Icon: FaUserTie,
     });
     items.push({
+      id: 'responsables',
+      label: 'Responsables villes',
+      path: '/dashboard/responsables',
+      section: COMMERCIAL_NAV_SECTION,
+      Icon: FaUsers,
+    });
+    items.push({
       id: 'champions',
       label: 'Livreurs Champion',
       path: '/dashboard/champions',
@@ -120,18 +146,19 @@ function buildCommercialNavItems({ isAdmin, t }) {
 export function buildDashboardNavItems({
   isAdmin,
   isCommercial = false,
+  isResponsable = false,
   isCuisinier = false,
   t,
   canManageMaintenance = false,
 }) {
-  const commercialItems = buildCommercialNavItems({ isAdmin, t });
+  const commercialItems = buildCommercialNavItems({ isAdmin, isResponsable, t });
   const kitchenItems = buildKitchenNavItems();
 
   if (isCuisinier) {
     return kitchenItems;
   }
 
-  if (isCommercial) {
+  if (isCommercial || isResponsable) {
     return commercialItems;
   }
   const dashboardHome = [

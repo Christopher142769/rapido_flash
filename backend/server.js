@@ -139,6 +139,7 @@ app.use('/api/commercial', require('./routes/commercial'));
 app.use('/api/kitchen', require('./routes/kitchen'));
 app.use('/api/champions', require('./routes/champions'));
 app.use('/api/custom-forms', require('./routes/customForms'));
+app.use('/api/responsables', require('./routes/responsables'));
 
 // Healthcheck Render
 app.get('/healthz', (req, res) => {

@@ -43,6 +43,7 @@ function titleForPath(pathname, user, t) {
     ['/dashboard/commercial-relances', 'Relances'],
     ['/dashboard/commercial-points', 'Points'],
     ['/dashboard/commerciaux', 'Commerciaux'],
+    ['/dashboard/responsables', 'Responsables villes'],
   ]);
   if (map.has(pathname)) return map.get(pathname);
   for (const [path, label] of map) {

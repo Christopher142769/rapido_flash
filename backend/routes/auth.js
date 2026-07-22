@@ -42,7 +42,7 @@ const generateLoginChallengeToken = (user) => {
 
 const requiresTwoFactorLogin = (user) => {
   const role = String(user?.role || '');
-  return role === 'restaurant' || role === 'gestionnaire' || role === 'commercial';
+  return role === 'restaurant' || role === 'gestionnaire' || role === 'commercial' || role === 'responsable';
 };
 
 const beginTwoFactorLogin = async (user) => {
@@ -71,6 +71,7 @@ const beginTwoFactorLogin = async (user) => {
         nom: user.nom,
         email: user.email,
         role: user.role,
+        assignedCity: user.assignedCity || '',
       }
     }
   };
@@ -165,6 +166,7 @@ router.post('/login', [
           email: user.email,
           role: user.role,
           restaurantId: user.restaurantId,
+          assignedCity: user.assignedCity || '',
           banned: !!user.banned,
           canManageMaintenance: canManageMaintenance(user),
         }
@@ -248,6 +250,7 @@ router.post('/google', [
           email: user.email,
           role: user.role,
           restaurantId: user.restaurantId,
+          assignedCity: user.assignedCity || '',
           banned: !!user.banned,
           canManageMaintenance: canManageMaintenance(user),
         }
@@ -310,6 +313,7 @@ router.post('/verify-dashboard-2fa', [
         email: user.email,
         role: user.role,
         restaurantId: user.restaurantId,
+        assignedCity: user.assignedCity || '',
         banned: !!user.banned,
         canManageMaintenance: canManageMaintenance(user),
       }
@@ -406,6 +410,7 @@ router.get('/me', auth, async (req, res) => {
         photo: user.photo,
         position: user.position,
         restaurantId: user.restaurantId,
+        assignedCity: user.assignedCity || '',
         banned: !!user.banned,
         canManageMaintenance: canManageMaintenance(user),
       }

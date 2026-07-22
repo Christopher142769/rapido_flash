@@ -34,7 +34,7 @@ const isRestaurant = (req, res, next) => {
 };
 
 const isCommercialStaff = (req, res, next) => {
-  if (!['restaurant', 'gestionnaire', 'commercial'].includes(req.user.role)) {
+  if (!['restaurant', 'gestionnaire', 'commercial', 'responsable'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Accès refusé - Espace commercial requis' });
   }
   next();
@@ -55,7 +55,7 @@ const isLivreur = (req, res, next) => {
 };
 
 const isKitchenStaff = (req, res, next) => {
-  if (!['restaurant', 'gestionnaire', 'commercial', 'cuisinier'].includes(req.user.role)) {
+  if (!['restaurant', 'gestionnaire', 'commercial', 'cuisinier', 'responsable'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Accès refusé - Espace cuisine requis' });
   }
   next();

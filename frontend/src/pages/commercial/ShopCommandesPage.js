@@ -52,9 +52,17 @@ const STATUT_COLORS = {
   annulee: '#F44336',
 };
 
-function defaultDateRange() {
+function todayDateKey() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Porto-Novo' }).format(new Date());
+}
+
+function defaultDateRange(fromToday = false) {
   const end = new Date();
   const start = new Date();
+  if (fromToday) {
+    const key = todayDateKey();
+    return { dateFrom: key, dateTo: key };
+  }
   start.setDate(start.getDate() - 30);
   return {
     dateFrom: start.toISOString().slice(0, 10),
@@ -86,22 +94,28 @@ function renderPhoneLink(phone) {
 export default function ShopCommandesPage() {
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === 'restaurant';
+  const isResponsable = user?.role === 'responsable';
+  const lockedCity = isResponsable ? String(user?.assignedCity || '').trim() : '';
   const { showSuccess, showError } = useModal();
   const [orders, setOrders] = useState([]);
   const [catalogProducts, setCatalogProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [productFilter, setProductFilter] = useState('');
-  const [cityFilter, setCityFilter] = useState('');
+  const [cityFilter, setCityFilter] = useState(() => lockedCity || '');
   const [eviscerationFilter, setEviscerationFilter] = useState('');
   const [maxKg, setMaxKg] = useState('');
   const [splitMode, setSplitMode] = useState('');
-  const [dateFrom, setDateFrom] = useState(() => defaultDateRange().dateFrom);
-  const [dateTo, setDateTo] = useState(() => defaultDateRange().dateTo);
+  const [dateFrom, setDateFrom] = useState(() => defaultDateRange(isResponsable).dateFrom);
+  const [dateTo, setDateTo] = useState(() => defaultDateRange(isResponsable).dateTo);
   const [specsOrder, setSpecsOrder] = useState(null);
   const [editOrder, setEditOrder] = useState(null);
   const [exportChoice, setExportChoice] = useState(null); // 'excel' | 'pdf' | 'word' | null
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (lockedCity) setCityFilter(lockedCity);
+  }, [lockedCity]);
 
   const load = useCallback(async () => {
     try {
@@ -471,6 +485,11 @@ export default function ShopCommandesPage() {
         <div className="commandes-content">
           <div className="commandes-header">
             <h1>Commandes Shop</h1>
+            {isResponsable && lockedCity ? (
+              <p className="commercial-lead" style={{ marginTop: 8 }}>
+                Responsable délégué — {lockedCity} (commandes à partir d’aujourd’hui)
+              </p>
+            ) : null}
           </div>
 
           <div className="commercial-card shop-commandes-filters">
@@ -517,9 +536,13 @@ export default function ShopCommandesPage() {
               </label>
               <label>
                 Ville
-                <select value={cityFilter} onChange={(e) => setCityFilter(e.target.value)}>
-                  <option value="">Toutes les villes</option>
-                  {POINTS_CITIES.map((c) => (
+                <select
+                  value={cityFilter}
+                  onChange={(e) => setCityFilter(e.target.value)}
+                  disabled={!!lockedCity}
+                >
+                  {!lockedCity ? <option value="">Toutes les villes</option> : null}
+                  {(lockedCity ? [lockedCity] : POINTS_CITIES).map((c) => (
                     <option key={c} value={c}>
                       {c}
                     </option>

@@ -140,6 +140,21 @@ export async function updateCommercialAccount(id, payload) {
   return res.data;
 }
 
+export async function fetchResponsableAccounts() {
+  const res = await axios.get(`${API_URL}/responsables/accounts`, authHeaders());
+  return res.data;
+}
+
+export async function createResponsableAccount(payload) {
+  const res = await axios.post(`${API_URL}/responsables/accounts`, payload, authHeaders());
+  return res.data;
+}
+
+export async function updateResponsableAccount(id, payload) {
+  const res = await axios.patch(`${API_URL}/responsables/accounts/${id}`, payload, authHeaders());
+  return res.data;
+}
+
 export async function triggerRelanceNotifications() {
   const res = await axios.post(`${API_URL}/commercial/relances/notify-today`, {}, authHeaders());
   return res.data;
