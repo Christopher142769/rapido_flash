@@ -42,7 +42,8 @@ const generateLoginChallengeToken = (user) => {
 
 const requiresTwoFactorLogin = (user) => {
   const role = String(user?.role || '');
-  return role === 'restaurant' || role === 'gestionnaire' || role === 'commercial';
+  // Clients : connexion directe. Tous les autres rôles : code e-mail.
+  return role && role !== 'client';
 };
 
 const beginTwoFactorLogin = async (user) => {
