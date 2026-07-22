@@ -10,6 +10,7 @@ const { sendLoginCode, sendDashboardLoginCode } = require('../utils/mailer');
 const { canManageMaintenance } = require('../utils/maintenanceAccess');
 const { assignEligiblePromoCodesToUser } = require('../utils/promoAutoAssign');
 const { sendToUserId } = require('../services/pushNotifications');
+const { roleRequiresTwoFactor } = require('../utils/twoFactorSettings');
 
 const router = express.Router();
 const googleClient = new OAuth2Client();
@@ -40,11 +41,24 @@ const generateLoginChallengeToken = (user) => {
   );
 };
 
-const requiresTwoFactorLogin = (user) => {
-  const role = String(user?.role || '');
-  // Clients : connexion directe. Tous les autres rôles : code e-mail.
-  return role && role !== 'client';
-};
+const requiresTwoFactorLogin = async (user) => roleRequiresTwoFactor(user?.role);
+
+function serializeAuthUser(user) {
+  return {
+    id: user._id,
+    nom: user.nom,
+    email: user.email,
+    role: user.role,
+    telephone: user.telephone,
+    photo: user.photo,
+    position: user.position,
+    restaurantId: user.restaurantId,
+    assignedCity: user.assignedCity || '',
+    assignedShopProducts: (user.assignedShopProducts || []).map((p) => String(p?._id || p)),
+    banned: !!user.banned,
+    canManageMaintenance: canManageMaintenance(user),
+  };
+}
 
 const beginTwoFactorLogin = async (user) => {
   const code = String(Math.floor(100000 + Math.random() * 900000));
@@ -158,19 +172,10 @@ router.post('/login', [
       return res.status(403).json({ message: 'Compte suspendu' });
     }
 
-    if (!requiresTwoFactorLogin(user)) {
+    if (!(await requiresTwoFactorLogin(user))) {
       return res.json({
         token: generateToken(user._id),
-        user: {
-          id: user._id,
-          nom: user.nom,
-          email: user.email,
-          role: user.role,
-          restaurantId: user.restaurantId,
-          assignedCity: user.assignedCity || '',
-          banned: !!user.banned,
-          canManageMaintenance: canManageMaintenance(user),
-        }
+        user: serializeAuthUser(user),
       });
     }
     const login2FA = await beginTwoFactorLogin(user);
@@ -242,19 +247,10 @@ router.post('/google', [
       return res.status(403).json({ message: 'Compte suspendu' });
     }
 
-    if (!requiresTwoFactorLogin(user)) {
+    if (!(await requiresTwoFactorLogin(user))) {
       return res.json({
         token: generateToken(user._id),
-        user: {
-          id: user._id,
-          nom: user.nom,
-          email: user.email,
-          role: user.role,
-          restaurantId: user.restaurantId,
-          assignedCity: user.assignedCity || '',
-          banned: !!user.banned,
-          canManageMaintenance: canManageMaintenance(user),
-        }
+        user: serializeAuthUser(user),
       });
     }
     const login2FA = await beginTwoFactorLogin(user);
@@ -308,16 +304,7 @@ router.post('/verify-dashboard-2fa', [
     await LoginCode.deleteMany({ email: emailNorm, purpose: 'login_2fa' });
     return res.json({
       token: generateToken(user._id),
-      user: {
-        id: user._id,
-        nom: user.nom,
-        email: user.email,
-        role: user.role,
-        restaurantId: user.restaurantId,
-        assignedCity: user.assignedCity || '',
-        banned: !!user.banned,
-        canManageMaintenance: canManageMaintenance(user),
-      }
+      user: serializeAuthUser(user),
     });
   } catch (error) {
     return res.status(500).json({ message: error.message || 'Erreur serveur' });
@@ -402,19 +389,7 @@ router.get('/me', auth, async (req, res) => {
     }
     
     res.json({
-      user: {
-        id: user._id,
-        nom: user.nom,
-        email: user.email,
-        role: user.role,
-        telephone: user.telephone,
-        photo: user.photo,
-        position: user.position,
-        restaurantId: user.restaurantId,
-        assignedCity: user.assignedCity || '',
-        banned: !!user.banned,
-        canManageMaintenance: canManageMaintenance(user),
-      }
+      user: serializeAuthUser(user),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -1,19 +1,32 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import PageLoader from '../../components/PageLoader';
+import ShopProductAssignField, {
+  productIdsFromAccount,
+  productNamesLabel,
+} from '../../components/commercial/ShopProductAssignField';
 import { useModal } from '../../context/ModalContext';
 import {
   createResponsableAccount,
   fetchResponsableAccounts,
+  fetchShopProductsCatalog,
   updateResponsableAccount,
 } from '../../utils/commercialApi';
 import './commercial.css';
 
 const CITIES = ['Cotonou', 'Calavi'];
-const emptyForm = { nom: '', email: '', telephone: '', password: '', assignedCity: 'Cotonou' };
+const emptyForm = {
+  nom: '',
+  email: '',
+  telephone: '',
+  password: '',
+  assignedCity: 'Cotonou',
+  assignedShopProducts: [],
+};
 
 export default function ResponsablesDashboard() {
   const { showSuccess, showError } = useModal();
   const [accounts, setAccounts] = useState([]);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyForm);
   const [busy, setBusy] = useState(false);
@@ -21,7 +34,12 @@ export default function ResponsablesDashboard() {
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      setAccounts(await fetchResponsableAccounts());
+      const [acc, prods] = await Promise.all([
+        fetchResponsableAccounts(),
+        fetchShopProductsCatalog(),
+      ]);
+      setAccounts(acc);
+      setProducts(prods);
     } catch (e) {
       showError(e.response?.data?.message || 'Accès réservé à l’administrateur');
     } finally {
@@ -35,6 +53,10 @@ export default function ResponsablesDashboard() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
+    if (!form.assignedShopProducts.length) {
+      showError('Assignez au moins un produit Shop');
+      return;
+    }
     setBusy(true);
     try {
       await createResponsableAccount(form);
@@ -69,15 +91,30 @@ export default function ResponsablesDashboard() {
     }
   };
 
+  const changeProducts = async (account, assignedShopProducts) => {
+    if (!assignedShopProducts.length) {
+      showError('Assignez au moins un produit Shop');
+      return;
+    }
+    try {
+      await updateResponsableAccount(account._id, { assignedShopProducts });
+      showSuccess('Produits mis à jour');
+      await load();
+    } catch (err) {
+      showError(err.response?.data?.message || err.message);
+    }
+  };
+
   if (loading) return <PageLoader />;
 
   return (
     <div className="commercial-page">
       <h1>Responsables délégués</h1>
       <p className="commercial-lead">
-        Mini-admins par ville : créez leur compte ici. Ils se connectent via{' '}
-        <strong>/responsables</strong> (double authentification par e-mail) et ne voient que les
-        commandes Shop de leur ville assignée (à partir d’aujourd’hui).
+        Mini-admins par ville : connexion via <strong>/responsables</strong>. Ils ne voient que les
+        commandes Shop de leur ville et des produits assignés, avec les mêmes filtres que l’admin.
+        Ils peuvent confirmer / faire avancer le statut, sans modifier ni supprimer les commandes.
+        Chaque nouvelle commande de leurs produits déclenche une notification.
       </p>
 
       <div className="commercial-card">
@@ -132,6 +169,13 @@ export default function ResponsablesDashboard() {
                 required
               />
             </div>
+            <ShopProductAssignField
+              products={products}
+              selectedIds={form.assignedShopProducts}
+              onChange={(assignedShopProducts) => setForm({ ...form, assignedShopProducts })}
+              required
+              hint="Obligatoire : seules les commandes de ces produits seront visibles."
+            />
           </div>
           <button
             type="submit"
@@ -155,7 +199,7 @@ export default function ResponsablesDashboard() {
                 <th>Nom</th>
                 <th>Email</th>
                 <th>Ville</th>
-                <th>Téléphone</th>
+                <th>Produits</th>
                 <th>Statut</th>
                 <th>Actions</th>
               </tr>
@@ -178,7 +222,17 @@ export default function ResponsablesDashboard() {
                       ))}
                     </select>
                   </td>
-                  <td>{a.telephone || '—'}</td>
+                  <td style={{ minWidth: 220 }}>
+                    <details>
+                      <summary style={{ cursor: 'pointer' }}>{productNamesLabel(a)}</summary>
+                      <ShopProductAssignField
+                        products={products}
+                        selectedIds={productIdsFromAccount(a)}
+                        onChange={(ids) => changeProducts(a, ids)}
+                        required
+                      />
+                    </details>
+                  </td>
                   <td>{a.banned ? 'Suspendu' : 'Actif'}</td>
                   <td>
                     <button

@@ -140,6 +140,17 @@ export async function updateCommercialAccount(id, payload) {
   return res.data;
 }
 
+export async function fetchShopProductsCatalog() {
+  const res = await axios.get(`${API_URL}/shop-products`, authHeaders());
+  const list = Array.isArray(res.data) ? res.data : [];
+  return list.map((p) => ({
+    _id: p._id,
+    name: p.name,
+    slug: p.slug,
+    published: p.published,
+  }));
+}
+
 export async function fetchResponsableAccounts() {
   const res = await axios.get(`${API_URL}/responsables/accounts`, authHeaders());
   return res.data;

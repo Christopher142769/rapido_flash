@@ -1,18 +1,30 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import PageLoader from '../../components/PageLoader';
+import ShopProductAssignField, {
+  productIdsFromAccount,
+  productNamesLabel,
+} from '../../components/commercial/ShopProductAssignField';
 import { useModal } from '../../context/ModalContext';
 import {
   createCommercialAccount,
   fetchCommercialAccounts,
+  fetchShopProductsCatalog,
   updateCommercialAccount,
 } from '../../utils/commercialApi';
 import './commercial.css';
 
-const emptyForm = { nom: '', email: '', telephone: '', password: '' };
+const emptyForm = {
+  nom: '',
+  email: '',
+  telephone: '',
+  password: '',
+  assignedShopProducts: [],
+};
 
 export default function CommerciauxDashboard() {
   const { showSuccess, showError } = useModal();
   const [accounts, setAccounts] = useState([]);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyForm);
   const [busy, setBusy] = useState(false);
@@ -20,7 +32,12 @@ export default function CommerciauxDashboard() {
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      setAccounts(await fetchCommercialAccounts());
+      const [acc, prods] = await Promise.all([
+        fetchCommercialAccounts(),
+        fetchShopProductsCatalog(),
+      ]);
+      setAccounts(acc);
+      setProducts(prods);
     } catch (e) {
       showError(e.response?.data?.message || 'Accès réservé à l’administrateur');
     } finally {
@@ -57,14 +74,28 @@ export default function CommerciauxDashboard() {
     }
   };
 
+  const changeProducts = async (account, assignedShopProducts) => {
+    try {
+      await updateCommercialAccount(account._id, { assignedShopProducts });
+      showSuccess(
+        assignedShopProducts.length
+          ? 'Produits mis à jour'
+          : 'Tous les produits Shop sont visibles'
+      );
+      await load();
+    } catch (err) {
+      showError(err.response?.data?.message || err.message);
+    }
+  };
+
   if (loading) return <PageLoader />;
 
   return (
     <div className="commercial-page">
       <h1>Comptes commerciaux</h1>
       <p className="commercial-lead">
-        Créez des accès pour vos commerciaux terrain. Ils gèrent les commandes Shop, le bilan et les
-        relances.
+        Créez des accès terrain. Vous pouvez limiter chaque commercial à certains produits Shop
+        (sinon tous). Ils reçoivent une notification à chaque commande de leurs produits.
       </p>
 
       <div className="commercial-card">
@@ -105,6 +136,12 @@ export default function CommerciauxDashboard() {
                 required
               />
             </div>
+            <ShopProductAssignField
+              products={products}
+              selectedIds={form.assignedShopProducts}
+              onChange={(assignedShopProducts) => setForm({ ...form, assignedShopProducts })}
+              hint="Optionnel : laisser vide = tous les produits Shop."
+            />
           </div>
           <button
             type="submit"
@@ -128,6 +165,7 @@ export default function CommerciauxDashboard() {
                 <th>Nom</th>
                 <th>Email</th>
                 <th>Téléphone</th>
+                <th>Produits</th>
                 <th>Statut</th>
                 <th>Actions</th>
               </tr>
@@ -138,6 +176,17 @@ export default function CommerciauxDashboard() {
                   <td>{a.nom}</td>
                   <td>{a.email}</td>
                   <td>{a.telephone || '—'}</td>
+                  <td style={{ minWidth: 220 }}>
+                    <details>
+                      <summary style={{ cursor: 'pointer' }}>{productNamesLabel(a)}</summary>
+                      <ShopProductAssignField
+                        products={products}
+                        selectedIds={productIdsFromAccount(a)}
+                        onChange={(ids) => changeProducts(a, ids)}
+                        hint="Vide = tous les produits."
+                      />
+                    </details>
+                  </td>
                   <td>{a.banned ? 'Suspendu' : 'Actif'}</td>
                   <td>
                     <button
@@ -153,7 +202,7 @@ export default function CommerciauxDashboard() {
             </tbody>
           </table>
           {accounts.length === 0 ? (
-            <p style={{ padding: '1rem' }}>Aucun compte commercial pour l&apos;instant.</p>
+            <p style={{ padding: '1rem' }}>Aucun commercial pour l&apos;instant.</p>
           ) : null}
         </div>
       </div>

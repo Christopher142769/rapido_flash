@@ -106,8 +106,8 @@ export default function ShopCommandesPage() {
   const [eviscerationFilter, setEviscerationFilter] = useState('');
   const [maxKg, setMaxKg] = useState('');
   const [splitMode, setSplitMode] = useState('');
-  const [dateFrom, setDateFrom] = useState(() => defaultDateRange(isResponsable).dateFrom);
-  const [dateTo, setDateTo] = useState(() => defaultDateRange(isResponsable).dateTo);
+  const [dateFrom, setDateFrom] = useState(() => defaultDateRange(false).dateFrom);
+  const [dateTo, setDateTo] = useState(() => defaultDateRange(false).dateTo);
   const [specsOrder, setSpecsOrder] = useState(null);
   const [editOrder, setEditOrder] = useState(null);
   const [exportChoice, setExportChoice] = useState(null); // 'excel' | 'pdf' | 'word' | null
@@ -487,7 +487,11 @@ export default function ShopCommandesPage() {
             <h1>Commandes Shop</h1>
             {isResponsable && lockedCity ? (
               <p className="commercial-lead" style={{ marginTop: 8 }}>
-                Responsable délégué — {lockedCity} (commandes à partir d’aujourd’hui)
+                Responsable — {lockedCity}
+                {Array.isArray(user?.assignedShopProducts) && user.assignedShopProducts.length
+                  ? ` · ${user.assignedShopProducts.length} produit(s) assigné(s)`
+                  : ''}
+                . Traitement uniquement (pas de modification / suppression).
               </p>
             ) : null}
           </div>
@@ -872,14 +876,16 @@ export default function ShopCommandesPage() {
                           >
                             Confirmer
                           </button>
-                          <button
-                            type="button"
-                            className="btn btn-outline"
-                            disabled={busy}
-                            onClick={() => updateStatut(order, 'annulee')}
-                          >
-                            Annuler
-                          </button>
+                          {!isResponsable ? (
+                            <button
+                              type="button"
+                              className="btn btn-outline"
+                              disabled={busy}
+                              onClick={() => updateStatut(order, 'annulee')}
+                            >
+                              Annuler
+                            </button>
+                          ) : null}
                         </>
                       ) : null}
                       {order.statut === 'confirmee' ? (
@@ -892,26 +898,28 @@ export default function ShopCommandesPage() {
                           >
                             En préparation
                           </button>
-                          <button
-                            type="button"
-                            className="btn btn-outline"
-                            disabled={busy}
-                            onClick={() => {
-                              if (
-                                !window.confirm(
-                                  'Annuler la confirmation de cette commande ? Elle repassera en attente.'
-                                )
-                              ) {
-                                return;
-                              }
-                              run(
-                                () => unconfirmCommercialOrder(order._id),
-                                'Confirmation annulée — commande en attente'
-                              );
-                            }}
-                          >
-                            Annuler la confirmation
-                          </button>
+                          {!isResponsable ? (
+                            <button
+                              type="button"
+                              className="btn btn-outline"
+                              disabled={busy}
+                              onClick={() => {
+                                if (
+                                  !window.confirm(
+                                    'Annuler la confirmation de cette commande ? Elle repassera en attente.'
+                                  )
+                                ) {
+                                  return;
+                                }
+                                run(
+                                  () => unconfirmCommercialOrder(order._id),
+                                  'Confirmation annulée — commande en attente'
+                                );
+                              }}
+                            >
+                              Annuler la confirmation
+                            </button>
+                          ) : null}
                         </>
                       ) : null}
                       {order.statut === 'en_preparation' ? (

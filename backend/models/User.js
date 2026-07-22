@@ -29,6 +29,11 @@ const userSchema = new mongoose.Schema({
     enum: ['', 'Cotonou', 'Calavi'],
     default: '',
   },
+  /** Produits Shop que le compte peut voir / traiter (commercial, responsable). */
+  assignedShopProducts: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ShopProduct',
+  }],
   position: {
     latitude: Number,
     longitude: Number,

@@ -38,13 +38,27 @@ const MaintenanceDashboardPage = () => {
   const [dnsSaving, setDnsSaving] = useState(false);
   const [dnsSaveSuccess, setDnsSaveSuccess] = useState(false);
 
+  const [twoFactorByRole, setTwoFactorByRole] = useState({
+    restaurant: true,
+    gestionnaire: true,
+    commercial: true,
+    cuisinier: true,
+    livreur: true,
+    responsable: true,
+  });
+  const [twoFactorSaving, setTwoFactorSaving] = useState(false);
+  const [twoFactorSaveSuccess, setTwoFactorSaveSuccess] = useState(false);
+
   useEffect(() => {
     if (!user?.canManageMaintenance) {
       setReady(true);
       return;
     }
+    const token = localStorage.getItem('token');
     axios
-      .get(`${API_URL}/app-settings/public`)
+      .get(`${API_URL}/app-settings`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       .then((res) => {
         setMaintenanceEnabled(!!res.data?.maintenanceEnabled);
         setMaintenanceMessage(res.data?.maintenanceMessage || '');
@@ -52,6 +66,9 @@ const MaintenanceDashboardPage = () => {
         setDnsNoticeSourceDomain(normalizeDnsSourceDomain(res.data?.dnsNoticeSourceDomain) || 'rapido.bj');
         setDnsNoticeUrl(res.data?.dnsNoticeUrl || '');
         setDnsNoticeMessage(res.data?.dnsNoticeMessage || '');
+        if (res.data?.twoFactorByRole && typeof res.data.twoFactorByRole === 'object') {
+          setTwoFactorByRole((prev) => ({ ...prev, ...res.data.twoFactorByRole }));
+        }
       })
       .catch(() => {})
       .finally(() => setReady(true));
@@ -64,6 +81,7 @@ const MaintenanceDashboardPage = () => {
     dnsNoticeSourceDomain,
     dnsNoticeUrl,
     dnsNoticeMessage,
+    twoFactorByRole,
   });
 
   const validateDns = () => {
@@ -122,6 +140,28 @@ const MaintenanceDashboardPage = () => {
     }
   };
 
+  const saveTwoFactor = async () => {
+    const token = localStorage.getItem('token');
+    setTwoFactorSaving(true);
+    try {
+      const res = await axios.put(
+        `${API_URL}/app-settings`,
+        { twoFactorByRole },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.data?.twoFactorByRole) {
+        setTwoFactorByRole((prev) => ({ ...prev, ...res.data.twoFactorByRole }));
+      }
+      showSuccess('Paramètres 2FA enregistrés');
+      setTwoFactorSaveSuccess(true);
+      setTimeout(() => setTwoFactorSaveSuccess(false), 2600);
+    } catch (err) {
+      showError(err.response?.data?.message || 'Impossible d’enregistrer la 2FA');
+    } finally {
+      setTwoFactorSaving(false);
+    }
+  };
+
   if (authLoading) {
     return <PageLoader message={t('maintenance', 'dashboardTitle')} />;
   }
@@ -134,7 +174,16 @@ const MaintenanceDashboardPage = () => {
     return <PageLoader message={t('maintenance', 'dashboardTitle')} />;
   }
 
-  const anySaving = maintenanceSaving || dnsSaving;
+  const anySaving = maintenanceSaving || dnsSaving || twoFactorSaving;
+
+  const twoFactorRoles = [
+    { key: 'restaurant', label: 'Administrateurs (restaurant)' },
+    { key: 'gestionnaire', label: 'Gestionnaires' },
+    { key: 'commercial', label: 'Commerciaux' },
+    { key: 'responsable', label: 'Responsables villes' },
+    { key: 'cuisinier', label: 'Cuisiniers' },
+    { key: 'livreur', label: 'Livreurs Champion' },
+  ];
 
   return (
     <div className="dashboard-main">
@@ -484,6 +533,62 @@ const MaintenanceDashboardPage = () => {
                   </motion.span>
                 )}
               </AnimatePresence>
+            </motion.button>
+          </div>
+        </div>
+
+        <div
+          className="relative z-0 overflow-hidden rounded-[var(--radius-xl)] border bg-white p-8 shadow-[var(--shadow-card)]"
+          style={{ borderColor: 'var(--rf-border)', marginTop: '1.5rem' }}
+        >
+          <header className="dashboard-block-header" style={{ marginBottom: '1rem' }}>
+            <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Double authentification</h2>
+            <p className="dashboard-block-desc" style={{ marginTop: 8 }}>
+              Activez ou désactivez le code e-mail à la connexion pour chaque rôle staff. Les
+              clients ne sont jamais concernés.
+            </p>
+          </header>
+          <div style={{ display: 'grid', gap: '1rem' }}>
+            {twoFactorRoles.map(({ key, label }) => (
+              <div
+                key={key}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-md)] border px-4 py-3"
+                style={{ borderColor: 'var(--rf-border)' }}
+              >
+                <span className="font-semibold">{label}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm" style={{ color: 'var(--rf-text-muted)' }}>
+                    {twoFactorByRole[key] ? 'Activée' : 'Désactivée'}
+                  </span>
+                  <AnimatedToggle
+                    checked={!!twoFactorByRole[key]}
+                    onChange={(checked) =>
+                      setTwoFactorByRole((prev) => ({ ...prev, [key]: checked }))
+                    }
+                    disabled={anySaving}
+                    aria-label={`2FA ${label}`}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: '1.25rem' }}>
+            <motion.button
+              type="button"
+              className="inline-flex min-w-[180px] items-center justify-center gap-2 rounded-[var(--radius-md)] border-0 px-6 py-3 text-base font-semibold text-white outline-none transition-colors disabled:opacity-60"
+              style={{
+                fontFamily: 'var(--font-display)',
+                background: 'linear-gradient(135deg, #1a5c52 0%, #c9782e 100%)',
+              }}
+              whileTap={prefersReducedMotion ? {} : { scale: 0.96 }}
+              onClick={saveTwoFactor}
+              disabled={anySaving}
+            >
+              {twoFactorSaving
+                ? 'Enregistrement…'
+                : twoFactorSaveSuccess
+                  ? '✓ Enregistré !'
+                  : 'Enregistrer la 2FA'}
             </motion.button>
           </div>
         </div>

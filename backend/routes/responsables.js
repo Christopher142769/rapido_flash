@@ -1,7 +1,10 @@
 const express = require('express');
 const User = require('../models/User');
 const { auth, isRestaurantAdmin } = require('../middleware/auth');
-const { RESPONSABLE_CITIES } = require('../utils/responsableAccess');
+const {
+  RESPONSABLE_CITIES,
+  normalizeAssignedShopProductIds,
+} = require('../utils/responsableAccess');
 
 const router = express.Router();
 
@@ -9,6 +12,7 @@ router.get('/accounts', auth, isRestaurantAdmin, async (req, res) => {
   try {
     const users = await User.find({ role: 'responsable' })
       .select('-password')
+      .populate('assignedShopProducts', 'name slug')
       .sort({ createdAt: -1 })
       .lean();
     res.json(users);
@@ -24,12 +28,16 @@ router.post('/accounts', auth, isRestaurantAdmin, async (req, res) => {
     const telephone = String(req.body?.telephone || '').trim();
     const password = String(req.body?.password || '');
     const assignedCity = String(req.body?.assignedCity || '').trim();
+    const productIds = normalizeAssignedShopProductIds(req.body?.assignedShopProducts) || [];
 
     if (!nom || !email || password.length < 6) {
       return res.status(400).json({ message: 'Nom, email et mot de passe (6 car. min) requis' });
     }
     if (!RESPONSABLE_CITIES.includes(assignedCity)) {
       return res.status(400).json({ message: 'Choisissez la ville : Cotonou ou Calavi' });
+    }
+    if (!productIds.length) {
+      return res.status(400).json({ message: 'Assignez au moins un produit Shop' });
     }
 
     const exists = await User.findOne({ email });
@@ -42,8 +50,10 @@ router.post('/accounts', auth, isRestaurantAdmin, async (req, res) => {
       password,
       role: 'responsable',
       assignedCity,
+      assignedShopProducts: productIds,
     });
     await user.save();
+    await user.populate('assignedShopProducts', 'name slug');
     const out = user.toObject();
     delete out.password;
     res.status(201).json(out);
@@ -67,10 +77,18 @@ router.patch('/accounts/:id', auth, isRestaurantAdmin, async (req, res) => {
       }
       user.assignedCity = city;
     }
+    if (req.body.assignedShopProducts != null) {
+      const ids = normalizeAssignedShopProductIds(req.body.assignedShopProducts);
+      if (!ids || !ids.length) {
+        return res.status(400).json({ message: 'Assignez au moins un produit Shop' });
+      }
+      user.assignedShopProducts = ids;
+    }
     if (req.body.password && String(req.body.password).length >= 6) {
       user.password = String(req.body.password);
     }
     await user.save();
+    await user.populate('assignedShopProducts', 'name slug');
     const out = user.toObject();
     delete out.password;
     res.json(out);

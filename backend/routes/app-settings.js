@@ -8,6 +8,10 @@ const {
   normalizeDnsSourceDomain,
   getNormalizedDomainFromUrl,
 } = require('../utils/dnsNoticeUrl');
+const {
+  normalizeTwoFactorByRole,
+  STAFF_2FA_ROLES,
+} = require('../utils/twoFactorSettings');
 
 const router = express.Router();
 
@@ -26,21 +30,47 @@ function buildPublicPayload(doc) {
   };
 }
 
+function buildAdminPayload(doc) {
+  return {
+    ...buildPublicPayload(doc),
+    twoFactorByRole: normalizeTwoFactorByRole(doc.twoFactorByRole || {}),
+  };
+}
+
+async function getOrCreateSettings() {
+  let doc = await AppSettings.findOne();
+  if (!doc) {
+    doc = await AppSettings.create({
+      maintenanceEnabled: false,
+      maintenanceMessage: '',
+      dnsNoticeEnabled: false,
+      dnsNoticeSourceDomain: 'rapido.bj',
+      dnsNoticeUrl: '',
+      dnsNoticeMessage: '',
+      twoFactorByRole: normalizeTwoFactorByRole({}),
+    });
+  }
+  return doc;
+}
+
 /** Public : maintenance + avis DNS (sans auth) */
 router.get('/public', async (req, res) => {
   try {
-    let doc = await AppSettings.findOne();
-    if (!doc) {
-      doc = await AppSettings.create({
-        maintenanceEnabled: false,
-        maintenanceMessage: '',
-        dnsNoticeEnabled: false,
-        dnsNoticeSourceDomain: 'rapido.bj',
-        dnsNoticeUrl: '',
-        dnsNoticeMessage: '',
-      });
-    }
+    const doc = await getOrCreateSettings();
     res.json(buildPublicPayload(doc));
+  } catch (e) {
+    res.status(500).json({ message: e.message || 'Erreur serveur' });
+  }
+});
+
+/** Admin : maintenance + DNS + 2FA par rôle */
+router.get('/', auth, async (req, res) => {
+  try {
+    if (!canManageMaintenance(req.user)) {
+      return res.status(403).json({ message: 'Non autorisé.' });
+    }
+    const doc = await getOrCreateSettings();
+    res.json(buildAdminPayload(doc));
   } catch (e) {
     res.status(500).json({ message: e.message || 'Erreur serveur' });
   }
@@ -58,9 +88,9 @@ router.put('/', auth, async (req, res) => {
       dnsNoticeSourceDomain,
       dnsNoticeUrl,
       dnsNoticeMessage,
+      twoFactorByRole,
     } = req.body;
-    let doc = await AppSettings.findOne();
-    if (!doc) doc = new AppSettings();
+    const doc = await getOrCreateSettings();
 
     if (typeof maintenanceEnabled === 'boolean') doc.maintenanceEnabled = maintenanceEnabled;
     if (typeof maintenanceMessage === 'string') {
@@ -75,6 +105,18 @@ router.put('/', auth, async (req, res) => {
     }
     if (typeof dnsNoticeUrl === 'string') {
       doc.dnsNoticeUrl = dnsNoticeUrl.trim().slice(0, 500);
+    }
+    if (twoFactorByRole && typeof twoFactorByRole === 'object') {
+      const merged = normalizeTwoFactorByRole({
+        ...(doc.twoFactorByRole?.toObject?.() || doc.twoFactorByRole || {}),
+        ...Object.fromEntries(
+          STAFF_2FA_ROLES.filter((role) => typeof twoFactorByRole[role] === 'boolean').map((role) => [
+            role,
+            twoFactorByRole[role],
+          ])
+        ),
+      });
+      doc.twoFactorByRole = merged;
     }
 
     if (doc.dnsNoticeEnabled) {
@@ -100,7 +142,7 @@ router.put('/', auth, async (req, res) => {
     }
 
     await doc.save();
-    res.json(buildPublicPayload(doc));
+    res.json(buildAdminPayload(doc));
   } catch (e) {
     res.status(500).json({ message: e.message || 'Erreur serveur' });
   }

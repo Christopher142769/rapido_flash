@@ -35,7 +35,7 @@ export function NotificationProvider({ children }) {
   const fetchSummary = useCallback(async () => {
     const token = localStorage.getItem('token');
     if (!token || !user) return;
-    if (!['restaurant', 'gestionnaire', 'commercial', 'client', 'cuisinier'].includes(user.role)) return;
+    if (!['restaurant', 'gestionnaire', 'commercial', 'client', 'cuisinier', 'responsable'].includes(user.role)) return;
     try {
       const res = await axios.get(`${API_URL}/notifications/summary`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -152,14 +152,14 @@ export function NotificationProvider({ children }) {
   }, [user?._id]);
 
   useEffect(() => {
-    if (!user || !['restaurant', 'gestionnaire', 'commercial', 'client', 'cuisinier'].includes(user.role)) return undefined;
+    if (!user || !['restaurant', 'gestionnaire', 'commercial', 'client', 'cuisinier', 'responsable'].includes(user.role)) return undefined;
     fetchSummary();
     const id = setInterval(fetchSummary, POLL_MS);
     return () => clearInterval(id);
   }, [user, fetchSummary]);
 
   useEffect(() => {
-    if (!user || !['restaurant', 'gestionnaire', 'commercial', 'client', 'cuisinier'].includes(user.role)) return undefined;
+    if (!user || !['restaurant', 'gestionnaire', 'commercial', 'client', 'cuisinier', 'responsable'].includes(user.role)) return undefined;
     if (isCapacitorAndroid()) {
       void requestAndroidNativeNotificationPermissions()
         .then(() => registerCapacitorFcmAndSync())

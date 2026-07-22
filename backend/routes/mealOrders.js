@@ -11,7 +11,7 @@ const { getShopOrderLimitState, mergeClosureWithOrderLimit } = require('../utils
 const { sendToUserIds } = require('../services/pushNotifications');
 const { normalizeBeninPhoneDigits } = require('../utils/phoneDigits');
 const { getTodayDateKey, deliveryDateKeyToDate } = require('../utils/shopDeliveryDate');
-const { assertResponsableCityAccess, responsableListFilter } = require('../utils/responsableAccess');
+const { assertResponsableCityAccess, responsableMealListFilter } = require('../utils/responsableAccess');
 
 const router = express.Router();
 
@@ -215,7 +215,7 @@ router.post('/:id/whatsapp-confirmation', async (req, res) => {
 router.get('/', auth, isKitchenStaff, async (req, res) => {
   try {
     const filter = {
-      ...responsableListFilter(req.user),
+      ...responsableMealListFilter(req.user),
     };
     if (req.query.statut) filter.statut = req.query.statut;
     if (req.query.commercialStatus) filter.commercialStatus = req.query.commercialStatus;

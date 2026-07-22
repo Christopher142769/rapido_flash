@@ -15,7 +15,7 @@ const { unconfirmShopOrder } = require('../utils/shopOrderStatus');
 const { isEviscerationApplicable } = require('../utils/shopEvisceration');
 const { normalizeBeninPhoneDigits } = require('../utils/phoneDigits');
 const { scheduleShopOrderWhatsAppConfirmation } = require('../services/shopOrderWhatsAppConfirmation');
-const { assertResponsableCityAccess, responsableListFilter } = require('../utils/responsableAccess');
+const { assertStaffShopOrderAccess, staffShopListFilter } = require('../utils/responsableAccess');
 
 const router = express.Router();
 
@@ -49,14 +49,32 @@ function validateShopCustomer(customer) {
   return null;
 }
 
-async function getShopStaffUserIds() {
+async function getShopOrderNotifyTargets(productId) {
+  const pid = String(productId || '');
   const staff = await User.find({
-    role: { $in: ['restaurant', 'gestionnaire', 'commercial'] },
+    role: { $in: ['restaurant', 'gestionnaire', 'commercial', 'responsable'] },
     banned: { $ne: true },
   })
-    .select('_id')
+    .select('_id role assignedShopProducts')
     .lean();
-  return staff.map((u) => String(u._id));
+
+  const dashboardIds = [];
+  const responsableIds = [];
+  for (const u of staff) {
+    const assigned = (u.assignedShopProducts || []).map((p) => String(p));
+    if (u.role === 'restaurant' || u.role === 'gestionnaire') {
+      dashboardIds.push(String(u._id));
+      continue;
+    }
+    if (u.role === 'commercial') {
+      if (!assigned.length || assigned.includes(pid)) dashboardIds.push(String(u._id));
+      continue;
+    }
+    if (u.role === 'responsable') {
+      if (assigned.length && assigned.includes(pid)) responsableIds.push(String(u._id));
+    }
+  }
+  return { dashboardIds, responsableIds };
 }
 
 /** Créer une commande Shop express (public, page /shop/:slug). */
@@ -148,13 +166,22 @@ router.post('/', async (req, res) => {
 
     await order.save();
 
-    const staffIds = await getShopStaffUserIds();
-    if (staffIds.length) {
-      void sendToUserIds(staffIds, {
-        title: 'Rapido Shop — Nouvelle commande',
-        body: `${order.productName} · ${order.quantityLabel}`,
+    const { dashboardIds, responsableIds } = await getShopOrderNotifyTargets(product._id);
+    const pushBody = {
+      title: 'Rapido Shop — Nouvelle commande',
+      body: `${order.productName} · ${order.quantityLabel}`,
+      tag: `rapido-shop-order-${order._id}`,
+    };
+    if (dashboardIds.length) {
+      void sendToUserIds(dashboardIds, {
+        ...pushBody,
         url: '/dashboard/commercial-commandes',
-        tag: `rapido-shop-order-${order._id}`,
+      }).catch(() => {});
+    }
+    if (responsableIds.length) {
+      void sendToUserIds(responsableIds, {
+        ...pushBody,
+        url: '/responsables',
       }).catch(() => {});
     }
 
@@ -191,10 +218,10 @@ router.post('/:id/whatsapp-confirmation', async (req, res) => {
   }
 });
 
-/** Liste des commandes Shop (dashboard restaurant / gestionnaire / responsable). */
+/** Liste des commandes Shop (dashboard restaurant / gestionnaire / commercial / responsable). */
 router.get('/', auth, isCommercialStaff, async (req, res) => {
   try {
-    const filter = responsableListFilter(req.user);
+    const filter = staffShopListFilter(req.user);
     const orders = await ShopOrder.find(filter)
       .populate('shopProduct', 'name slug mainImage')
       .sort({ createdAt: 1, _id: 1 })
@@ -216,8 +243,12 @@ router.put('/:id/statut', auth, isCommercialStaff, async (req, res) => {
     const order = await ShopOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
 
-    const cityErr = assertResponsableCityAccess(req.user, order);
-    if (cityErr) return res.status(403).json({ message: cityErr });
+    const accessErr = assertStaffShopOrderAccess(req.user, order);
+    if (accessErr) return res.status(403).json({ message: accessErr });
+
+    if (req.user.role === 'responsable' && ['annulee'].includes(statut)) {
+      return res.status(403).json({ message: 'Les responsables ne peuvent pas annuler une commande' });
+    }
 
     if (statut === 'en_attente') {
       const unconfirmErr = unconfirmShopOrder(order);

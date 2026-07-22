@@ -6,7 +6,11 @@ const ShopProduct = require('../models/ShopProduct');
 const { auth, isCommercialStaff, isRestaurantAdmin } = require('../middleware/auth');
 const { generateShopOrderNumber, startOfDay, endOfDay } = require('../utils/shopOrderNumber');
 const { unconfirmShopOrder } = require('../utils/shopOrderStatus');
-const { assertResponsableCityAccess, responsableListFilter } = require('../utils/responsableAccess');
+const {
+  assertStaffShopOrderAccess,
+  staffShopListFilter,
+  normalizeAssignedShopProductIds,
+} = require('../utils/responsableAccess');
 const {
   bilanBaseQuery,
   bilanRowFromOrder,
@@ -98,6 +102,7 @@ router.get('/accounts', auth, isRestaurantAdmin, async (req, res) => {
   try {
     const users = await User.find({ role: 'commercial' })
       .select('-password')
+      .populate('assignedShopProducts', 'name slug')
       .sort({ createdAt: -1 })
       .lean();
     res.json(users);
@@ -121,6 +126,10 @@ router.post('/accounts', auth, isRestaurantAdmin, async (req, res) => {
     if (exists) return res.status(400).json({ message: 'Cet email est déjà utilisé' });
 
     const user = new User({ nom, email, telephone, password, role: 'commercial' });
+    if (req.body.assignedShopProducts != null) {
+      const ids = normalizeAssignedShopProductIds(req.body.assignedShopProducts);
+      if (ids) user.assignedShopProducts = ids;
+    }
     await user.save();
     const out = user.toObject();
     delete out.password;
@@ -140,6 +149,10 @@ router.patch('/accounts/:id', auth, isRestaurantAdmin, async (req, res) => {
     if (req.body.banned !== undefined) user.banned = !!req.body.banned;
     if (req.body.password && String(req.body.password).length >= 6) {
       user.password = String(req.body.password);
+    }
+    if (req.body.assignedShopProducts != null) {
+      const ids = normalizeAssignedShopProductIds(req.body.assignedShopProducts);
+      if (ids) user.assignedShopProducts = ids;
     }
     await user.save();
     const out = user.toObject();
@@ -321,7 +334,7 @@ router.get('/overview', auth, isCommercialStaff, async (req, res) => {
 
 router.get('/orders', auth, isCommercialStaff, async (req, res) => {
   try {
-    let orders = await ShopOrder.find(responsableListFilter(req.user))
+    let orders = await ShopOrder.find(staffShopListFilter(req.user))
       .populate('shopProduct', 'name slug mainImage')
       .sort({ createdAt: 1, _id: 1 })
       .lean();
@@ -349,8 +362,8 @@ router.put('/orders/:id/confirm', auth, isCommercialStaff, async (req, res) => {
     const order = await ShopOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
 
-    const cityErr = assertResponsableCityAccess(req.user, order);
-    if (cityErr) return res.status(403).json({ message: cityErr });
+    const accessErr = assertStaffShopOrderAccess(req.user, order);
+    if (accessErr) return res.status(403).json({ message: accessErr });
 
     if (!order.orderDate) {
       order.orderDate = order.createdAt || new Date();
@@ -379,8 +392,12 @@ router.put('/orders/:id/unconfirm', auth, isCommercialStaff, async (req, res) =>
     const order = await ShopOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
 
-    const cityErr = assertResponsableCityAccess(req.user, order);
-    if (cityErr) return res.status(403).json({ message: cityErr });
+    const accessErr = assertStaffShopOrderAccess(req.user, order);
+    if (accessErr) return res.status(403).json({ message: accessErr });
+
+    if (req.user.role === 'responsable') {
+      return res.status(403).json({ message: 'Les responsables ne peuvent pas annuler une confirmation' });
+    }
 
     const unconfirmErr = unconfirmShopOrder(order);
     if (unconfirmErr) return res.status(400).json({ message: unconfirmErr });
@@ -397,8 +414,8 @@ router.put('/orders/:id/deliver', auth, isCommercialStaff, async (req, res) => {
     const order = await ShopOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
 
-    const cityErr = assertResponsableCityAccess(req.user, order);
-    if (cityErr) return res.status(403).json({ message: cityErr });
+    const accessErr = assertStaffShopOrderAccess(req.user, order);
+    if (accessErr) return res.status(403).json({ message: accessErr });
 
     order.statut = 'livree';
     order.commercialStatus = 'livree';
@@ -416,8 +433,8 @@ router.put('/orders/:id/specifications', auth, isCommercialStaff, async (req, re
     const order = await ShopOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
 
-    const cityErr = assertResponsableCityAccess(req.user, order);
-    if (cityErr) return res.status(403).json({ message: cityErr });
+    const accessErr = assertStaffShopOrderAccess(req.user, order);
+    if (accessErr) return res.status(403).json({ message: accessErr });
 
     order.clientSpecifications = String(req.body?.clientSpecifications ?? '').trim().slice(0, 2000);
     await order.save();
@@ -570,8 +587,12 @@ router.put('/orders/:id/cancel', auth, isCommercialStaff, async (req, res) => {
     const order = await ShopOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
 
-    const cityErr = assertResponsableCityAccess(req.user, order);
-    if (cityErr) return res.status(403).json({ message: cityErr });
+    const accessErr = assertStaffShopOrderAccess(req.user, order);
+    if (accessErr) return res.status(403).json({ message: accessErr });
+
+    if (req.user.role === 'responsable') {
+      return res.status(403).json({ message: 'Les responsables ne peuvent pas annuler une commande' });
+    }
 
     const status = resolveCommercialStatus(order);
     if (status === 'livree') {
@@ -605,8 +626,8 @@ router.put('/orders/:id/relance', auth, isCommercialStaff, async (req, res) => {
     const order = await ShopOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
 
-    const cityErr = assertResponsableCityAccess(req.user, order);
-    if (cityErr) return res.status(403).json({ message: cityErr });
+    const accessErr = assertStaffShopOrderAccess(req.user, order);
+    if (accessErr) return res.status(403).json({ message: accessErr });
 
     order.commercialStatus = 'relance';
     order.scheduledDeliveryAt = scheduledDeliveryAt;

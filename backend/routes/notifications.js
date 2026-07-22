@@ -6,6 +6,7 @@ const Commande = require('../models/Commande');
 const ShopOrder = require('../models/ShopOrder');
 const MealOrder = require('../models/MealOrder');
 const Conversation = require('../models/Conversation');
+const { staffShopListFilter } = require('../utils/responsableAccess');
 
 const router = express.Router();
 
@@ -25,7 +26,10 @@ router.get('/summary', auth, async (req, res) => {
       const rids = owned.map((r) => r._id);
       let pendingOrders = 0;
       let unreadMessages = 0;
-      const shopPending = await ShopOrder.countDocuments({ statut: 'en_attente' });
+      const shopPending = await ShopOrder.countDocuments({
+        statut: 'en_attente',
+        ...staffShopListFilter(user),
+      });
       if (rids.length > 0) {
         pendingOrders = await Commande.countDocuments({
           restaurant: { $in: rids },
@@ -51,6 +55,7 @@ router.get('/summary', auth, async (req, res) => {
       const todayRelances = await ShopOrder.countDocuments({
         commercialStatus: 'relance',
         scheduledDeliveryAt: { $gte: start, $lte: end },
+        ...staffShopListFilter(user),
       });
 
       return res.json({
@@ -59,6 +64,20 @@ router.get('/summary', auth, async (req, res) => {
         unreadMessages,
         todayRelances,
         total: pendingOrders + unreadMessages + todayRelances,
+      });
+    }
+
+    if (user.role === 'responsable') {
+      const pendingOrders = await ShopOrder.countDocuments({
+        statut: 'en_attente',
+        ...staffShopListFilter(user),
+      });
+      return res.json({
+        role: 'responsable',
+        pendingOrders,
+        unreadMessages: 0,
+        todayRelances: 0,
+        total: pendingOrders,
       });
     }
 
