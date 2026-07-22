@@ -133,6 +133,7 @@ app.use('/api/shop-settings', require('./routes/shopSettings'));
 app.use('/api/meal-products', require('./routes/mealProducts'));
 app.use('/api/meal-shop', require('./routes/mealShop'));
 app.use('/api/meal-orders', require('./routes/mealOrders'));
+app.use('/api/invitations', require('./routes/invitations'));
 app.use('/api/whatsapp/webhook', require('./routes/whatsappWebhook'));
 app.use('/api/commercial', require('./routes/commercial'));
 app.use('/api/kitchen', require('./routes/kitchen'));

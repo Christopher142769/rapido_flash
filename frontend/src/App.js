@@ -22,6 +22,7 @@ import Checkout from './pages/client/Checkout';
 import Orders from './pages/client/Orders';
 import Factures from './pages/client/Factures';
 import ReceiptPage from './pages/client/ReceiptPage';
+import InvitesCheckPage from './pages/client/InvitesCheckPage';
 import Settings from './pages/client/Settings';
 import AccountDeletion from './pages/AccountDeletion';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
@@ -50,6 +51,7 @@ import PromoUsersDashboard from './pages/restaurant/PromoUsersDashboard';
 import ShopDashboard from './pages/restaurant/ShopDashboard';
 import ShopRepasDashboard from './pages/restaurant/ShopRepasDashboard';
 import PushNotificationsDashboard from './pages/restaurant/PushNotificationsDashboard';
+import InvitesDashboard from './pages/restaurant/InvitesDashboard';
 import ShopProductLanding from './pages/shop/ShopProductLanding';
 import ShopOrderConfirmation from './pages/shop/ShopOrderConfirmation';
 import MealShopPage from './pages/repas/MealShopPage';
@@ -200,6 +202,8 @@ function AppRoutes() {
         <Route path="/repas/:slug/commande" element={<MealOrderConfirmation />} />
         <Route path="/repas/commande" element={<MealOrderConfirmation />} />
         <Route path="/repas/panier" element={<MealCartPage />} />
+        <Route path="/invites/:code" element={<InvitesCheckPage />} />
+        <Route path="/invités/:code" element={<InvitesCheckPage />} />
         <Route
           path="/repas/:slug"
           element={<MealProductLegacyRedirect />}
@@ -225,6 +229,7 @@ function AppRoutes() {
           <Route path="plats" element={<RestaurantPlats />} />
           <Route path="shop" element={<ShopDashboard />} />
           <Route path="shop-repas" element={<ShopRepasDashboard />} />
+          <Route path="invites" element={<InvitesDashboard />} />
           <Route path="categories" element={<Categories />} />
           <Route path="commandes" element={<RestaurantCommandes />} />
           <Route path="bannieres" element={<Bannieres />} />

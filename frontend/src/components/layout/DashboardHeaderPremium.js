@@ -25,6 +25,7 @@ function titleForPath(pathname, user, t) {
     ['/dashboard/shop-repas', 'Shop repas'],
     ['/dashboard/formulaires', t('dashNav', 'formulaires')],
     ['/dashboard/commandes', t('dashNav', 'commandes')],
+    ['/dashboard/invites', 'Invités'],
     ['/dashboard/messages', t('dashNav', 'messages')],
     ['/dashboard/offres-promo', t('dashNav', 'offresPromo')],
     ['/dashboard/utilisateurs-promo', t('dashNav', 'utilisateurs')],

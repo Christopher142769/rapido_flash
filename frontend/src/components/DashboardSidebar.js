@@ -11,6 +11,7 @@ import {
   FaStar,
   FaBullhorn,
   FaUsers,
+  FaQrcode,
 } from 'react-icons/fa';
 import AuthContext from '../context/AuthContext';
 import LanguageContext from '../context/LanguageContext';
@@ -37,6 +38,7 @@ const DashboardSidebar = ({ onLogout }) => {
     { id: 'categories', label: 'Catégories produits', path: '/dashboard/categories' },
     { id: 'plats', label: 'Produits', path: '/dashboard/plats' },
     { id: 'commandes', label: 'Commandes', path: '/dashboard/commandes' },
+    { id: 'invites', label: 'Invités', path: '/dashboard/invites' },
     { id: 'messages', label: 'Messages', path: '/dashboard/messages' },
     { id: 'avis', label: t('reviews', 'sidebarReviews'), path: '/dashboard/avis' },
     { id: 'bannieres', label: 'Bannières', path: '/dashboard/bannieres' }
@@ -66,6 +68,7 @@ const DashboardSidebar = ({ onLogout }) => {
       categories: FaTags,
       plats: FaBoxOpen,
       commandes: FaClipboardList,
+      invites: FaQrcode,
       messages: FaComments,
       avis: FaStar,
       bannieres: FaImages,

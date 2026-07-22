@@ -111,4 +111,54 @@ const sendCustomFormNotification = async ({ to, subject, text, html }) => {
   return { sent: true };
 };
 
-module.exports = { sendLoginCode, sendDashboardLoginCode, sendCustomFormNotification };
+const sendInvitationEmail = async ({ to, subject, text, html, attachments = [] }) => {
+  const recipient = String(to || '').trim();
+  if (!recipient) return { sent: false, error: 'no_recipient' };
+
+  const hasSmtp = process.env.SMTP_HOST && process.env.SMTP_USER;
+
+  if (hasSmtp) {
+    try {
+      const nodemailer = require('nodemailer');
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || '587', 10),
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+      const from = process.env.MAIL_FROM || process.env.SMTP_USER;
+      await transporter.sendMail({
+        from,
+        to: recipient,
+        subject,
+        text,
+        html,
+        attachments,
+      });
+      return { sent: true };
+    } catch (err) {
+      console.error('Erreur envoi email invitation:', err.message);
+      return { sent: false, error: err.message };
+    }
+  }
+
+  console.log('📧 [DEV] Invitation →', recipient);
+  console.log(subject);
+  if (attachments?.length) {
+    console.log(
+      'Pièces jointes:',
+      attachments.map((a) => a.filename || 'fichier').join(', ')
+    );
+  }
+  return { sent: true, dev: true };
+};
+
+module.exports = {
+  sendLoginCode,
+  sendDashboardLoginCode,
+  sendCustomFormNotification,
+  sendInvitationEmail,
+};

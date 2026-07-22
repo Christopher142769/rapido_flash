@@ -1,0 +1,81 @@
+.invites-check-page {
+  min-height: 60vh;
+  padding: 16px 14px 80px;
+}
+
+.invites-check-card {
+  max-width: 760px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+}
+
+.invites-check-card--err {
+  border: 1px solid #ffd6d6;
+}
+
+.invites-check-title {
+  font-size: 20px;
+  margin: 0 0 12px;
+}
+
+.invites-check-text {
+  color: #8a0d0d;
+  margin-bottom: 12px;
+}
+
+.invites-check-invite {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 14px 14px;
+}
+
+.invites-check-invite-name {
+  font-weight: 700;
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.invites-check-badge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.invites-check-badge--ok {
+  background: #e9f7ef;
+  color: #156a32;
+}
+
+.invites-check-badge--todo {
+  background: #fff6db;
+  color: #8a5a00;
+}
+
+.invites-check-checked-at {
+  margin-top: 10px;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.invites-check-actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.invites-check-secondary-link {
+  color: #0055aa;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.invites-check-secondary-btn {
+  text-decoration: none;
+}
+
