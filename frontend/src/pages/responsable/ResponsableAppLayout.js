@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
-import { FaSignOutAlt, FaShoppingBag, FaUtensils } from 'react-icons/fa';
+import { Outlet } from 'react-router-dom';
+import { FaSignOutAlt } from 'react-icons/fa';
 import AuthContext from '../../context/AuthContext';
 import './responsable.css';
 
@@ -31,23 +31,6 @@ export default function ResponsableAppLayout() {
           <FaSignOutAlt />
         </button>
       </header>
-
-      <nav className="resp-nav" aria-label="Navigation responsable">
-        <NavLink
-          to="/responsables/commandes"
-          className={({ isActive }) => `resp-nav__link${isActive ? ' is-active' : ''}`}
-        >
-          <FaShoppingBag aria-hidden />
-          Commandes Shop
-        </NavLink>
-        <NavLink
-          to="/responsables/commandes-repas"
-          className={({ isActive }) => `resp-nav__link${isActive ? ' is-active' : ''}`}
-        >
-          <FaUtensils aria-hidden />
-          Commandes Repas
-        </NavLink>
-      </nav>
 
       <main className="resp-main">
         <Outlet />

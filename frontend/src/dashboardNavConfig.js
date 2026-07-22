@@ -52,16 +52,9 @@ function buildCommercialNavItems({ isAdmin, isResponsable = false, t }) {
       {
         id: 'commercial-commandes',
         label: 'Commandes Shop',
-        path: '/responsables/commandes',
+        path: '/responsables',
         section: COMMERCIAL_NAV_SECTION,
         Icon: FaShoppingBag,
-      },
-      {
-        id: 'commercial-commandes-repas',
-        label: 'Commandes Repas',
-        path: '/responsables/commandes-repas',
-        section: COMMERCIAL_NAV_SECTION,
-        Icon: FaUtensils,
       },
     ];
   }

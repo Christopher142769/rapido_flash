@@ -75,9 +75,9 @@ export default function ResponsablesDashboard() {
     <div className="commercial-page">
       <h1>Responsables délégués</h1>
       <p className="commercial-lead">
-        Mini-admins par ville : créez leur compte ici. Ils se connectent ensuite via{' '}
-        <strong>/responsables</strong> pour recevoir les commandes Shop et Repas de leur ville (à
-        partir d’aujourd’hui), confirmer et marquer livré.
+        Mini-admins par ville : créez leur compte ici. Ils se connectent via{' '}
+        <strong>/responsables</strong> (sans double authentification) et ne voient que les
+        commandes Shop de leur ville assignée (à partir d’aujourd’hui).
       </p>
 
       <div className="commercial-card">

@@ -183,12 +183,12 @@ function AppRoutes() {
           </Route>
         </Route>
 
-        {/* Espace responsables délégués */}
+        {/* Espace responsables délégués (Shop, filtré par ville) */}
         <Route path="/responsables" element={<ResponsableGate />}>
           <Route element={<ResponsableAppLayout />}>
-            <Route index element={<Navigate to="commandes" replace />} />
+            <Route index element={<CommercialCommandesPage />} />
             <Route path="commandes" element={<CommercialCommandesPage />} />
-            <Route path="commandes-repas" element={<MealCommandesPage />} />
+            <Route path="commandes-repas" element={<Navigate to="/responsables" replace />} />
           </Route>
         </Route>
 
