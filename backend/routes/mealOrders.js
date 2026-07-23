@@ -11,7 +11,11 @@ const { getShopOrderLimitState, mergeClosureWithOrderLimit } = require('../utils
 const { sendToUserIds } = require('../services/pushNotifications');
 const { normalizeBeninPhoneDigits } = require('../utils/phoneDigits');
 const { getTodayDateKey, deliveryDateKeyToDate } = require('../utils/shopDeliveryDate');
-const { assertResponsableCityAccess, responsableMealListFilter } = require('../utils/responsableAccess');
+const {
+  assertResponsableCityAccess,
+  assertResponsableMealAccess,
+  responsableMealListFilter,
+} = require('../utils/responsableAccess');
 
 const router = express.Router();
 
@@ -55,6 +59,20 @@ async function getKitchenUserIds() {
   const staff = await User.find({
     role: { $in: ['restaurant', 'gestionnaire', 'cuisinier'] },
     banned: { $ne: true },
+  })
+    .select('_id')
+    .lean();
+  return staff.map((u) => String(u._id));
+}
+
+/** Responsables avec Repas activé, filtrés par ville de la commande. */
+async function getResponsableMealNotifyIds(orderCity) {
+  const city = String(orderCity || '').trim();
+  const staff = await User.find({
+    role: 'responsable',
+    mealOrdersEnabled: true,
+    banned: { $ne: true },
+    ...(city ? { assignedCity: city } : {}),
   })
     .select('_id')
     .lean();
@@ -165,8 +183,9 @@ router.post('/', async (req, res) => {
 
     const staffIds = await getStaffUserIds();
     const kitchenIds = await getKitchenUserIds();
+    const responsableIds = await getResponsableMealNotifyIds(order.customer?.city);
+    const summary = builtItems.map((i) => `${i.productName} ×${i.quantity}`).join(', ');
     if (staffIds.length) {
-      const summary = builtItems.map((i) => `${i.productName} ×${i.quantity}`).join(', ');
       void sendToUserIds(staffIds, {
         title: 'Rapido Repas — Nouvelle commande',
         body: summary.slice(0, 120),
@@ -175,13 +194,20 @@ router.post('/', async (req, res) => {
       }).catch(() => {});
     }
     if (kitchenIds.length) {
-      const summary = builtItems.map((i) => `${i.productName} ×${i.quantity}`).join(', ');
       void sendToUserIds(kitchenIds, {
         title: 'Cuisine — Nouvelle commande repas',
         body: summary.slice(0, 120),
         url: '/cuisine/app',
         tag: `rapido-kitchen-order-${order._id}`,
         sound: 'meal',
+      }).catch(() => {});
+    }
+    if (responsableIds.length) {
+      void sendToUserIds(responsableIds, {
+        title: 'Rapido Repas — Nouvelle commande',
+        body: summary.slice(0, 120),
+        url: '/responsables/commandes-repas',
+        tag: `rapido-meal-order-${order._id}`,
       }).catch(() => {});
     }
 
@@ -214,6 +240,9 @@ router.post('/:id/whatsapp-confirmation', async (req, res) => {
 
 router.get('/', auth, isKitchenStaff, async (req, res) => {
   try {
+    const mealAccessErr = assertResponsableMealAccess(req.user);
+    if (mealAccessErr) return res.status(403).json({ message: mealAccessErr });
+
     const filter = {
       ...responsableMealListFilter(req.user),
     };
@@ -272,8 +301,15 @@ router.put('/:id/statut', auth, isKitchenStaff, async (req, res) => {
       return res.status(403).json({ message: 'Accès refusé' });
     }
 
+    const mealAccessErr = assertResponsableMealAccess(req.user);
+    if (mealAccessErr) return res.status(403).json({ message: mealAccessErr });
+
     const cityErr = assertResponsableCityAccess(req.user, order);
     if (cityErr) return res.status(403).json({ message: cityErr });
+
+    if (req.user.role === 'responsable' && (statut === 'annulee')) {
+      return res.status(403).json({ message: 'Les responsables ne peuvent pas annuler une commande' });
+    }
 
     if (statut) {
       order.statut = statut;

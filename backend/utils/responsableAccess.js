@@ -26,6 +26,18 @@ function startOfTodayBenin(now = new Date()) {
   return new Date(`${key}T00:00:00+01:00`);
 }
 
+function hasResponsableMealAccess(user) {
+  return isResponsable(user) && !!user?.mealOrdersEnabled;
+}
+
+function assertResponsableMealAccess(user) {
+  if (!isResponsable(user)) return null;
+  if (!user?.mealOrdersEnabled) {
+    return 'Les commandes Repas ne sont pas activées pour ce compte';
+  }
+  return null;
+}
+
 function assertResponsableCityAccess(user, order) {
   if (!isResponsable(user)) return null;
   const city = getAssignedCity(user);
@@ -86,6 +98,7 @@ function staffShopListFilter(user) {
 /** Filtre repas pour responsable (ville seulement — pas de produits Shop). */
 function responsableMealListFilter(user) {
   if (!isResponsable(user)) return {};
+  if (!user?.mealOrdersEnabled) return { _id: { $in: [] } };
   const city = getAssignedCity(user);
   const filter = {};
   if (city) filter['customer.city'] = city;
@@ -111,6 +124,8 @@ module.exports = {
   getAssignedProductIds,
   startOfTodayBenin,
   assertResponsableCityAccess,
+  hasResponsableMealAccess,
+  assertResponsableMealAccess,
   assertStaffShopProductAccess,
   assertStaffShopOrderAccess,
   staffShopListFilter,

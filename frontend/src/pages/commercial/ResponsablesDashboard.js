@@ -21,6 +21,7 @@ const emptyForm = {
   password: '',
   assignedCity: 'Cotonou',
   assignedShopProducts: [],
+  mealOrdersEnabled: false,
 };
 
 export default function ResponsablesDashboard() {
@@ -105,16 +106,32 @@ export default function ResponsablesDashboard() {
     }
   };
 
+  const toggleMealOrders = async (account) => {
+    try {
+      await updateResponsableAccount(account._id, {
+        mealOrdersEnabled: !account.mealOrdersEnabled,
+      });
+      showSuccess(
+        account.mealOrdersEnabled
+          ? 'Commandes Repas désactivées'
+          : 'Commandes Repas activées'
+      );
+      await load();
+    } catch (err) {
+      showError(err.response?.data?.message || err.message);
+    }
+  };
+
   if (loading) return <PageLoader />;
 
   return (
     <div className="commercial-page">
       <h1>Responsables délégués</h1>
       <p className="commercial-lead">
-        Mini-admins par ville : connexion via <strong>/responsables</strong>. Ils ne voient que les
-        commandes Shop de leur ville et des produits assignés, avec les mêmes filtres que l’admin.
-        Ils peuvent confirmer / faire avancer le statut, sans modifier ni supprimer les commandes.
-        Chaque nouvelle commande de leurs produits déclenche une notification.
+        Mini-admins par ville : connexion via <strong>/responsables</strong>. Par défaut ils ne
+        voient que les commandes Shop (ville + produits assignés). Les commandes Repas restent
+        désactivées tant que vous ne les activez pas ici. Traitement uniquement (pas de modif /
+        suppression). Notifications à chaque commande concernée.
       </p>
 
       <div className="commercial-card">
@@ -176,6 +193,18 @@ export default function ResponsablesDashboard() {
               required
               hint="Obligatoire : seules les commandes de ces produits seront visibles."
             />
+            <div className="commercial-form-field" style={{ gridColumn: '1 / -1' }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={!!form.mealOrdersEnabled}
+                  onChange={(e) =>
+                    setForm({ ...form, mealOrdersEnabled: e.target.checked })
+                  }
+                />
+                Activer aussi les commandes Repas (ville assignée)
+              </label>
+            </div>
           </div>
           <button
             type="submit"
@@ -199,7 +228,8 @@ export default function ResponsablesDashboard() {
                 <th>Nom</th>
                 <th>Email</th>
                 <th>Ville</th>
-                <th>Produits</th>
+                <th>Produits Shop</th>
+                <th>Repas</th>
                 <th>Statut</th>
                 <th>Actions</th>
               </tr>
@@ -232,6 +262,15 @@ export default function ResponsablesDashboard() {
                         required
                       />
                     </details>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="commercial-btn commercial-btn--outline commercial-btn--sm"
+                      onClick={() => toggleMealOrders(a)}
+                    >
+                      {a.mealOrdersEnabled ? 'Activé' : 'Désactivé'}
+                    </button>
                   </td>
                   <td>{a.banned ? 'Suspendu' : 'Actif'}</td>
                   <td>

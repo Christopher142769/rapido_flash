@@ -6,7 +6,7 @@ const Commande = require('../models/Commande');
 const ShopOrder = require('../models/ShopOrder');
 const MealOrder = require('../models/MealOrder');
 const Conversation = require('../models/Conversation');
-const { staffShopListFilter } = require('../utils/responsableAccess');
+const { staffShopListFilter, responsableMealListFilter } = require('../utils/responsableAccess');
 
 const router = express.Router();
 
@@ -68,10 +68,18 @@ router.get('/summary', auth, async (req, res) => {
     }
 
     if (user.role === 'responsable') {
-      const pendingOrders = await ShopOrder.countDocuments({
+      const shopPending = await ShopOrder.countDocuments({
         statut: 'en_attente',
         ...staffShopListFilter(user),
       });
+      let mealPending = 0;
+      if (user.mealOrdersEnabled) {
+        mealPending = await MealOrder.countDocuments({
+          statut: 'en_attente',
+          ...responsableMealListFilter(user),
+        });
+      }
+      const pendingOrders = shopPending + mealPending;
       return res.json({
         role: 'responsable',
         pendingOrders,

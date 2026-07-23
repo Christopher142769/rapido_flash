@@ -34,6 +34,11 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'ShopProduct',
   }],
+  /** Responsable : accès commandes Repas (désactivé par défaut, activé par l’admin). */
+  mealOrdersEnabled: {
+    type: Boolean,
+    default: false,
+  },
   position: {
     latitude: Number,
     longitude: Number,

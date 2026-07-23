@@ -1,13 +1,17 @@
 import React, { useContext } from 'react';
-import { Outlet } from 'react-router-dom';
-import { FaSignOutAlt } from 'react-icons/fa';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { FaSignOutAlt, FaShoppingBag, FaUtensils } from 'react-icons/fa';
 import AuthContext from '../../context/AuthContext';
 import './responsable.css';
 
 export default function ResponsableAppLayout() {
   const { user, logout } = useContext(AuthContext);
+  const location = useLocation();
   const city = String(user?.assignedCity || '').trim();
   const firstName = user?.nom ? String(user.nom).split(' ')[0] : 'Responsable';
+  const mealEnabled = !!user?.mealOrdersEnabled;
+  const path = location.pathname;
+  const shopActive = path === '/responsables' || path === '/responsables/commandes';
 
   return (
     <div className="resp-shell">
@@ -31,6 +35,25 @@ export default function ResponsableAppLayout() {
           <FaSignOutAlt />
         </button>
       </header>
+
+      {mealEnabled ? (
+        <nav className="resp-nav" aria-label="Navigation responsable">
+          <NavLink
+            to="/responsables/commandes"
+            className={() => `resp-nav__link${shopActive ? ' is-active' : ''}`}
+          >
+            <FaShoppingBag aria-hidden />
+            Commandes Shop
+          </NavLink>
+          <NavLink
+            to="/responsables/commandes-repas"
+            className={({ isActive }) => `resp-nav__link${isActive ? ' is-active' : ''}`}
+          >
+            <FaUtensils aria-hidden />
+            Commandes Repas
+          </NavLink>
+        </nav>
+      ) : null}
 
       <main className="resp-main">
         <Outlet />

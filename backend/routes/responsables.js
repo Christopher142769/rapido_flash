@@ -51,6 +51,7 @@ router.post('/accounts', auth, isRestaurantAdmin, async (req, res) => {
       role: 'responsable',
       assignedCity,
       assignedShopProducts: productIds,
+      mealOrdersEnabled: !!req.body?.mealOrdersEnabled,
     });
     await user.save();
     await user.populate('assignedShopProducts', 'name slug');
@@ -70,6 +71,9 @@ router.patch('/accounts/:id', auth, isRestaurantAdmin, async (req, res) => {
     if (req.body.nom) user.nom = String(req.body.nom).trim();
     if (req.body.telephone !== undefined) user.telephone = String(req.body.telephone || '').trim();
     if (req.body.banned !== undefined) user.banned = !!req.body.banned;
+    if (req.body.mealOrdersEnabled !== undefined) {
+      user.mealOrdersEnabled = !!req.body.mealOrdersEnabled;
+    }
     if (req.body.assignedCity != null) {
       const city = String(req.body.assignedCity || '').trim();
       if (!RESPONSABLE_CITIES.includes(city)) {

@@ -55,6 +55,7 @@ function serializeAuthUser(user) {
     restaurantId: user.restaurantId,
     assignedCity: user.assignedCity || '',
     assignedShopProducts: (user.assignedShopProducts || []).map((p) => String(p?._id || p)),
+    mealOrdersEnabled: !!user.mealOrdersEnabled,
     banned: !!user.banned,
     canManageMaintenance: canManageMaintenance(user),
   };

@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useContext, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import AuthContext, { AuthProvider } from './context/AuthContext';
 import { ModalProvider } from './context/ModalContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -130,6 +130,14 @@ function MealProductLegacyRedirect() {
   return <Navigate to={`/repas/commandes/${slug}`} replace />;
 }
 
+function ResponsableMealOrdersRoute() {
+  const { user } = useContext(AuthContext);
+  if (!user?.mealOrdersEnabled) {
+    return <Navigate to="/responsables" replace />;
+  }
+  return <MealCommandesPage />;
+}
+
 function AppRoutes() {
   const location = useLocation();
   const isRecrutement =
@@ -183,12 +191,12 @@ function AppRoutes() {
           </Route>
         </Route>
 
-        {/* Espace responsables délégués (Shop, filtré par ville) */}
+        {/* Espace responsables délégués (Shop ; Repas si activé par l’admin) */}
         <Route path="/responsables" element={<ResponsableGate />}>
           <Route element={<ResponsableAppLayout />}>
             <Route index element={<CommercialCommandesPage />} />
             <Route path="commandes" element={<CommercialCommandesPage />} />
-            <Route path="commandes-repas" element={<Navigate to="/responsables" replace />} />
+            <Route path="commandes-repas" element={<ResponsableMealOrdersRoute />} />
           </Route>
         </Route>
 

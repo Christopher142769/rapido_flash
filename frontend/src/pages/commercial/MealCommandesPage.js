@@ -194,8 +194,8 @@ export default function MealCommandesPage({ variant = 'commercial', refreshKey =
   const [filter, setFilter] = useState('');
   const [productFilter, setProductFilter] = useState('');
   const [cityFilter, setCityFilter] = useState(() => lockedCity || '');
-  const [dateFrom, setDateFrom] = useState(() => defaultDateRange(isResponsable).dateFrom);
-  const [dateTo, setDateTo] = useState(() => defaultDateRange(isResponsable).dateTo);
+  const [dateFrom, setDateFrom] = useState(() => defaultDateRange(false).dateFrom);
+  const [dateTo, setDateTo] = useState(() => defaultDateRange(false).dateTo);
   const [specsOrder, setSpecsOrder] = useState(null);
   const [editOrder, setEditOrder] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -423,7 +423,7 @@ export default function MealCommandesPage({ variant = 'commercial', refreshKey =
               <h1>Commandes Repas</h1>
               {isResponsable && lockedCity ? (
                 <p className="commercial-lead" style={{ marginTop: 8 }}>
-                  Responsable délégué — {lockedCity} (commandes à partir d’aujourd’hui)
+                  Responsable — {lockedCity} · commandes Repas activées (traitement uniquement).
                 </p>
               ) : null}
             </div>
@@ -776,14 +776,16 @@ export default function MealCommandesPage({ variant = 'commercial', refreshKey =
                                 >
                                   Confirmer
                                 </button>
-                                <button
-                                  type="button"
-                                  className="btn btn-outline"
-                                  disabled={busy}
-                                  onClick={() => updateStatut(order, 'annulee')}
-                                >
-                                  Annuler
-                                </button>
+                                {!isResponsable ? (
+                                  <button
+                                    type="button"
+                                    className="btn btn-outline"
+                                    disabled={busy}
+                                    onClick={() => updateStatut(order, 'annulee')}
+                                  >
+                                    Annuler
+                                  </button>
+                                ) : null}
                               </>
                             ) : null}
                             {order.statut === 'confirmee' ? (
@@ -796,23 +798,25 @@ export default function MealCommandesPage({ variant = 'commercial', refreshKey =
                                 >
                                   En préparation
                                 </button>
-                                <button
-                                  type="button"
-                                  className="btn btn-outline"
-                                  disabled={busy}
-                                  onClick={() => {
-                                    if (
-                                      !window.confirm(
-                                        'Annuler la confirmation de cette commande ? Elle repassera en attente.'
-                                      )
-                                    ) {
-                                      return;
-                                    }
-                                    updateStatut(order, 'en_attente');
-                                  }}
-                                >
-                                  Annuler la confirmation
-                                </button>
+                                {!isResponsable ? (
+                                  <button
+                                    type="button"
+                                    className="btn btn-outline"
+                                    disabled={busy}
+                                    onClick={() => {
+                                      if (
+                                        !window.confirm(
+                                          'Annuler la confirmation de cette commande ? Elle repassera en attente.'
+                                        )
+                                      ) {
+                                        return;
+                                      }
+                                      updateStatut(order, 'en_attente');
+                                    }}
+                                  >
+                                    Annuler la confirmation
+                                  </button>
+                                ) : null}
                               </>
                             ) : null}
                             {order.statut === 'en_preparation' ? (
