@@ -194,3 +194,63 @@ export function exportPresenceToWord(exportData) {
   const stamp = new Date().toISOString().slice(0, 10);
   triggerBrowserDownload(blob, `presence-personnel-${stamp}.doc`);
 }
+
+/** PDF A4 imprimable avec le QR de pointage (image PNG du canvas). */
+export function exportPresenceQrToPdf({ url, qrDataUrl }) {
+  if (!url || !qrDataUrl) {
+    throw new Error('QR indisponible');
+  }
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageW = 210;
+  const margin = 18;
+
+  doc.setFillColor(...BRAND.cream);
+  doc.rect(0, 0, pageW, 297, 'F');
+
+  doc.setTextColor(...BRAND.brown);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.text('Rapido Flash — Présence personnel', pageW / 2, 28, { align: 'center' });
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(12);
+  doc.setTextColor(...BRAND.text);
+  doc.text('Scannez ce QR code pour marquer votre présence', pageW / 2, 40, { align: 'center' });
+
+  const qrSize = 110;
+  const qrX = (pageW - qrSize) / 2;
+  const qrY = 55;
+  doc.setFillColor(...BRAND.white);
+  doc.roundedRect(qrX - 6, qrY - 6, qrSize + 12, qrSize + 12, 4, 4, 'F');
+  doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(...BRAND.brown);
+  doc.text('Comment faire ?', margin, qrY + qrSize + 22);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.setTextColor(...BRAND.text);
+  const steps = [
+    '1. Scannez le QR avec votre téléphone',
+    '2. Saisissez votre prénom et votre nom',
+    '3. Appuyez sur « Je suis présent »',
+    'L’heure est enregistrée automatiquement.',
+  ];
+  let y = qrY + qrSize + 30;
+  steps.forEach((line) => {
+    doc.text(line, margin, y);
+    y += 7;
+  });
+
+  doc.setFontSize(9);
+  doc.setTextColor(...BRAND.muted);
+  const linkLines = doc.splitTextToSize(`Lien : ${url}`, pageW - margin * 2);
+  doc.text(linkLines, margin, y + 8);
+
+  doc.setFontSize(8);
+  doc.text('QR définitif — à afficher sur le lieu de travail', pageW / 2, 285, { align: 'center' });
+
+  doc.save('qr-presence-personnel.pdf');
+}

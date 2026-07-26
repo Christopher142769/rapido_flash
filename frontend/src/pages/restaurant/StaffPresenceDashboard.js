@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
-import { QRCodeSVG } from 'qrcode.react';
+import { QRCodeCanvas, QRCodeSVG } from 'qrcode.react';
 import PageLoader from '../../components/PageLoader';
 import { useModal } from '../../context/ModalContext';
 import {
+  exportPresenceQrToPdf,
   exportPresenceToExcel,
   exportPresenceToPdf,
   exportPresenceToWord,
@@ -40,6 +41,7 @@ export default function StaffPresenceDashboard() {
   const [dateFrom, setDateFrom] = useState(() => todayKey());
   const [dateTo, setDateTo] = useState(() => todayKey());
   const [busy, setBusy] = useState(false);
+  const qrCanvasRef = useRef(null);
 
   const loadSettings = useCallback(async () => {
     const res = await axios.get(`${API_URL}/staff-presence/settings`, authHeaders());
@@ -125,6 +127,23 @@ export default function StaffPresenceDashboard() {
     }
   };
 
+  const downloadQrPdf = () => {
+    try {
+      const canvas = qrCanvasRef.current;
+      if (!canvas || typeof canvas.toDataURL !== 'function') {
+        showError('QR pas encore prêt');
+        return;
+      }
+      exportPresenceQrToPdf({
+        url: publicUrl,
+        qrDataUrl: canvas.toDataURL('image/png'),
+      });
+      showSuccess('PDF du QR téléchargé');
+    } catch (e) {
+      showError(e.message || 'Impossible de générer le PDF');
+    }
+  };
+
   if (loading) return <PageLoader message="Présence personnel…" />;
 
   return (
@@ -142,6 +161,16 @@ export default function StaffPresenceDashboard() {
           <div className="staff-presence-qr-grid">
             <div className="staff-presence-qr-box">
               <QRCodeSVG value={publicUrl} size={180} level="M" includeMargin />
+              {/* Canvas haute résolution pour le PDF (hors écran) */}
+              <div className="staff-presence-qr-print" aria-hidden>
+                <QRCodeCanvas
+                  ref={qrCanvasRef}
+                  value={publicUrl}
+                  size={512}
+                  level="M"
+                  includeMargin
+                />
+              </div>
             </div>
             <div className="staff-presence-qr-meta">
               <label>
@@ -152,6 +181,14 @@ export default function StaffPresenceDashboard() {
                 <button
                   type="button"
                   className="commercial-btn commercial-btn--primary"
+                  onClick={downloadQrPdf}
+                  disabled={busy || !publicUrl}
+                >
+                  Télécharger PDF
+                </button>
+                <button
+                  type="button"
+                  className="commercial-btn commercial-btn--outline"
                   onClick={copyUrl}
                 >
                   Copier le lien
