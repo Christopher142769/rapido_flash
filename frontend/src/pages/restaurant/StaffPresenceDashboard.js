@@ -71,7 +71,15 @@ export default function StaffPresenceDashboard() {
     loadAll();
   }, [loadAll]);
 
-  const publicUrl = settings?.url || '';
+  // Toujours le domaine courant (rapido.bj / rapido.online), jamais un host fantôme.
+  const publicUrl = useMemo(() => {
+    const code = settings?.code;
+    if (!code) return '';
+    if (typeof window !== 'undefined' && window.location?.origin) {
+      return `${window.location.origin}/présence/${encodeURIComponent(code)}`;
+    }
+    return settings?.url || '';
+  }, [settings?.code, settings?.url]);
 
   const exportMeta = useMemo(() => {
     const same = dateFrom && dateTo && dateFrom === dateTo;

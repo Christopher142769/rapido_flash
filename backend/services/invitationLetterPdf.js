@@ -47,9 +47,14 @@ function parseGuestName(fullName) {
 }
 
 function getPublicInviteUrl(code) {
-  const base = String(process.env.PUBLIC_APP_URL || process.env.FRONTEND_URL || '').replace(/\/$/, '');
-  if (base) return `${base}/invités/${code}`;
-  return `https://rapido-flash.com/invités/${code}`;
+  const base = String(
+    process.env.PUBLIC_APP_URL ||
+      process.env.FRONTEND_URL_1 ||
+      process.env.FRONTEND_URL ||
+      process.env.FRONTEND_URL_2 ||
+      'https://rapido.online'
+  ).replace(/\/$/, '');
+  return `${base}/invités/${code}`;
 }
 
 async function loadTemplateBytes() {
