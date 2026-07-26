@@ -1,10 +1,13 @@
 .staff-presence-page {
-  --sp-ink: #0f2e2a;
-  --sp-teal: #1a5c52;
-  --sp-teal-deep: #0d3d37;
-  --sp-amber: #d4782e;
-  --sp-sand: #f3f7f5;
-  --sp-mist: rgba(255, 255, 255, 0.88);
+  --sp-brown: #8b4513;
+  --sp-amber: var(--rf-amber, #c76d2e);
+  --sp-amber-light: var(--rf-amber-light, #e0914a);
+  --sp-gold: var(--rf-gold, #e8b54a);
+  --sp-ink: var(--rf-ink, #1a1411);
+  --sp-muted: var(--rf-text-muted, #7a6558);
+  --sp-cream: var(--rf-cream, #f7f4ef);
+  --sp-surface: var(--rf-cream-card, #fffefb);
+  --sp-font: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
@@ -14,19 +17,19 @@
   position: relative;
   overflow: hidden;
   color: var(--sp-ink);
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: var(--sp-font);
   background:
-    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(212, 120, 46, 0.28), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 100% 100%, rgba(26, 92, 82, 0.22), transparent 50%),
-    linear-gradient(165deg, #e8f2ef 0%, #f5f8f6 42%, #eef4f1 100%);
+    radial-gradient(ellipse 90% 55% at 50% -8%, rgba(232, 181, 74, 0.35), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 100% 100%, rgba(199, 109, 46, 0.18), transparent 50%),
+    var(--rf-shell-gradient, linear-gradient(165deg, #f4f0e8 0%, #ebe6de 42%, #e3ddd4 100%));
 }
 
 .staff-presence-page::before {
   content: '';
   position: absolute;
-  inset: -20% 20% auto;
-  height: 55%;
-  background: radial-gradient(circle, rgba(26, 92, 82, 0.12), transparent 70%);
+  inset: -18% 18% auto;
+  height: 52%;
+  background: radial-gradient(circle, rgba(139, 69, 19, 0.1), transparent 70%);
   pointer-events: none;
   animation: sp-glow 8s ease-in-out infinite alternate;
 }
@@ -90,10 +93,11 @@
   border-radius: 28px;
   display: grid;
   place-items: center;
-  background: var(--sp-mist);
+  background: rgba(255, 254, 251, 0.92);
+  border: 1px solid rgba(139, 69, 19, 0.1);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.9) inset,
-    0 20px 40px rgba(15, 46, 42, 0.12);
+    0 18px 40px rgba(139, 69, 19, 0.12);
   animation: sp-logo-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -106,38 +110,39 @@
 
 .staff-presence-brand-name {
   margin: 0;
-  font-family: Syne, 'DM Sans', sans-serif;
+  font-family: var(--sp-font);
   font-size: 1.65rem;
   font-weight: 800;
-  letter-spacing: -0.03em;
-  color: var(--sp-teal-deep);
+  letter-spacing: -0.02em;
+  color: var(--sp-brown);
   line-height: 1.1;
 }
 
 .staff-presence-brand-tag {
   margin: -6px 0 0;
-  font-size: 0.8rem;
+  font-family: var(--sp-font);
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(15, 46, 42, 0.5);
+  color: var(--sp-muted);
 }
 
 .staff-presence-panel {
   width: 100%;
   padding: 26px 22px 22px;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 254, 251, 0.88);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(26, 92, 82, 0.1);
-  box-shadow: 0 24px 48px rgba(15, 46, 42, 0.08);
+  border: 1px solid var(--rf-border, rgba(120, 90, 60, 0.12));
+  box-shadow: var(--shadow-card, 0 24px 48px rgba(26, 20, 16, 0.08));
   animation: sp-rise 0.6s ease-out 0.08s both;
 }
 
 .staff-presence-panel h1 {
   margin: 0 0 8px;
-  font-family: Syne, 'DM Sans', sans-serif;
+  font-family: var(--sp-font);
   font-size: 1.35rem;
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -147,8 +152,9 @@
 .staff-presence-lead {
   margin: 0 0 22px;
   font-size: 0.95rem;
-  line-height: 1.5;
-  color: rgba(15, 46, 42, 0.68);
+  line-height: 1.55;
+  font-weight: 500;
+  color: var(--sp-muted);
 }
 
 .staff-presence-form {
@@ -160,20 +166,20 @@
 .staff-presence-form label {
   display: grid;
   gap: 6px;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgba(15, 46, 42, 0.65);
+  color: var(--sp-brown);
 }
 
 .staff-presence-form input {
   width: 100%;
   padding: 13px 14px;
   border-radius: 14px;
-  border: 1px solid rgba(26, 92, 82, 0.16);
+  border: 1px solid var(--rf-border-strong, rgba(120, 90, 60, 0.22));
   font-size: 1.02rem;
-  font-family: inherit;
+  font-family: var(--sp-font);
   font-weight: 500;
   color: var(--sp-ink);
   background: #fff;
@@ -182,8 +188,8 @@
 
 .staff-presence-form input:focus {
   outline: none;
-  border-color: var(--sp-teal);
-  box-shadow: 0 0 0 3px rgba(26, 92, 82, 0.15);
+  border-color: var(--sp-amber);
+  box-shadow: var(--shadow-gold, 0 0 0 3px rgba(232, 181, 74, 0.28));
 }
 
 .staff-presence-cta {
@@ -193,21 +199,21 @@
   border-radius: 16px;
   padding: 15px 18px;
   font-size: 1.05rem;
-  font-family: Syne, 'DM Sans', sans-serif;
+  font-family: var(--sp-font);
   font-weight: 800;
   letter-spacing: -0.01em;
   color: #fff;
   cursor: pointer;
-  background: linear-gradient(135deg, var(--sp-teal) 0%, var(--sp-teal-deep) 55%, var(--sp-amber) 140%);
+  background: linear-gradient(135deg, var(--sp-amber) 0%, var(--sp-brown) 72%, var(--sp-gold) 160%);
   background-size: 140% 140%;
-  box-shadow: 0 12px 28px rgba(26, 92, 82, 0.28);
+  box-shadow: 0 12px 28px rgba(139, 69, 19, 0.28);
   transition: transform 0.2s ease, box-shadow 0.2s ease, background-position 0.35s ease;
 }
 
 .staff-presence-cta:hover:not(:disabled) {
   transform: translateY(-1px);
   background-position: 100% 50%;
-  box-shadow: 0 16px 32px rgba(26, 92, 82, 0.34);
+  box-shadow: 0 16px 32px rgba(139, 69, 19, 0.34);
 }
 
 .staff-presence-cta:active:not(:disabled) {
@@ -223,8 +229,8 @@
   margin: 0 0 14px;
   padding: 12px 14px;
   border-radius: 14px;
-  background: #fff0f0;
-  color: #b42318;
+  background: var(--rf-danger-bg, #fff0f0);
+  color: var(--rf-danger, #dc3838);
   font-size: 0.9rem;
   font-weight: 500;
   text-align: left;
@@ -232,7 +238,7 @@
 
 .staff-presence-success {
   padding: 4px 0 2px;
-  color: var(--sp-teal-deep);
+  color: var(--sp-brown);
 }
 
 .staff-presence-success-icon {
@@ -245,29 +251,31 @@
   font-size: 1.5rem;
   font-weight: 800;
   color: #fff;
-  background: linear-gradient(145deg, var(--sp-teal), var(--sp-teal-deep));
-  box-shadow: 0 10px 24px rgba(26, 92, 82, 0.28);
+  background: linear-gradient(145deg, var(--sp-amber), var(--sp-brown));
+  box-shadow: 0 10px 24px rgba(139, 69, 19, 0.28);
   animation: sp-logo-in 0.45s ease-out both;
 }
 
 .staff-presence-success strong {
   display: block;
-  font-family: Syne, 'DM Sans', sans-serif;
+  font-family: var(--sp-font);
   font-size: 1.15rem;
   font-weight: 800;
   margin-bottom: 8px;
+  color: var(--sp-ink);
 }
 
 .staff-presence-success p {
   margin: 4px 0;
   font-size: 1rem;
   font-weight: 600;
+  color: var(--sp-ink);
 }
 
 .staff-presence-time {
   font-size: 0.9rem !important;
   font-weight: 500 !important;
-  color: rgba(15, 46, 42, 0.65) !important;
+  color: var(--sp-muted) !important;
 }
 
 .staff-presence-page .page-loader,
