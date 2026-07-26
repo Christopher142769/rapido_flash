@@ -10,6 +10,9 @@ const { auth, isRestaurant } = require('../middleware/auth');
 const router = express.Router();
 
 const TZ = 'Africa/Porto-Novo';
+const VALID_KINDS = new Set(['arrival', 'exit']);
+
+let indexesEnsured = false;
 
 function dateKeyBenin(now = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(now);
@@ -52,15 +55,72 @@ function newPresenceCode() {
   return crypto.randomBytes(16).toString('hex');
 }
 
+async function ensureRecordIndexes() {
+  if (indexesEnsured) return;
+  indexesEnsured = true;
+  try {
+    await StaffPresenceRecord.updateMany(
+      { $or: [{ kind: { $exists: false } }, { kind: null }, { kind: '' }] },
+      { $set: { kind: 'arrival' } }
+    );
+    const col = StaffPresenceRecord.collection;
+    const indexes = await col.indexes();
+    for (const idx of indexes) {
+      const key = idx.key || {};
+      const keys = Object.keys(key);
+      // Ancien index unique sans kind
+      if (
+        idx.unique &&
+        keys.length === 2 &&
+        key.dateKey === 1 &&
+        key.normalizedName === 1 &&
+        !('kind' in key)
+      ) {
+        await col.dropIndex(idx.name).catch(() => {});
+      }
+    }
+    await StaffPresenceRecord.syncIndexes();
+  } catch (e) {
+    console.warn('[staff-presence] ensureRecordIndexes:', e.message);
+  }
+}
+
 async function getOrCreateSettings() {
   let doc = await StaffPresenceSettings.findOne({ key: 'default' });
   if (!doc) {
     doc = await StaffPresenceSettings.create({
       key: 'default',
-      code: newPresenceCode(),
+      arrivalCode: newPresenceCode(),
+      exitCode: newPresenceCode(),
     });
+    return doc;
   }
+
+  let dirty = false;
+  if (!doc.arrivalCode) {
+    doc.arrivalCode = doc.code || newPresenceCode();
+    dirty = true;
+  }
+  if (!doc.exitCode) {
+    doc.exitCode = newPresenceCode();
+    dirty = true;
+  }
+  if (dirty) await doc.save();
   return doc;
+}
+
+function resolveKindFromCode(doc, code) {
+  if (!doc || !code) return null;
+  if (doc.exitCode && doc.exitCode === code) return 'exit';
+  if (doc.arrivalCode && doc.arrivalCode === code) return 'arrival';
+  if (doc.code && doc.code === code) return 'arrival';
+  return null;
+}
+
+async function findSettingsByCode(code) {
+  return StaffPresenceSettings.findOne({
+    $or: [{ arrivalCode: code }, { exitCode: code }, { code }],
+  });
 }
 
 function mimeFromExt(filePath) {
@@ -108,8 +168,13 @@ async function getKingFishBranding() {
 async function serializeSettings(doc) {
   const branding = await getKingFishBranding();
   return {
-    code: doc.code,
-    url: publicPresenceUrl(doc.code),
+    arrivalCode: doc.arrivalCode,
+    exitCode: doc.exitCode,
+    arrivalUrl: publicPresenceUrl(doc.arrivalCode),
+    exitUrl: publicPresenceUrl(doc.exitCode),
+    /** rétrocompat */
+    code: doc.arrivalCode,
+    url: publicPresenceUrl(doc.arrivalCode),
     companyName: branding.companyName,
     companyLogo: branding.companyLogo,
     companyLogoDataUrl: branding.companyLogoDataUrl,
@@ -118,9 +183,24 @@ async function serializeSettings(doc) {
   };
 }
 
-/** Admin : récupérer (ou créer) le QR permanent. */
+function kindLabel(kind) {
+  return kind === 'exit' ? 'sortie' : 'arrivée';
+}
+
+function alreadyMessage(kind) {
+  return kind === 'exit'
+    ? 'Sortie déjà enregistrée aujourd’hui'
+    : 'Arrivée déjà enregistrée aujourd’hui';
+}
+
+function successMessage(kind) {
+  return kind === 'exit' ? 'Sortie enregistrée' : 'Arrivée enregistrée';
+}
+
+/** Admin : récupérer (ou créer) les QR permanents. */
 router.get('/settings', auth, isRestaurant, async (req, res) => {
   try {
+    await ensureRecordIndexes();
     const doc = await getOrCreateSettings();
     res.json(await serializeSettings(doc));
   } catch (e) {
@@ -128,11 +208,16 @@ router.get('/settings', auth, isRestaurant, async (req, res) => {
   }
 });
 
-/** Admin : régénérer le code (ancien QR invalide). */
+/**
+ * Admin : régénérer un QR.
+ * body.kind = 'arrival' | 'exit' | 'both' (défaut: both)
+ */
 router.post('/settings/regenerate', auth, isRestaurant, async (req, res) => {
   try {
+    const kind = String(req.body?.kind || 'both').trim().toLowerCase();
     const doc = await getOrCreateSettings();
-    doc.code = newPresenceCode();
+    if (kind === 'arrival' || kind === 'both') doc.arrivalCode = newPresenceCode();
+    if (kind === 'exit' || kind === 'both') doc.exitCode = newPresenceCode();
     await doc.save();
     res.json(await serializeSettings(doc));
   } catch (e) {
@@ -140,12 +225,16 @@ router.post('/settings/regenerate', auth, isRestaurant, async (req, res) => {
   }
 });
 
-/** Admin : liste des présences (filtre date optionnel). */
+/** Admin : liste des présences (filtre date + kind). */
 router.get('/records', auth, isRestaurant, async (req, res) => {
   try {
+    await ensureRecordIndexes();
     const filter = {};
     const dateFrom = String(req.query.dateFrom || '').trim();
     const dateTo = String(req.query.dateTo || '').trim();
+    const kind = String(req.query.kind || '').trim().toLowerCase();
+    if (VALID_KINDS.has(kind)) filter.kind = kind;
+
     if (dateFrom && dateTo) {
       filter.dateKey = { $gte: dateFrom, $lte: dateTo };
     } else if (dateFrom) {
@@ -165,16 +254,20 @@ router.get('/records', auth, isRestaurant, async (req, res) => {
   }
 });
 
-/** Public : valider le code QR. */
+/** Public : valider le code QR + type (arrivée / sortie). */
 router.get('/public/:code', async (req, res) => {
   try {
     const code = String(req.params.code || '').trim();
     if (!code) return res.status(400).json({ message: 'Code manquant' });
-    const settings = await StaffPresenceSettings.findOne({ code }).lean();
+    const settings = await findSettingsByCode(code);
     if (!settings) return res.status(404).json({ message: 'QR code invalide' });
+    const kind = resolveKindFromCode(settings, code);
+    if (!kind) return res.status(404).json({ message: 'QR code invalide' });
     res.json({
       ok: true,
-      code: settings.code,
+      code,
+      kind,
+      kindLabel: kindLabel(kind),
       todayKey: dateKeyBenin(),
     });
   } catch (e) {
@@ -182,14 +275,17 @@ router.get('/public/:code', async (req, res) => {
   }
 });
 
-/** Public : marquer présence (heure = serveur uniquement). */
+/** Public : marquer arrivée ou sortie (heure = serveur uniquement). */
 router.post('/public/:code/check', async (req, res) => {
   try {
+    await ensureRecordIndexes();
     const code = String(req.params.code || '').trim();
     if (!code) return res.status(400).json({ message: 'Code manquant' });
 
-    const settings = await StaffPresenceSettings.findOne({ code }).lean();
+    const settings = await findSettingsByCode(code);
     if (!settings) return res.status(404).json({ message: 'QR code invalide' });
+    const kind = resolveKindFromCode(settings, code);
+    if (!kind) return res.status(404).json({ message: 'QR code invalide' });
 
     const firstName = normalizeNamePart(req.body?.firstName || req.body?.prenom);
     const lastName = normalizeNamePart(req.body?.lastName || req.body?.nom);
@@ -204,16 +300,18 @@ router.post('/public/:code/check', async (req, res) => {
     const dateKey = dateKeyBenin(now);
     const normalizedName = normalizeFullKey(firstName, lastName);
 
-    const existing = await StaffPresenceRecord.findOne({ dateKey, normalizedName }).lean();
+    const existing = await StaffPresenceRecord.findOne({ dateKey, normalizedName, kind }).lean();
     if (existing) {
       return res.json({
         ok: true,
         alreadyPresent: true,
+        kind,
+        kindLabel: kindLabel(kind),
         firstName: existing.firstName,
         lastName: existing.lastName,
         checkedAt: existing.checkedAt,
         dateKey: existing.dateKey,
-        message: 'Présence déjà enregistrée aujourd’hui',
+        message: alreadyMessage(kind),
       });
     }
 
@@ -221,6 +319,7 @@ router.post('/public/:code/check', async (req, res) => {
       firstName,
       lastName,
       normalizedName,
+      kind,
       dateKey,
       checkedAt: now,
       code,
@@ -231,30 +330,38 @@ router.post('/public/:code/check', async (req, res) => {
     res.status(201).json({
       ok: true,
       alreadyPresent: false,
+      kind,
+      kindLabel: kindLabel(kind),
       firstName: record.firstName,
       lastName: record.lastName,
       checkedAt: record.checkedAt,
       dateKey: record.dateKey,
-      message: 'Présence enregistrée',
+      message: successMessage(kind),
     });
   } catch (e) {
     if (e?.code === 11000) {
       const dateKey = dateKeyBenin();
       const firstName = normalizeNamePart(req.body?.firstName || req.body?.prenom);
       const lastName = normalizeNamePart(req.body?.lastName || req.body?.nom);
+      const code = String(req.params.code || '').trim();
+      const settings = await findSettingsByCode(code);
+      const kind = resolveKindFromCode(settings, code) || 'arrival';
       const existing = await StaffPresenceRecord.findOne({
         dateKey,
         normalizedName: normalizeFullKey(firstName, lastName),
+        kind,
       }).lean();
       if (existing) {
         return res.json({
           ok: true,
           alreadyPresent: true,
+          kind,
+          kindLabel: kindLabel(kind),
           firstName: existing.firstName,
           lastName: existing.lastName,
           checkedAt: existing.checkedAt,
           dateKey: existing.dateKey,
-          message: 'Présence déjà enregistrée aujourd’hui',
+          message: alreadyMessage(kind),
         });
       }
     }

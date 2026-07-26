@@ -42,15 +42,96 @@ function formatCheckedAt(d) {
   });
 }
 
+function buildPublicUrl(code) {
+  if (!code) return '';
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}/présence/${encodeURIComponent(code)}`;
+  }
+  return '';
+}
+
+function QrBlock({
+  title,
+  hint,
+  publicUrl,
+  canvasRef,
+  busy,
+  onDownloadPdf,
+  onCopy,
+  onRegenerate,
+}) {
+  return (
+    <div className="commercial-card staff-presence-qr-card">
+      <h2 style={{ margin: '0 0 0.35rem', fontSize: '1.05rem' }}>{title}</h2>
+      <p className="commercial-lead" style={{ marginTop: 0, fontSize: '0.88rem' }}>
+        {hint}
+      </p>
+      {publicUrl ? (
+        <div className="staff-presence-qr-grid">
+          <div className="staff-presence-qr-box">
+            <QRCodeSVG value={publicUrl} size={160} level="M" includeMargin />
+            <div className="staff-presence-qr-print" aria-hidden>
+              <QRCodeCanvas ref={canvasRef} value={publicUrl} size={512} level="M" includeMargin />
+            </div>
+          </div>
+          <div className="staff-presence-qr-meta">
+            <label>
+              Lien public
+              <input readOnly value={publicUrl} />
+            </label>
+            <div className="commercial-filters" style={{ marginBottom: 0 }}>
+              <button
+                type="button"
+                className="commercial-btn commercial-btn--primary"
+                onClick={onDownloadPdf}
+                disabled={busy || !publicUrl}
+              >
+                Télécharger PDF
+              </button>
+              <button
+                type="button"
+                className="commercial-btn commercial-btn--outline"
+                onClick={onCopy}
+              >
+                Copier le lien
+              </button>
+              <a
+                className="commercial-btn commercial-btn--outline"
+                href={publicUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Ouvrir
+              </a>
+              <button
+                type="button"
+                className="commercial-btn commercial-btn--outline"
+                onClick={onRegenerate}
+                disabled={busy}
+              >
+                Régénérer
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <p>Impossible de charger le QR.</p>
+      )}
+    </div>
+  );
+}
+
 export default function StaffPresenceDashboard() {
   const { showSuccess, showError } = useModal();
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState(null);
   const [records, setRecords] = useState([]);
+  const [listKind, setListKind] = useState('arrival');
   const [dateFrom, setDateFrom] = useState(() => todayKey());
   const [dateTo, setDateTo] = useState(() => todayKey());
   const [busy, setBusy] = useState(false);
-  const qrCanvasRef = useRef(null);
+  const arrivalCanvasRef = useRef(null);
+  const exitCanvasRef = useRef(null);
 
   const loadSettings = useCallback(async () => {
     const res = await axios.get(`${API_URL}/staff-presence/settings`, authHeaders());
@@ -60,10 +141,10 @@ export default function StaffPresenceDashboard() {
   const loadRecords = useCallback(async () => {
     const res = await axios.get(`${API_URL}/staff-presence/records`, {
       ...authHeaders(),
-      params: { dateFrom, dateTo },
+      params: { dateFrom, dateTo, kind: listKind },
     });
     setRecords(Array.isArray(res.data) ? res.data : []);
-  }, [dateFrom, dateTo]);
+  }, [dateFrom, dateTo, listKind]);
 
   const loadAll = useCallback(async () => {
     try {
@@ -80,30 +161,39 @@ export default function StaffPresenceDashboard() {
     loadAll();
   }, [loadAll]);
 
-  // Toujours le domaine courant (rapido.bj / rapido.online), jamais un host fantôme.
-  const publicUrl = useMemo(() => {
-    const code = settings?.code;
-    if (!code) return '';
-    if (typeof window !== 'undefined' && window.location?.origin) {
-      return `${window.location.origin}/présence/${encodeURIComponent(code)}`;
-    }
-    return settings?.url || '';
-  }, [settings?.code, settings?.url]);
+  const arrivalUrl = useMemo(
+    () => buildPublicUrl(settings?.arrivalCode) || settings?.arrivalUrl || '',
+    [settings?.arrivalCode, settings?.arrivalUrl]
+  );
+  const exitUrl = useMemo(
+    () => buildPublicUrl(settings?.exitCode) || settings?.exitUrl || '',
+    [settings?.exitCode, settings?.exitUrl]
+  );
+
+  const isExitList = listKind === 'exit';
+  const listLabel = isExitList ? 'sortie' : 'arrivée';
+  const timeHeader = isExitList ? 'Heure de sortie' : 'Heure d’arrivée';
 
   const exportMeta = useMemo(() => {
     const same = dateFrom && dateTo && dateFrom === dateTo;
     return {
-      title: 'Présence personnel — Rapido Flash',
+      title: isExitList
+        ? 'Présence personnel — Sortie'
+        : 'Présence personnel — Arrivée',
       subtitle: same
-        ? `Date : ${dateFrom} · ${records.length} présence(s)`
-        : `Du ${dateFrom || '…'} au ${dateTo || '…'} · ${records.length} présence(s)`,
+        ? `Date : ${dateFrom} · ${records.length} ${listLabel}(s)`
+        : `Du ${dateFrom || '…'} au ${dateTo || '…'} · ${records.length} ${listLabel}(s)`,
+      timeHeader,
+      fileSlug: isExitList ? 'presence-sortie' : 'presence-arrivee',
     };
-  }, [dateFrom, dateTo, records.length]);
+  }, [dateFrom, dateTo, records.length, isExitList, listLabel, timeHeader]);
 
   const handleExport = (kind) => {
     const data = preparePresenceExport(records, exportMeta);
+    data.timeHeader = exportMeta.timeHeader;
+    data.fileSlug = exportMeta.fileSlug;
     if (!data.rows.length) {
-      showError('Aucune présence à exporter pour cette période');
+      showError(`Aucune ${listLabel} à exporter pour cette période`);
       return;
     }
     if (kind === 'excel') exportPresenceToExcel(data);
@@ -111,10 +201,11 @@ export default function StaffPresenceDashboard() {
     if (kind === 'word') exportPresenceToWord(data);
   };
 
-  const regenerate = async () => {
+  const regenerate = async (kind) => {
+    const label = kind === 'exit' ? 'sortie' : 'arrivée';
     if (
       !window.confirm(
-        'Régénérer le QR ? L’ancien code ne fonctionnera plus. Les présences déjà enregistrées sont conservées.'
+        `Régénérer le QR ${label} ? L’ancien code ne fonctionnera plus. Les enregistrements sont conservés.`
       )
     ) {
       return;
@@ -123,11 +214,11 @@ export default function StaffPresenceDashboard() {
     try {
       const res = await axios.post(
         `${API_URL}/staff-presence/settings/regenerate`,
-        {},
+        { kind },
         authHeaders()
       );
       setSettings(res.data);
-      showSuccess('Nouveau QR généré');
+      showSuccess(`Nouveau QR ${label} généré`);
     } catch (e) {
       showError(e.response?.data?.message || e.message);
     } finally {
@@ -135,38 +226,45 @@ export default function StaffPresenceDashboard() {
     }
   };
 
-  const copyUrl = async () => {
+  const copyUrl = async (url) => {
     try {
-      await navigator.clipboard.writeText(publicUrl);
+      await navigator.clipboard.writeText(url);
       showSuccess('Lien copié');
     } catch {
       showError('Impossible de copier le lien');
     }
   };
 
-  const downloadQrPdf = async () => {
+  const resolveLogoDataUrl = async () => {
+    let logoDataUrl = settings?.companyLogoDataUrl || null;
+    if (!logoDataUrl && settings?.companyLogo) {
+      try {
+        logoDataUrl = await fetchImageAsDataUrl(absoluteMediaUrl(settings.companyLogo));
+      } catch {
+        logoDataUrl = null;
+      }
+    }
+    return logoDataUrl;
+  };
+
+  const downloadQrPdf = async (kind) => {
     try {
       setBusy(true);
-      const canvas = qrCanvasRef.current;
+      const canvas = kind === 'exit' ? exitCanvasRef.current : arrivalCanvasRef.current;
+      const publicUrl = kind === 'exit' ? exitUrl : arrivalUrl;
       if (!canvas || typeof canvas.toDataURL !== 'function') {
         showError('QR pas encore prêt');
         return;
       }
-      let logoDataUrl = settings?.companyLogoDataUrl || null;
-      if (!logoDataUrl && settings?.companyLogo) {
-        try {
-          logoDataUrl = await fetchImageAsDataUrl(absoluteMediaUrl(settings.companyLogo));
-        } catch {
-          logoDataUrl = null;
-        }
-      }
+      const logoDataUrl = await resolveLogoDataUrl();
       await exportPresenceQrToPdf({
         url: publicUrl,
         qrDataUrl: canvas.toDataURL('image/png'),
         companyName: settings?.companyName || 'KING FISH',
         logoDataUrl,
+        kind,
       });
-      showSuccess('PDF du QR téléchargé');
+      showSuccess(kind === 'exit' ? 'PDF sortie téléchargé' : 'PDF arrivée téléchargé');
     } catch (e) {
       showError(e.message || 'Impossible de générer le PDF');
     } finally {
@@ -180,78 +278,60 @@ export default function StaffPresenceDashboard() {
     <div className="commercial-page staff-presence-dash">
       <h1>Présence personnel</h1>
       <p className="commercial-lead">
-        QR code définitif à afficher / imprimer. Les employés scannent, saisissent leur nom et
-        prénom, puis cliquent sur « Je suis présent ». L’heure est prise automatiquement côté
-        serveur.
+        Deux QR codes distincts : <strong>arrivée</strong> (début de service) et{' '}
+        <strong>sortie</strong> (fin de service). Chaque scan enregistre le nom, le prénom et
+        l’heure côté serveur.
       </p>
 
-      <div className="commercial-card staff-presence-qr-card">
-        <h2 style={{ margin: '0 0 1rem', fontSize: '1.05rem' }}>QR de pointage</h2>
-        {publicUrl ? (
-          <div className="staff-presence-qr-grid">
-            <div className="staff-presence-qr-box">
-              <QRCodeSVG value={publicUrl} size={180} level="M" includeMargin />
-              {/* Canvas haute résolution pour le PDF (hors écran) */}
-              <div className="staff-presence-qr-print" aria-hidden>
-                <QRCodeCanvas
-                  ref={qrCanvasRef}
-                  value={publicUrl}
-                  size={512}
-                  level="M"
-                  includeMargin
-                />
-              </div>
-            </div>
-            <div className="staff-presence-qr-meta">
-              <label>
-                Lien public
-                <input readOnly value={publicUrl} />
-              </label>
-              <div className="commercial-filters" style={{ marginBottom: 0 }}>
-                <button
-                  type="button"
-                  className="commercial-btn commercial-btn--primary"
-                  onClick={downloadQrPdf}
-                  disabled={busy || !publicUrl}
-                >
-                  Télécharger PDF
-                </button>
-                <button
-                  type="button"
-                  className="commercial-btn commercial-btn--outline"
-                  onClick={copyUrl}
-                >
-                  Copier le lien
-                </button>
-                <a
-                  className="commercial-btn commercial-btn--outline"
-                  href={publicUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Ouvrir
-                </a>
-                <button
-                  type="button"
-                  className="commercial-btn commercial-btn--outline"
-                  onClick={regenerate}
-                  disabled={busy}
-                >
-                  Régénérer le QR
-                </button>
-              </div>
-              <p className="commercial-lead" style={{ margin: '0.75rem 0 0', fontSize: '0.85rem' }}>
-                Pas d’expiration : le même QR sert tous les jours jusqu’à régénération.
-              </p>
-            </div>
-          </div>
-        ) : (
-          <p>Impossible de charger le QR.</p>
-        )}
+      <div className="staff-presence-qr-pair">
+        <QrBlock
+          title="QR Arrivée"
+          hint="À scanner en entrant · bouton « Je suis présent »"
+          publicUrl={arrivalUrl}
+          canvasRef={arrivalCanvasRef}
+          busy={busy}
+          onDownloadPdf={() => downloadQrPdf('arrival')}
+          onCopy={() => copyUrl(arrivalUrl)}
+          onRegenerate={() => regenerate('arrival')}
+        />
+        <QrBlock
+          title="QR Sortie"
+          hint="À scanner en quittant · bouton « Je suis parti »"
+          publicUrl={exitUrl}
+          canvasRef={exitCanvasRef}
+          busy={busy}
+          onDownloadPdf={() => downloadQrPdf('exit')}
+          onCopy={() => copyUrl(exitUrl)}
+          onRegenerate={() => regenerate('exit')}
+        />
       </div>
 
       <div className="commercial-card">
-        <h2 style={{ margin: '0 0 1rem', fontSize: '1.05rem' }}>Liste des présences</h2>
+        <div className="staff-presence-tabs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={listKind === 'arrival'}
+            className={`staff-presence-tab${listKind === 'arrival' ? ' is-active' : ''}`}
+            onClick={() => setListKind('arrival')}
+          >
+            Liste arrivées
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={listKind === 'exit'}
+            className={`staff-presence-tab${listKind === 'exit' ? ' is-active' : ''}`}
+            onClick={() => setListKind('exit')}
+          >
+            Liste sorties
+          </button>
+        </div>
+
+        <h2 style={{ margin: '0 0 1rem', fontSize: '1.05rem' }}>
+          {isExitList ? 'Présences à la sortie' : 'Présences à l’arrivée'}
+        </h2>
+
         <div className="commercial-filters">
           <label>
             Du
@@ -305,7 +385,8 @@ export default function StaffPresenceDashboard() {
         </div>
 
         <p className="commercial-lead" style={{ marginTop: 0 }}>
-          <strong>{records.length}</strong> présence{records.length > 1 ? 's' : ''} sur la période
+          <strong>{records.length}</strong> {listLabel}
+          {records.length > 1 ? 's' : ''} sur la période
         </p>
 
         <div className="commercial-table-wrap">
@@ -316,7 +397,7 @@ export default function StaffPresenceDashboard() {
                 <th>Date</th>
                 <th>Prénom</th>
                 <th>Nom</th>
-                <th>Heure de pointage</th>
+                <th>{timeHeader}</th>
               </tr>
             </thead>
             <tbody>
@@ -332,7 +413,9 @@ export default function StaffPresenceDashboard() {
             </tbody>
           </table>
           {!records.length ? (
-            <p style={{ padding: '1rem' }}>Aucune présence pour cette période.</p>
+            <p style={{ padding: '1rem' }}>
+              Aucune {listLabel} pour cette période.
+            </p>
           ) : null}
         </div>
       </div>

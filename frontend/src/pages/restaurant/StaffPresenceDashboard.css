@@ -1,5 +1,17 @@
-.staff-presence-qr-card {
+.staff-presence-qr-pair {
+  display: grid;
+  gap: 1.25rem;
   margin-bottom: 1.25rem;
+}
+
+@media (min-width: 980px) {
+  .staff-presence-qr-pair {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.staff-presence-qr-card {
+  margin-bottom: 0;
 }
 
 .staff-presence-qr-grid {
@@ -8,9 +20,9 @@
   align-items: start;
 }
 
-@media (min-width: 720px) {
+@media (min-width: 560px) {
   .staff-presence-qr-grid {
-    grid-template-columns: 200px 1fr;
+    grid-template-columns: 180px 1fr;
   }
 }
 
@@ -47,5 +59,30 @@
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, 0.12);
+  font-size: 0.85rem;
+}
+
+.staff-presence-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.staff-presence-tab {
+  border: 1px solid rgba(139, 69, 19, 0.22);
+  background: #fff;
+  color: #8b4513;
+  border-radius: 999px;
+  padding: 8px 16px;
   font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.staff-presence-tab.is-active {
+  background: #8b4513;
+  border-color: #8b4513;
+  color: #fff;
 }

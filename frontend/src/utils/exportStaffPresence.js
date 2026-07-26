@@ -66,12 +66,15 @@ export function preparePresenceExport(records, meta = {}) {
     count: rows.length,
     title: meta.title || 'Présence personnel',
     subtitle: meta.subtitle || '',
+    timeHeader: meta.timeHeader || 'Heure de pointage',
+    fileSlug: meta.fileSlug || 'presence-personnel',
     exportedAt: new Date(),
   };
 }
 
 export function exportPresenceToExcel(exportData) {
-  const headers = ['N°', 'Date', 'Prénom', 'Nom', 'Heure de pointage'];
+  const timeHeader = exportData.timeHeader || 'Heure de pointage';
+  const headers = ['N°', 'Date', 'Prénom', 'Nom', timeHeader];
   const body = exportData.rows
     .map(
       (r) =>
@@ -94,7 +97,8 @@ export function exportPresenceToExcel(exportData) {
   </body></html>`;
   const blob = new Blob(['\ufeff', html], { type: 'application/vnd.ms-excel;charset=utf-8' });
   const stamp = new Date().toISOString().slice(0, 10);
-  triggerBrowserDownload(blob, `presence-personnel-${stamp}.xls`);
+  const slug = String(exportData.fileSlug || 'presence-personnel');
+  triggerBrowserDownload(blob, `${slug}-${stamp}.xls`);
 }
 
 export function exportPresenceToPdf(exportData) {
@@ -119,7 +123,7 @@ export function exportPresenceToPdf(exportData) {
     { key: 'date', label: 'Date', w: 28 },
     { key: 'firstName', label: 'Prénom', w: 40 },
     { key: 'lastName', label: 'Nom', w: 40 },
-    { key: 'checkedAt', label: 'Heure', w: 52 },
+    { key: 'checkedAt', label: exportData.timeHeader || 'Heure', w: 52 },
   ];
 
   const drawHeader = () => {
@@ -157,11 +161,13 @@ export function exportPresenceToPdf(exportData) {
   }
 
   const stamp = new Date().toISOString().slice(0, 10);
-  doc.save(`presence-personnel-${stamp}.pdf`);
+  const slug = String(exportData.fileSlug || 'presence-personnel');
+  doc.save(`${slug}-${stamp}.pdf`);
 }
 
 export function exportPresenceToWord(exportData) {
-  const headers = ['N°', 'Date', 'Prénom', 'Nom', 'Heure de pointage'];
+  const timeHeader = exportData.timeHeader || 'Heure de pointage';
+  const headers = ['N°', 'Date', 'Prénom', 'Nom', timeHeader];
   const rows = exportData.rows
     .map(
       (r) =>
@@ -192,7 +198,8 @@ export function exportPresenceToWord(exportData) {
   </body></html>`;
   const blob = new Blob(['\ufeff', html], { type: 'application/msword;charset=utf-8' });
   const stamp = new Date().toISOString().slice(0, 10);
-  triggerBrowserDownload(blob, `presence-personnel-${stamp}.doc`);
+  const slug = String(exportData.fileSlug || 'presence-personnel');
+  triggerBrowserDownload(blob, `${slug}-${stamp}.doc`);
 }
 
 function detectImageFormat(dataUrl) {
@@ -224,14 +231,18 @@ export async function exportPresenceQrToPdf({
   qrDataUrl,
   companyName = 'KING FISH',
   logoDataUrl = null,
+  kind = 'arrival',
 }) {
   if (!url || !qrDataUrl) {
     throw new Error('QR indisponible');
   }
+  const isExit = kind === 'exit';
+  const modeLabel = isExit ? 'Sortie' : 'Arrivée';
+  const ctaLabel = isExit ? 'Je suis parti' : 'Je suis présent';
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = 210;
   const margin = 18;
-  const title = `${String(companyName || 'KING FISH').toUpperCase()} — Présence personnel`;
+  const title = `${String(companyName || 'KING FISH').toUpperCase()} — ${modeLabel}`;
 
   doc.setFillColor(...BRAND.cream);
   doc.rect(0, 0, pageW, 297, 'F');
@@ -257,9 +268,14 @@ export async function exportPresenceQrToPdf({
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(12);
   doc.setTextColor(...BRAND.text);
-  doc.text('Scannez ce QR code pour marquer votre présence', pageW / 2, yCursor, {
-    align: 'center',
-  });
+  doc.text(
+    isExit
+      ? 'Scannez ce QR code pour marquer votre sortie'
+      : 'Scannez ce QR code pour marquer votre arrivée',
+    pageW / 2,
+    yCursor,
+    { align: 'center' }
+  );
   yCursor += 12;
 
   const qrSize = 110;
@@ -280,7 +296,7 @@ export async function exportPresenceQrToPdf({
   const steps = [
     '1. Scannez le QR avec votre téléphone',
     '2. Saisissez votre prénom et votre nom',
-    '3. Appuyez sur « Je suis présent »',
+    `3. Appuyez sur « ${ctaLabel} »`,
   ];
   let y = qrY + qrSize + 30;
   steps.forEach((line) => {
@@ -288,5 +304,5 @@ export async function exportPresenceQrToPdf({
     y += 7;
   });
 
-  doc.save('qr-presence-personnel.pdf');
+  doc.save(isExit ? 'qr-presence-sortie.pdf' : 'qr-presence-arrivee.pdf');
 }

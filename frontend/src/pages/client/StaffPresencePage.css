@@ -192,6 +192,10 @@
   box-shadow: var(--shadow-gold, 0 0 0 3px rgba(232, 181, 74, 0.28));
 }
 
+.staff-presence-page--exit .staff-presence-brand-tag {
+  color: var(--sp-brown);
+}
+
 .staff-presence-cta {
   margin-top: 8px;
   width: 100%;
@@ -208,6 +212,10 @@
   background-size: 140% 140%;
   box-shadow: 0 12px 28px rgba(139, 69, 19, 0.28);
   transition: transform 0.2s ease, box-shadow 0.2s ease, background-position 0.35s ease;
+}
+
+.staff-presence-page--exit .staff-presence-cta {
+  background: linear-gradient(135deg, #5c3a1e 0%, var(--sp-brown) 55%, var(--sp-amber) 140%);
 }
 
 .staff-presence-cta:hover:not(:disabled) {
