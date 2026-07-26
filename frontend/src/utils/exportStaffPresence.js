@@ -210,7 +210,7 @@ export function exportPresenceQrToPdf({ url, qrDataUrl }) {
   doc.setTextColor(...BRAND.brown);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
-  doc.text('Rapido Flash — Présence personnel', pageW / 2, 28, { align: 'center' });
+  doc.text('KING FISH — Présence personnel', pageW / 2, 28, { align: 'center' });
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(12);
@@ -236,21 +236,12 @@ export function exportPresenceQrToPdf({ url, qrDataUrl }) {
     '1. Scannez le QR avec votre téléphone',
     '2. Saisissez votre prénom et votre nom',
     '3. Appuyez sur « Je suis présent »',
-    'L’heure est enregistrée automatiquement.',
   ];
   let y = qrY + qrSize + 30;
   steps.forEach((line) => {
     doc.text(line, margin, y);
     y += 7;
   });
-
-  doc.setFontSize(9);
-  doc.setTextColor(...BRAND.muted);
-  const linkLines = doc.splitTextToSize(`Lien : ${url}`, pageW - margin * 2);
-  doc.text(linkLines, margin, y + 8);
-
-  doc.setFontSize(8);
-  doc.text('QR définitif — à afficher sur le lieu de travail', pageW / 2, 285, { align: 'center' });
 
   doc.save('qr-presence-personnel.pdf');
 }
