@@ -66,6 +66,20 @@
   border-bottom: 1px solid var(--rf-border);
 }
 
+.meal-pdp-acc-row.is-unavailable {
+  opacity: 0.6;
+}
+
+.meal-pdp-acc-row.is-unavailable .meal-pdp-acc-info strong {
+  text-decoration: line-through;
+  color: #6b5f54;
+}
+
+.meal-pdp-acc-row.is-unavailable .meal-pdp-acc-ctrl button {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .meal-pdp-acc-info {
   display: flex;
   flex-direction: column;

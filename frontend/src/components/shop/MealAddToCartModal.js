@@ -27,7 +27,8 @@ export default function MealAddToCartModal({
   ctaLabel = 'Ajouter au panier',
 }) {
   const options = product?.accompagnements || [];
-  const hasAcc = options.length > 0;
+  const availableOptions = options.filter((a) => a.available !== false);
+  const hasAcc = availableOptions.length > 0;
   const optionGroups = product?.optionGroups || [];
   const hasOptions = optionGroups.length > 0;
   const allowSpec = product?.allowSpecifications !== false;
@@ -65,6 +66,7 @@ export default function MealAddToCartModal({
   const selectedAcc = useMemo(() => {
     return (options || [])
       .map((a) => {
+        if (a.available === false) return null;
         const key = String(a._id || a.name);
         const q = Number(accDraft[key]) || 0;
         if (q < 1) return null;
@@ -108,6 +110,17 @@ export default function MealAddToCartModal({
     if (hasAcc && selectedAcc.length < 1) {
       setError('Choisissez au moins un accompagnement pour ce plat.');
       return;
+    }
+    for (const req of availableOptions.filter((a) => a.required)) {
+      const found = selectedAcc.find(
+        (a) =>
+          (a.id && String(a.id) === String(req._id)) ||
+          String(a.name).toLowerCase() === String(req.name).toLowerCase()
+      );
+      if (!found) {
+        setError(`Accompagnement requis : ${req.name}`);
+        return;
+      }
     }
     const optError = validateOptionSelection(optionGroups, optSelection);
     if (optError) {
@@ -157,24 +170,40 @@ export default function MealAddToCartModal({
           </div>
         </div>
 
-        {hasAcc ? (
+        {options.length ? (
           <div className="meal-atc-acc">
             <h3>Accompagnements</h3>
-            <p>Obligatoire — choisissez au moins un accompagnement.</p>
+            <p>
+              {hasAcc
+                ? 'Obligatoire — choisissez au moins un accompagnement.'
+                : 'Tous les accompagnements sont momentanément indisponibles.'}
+            </p>
             {options.map((a) => {
               const key = String(a._id || a.name);
               const q = accDraft[key] || 0;
+              const unavailable = a.available === false;
               return (
-                <div key={key} className={`meal-atc-acc-row${q > 0 ? ' is-selected' : ''}`}>
+                <div
+                  key={key}
+                  className={`meal-atc-acc-row${q > 0 ? ' is-selected' : ''}${
+                    unavailable ? ' is-unavailable' : ''
+                  }`}
+                >
                   <div>
                     <strong>{a.name}</strong>
-                    <span>{formatPriceXof(a.price)}</span>
+                    <span>
+                      {unavailable ? 'Indisponible' : formatPriceXof(a.price)}
+                    </span>
                   </div>
                   <div className="meal-atc-qty-ctrl">
                     <button
                       type="button"
                       aria-label={`Retirer ${a.name}`}
-                      onClick={() => setAccQty(key, q - 1, a.maxQuantity)}
+                      disabled={unavailable}
+                      onClick={() => {
+                        if (unavailable) return;
+                        setAccQty(key, q - 1, a.maxQuantity);
+                      }}
                     >
                       −
                     </button>
@@ -182,7 +211,11 @@ export default function MealAddToCartModal({
                     <button
                       type="button"
                       aria-label={`Ajouter ${a.name}`}
-                      onClick={() => setAccQty(key, q + 1, a.maxQuantity)}
+                      disabled={unavailable}
+                      onClick={() => {
+                        if (unavailable) return;
+                        setAccQty(key, q + 1, a.maxQuantity);
+                      }}
                     >
                       +
                     </button>

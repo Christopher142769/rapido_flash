@@ -6,6 +6,8 @@ const accompagnementSchema = new mongoose.Schema(
     price: { type: Number, default: 0, min: 0 },
     /** Si true, le client doit en sélectionner au moins un (qty >= 1). */
     required: { type: Boolean, default: false },
+    /** false = indisponible (barré, non sélectionnable). */
+    available: { type: Boolean, default: true },
     maxQuantity: { type: Number, default: 10, min: 1 },
   },
   { _id: true }
@@ -15,6 +17,8 @@ const optionChoiceSchema = new mongoose.Schema(
   {
     label: { type: String, required: true, trim: true },
     price: { type: Number, default: 0, min: 0 },
+    /** false = indisponible (barré, non sélectionnable). */
+    available: { type: Boolean, default: true },
   },
   { _id: true }
 );
@@ -70,6 +74,8 @@ const mealProductSchema = new mongoose.Schema(
     category: { type: String, default: '', trim: true },
     currency: { type: String, default: 'XOF' },
     published: { type: Boolean, default: false },
+    /** false = visible sur /repas mais grisé / non commandable. */
+    available: { type: Boolean, default: true },
     /** Afficher le NB « livraison dans les prochaines 24 h » sur la fiche produit. */
     showDeliveryNotice: { type: Boolean, default: true },
     sortOrder: { type: Number, default: 0 },

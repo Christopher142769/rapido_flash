@@ -202,22 +202,42 @@ export default function MealShopPage() {
             const img = p.mainImage || p.images?.[0];
             const href = mealProductPath(p.slug);
             const hasAcc = (p.accompagnements || []).length > 0;
+            const unavailable = p.available === false;
             return (
-              <article key={p._id} className="meal-shop-card">
-                <Link to={href} className="meal-shop-card-media">
-                  {img ? (
-                    <img src={getImageUrl(img, null, BASE_URL)} alt={p.name} loading="lazy" />
-                  ) : (
-                    <div className="meal-shop-card-ph" />
-                  )}
-                  {p.isPromoLive && p.discountPercent ? (
-                    <span className="meal-shop-badge">-{p.discountPercent}%</span>
-                  ) : null}
-                </Link>
+              <article
+                key={p._id}
+                className={`meal-shop-card${unavailable ? ' meal-shop-card--unavailable' : ''}`}
+                aria-disabled={unavailable}
+              >
+                {unavailable ? (
+                  <div className="meal-shop-card-media" aria-hidden>
+                    {img ? (
+                      <img src={getImageUrl(img, null, BASE_URL)} alt="" loading="lazy" />
+                    ) : (
+                      <div className="meal-shop-card-ph" />
+                    )}
+                    <span className="meal-shop-badge meal-shop-badge--unavailable">Indisponible</span>
+                  </div>
+                ) : (
+                  <Link to={href} className="meal-shop-card-media">
+                    {img ? (
+                      <img src={getImageUrl(img, null, BASE_URL)} alt={p.name} loading="lazy" />
+                    ) : (
+                      <div className="meal-shop-card-ph" />
+                    )}
+                    {p.isPromoLive && p.discountPercent ? (
+                      <span className="meal-shop-badge">-{p.discountPercent}%</span>
+                    ) : null}
+                  </Link>
+                )}
                 <div className="meal-shop-card-body">
                   {p.category ? <p className="meal-shop-card-cat">{p.category}</p> : null}
                   <h3>
-                    <Link to={href}>{p.name}</Link>
+                    {unavailable ? (
+                      <span>{p.name}</span>
+                    ) : (
+                      <Link to={href}>{p.name}</Link>
+                    )}
                   </h3>
                   <div className="meal-shop-card-price">
                     <strong>{formatPriceXof(price)}</strong>
@@ -228,13 +248,23 @@ export default function MealShopPage() {
                     <button
                       type="button"
                       className="meal-shop-btn meal-shop-btn--primary"
-                      onClick={(e) => openAddToCart(p, e)}
+                      disabled={unavailable}
+                      onClick={(e) => {
+                        if (unavailable) return;
+                        openAddToCart(p, e);
+                      }}
                     >
-                      Ajouter au panier
+                      {unavailable ? 'Indisponible' : 'Ajouter au panier'}
                     </button>
-                    <Link to={href} className="meal-shop-btn meal-shop-btn--ghost">
-                      Voir
-                    </Link>
+                    {unavailable ? (
+                      <span className="meal-shop-btn meal-shop-btn--ghost" aria-disabled="true">
+                        Voir
+                      </span>
+                    ) : (
+                      <Link to={href} className="meal-shop-btn meal-shop-btn--ghost">
+                        Voir
+                      </Link>
+                    )}
                   </div>
                 </div>
               </article>

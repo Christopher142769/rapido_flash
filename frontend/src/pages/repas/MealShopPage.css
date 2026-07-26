@@ -161,6 +161,26 @@
   transform: translateY(-2px);
 }
 
+.meal-shop-card--unavailable {
+  opacity: 0.72;
+  filter: grayscale(0.55);
+}
+
+.meal-shop-card--unavailable:hover {
+  border-color: var(--rf-border);
+  box-shadow: none;
+  transform: none;
+}
+
+.meal-shop-card--unavailable .meal-shop-card-body h3 span {
+  text-decoration: none;
+  color: #6b5f54;
+}
+
+.meal-shop-badge--unavailable {
+  background: #6b5f54;
+}
+
 .meal-shop-card-media {
   position: relative;
   aspect-ratio: 1;

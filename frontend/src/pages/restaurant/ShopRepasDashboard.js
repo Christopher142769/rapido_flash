@@ -40,9 +40,9 @@ import './ShopRepasDashboard.css';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const BASE_URL = API_URL.replace('/api', '');
 
-const emptyAcc = () => ({ name: '', price: '', required: false, maxQuantity: 5 });
+const emptyAcc = () => ({ name: '', price: '', required: false, available: true, maxQuantity: 5 });
 
-const emptyOptionChoice = () => ({ label: '', price: '' });
+const emptyOptionChoice = () => ({ label: '', price: '', available: true });
 const emptyOptionGroup = () => ({
   name: '',
   selectionType: 'single',
@@ -77,6 +77,7 @@ const emptyForm = () => ({
   basePrice: '',
   category: '',
   published: false,
+  available: true,
   mainImage: '',
   images: [],
   copySections: [emptyCopyBlock('text')],
@@ -224,6 +225,7 @@ export default function ShopRepasDashboard() {
       basePrice: p.basePrice ?? '',
       category: p.category || '',
       published: !!p.published,
+      available: p.available !== false,
       showDeliveryNotice: p.showDeliveryNotice !== false,
       mainImage: p.mainImage || '',
       images: Array.isArray(p.images) ? p.images : [],
@@ -235,6 +237,7 @@ export default function ShopRepasDashboard() {
         name: a.name,
         price: a.price,
         required: !!a.required,
+        available: a.available !== false,
         maxQuantity: a.maxQuantity || 5,
         _id: a._id,
       })),
@@ -246,6 +249,7 @@ export default function ShopRepasDashboard() {
         choices: (g.choices || []).map((c) => ({
           label: c.label || '',
           price: c.price ?? '',
+          available: c.available !== false,
           _id: c._id,
         })),
       })),
@@ -366,6 +370,7 @@ export default function ShopRepasDashboard() {
         basePrice: Number(form.basePrice),
         category: form.category,
         published: form.published,
+        available: form.available !== false,
         showDeliveryNotice: form.showDeliveryNotice !== false,
         mainImage: galleryList[0] || '',
         images: galleryList.slice(1),
@@ -373,21 +378,26 @@ export default function ShopRepasDashboard() {
         accompagnements: form.accompagnements
           .filter((a) => a.name?.trim())
           .map((a) => ({
+            _id: a._id,
             name: a.name.trim(),
             price: Math.max(0, Number(a.price) || 0),
             required: !!a.required,
+            available: a.available !== false,
             maxQuantity: Math.max(1, Number(a.maxQuantity) || 5),
           })),
         optionGroups: (form.optionGroups || [])
           .map((g) => ({
+            _id: g._id,
             name: (g.name || '').trim(),
             selectionType: g.selectionType === 'multiple' ? 'multiple' : 'single',
             required: !!g.required,
             choices: (g.choices || [])
               .filter((c) => c.label?.trim())
               .map((c) => ({
+                _id: c._id,
                 label: c.label.trim(),
                 price: Math.max(0, Number(c.price) || 0),
+                available: c.available !== false,
               })),
           }))
           .filter((g) => g.name && g.choices.length),
@@ -1217,6 +1227,14 @@ export default function ShopRepasDashboard() {
             <label className="shop-dash-check">
               <input
                 type="checkbox"
+                checked={form.available !== false}
+                onChange={(e) => setForm((f) => ({ ...f, available: e.target.checked }))}
+              />
+              Disponible à la commande (sinon grisé sur /repas)
+            </label>
+            <label className="shop-dash-check">
+              <input
+                type="checkbox"
                 checked={form.showDeliveryNotice !== false}
                 onChange={(e) => setForm((f) => ({ ...f, showDeliveryNotice: e.target.checked }))}
               />
@@ -1382,6 +1400,20 @@ export default function ShopRepasDashboard() {
                   />
                   Requis
                 </label>
+                <label className="shop-dash-check shop-repas-acc-check">
+                  <input
+                    type="checkbox"
+                    checked={a.available !== false}
+                    onChange={(e) =>
+                      setForm((f) => {
+                        const next = [...f.accompagnements];
+                        next[idx] = { ...next[idx], available: e.target.checked };
+                        return { ...f, accompagnements: next };
+                      })
+                    }
+                  />
+                  Dispo
+                </label>
                 <button
                   type="button"
                   className="shop-dash-icon-btn shop-dash-icon-btn--danger"
@@ -1503,6 +1535,22 @@ export default function ShopRepasDashboard() {
                           })
                         }
                       />
+                      <label className="shop-dash-check shop-repas-acc-check">
+                        <input
+                          type="checkbox"
+                          checked={c.available !== false}
+                          onChange={(e) =>
+                            setForm((f) => {
+                              const next = [...f.optionGroups];
+                              const choices = [...next[gi].choices];
+                              choices[ci] = { ...choices[ci], available: e.target.checked };
+                              next[gi] = { ...next[gi], choices };
+                              return { ...f, optionGroups: next };
+                            })
+                          }
+                        />
+                        Dispo
+                      </label>
                       <button
                         type="button"
                         className="shop-dash-icon-btn shop-dash-icon-btn--danger"
@@ -1636,6 +1684,9 @@ export default function ShopRepasDashboard() {
                   <img src={getImageUrl(p.mainImage || p.images?.[0], null, BASE_URL)} alt="" />
                   {promo.isPromoLive ? <span className="shop-dash-product-card-promo">Promo</span> : null}
                   {!p.published ? <span className="shop-dash-product-card-draft">Brouillon</span> : null}
+                  {p.published && p.available === false ? (
+                    <span className="shop-dash-product-card-draft">Indisponible</span>
+                  ) : null}
                 </div>
                 <div className="shop-dash-product-card-body">
                   <h4>{p.name}</h4>

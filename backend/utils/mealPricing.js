@@ -4,6 +4,10 @@
  */
 const { getShopPromoState } = require('./shopPromo');
 
+function isItemAvailable(item) {
+  return item?.available !== false;
+}
+
 function normalizeAccompagnements(list) {
   if (!Array.isArray(list)) return [];
   return list
@@ -11,6 +15,7 @@ function normalizeAccompagnements(list) {
       name: String(a?.name || '').trim(),
       price: Math.max(0, Math.round(Number(a?.price) || 0)),
       required: !!a?.required,
+      available: a?.available !== false,
       maxQuantity: Math.min(99, Math.max(1, Number(a?.maxQuantity) || 10)),
       _id: a?._id ? String(a._id) : undefined,
     }))
@@ -28,6 +33,7 @@ function normalizeOptionGroups(list) {
         .map((c) => ({
           label: String(c?.label || '').trim(),
           price: Math.max(0, Math.round(Number(c?.price) || 0)),
+          available: c?.available !== false,
           _id: c?._id ? String(c._id) : undefined,
         }))
         .filter((c) => c.label),
@@ -50,6 +56,7 @@ function resolveMealOptions(product, line) {
 
   for (const group of groups) {
     const groupId = String(group._id || '');
+    const availableChoices = (group.choices || []).filter(isItemAvailable);
     const picks = selected.filter(
       (s) =>
         (s.groupId && String(s.groupId) === groupId) ||
@@ -59,7 +66,7 @@ function resolveMealOptions(product, line) {
     if (group.selectionType === 'single' && picks.length > 1) {
       return { error: `Un seul choix autorisé pour « ${group.name} »` };
     }
-    if (group.required && picks.length < 1) {
+    if (group.required && availableChoices.length > 0 && picks.length < 1) {
       return { error: `Choix requis : ${group.name}` };
     }
 
@@ -72,6 +79,9 @@ function resolveMealOptions(product, line) {
       );
       if (!choice) {
         return { error: `Option inconnue pour « ${group.name} »` };
+      }
+      if (!isItemAvailable(choice)) {
+        return { error: `Option indisponible : ${choice.label}` };
       }
       const price = Math.max(0, Math.round(Number(choice.price) || 0));
       resultOptions.push({
@@ -102,6 +112,10 @@ function getMealUnitPrice(product, now = new Date()) {
  * @param {{ quantity: number, accompagnements?: { id?: string, name?: string, quantity: number }[] }} line
  */
 function buildMealOrderLine(product, line) {
+  if (product?.available === false) {
+    return { error: 'Ce plat est temporairement indisponible' };
+  }
+
   const quantity = Math.max(1, Math.round(Number(line?.quantity) || 0));
   if (!Number.isFinite(quantity) || quantity < 1) {
     return { error: 'Quantité invalide' };
@@ -109,9 +123,10 @@ function buildMealOrderLine(product, line) {
 
   const { promoState, unitPrice } = getMealUnitPrice(product);
   const catalog = product.accompagnements || [];
+  const availableCatalog = catalog.filter(isItemAvailable);
   const selected = Array.isArray(line?.accompagnements) ? line.accompagnements : [];
 
-  const requiredOnes = catalog.filter((a) => a.required);
+  const requiredOnes = availableCatalog.filter((a) => a.required);
   for (const req of requiredOnes) {
     const pick = selected.find(
       (s) =>
@@ -138,6 +153,9 @@ function buildMealOrderLine(product, line) {
     if (!match) {
       return { error: `Accompagnement inconnu : ${s.name || s.id}` };
     }
+    if (!isItemAvailable(match)) {
+      return { error: `Accompagnement indisponible : ${match.name}` };
+    }
     const maxQ = Math.min(99, Math.max(1, Number(match.maxQuantity) || 10));
     const safeQty = Math.min(maxQ, qty);
     const price = Math.max(0, Math.round(Number(match.price) || 0));
@@ -150,7 +168,7 @@ function buildMealOrderLine(product, line) {
     accTotal += price * safeQty;
   }
 
-  if (catalog.length > 0 && accompagnements.length === 0) {
+  if (availableCatalog.length > 0 && accompagnements.length === 0) {
     return { error: 'Choisissez au moins un accompagnement pour ce plat' };
   }
 
@@ -198,6 +216,7 @@ function serializeMealProduct(product) {
   return {
     ...doc,
     ...promoState,
+    available: doc.available !== false,
     accompagnements: normalizeAccompagnements(doc.accompagnements),
     optionGroups: normalizeOptionGroups(doc.optionGroups),
     allowSpecifications: doc.allowSpecifications !== false,
@@ -211,4 +230,5 @@ module.exports = {
   buildMealOrderLine,
   computeMealOrderTotals,
   serializeMealProduct,
+  isItemAvailable,
 };

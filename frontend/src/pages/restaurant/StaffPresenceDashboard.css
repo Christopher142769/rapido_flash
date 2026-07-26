@@ -1,0 +1,39 @@
+.staff-presence-qr-card {
+  margin-bottom: 1.25rem;
+}
+
+.staff-presence-qr-grid {
+  display: grid;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (min-width: 720px) {
+  .staff-presence-qr-grid {
+    grid-template-columns: 200px 1fr;
+  }
+}
+
+.staff-presence-qr-box {
+  display: inline-flex;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+}
+
+.staff-presence-qr-meta label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.staff-presence-qr-meta input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  font-size: 0.9rem;
+}

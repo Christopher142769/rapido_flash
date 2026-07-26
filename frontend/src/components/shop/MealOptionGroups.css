@@ -114,6 +114,23 @@
   color: #c76d2e;
 }
 
+.meal-opt-choice.is-unavailable {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: #f3f0ec;
+  border-style: dashed;
+}
+
+.meal-opt-choice.is-unavailable .meal-opt-label {
+  text-decoration: line-through;
+  color: #8a7d70;
+}
+
+.meal-opt-choice.is-unavailable .meal-opt-price {
+  text-decoration: line-through;
+  color: #9a8b7c;
+}
+
 /* Champ spécifications */
 .meal-spec-field {
   margin-top: 14px;

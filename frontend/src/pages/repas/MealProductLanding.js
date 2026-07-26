@@ -193,7 +193,7 @@ export default function MealProductLanding() {
   }, [catalogueUrgency.isLive, productCountdownLive, productCountdownEndsAt]);
 
   const gallery = useMemo(() => (product ? getProductGallery(product) : []), [product]);
-  const canOrder = !!getShopWhatsAppDigits();
+  const canOrder = !!getShopWhatsAppDigits() && product?.available !== false;
   const unitPrice = promoState?.isPromoLive ? promoState.promoPrice : product?.basePrice;
   const unitBasePrice = product?.basePrice ?? 0;
   const hasQuantity = quantity >= 1;
@@ -264,10 +264,12 @@ export default function MealProductLanding() {
       return;
     }
 
+    const availableAcc = (product?.accompagnements || []).filter((a) => a.available !== false);
     const accList =
       accOverride ||
       (product?.accompagnements || [])
         .map((a) => {
+          if (a.available === false) return null;
           const key = a._id || a.name;
           const q = Number(accQty[key] || 0);
           if (q < 1) return null;
@@ -275,12 +277,12 @@ export default function MealProductLanding() {
         })
         .filter(Boolean);
 
-    if ((product?.accompagnements || []).length > 0 && accList.length === 0) {
+    if (availableAcc.length > 0 && accList.length === 0) {
       openAccModal(orderQuantity);
       return;
     }
 
-    const required = (product?.accompagnements || []).filter((a) => a.required);
+    const required = availableAcc.filter((a) => a.required);
     for (const r of required) {
       const found = accList.find(
         (a) =>
@@ -513,20 +515,28 @@ export default function MealProductLanding() {
                 {product.accompagnements.map((a) => {
                   const key = a._id || a.name;
                   const q = accQty[key] || 0;
+                  const unavailable = a.available === false;
                   return (
-                    <div key={key} className={`meal-pdp-acc-row${q > 0 ? ' is-selected' : ''}`}>
+                    <div
+                      key={key}
+                      className={`meal-pdp-acc-row${q > 0 ? ' is-selected' : ''}${
+                        unavailable ? ' is-unavailable' : ''
+                      }`}
+                    >
                       <div className="meal-pdp-acc-info">
                         <strong>
                           {a.name}
-                          <span className="meal-pdp-acc-req"> *</span>
+                          {!unavailable ? <span className="meal-pdp-acc-req"> *</span> : null}
                         </strong>
-                        <span>{formatPriceXof(a.price)}</span>
+                        <span>{unavailable ? 'Indisponible' : formatPriceXof(a.price)}</span>
                       </div>
                       <div className="meal-pdp-acc-ctrl">
                         <button
                           type="button"
                           aria-label={`Retirer ${a.name}`}
+                          disabled={unavailable}
                           onClick={() => {
+                            if (unavailable) return;
                             setAccQty((s) => ({ ...s, [key]: Math.max(0, (s[key] || 0) - 1) }));
                             setHighlightAcc(false);
                           }}
@@ -537,7 +547,9 @@ export default function MealProductLanding() {
                         <button
                           type="button"
                           aria-label={`Ajouter ${a.name}`}
+                          disabled={unavailable}
                           onClick={() => {
+                            if (unavailable) return;
                             setAccQty((s) => ({
                               ...s,
                               [key]: Math.min(a.maxQuantity || 10, (s[key] || 0) + 1),
@@ -601,7 +613,7 @@ export default function MealProductLanding() {
               </button>
             ) : (
               <button type="button" className="shop-pdp-cta shop-pdp-cta--primary" disabled>
-                Commande bientôt disponible
+                {product?.available === false ? 'Plat indisponible' : 'Commande bientôt disponible'}
               </button>
             )}
           </form>

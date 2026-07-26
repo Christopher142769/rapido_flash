@@ -139,6 +139,26 @@
   box-shadow: 0 0 0 1px rgba(199, 109, 46, 0.12);
 }
 
+.meal-acc-modal-row.is-unavailable {
+  opacity: 0.6;
+  border-style: dashed;
+}
+
+.meal-acc-modal-row.is-unavailable .meal-acc-modal-info strong {
+  text-decoration: line-through;
+  color: #6b5f54;
+}
+
+.meal-acc-modal-row.is-unavailable .meal-acc-modal-info span {
+  text-decoration: line-through;
+  color: #9a8b7c;
+}
+
+.meal-acc-modal-row.is-unavailable .meal-acc-modal-ctrl button {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .meal-acc-modal-info {
   display: flex;
   flex-direction: column;

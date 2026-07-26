@@ -23,6 +23,7 @@ import Orders from './pages/client/Orders';
 import Factures from './pages/client/Factures';
 import ReceiptPage from './pages/client/ReceiptPage';
 import InvitesCheckPage from './pages/client/InvitesCheckPage';
+import StaffPresencePage from './pages/client/StaffPresencePage';
 import Settings from './pages/client/Settings';
 import AccountDeletion from './pages/AccountDeletion';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
@@ -52,6 +53,7 @@ import ShopDashboard from './pages/restaurant/ShopDashboard';
 import ShopRepasDashboard from './pages/restaurant/ShopRepasDashboard';
 import PushNotificationsDashboard from './pages/restaurant/PushNotificationsDashboard';
 import InvitesDashboard from './pages/restaurant/InvitesDashboard';
+import StaffPresenceDashboard from './pages/restaurant/StaffPresenceDashboard';
 import ShopProductLanding from './pages/shop/ShopProductLanding';
 import ShopOrderConfirmation from './pages/shop/ShopOrderConfirmation';
 import MealShopPage from './pages/repas/MealShopPage';
@@ -145,7 +147,9 @@ function AppRoutes() {
     location.pathname.startsWith('/form') ||
     location.pathname.startsWith('/champion') ||
     location.pathname.startsWith('/cuisine') ||
-    location.pathname.startsWith('/responsables');
+    location.pathname.startsWith('/responsables') ||
+    location.pathname.startsWith('/présence') ||
+    location.pathname.startsWith('/presence');
 
   return (
     <MaintenanceGate>
@@ -225,6 +229,8 @@ function AppRoutes() {
         <Route path="/repas/panier" element={<MealCartPage />} />
         <Route path="/invites/:code" element={<InvitesCheckPage />} />
         <Route path="/invités/:code" element={<InvitesCheckPage />} />
+        <Route path="/présence/:code" element={<StaffPresencePage />} />
+        <Route path="/presence/:code" element={<StaffPresencePage />} />
         <Route
           path="/repas/:slug"
           element={<MealProductLegacyRedirect />}
@@ -251,6 +257,7 @@ function AppRoutes() {
           <Route path="shop" element={<ShopDashboard />} />
           <Route path="shop-repas" element={<ShopRepasDashboard />} />
           <Route path="invites" element={<InvitesDashboard />} />
+          <Route path="presence-personnel" element={<StaffPresenceDashboard />} />
           <Route path="categories" element={<Categories />} />
           <Route path="commandes" element={<RestaurantCommandes />} />
           <Route path="bannieres" element={<Bannieres />} />

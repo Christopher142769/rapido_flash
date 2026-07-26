@@ -30,16 +30,28 @@ export default function MealOptionGroups({ groups = [], selection = {}, onToggle
             <div className="meal-opt-choices">
               {(g.choices || []).map((c) => {
                 const selected = isChoiceSelected(selection, g, c);
+                const unavailable = c.available === false;
                 return (
                   <button
                     key={optionChoiceKey(c)}
                     type="button"
-                    className={`meal-opt-choice${selected ? ' is-selected' : ''}`}
-                    onClick={() => onToggle(g, c)}
+                    className={`meal-opt-choice${selected ? ' is-selected' : ''}${
+                      unavailable ? ' is-unavailable' : ''
+                    }`}
+                    onClick={() => {
+                      if (unavailable) return;
+                      onToggle(g, c);
+                    }}
+                    disabled={unavailable}
                     aria-pressed={selected}
+                    aria-disabled={unavailable}
+                    title={unavailable ? 'Indisponible' : undefined}
                   >
                     <span className={`meal-opt-mark${multiple ? ' is-check' : ''}`} aria-hidden />
-                    <span className="meal-opt-label">{c.label}</span>
+                    <span className="meal-opt-label">
+                      {c.label}
+                      {unavailable ? ' (indisponible)' : ''}
+                    </span>
                     <span className="meal-opt-price">
                       {Number(c.price) > 0 ? `+${formatPriceXof(c.price)}` : 'Inclus'}
                     </span>

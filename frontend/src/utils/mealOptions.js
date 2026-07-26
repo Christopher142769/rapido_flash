@@ -19,6 +19,7 @@ export function buildOptionSelection(groups = []) {
 
 /** Active/désactive un choix. Respecte le type (single => remplace, multiple => bascule). */
 export function toggleOptionChoice(state, group, choice) {
+  if (choice?.available === false) return state;
   const gKey = optionGroupKey(group);
   const cKey = optionChoiceKey(choice);
   const current = state[gKey] || [];
@@ -65,7 +66,8 @@ export function optionsPerUnitTotal(list = []) {
 /** Renvoie un message d'erreur si un groupe requis n'a pas de choix, sinon ''. */
 export function validateOptionSelection(groups = [], state = {}) {
   for (const g of groups || []) {
-    if (g.required && (state[optionGroupKey(g)] || []).length < 1) {
+    const availableChoices = (g.choices || []).filter((c) => c.available !== false);
+    if (g.required && availableChoices.length > 0 && (state[optionGroupKey(g)] || []).length < 1) {
       return `Choix requis : ${g.name}`;
     }
   }

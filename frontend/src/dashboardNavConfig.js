@@ -25,6 +25,7 @@ import {
   FaMotorcycle,
   FaUtensils,
   FaFire,
+  FaUserCheck,
 } from 'react-icons/fa';
 
 export const DASHBOARD_HOME_SECTION = 'dashboard_home';
@@ -201,6 +202,13 @@ export function buildDashboardNavItems({
       path: '/dashboard/formulaires',
       section: GESTION_NAV_SECTION,
       Icon: FaWpforms,
+    },
+    {
+      id: 'presence-personnel',
+      label: 'Présence personnel',
+      path: '/dashboard/presence-personnel',
+      section: GESTION_NAV_SECTION,
+      Icon: FaUserCheck,
     },
   ];
 

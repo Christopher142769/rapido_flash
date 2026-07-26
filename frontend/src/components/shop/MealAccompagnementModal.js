@@ -45,19 +45,28 @@ export default function MealAccompagnementModal({
     };
   }, [open, onClose]);
 
+  const availableOptions = useMemo(
+    () => (options || []).filter((a) => a.available !== false),
+    [options]
+  );
+
   const selectedCount = useMemo(
-    () => Object.values(draft).reduce((sum, q) => sum + (Number(q) > 0 ? 1 : 0), 0),
-    [draft]
+    () =>
+      availableOptions.reduce((sum, a) => {
+        const key = String(a._id || a.name);
+        return sum + (Number(draft[key]) > 0 ? 1 : 0);
+      }, 0),
+    [availableOptions, draft]
   );
 
   const accTotal = useMemo(
     () =>
-      (options || []).reduce((sum, a) => {
+      availableOptions.reduce((sum, a) => {
         const key = String(a._id || a.name);
         const q = Number(draft[key]) || 0;
         return sum + (Number(a.price) || 0) * q;
       }, 0),
-    [options, draft]
+    [availableOptions, draft]
   );
 
   if (!open) return null;
@@ -69,9 +78,16 @@ export default function MealAccompagnementModal({
   };
 
   const handleConfirm = () => {
-    if (selectedCount < 1) {
+    if (availableOptions.length > 0 && selectedCount < 1) {
       setError('Choisissez au moins un accompagnement pour continuer.');
       return;
+    }
+    for (const req of availableOptions.filter((a) => a.required)) {
+      const key = String(req._id || req.name);
+      if (!(Number(draft[key]) > 0)) {
+        setError(`Accompagnement requis : ${req.name}`);
+        return;
+      }
     }
     onConfirm(draft);
   };
@@ -104,17 +120,27 @@ export default function MealAccompagnementModal({
           {options.map((a) => {
             const key = String(a._id || a.name);
             const q = draft[key] || 0;
+            const unavailable = a.available === false;
             return (
-              <div key={key} className={`meal-acc-modal-row${q > 0 ? ' is-selected' : ''}`}>
+              <div
+                key={key}
+                className={`meal-acc-modal-row${q > 0 ? ' is-selected' : ''}${
+                  unavailable ? ' is-unavailable' : ''
+                }`}
+              >
                 <div className="meal-acc-modal-info">
                   <strong>{a.name}</strong>
-                  <span>{formatPriceXof(a.price)}</span>
+                  <span>{unavailable ? 'Indisponible' : formatPriceXof(a.price)}</span>
                 </div>
                 <div className="meal-acc-modal-ctrl">
                   <button
                     type="button"
                     aria-label={`Retirer ${a.name}`}
-                    onClick={() => setQty(key, q - 1, a.maxQuantity)}
+                    disabled={unavailable}
+                    onClick={() => {
+                      if (unavailable) return;
+                      setQty(key, q - 1, a.maxQuantity);
+                    }}
                   >
                     −
                   </button>
@@ -122,7 +148,11 @@ export default function MealAccompagnementModal({
                   <button
                     type="button"
                     aria-label={`Ajouter ${a.name}`}
-                    onClick={() => setQty(key, q + 1, a.maxQuantity)}
+                    disabled={unavailable}
+                    onClick={() => {
+                      if (unavailable) return;
+                      setQty(key, q + 1, a.maxQuantity);
+                    }}
                   >
                     +
                   </button>

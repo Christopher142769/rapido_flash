@@ -1,0 +1,126 @@
+.staff-presence-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background:
+    radial-gradient(ellipse at top, rgba(199, 109, 46, 0.12), transparent 55%),
+    linear-gradient(160deg, #f7f2eb 0%, #efe6da 100%);
+  color: #1a1410;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.staff-presence-card {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 28px 22px 24px;
+  box-shadow: 0 18px 40px rgba(26, 20, 16, 0.1);
+  border: 1px solid rgba(26, 20, 16, 0.06);
+  text-align: center;
+}
+
+.staff-presence-logo {
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+
+.staff-presence-card h1 {
+  margin: 0 0 8px;
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.staff-presence-lead {
+  margin: 0 0 20px;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: rgba(26, 20, 16, 0.7);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.staff-presence-form {
+  display: grid;
+  gap: 14px;
+  text-align: left;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.staff-presence-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #3d3229;
+}
+
+.staff-presence-form input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #e2d7c9;
+  font-size: 1rem;
+  font-family: inherit;
+  background: #fff;
+}
+
+.staff-presence-form input:focus {
+  outline: none;
+  border-color: #c76d2e;
+  box-shadow: 0 0 0 3px rgba(199, 109, 46, 0.15);
+}
+
+.staff-presence-cta {
+  margin-top: 6px;
+  width: 100%;
+  border: 0;
+  border-radius: 999px;
+  padding: 14px 18px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff;
+  cursor: pointer;
+  background: linear-gradient(135deg, #1a5c52 0%, #c76d2e 100%);
+}
+
+.staff-presence-cta:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.staff-presence-error {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fde8e8;
+  color: #9b1c1c;
+  font-size: 0.9rem;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.staff-presence-success {
+  margin-top: 8px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #eaf7ef;
+  color: #166534;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.staff-presence-success strong {
+  display: block;
+  font-size: 1.05rem;
+  margin-bottom: 6px;
+}
+
+.staff-presence-success p {
+  margin: 4px 0;
+}
+
+.staff-presence-time {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
