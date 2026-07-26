@@ -195,31 +195,76 @@ export function exportPresenceToWord(exportData) {
   triggerBrowserDownload(blob, `presence-personnel-${stamp}.doc`);
 }
 
+function detectImageFormat(dataUrl) {
+  const m = String(dataUrl || '').match(/^data:image\/(png|jpeg|jpg|webp)/i);
+  if (!m) return 'PNG';
+  const t = m[1].toLowerCase();
+  if (t === 'jpg' || t === 'jpeg') return 'JPEG';
+  if (t === 'webp') return 'WEBP';
+  return 'PNG';
+}
+
+/** Charge une image (logo entreprise) en data URL pour jsPDF. */
+export async function fetchImageAsDataUrl(url) {
+  if (!url) return null;
+  const res = await fetch(url, { credentials: 'omit' });
+  if (!res.ok) throw new Error('Logo introuvable');
+  const blob = await res.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Lecture logo impossible'));
+    reader.readAsDataURL(blob);
+  });
+}
+
 /** PDF A4 imprimable avec le QR de pointage (image PNG du canvas). */
-export function exportPresenceQrToPdf({ url, qrDataUrl }) {
+export async function exportPresenceQrToPdf({
+  url,
+  qrDataUrl,
+  companyName = 'KING FISH',
+  logoDataUrl = null,
+}) {
   if (!url || !qrDataUrl) {
     throw new Error('QR indisponible');
   }
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = 210;
   const margin = 18;
+  const title = `${String(companyName || 'KING FISH').toUpperCase()} — Présence personnel`;
 
   doc.setFillColor(...BRAND.cream);
   doc.rect(0, 0, pageW, 297, 'F');
 
+  let yCursor = 18;
+  if (logoDataUrl) {
+    const logoSize = 28;
+    const logoX = (pageW - logoSize) / 2;
+    try {
+      doc.addImage(logoDataUrl, detectImageFormat(logoDataUrl), logoX, yCursor, logoSize, logoSize);
+      yCursor += logoSize + 8;
+    } catch {
+      // logo optionnel
+    }
+  }
+
   doc.setTextColor(...BRAND.brown);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(20);
-  doc.text('KING FISH — Présence personnel', pageW / 2, 28, { align: 'center' });
+  doc.setFontSize(18);
+  doc.text(title, pageW / 2, yCursor + 4, { align: 'center' });
+  yCursor += 14;
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(12);
   doc.setTextColor(...BRAND.text);
-  doc.text('Scannez ce QR code pour marquer votre présence', pageW / 2, 40, { align: 'center' });
+  doc.text('Scannez ce QR code pour marquer votre présence', pageW / 2, yCursor, {
+    align: 'center',
+  });
+  yCursor += 12;
 
   const qrSize = 110;
   const qrX = (pageW - qrSize) / 2;
-  const qrY = 55;
+  const qrY = yCursor;
   doc.setFillColor(...BRAND.white);
   doc.roundedRect(qrX - 6, qrY - 6, qrSize + 12, qrSize + 12, 4, 4, 'F');
   doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);

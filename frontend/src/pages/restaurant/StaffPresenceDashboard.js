@@ -8,12 +8,21 @@ import {
   exportPresenceToExcel,
   exportPresenceToPdf,
   exportPresenceToWord,
+  fetchImageAsDataUrl,
   preparePresenceExport,
 } from '../../utils/exportStaffPresence';
 import '../commercial/commercial.css';
 import './StaffPresenceDashboard.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const MEDIA_BASE = API_URL.replace(/\/api\/?$/, '');
+
+function absoluteMediaUrl(path) {
+  if (!path) return '';
+  const s = String(path);
+  if (/^https?:\/\//i.test(s)) return s;
+  return `${MEDIA_BASE}${s.startsWith('/') ? '' : '/'}${s}`;
+}
 
 function authHeaders() {
   const token = localStorage.getItem('token');
@@ -135,20 +144,33 @@ export default function StaffPresenceDashboard() {
     }
   };
 
-  const downloadQrPdf = () => {
+  const downloadQrPdf = async () => {
     try {
+      setBusy(true);
       const canvas = qrCanvasRef.current;
       if (!canvas || typeof canvas.toDataURL !== 'function') {
         showError('QR pas encore prêt');
         return;
       }
-      exportPresenceQrToPdf({
+      let logoDataUrl = settings?.companyLogoDataUrl || null;
+      if (!logoDataUrl && settings?.companyLogo) {
+        try {
+          logoDataUrl = await fetchImageAsDataUrl(absoluteMediaUrl(settings.companyLogo));
+        } catch {
+          logoDataUrl = null;
+        }
+      }
+      await exportPresenceQrToPdf({
         url: publicUrl,
         qrDataUrl: canvas.toDataURL('image/png'),
+        companyName: settings?.companyName || 'KING FISH',
+        logoDataUrl,
       });
       showSuccess('PDF du QR téléchargé');
     } catch (e) {
       showError(e.message || 'Impossible de générer le PDF');
+    } finally {
+      setBusy(false);
     }
   };
 

@@ -85,63 +85,79 @@ export default function StaffPresencePage() {
 
   return (
     <div className="staff-presence-page">
-      <div className="staff-presence-card">
-        <img src="/images/logo.png" alt="" className="staff-presence-logo" width={56} height={56} />
-        <h1>Présence personnel</h1>
-        <p className="staff-presence-lead">
-          Indiquez votre nom et prénom, puis confirmez votre présence. L’heure est enregistrée
-          automatiquement.
-        </p>
-
-        {error && !result ? <p className="staff-presence-error">{error}</p> : null}
-
-        {!valid && !result ? (
-          <p className="staff-presence-error">Ce QR code n’est pas valide.</p>
-        ) : null}
-
-        {result ? (
-          <div className="staff-presence-success" role="status">
-            <strong>
-              {result.alreadyPresent ? 'Déjà présent aujourd’hui' : 'Présence enregistrée'}
-            </strong>
-            <p>
-              {result.firstName} {result.lastName}
-            </p>
-            <p className="staff-presence-time">
-              Pointé à {formatCheckedAt(result.checkedAt)}
-            </p>
+      <div className="staff-presence-shell">
+        <header className="staff-presence-brand">
+          <div className="staff-presence-logo-wrap">
+            <img
+              src="/images/logo.png"
+              alt="Rapido Flash"
+              className="staff-presence-logo"
+              width={78}
+              height={78}
+            />
           </div>
-        ) : null}
+          <p className="staff-presence-brand-name">Rapido Flash</p>
+          <p className="staff-presence-brand-tag">Pointage personnel</p>
+        </header>
 
-        {valid && !result ? (
-          <form className="staff-presence-form" onSubmit={handleSubmit}>
-            <label>
-              Prénom
-              <input
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                autoComplete="given-name"
-                required
-                minLength={2}
-                placeholder="Votre prénom"
-              />
-            </label>
-            <label>
-              Nom
-              <input
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                autoComplete="family-name"
-                required
-                minLength={2}
-                placeholder="Votre nom"
-              />
-            </label>
-            <button type="submit" className="staff-presence-cta" disabled={submitting}>
-              {submitting ? 'Enregistrement…' : 'Je suis présent'}
-            </button>
-          </form>
-        ) : null}
+        <div className="staff-presence-panel">
+          <h1>Présence</h1>
+          <p className="staff-presence-lead">
+            Saisissez votre prénom et votre nom, puis confirmez. L’heure est enregistrée
+            automatiquement.
+          </p>
+
+          {error && !result ? <p className="staff-presence-error">{error}</p> : null}
+
+          {!valid && !result ? (
+            <p className="staff-presence-error">Ce QR code n’est pas valide.</p>
+          ) : null}
+
+          {result ? (
+            <div className="staff-presence-success" role="status">
+              <div className="staff-presence-success-icon" aria-hidden>
+                ✓
+              </div>
+              <strong>
+                {result.alreadyPresent ? 'Déjà présent aujourd’hui' : 'Présence enregistrée'}
+              </strong>
+              <p>
+                {result.firstName} {result.lastName}
+              </p>
+              <p className="staff-presence-time">Pointé à {formatCheckedAt(result.checkedAt)}</p>
+            </div>
+          ) : null}
+
+          {valid && !result ? (
+            <form className="staff-presence-form" onSubmit={handleSubmit}>
+              <label>
+                Prénom
+                <input
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  autoComplete="given-name"
+                  required
+                  minLength={2}
+                  placeholder="Votre prénom"
+                />
+              </label>
+              <label>
+                Nom
+                <input
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  autoComplete="family-name"
+                  required
+                  minLength={2}
+                  placeholder="Votre nom"
+                />
+              </label>
+              <button type="submit" className="staff-presence-cta" disabled={submitting}>
+                {submitting ? 'Enregistrement…' : 'Je suis présent'}
+              </button>
+            </form>
+          ) : null}
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,10 @@
 const express = require('express');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const StaffPresenceSettings = require('../models/StaffPresenceSettings');
 const StaffPresenceRecord = require('../models/StaffPresenceRecord');
+const Restaurant = require('../models/Restaurant');
 const { auth, isRestaurant } = require('../middleware/auth');
 
 const router = express.Router();
@@ -60,10 +63,56 @@ async function getOrCreateSettings() {
   return doc;
 }
 
-function serializeSettings(doc) {
+function mimeFromExt(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === '.png') return 'image/png';
+  if (ext === '.webp') return 'image/webp';
+  if (ext === '.gif') return 'image/gif';
+  if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';
+  return 'image/png';
+}
+
+function logoPathToDataUrl(logoPath) {
+  if (!logoPath) return null;
+  const raw = String(logoPath).trim();
+  if (raw.startsWith('data:image/')) return raw;
+  if (/^https?:\/\//i.test(raw)) return null;
+  const rel = raw.replace(/^\/+/, '');
+  const abs = path.resolve(__dirname, '..', rel);
+  const uploadsRoot = path.resolve(__dirname, '..', 'uploads');
+  if (abs !== uploadsRoot && !abs.startsWith(`${uploadsRoot}${path.sep}`)) return null;
+  if (!fs.existsSync(abs)) return null;
+  try {
+    const buf = fs.readFileSync(abs);
+    return `data:${mimeFromExt(abs)};base64,${buf.toString('base64')}`;
+  } catch {
+    return null;
+  }
+}
+
+async function getKingFishBranding() {
+  const doc = await Restaurant.findOne({
+    nom: { $regex: /king\s*fish/i },
+    isPlatformSupport: { $ne: true },
+  })
+    .select('nom logo')
+    .lean();
+  const companyLogo = doc?.logo || null;
+  return {
+    companyName: doc?.nom || 'KING FISH',
+    companyLogo,
+    companyLogoDataUrl: logoPathToDataUrl(companyLogo),
+  };
+}
+
+async function serializeSettings(doc) {
+  const branding = await getKingFishBranding();
   return {
     code: doc.code,
     url: publicPresenceUrl(doc.code),
+    companyName: branding.companyName,
+    companyLogo: branding.companyLogo,
+    companyLogoDataUrl: branding.companyLogoDataUrl,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
@@ -73,7 +122,7 @@ function serializeSettings(doc) {
 router.get('/settings', auth, isRestaurant, async (req, res) => {
   try {
     const doc = await getOrCreateSettings();
-    res.json(serializeSettings(doc));
+    res.json(await serializeSettings(doc));
   } catch (e) {
     res.status(500).json({ message: e.message });
   }
@@ -85,7 +134,7 @@ router.post('/settings/regenerate', auth, isRestaurant, async (req, res) => {
     const doc = await getOrCreateSettings();
     doc.code = newPresenceCode();
     await doc.save();
-    res.json(serializeSettings(doc));
+    res.json(await serializeSettings(doc));
   } catch (e) {
     res.status(500).json({ message: e.message });
   }
