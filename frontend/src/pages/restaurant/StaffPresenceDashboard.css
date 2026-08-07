@@ -1,7 +1,7 @@
 .staff-presence-qr-pair {
   display: grid;
-  gap: 1.25rem;
-  margin-bottom: 1.25rem;
+  gap: 1.15rem;
+  margin-bottom: 1.15rem;
 }
 
 @media (min-width: 980px) {
@@ -11,12 +11,12 @@
 }
 
 .staff-presence-qr-card {
-  margin-bottom: 0;
+  margin-bottom: 0 !important;
 }
 
 .staff-presence-qr-grid {
   display: grid;
-  gap: 1.25rem;
+  gap: 1.15rem;
   align-items: start;
 }
 
@@ -28,11 +28,12 @@
 
 .staff-presence-qr-box {
   display: inline-flex;
-  padding: 12px;
+  padding: 14px;
   background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 12px;
+  border: 1px solid var(--rf-border, rgba(0, 0, 0, 0.08));
+  border-radius: 18px;
   position: relative;
+  box-shadow: var(--shadow-card);
 }
 
 .staff-presence-qr-print {
@@ -57,20 +58,20 @@
 .staff-presence-qr-meta input {
   width: 100%;
   padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  border: 1px solid var(--rf-border-strong, rgba(0, 0, 0, 0.12));
   font-size: 0.85rem;
 }
 
 .staff-presence-tabs {
   display: flex;
   gap: 8px;
-  margin-bottom: 1rem;
+  margin-bottom: 1.15rem;
   flex-wrap: wrap;
 }
 
 .staff-presence-tab {
-  border: 1px solid rgba(139, 69, 19, 0.22);
+  border: 1px solid rgba(139, 69, 19, 0.2);
   background: #fff;
   color: #8b4513;
   border-radius: 999px;
@@ -82,7 +83,7 @@
 }
 
 .staff-presence-tab.is-active {
-  background: #8b4513;
-  border-color: #8b4513;
+  background: linear-gradient(145deg, #c76d2e, #8b4513);
+  border-color: transparent;
   color: #fff;
 }

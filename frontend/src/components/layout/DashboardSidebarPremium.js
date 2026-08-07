@@ -49,22 +49,22 @@ function NavItem({ item, pendingOrders, unreadMessages, todayRelances, onNavigat
             {isActive ? (
               <motion.div
                 layoutId="rf-sidebar-active-pill"
-                className="absolute inset-y-1 left-0 right-0 rounded-[10px]"
+                className="absolute inset-y-0.5 left-0 right-0 rounded-2xl"
                 style={{
                   background: 'var(--rf-sidebar-active)',
-                  borderLeft: '3px solid var(--rf-amber)',
+                  borderLeft: '3px solid var(--rf-brown)',
                 }}
                 transition={reduce ? { duration: 0.12 } : { type: 'spring', stiffness: 300, damping: 28 }}
               />
             ) : null}
             <span
-              className={`relative z-10 flex items-center gap-3 rounded-[10px] px-3 py-2.5 transition-colors ${
+              className={`relative z-10 flex items-center gap-3 rounded-2xl px-3.5 py-2.5 transition-colors ${
                 isActive ? '' : 'hover:bg-[var(--rf-sidebar-hover)]'
               }`}
             >
               <Icon
                 className="h-4 w-4 shrink-0"
-                style={{ color: isActive ? 'var(--rf-amber)' : 'var(--rf-sidebar-text-muted)' }}
+                style={{ color: isActive ? 'var(--rf-brown)' : 'var(--rf-sidebar-text-muted)' }}
                 aria-hidden
               />
               <span
@@ -122,28 +122,37 @@ export default function DashboardSidebarPremium({ onNavigate, className = '' }) 
       className={`flex h-full min-h-0 flex-col ${className}`}
       style={{ background: 'var(--rf-sidebar-bg)', color: 'var(--rf-sidebar-text)' }}
     >
-      <div className="flex shrink-0 flex-col px-4 pb-4 pt-5">
+      <div className="flex shrink-0 flex-col px-5 pb-5 pt-6">
         <button
           type="button"
-          className="flex cursor-pointer items-center gap-2 border-0 bg-transparent p-0 text-left outline-none"
+          className="flex cursor-pointer items-center gap-3 border-0 bg-transparent p-0 text-left outline-none"
           onClick={() => {
             onNavigate?.();
             navigate('/dashboard');
           }}
         >
-          <img src="/images/logo.png" alt="" className="h-10 w-10 shrink-0 rounded-lg object-contain" />
+          <img
+            src="/images/logo.png"
+            alt=""
+            className="h-11 w-11 shrink-0 rounded-2xl object-contain"
+            style={{
+              boxShadow: 'var(--shadow-card)',
+              background: '#fff',
+              border: '1px solid var(--rf-border)',
+            }}
+          />
           <div className="min-w-0">
             <div
-              className="truncate text-lg font-bold leading-tight tracking-tight"
-              style={{ fontFamily: 'var(--font-display)', color: 'var(--rf-text-dark)' }}
+              className="truncate text-[1.05rem] font-extrabold leading-tight tracking-tight"
+              style={{ fontFamily: 'var(--font-display)', color: 'var(--rf-brown)' }}
             >
               Rapido Flash
             </div>
             <div
-              className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.18em]"
+              className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.16em]"
               style={{ color: 'var(--rf-sidebar-text-muted)' }}
             >
-              {t('dashNav', 'sectionAdmin')}
+              Menu
             </div>
           </div>
         </button>

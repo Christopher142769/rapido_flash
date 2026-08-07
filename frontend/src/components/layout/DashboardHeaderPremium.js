@@ -71,18 +71,17 @@ export default function DashboardHeaderPremium({ onOpenDrawer }) {
 
   return (
     <header
-      className="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-4 border-b px-4 md:px-6"
+      className="sticky top-0 z-50 flex h-[72px] shrink-0 items-center gap-4 border-b px-4 md:px-7"
       style={{
-        background: 'rgba(255, 252, 248, 0.82)',
-        backdropFilter: 'blur(18px) saturate(1.2)',
-        WebkitBackdropFilter: 'blur(18px) saturate(1.2)',
+        background: 'rgba(255, 255, 255, 0.86)',
+        backdropFilter: 'blur(18px) saturate(1.15)',
+        WebkitBackdropFilter: 'blur(18px) saturate(1.15)',
         borderColor: 'var(--rf-border)',
-        boxShadow: '0 1px 0 rgba(255,255,255,0.9) inset',
       }}
     >
       <button
         type="button"
-        className="flex h-10 w-10 items-center justify-center rounded-xl border md:hidden"
+        className="flex h-11 w-11 items-center justify-center rounded-2xl border md:hidden"
         style={{
           background: 'var(--rf-surface)',
           color: 'var(--rf-text-dark)',
@@ -96,40 +95,50 @@ export default function DashboardHeaderPremium({ onOpenDrawer }) {
       </button>
 
       <h1
-        className="min-w-0 flex-1 font-display text-[22px] font-bold leading-tight tracking-tight md:flex-none"
+        className="min-w-0 flex-1 font-display text-[20px] font-extrabold leading-tight tracking-tight md:flex-none md:max-w-[220px]"
         style={{ color: 'var(--rf-text-dark)', fontFamily: 'var(--font-display)' }}
       >
         {title}
       </h1>
 
       <motion.div
-        className="mx-auto hidden max-w-[280px] flex-1 md:flex"
-        animate={reduce ? {} : { scale: searchFocused ? 1.02 : 1 }}
+        className="mx-auto hidden max-w-[420px] flex-1 lg:flex"
+        animate={reduce ? {} : { scale: searchFocused ? 1.01 : 1 }}
         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       >
         <label className="relative block w-full">
           <span className="sr-only">{t('dashNav', 'rechercher')}</span>
           <FaSearch
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm opacity-50"
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm opacity-45"
             style={{ color: 'var(--rf-text-muted)' }}
             aria-hidden
           />
           <input
             ref={searchRef}
             type="search"
-            placeholder={`${t('dashNav', 'rechercher')}...`}
-            className="w-full rounded-[var(--radius-md)] border bg-white py-2.5 pl-10 pr-3 text-sm outline-none transition-shadow"
+            placeholder={`${t('dashNav', 'rechercher')}…`}
+            className="w-full rounded-full border bg-[var(--rf-cream)] py-3 pl-11 pr-14 text-sm outline-none transition-shadow"
             style={{
-              borderColor: 'var(--rf-border-strong)',
+              borderColor: 'var(--rf-border)',
               boxShadow: searchFocused ? 'var(--shadow-gold)' : 'none',
             }}
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setSearchFocused(false)}
           />
+          <kbd
+            className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold sm:inline"
+            style={{
+              borderColor: 'var(--rf-border)',
+              color: 'var(--rf-text-muted)',
+              background: '#fff',
+            }}
+          >
+            ⌘F
+          </kbd>
         </label>
       </motion.div>
 
-      <div className="flex items-center gap-3">
+      <div className="ml-auto flex items-center gap-2.5 md:gap-3">
         <SectionRefreshButton
           onRefresh={refresh}
           loading={refreshing}
@@ -143,7 +152,7 @@ export default function DashboardHeaderPremium({ onOpenDrawer }) {
         />
         <button
           type="button"
-          className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[var(--rf-border)] bg-[var(--rf-surface)] text-lg outline-none transition hover:shadow-[var(--shadow-hover)]"
+          className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--rf-border)] bg-white text-lg outline-none transition hover:shadow-[var(--shadow-hover)]"
           style={{ color: 'var(--rf-text-dark)', boxShadow: 'var(--shadow-card)' }}
           aria-label={t('dashNav', 'notifications')}
           onClick={() => navigate('/dashboard/commandes')}
@@ -151,10 +160,9 @@ export default function DashboardHeaderPremium({ onOpenDrawer }) {
           <FaBell />
           {notifTotal > 0 ? (
             <motion.span
-              className="absolute -right-0.5 -top-0.5 flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold"
+              className="absolute -right-0.5 -top-0.5 flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white"
               style={{
-                background: 'linear-gradient(145deg, var(--rf-gold-soft) 0%, var(--rf-gold) 100%)',
-                color: 'var(--rf-ink)',
+                background: 'linear-gradient(145deg, var(--rf-amber) 0%, var(--rf-brown) 100%)',
               }}
               initial={reduce ? false : { scale: 0 }}
               animate={{ scale: 1 }}
@@ -168,19 +176,25 @@ export default function DashboardHeaderPremium({ onOpenDrawer }) {
         <div className="relative">
           <button
             type="button"
-            className="flex items-center gap-2 rounded-full border-0 bg-transparent p-1 pr-2 outline-none"
+            className="flex items-center gap-2.5 rounded-2xl border border-[var(--rf-border)] bg-white py-1.5 pl-1.5 pr-3 outline-none"
+            style={{ boxShadow: 'var(--shadow-card)' }}
             onClick={() => setMenuOpen((o) => !o)}
             aria-expanded={menuOpen}
             aria-haspopup="menu"
           >
             <span
-              className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white"
-              style={{ background: 'var(--rf-amber)' }}
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold text-white"
+              style={{ background: 'linear-gradient(145deg, var(--rf-amber), var(--rf-brown))' }}
             >
               {(user?.nom || user?.email || 'A').slice(0, 1).toUpperCase()}
             </span>
-            <span className="hidden text-sm font-semibold sm:inline" style={{ color: 'var(--rf-text-dark)' }}>
-              {t('dashNav', 'admin')}
+            <span className="hidden min-w-0 flex-col text-left sm:flex">
+              <span className="truncate text-[13px] font-bold leading-tight" style={{ color: 'var(--rf-text-dark)' }}>
+                {user?.nom || t('dashNav', 'admin')}
+              </span>
+              <span className="truncate text-[11px] font-medium leading-tight" style={{ color: 'var(--rf-text-muted)' }}>
+                {user?.email || ''}
+              </span>
             </span>
           </button>
           <AnimatePresence>
@@ -191,13 +205,13 @@ export default function DashboardHeaderPremium({ onOpenDrawer }) {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.92, y: -6 }}
                 transition={{ duration: reduce ? 0.12 : 0.2 }}
-                className="absolute right-0 top-full z-50 mt-2 min-w-[180px] rounded-[var(--radius-md)] border bg-white py-1 shadow-lg"
+                className="absolute right-0 top-full z-50 mt-2 min-w-[200px] rounded-2xl border bg-white py-1.5 shadow-lg"
                 style={{ borderColor: 'var(--rf-border)' }}
               >
                 <button
                   type="button"
                   role="menuitem"
-                  className="block w-full px-4 py-2 text-left text-sm hover:bg-[var(--rf-cream)]"
+                  className="block w-full px-4 py-2.5 text-left text-sm font-semibold hover:bg-[var(--rf-cream)]"
                   onClick={() => {
                     setMenuOpen(false);
                     navigate('/home');

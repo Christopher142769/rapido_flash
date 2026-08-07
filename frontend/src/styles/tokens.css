@@ -1,25 +1,27 @@
 :root {
-  /* Fond application & shell dashboard */
-  --rf-shell-bg: #ebe6de;
-  --rf-shell-gradient: linear-gradient(165deg, #f4f0e8 0%, #ebe6de 42%, #e3ddd4 100%);
+  /* Fond canvas type Donezo — crème Rapido */
+  --rf-shell-bg: #f3efe8;
+  --rf-shell-gradient: linear-gradient(180deg, #f6f2eb 0%, #efe9e0 48%, #ebe4da 100%);
   --rf-cream: #f7f4ef;
-  --rf-cream-card: #fffefb;
+  --rf-cream-card: #ffffff;
 
-  /* Surfaces cartes / modales */
+  /* Surfaces */
   --rf-surface: #ffffff;
   --rf-surface-warm: #fffbf7;
   --rf-surface-muted: #f3efe8;
 
-  /* Sidebar — ton clair premium */
-  --rf-sidebar-bg: #faf8f5;
-  --rf-sidebar-active: rgba(212, 124, 47, 0.14);
-  --rf-sidebar-hover: rgba(26, 15, 0, 0.05);
-  --rf-sidebar-border: rgba(26, 15, 0, 0.08);
+  /* Sidebar claire */
+  --rf-sidebar-bg: #ffffff;
+  --rf-sidebar-active: rgba(199, 109, 46, 0.12);
+  --rf-sidebar-hover: rgba(26, 15, 0, 0.04);
+  --rf-sidebar-border: rgba(26, 15, 0, 0.06);
   --rf-sidebar-text: #1c1410;
-  --rf-sidebar-text-muted: rgba(28, 20, 16, 0.5);
-  --rf-sidebar-section: rgba(180, 100, 40, 0.85);
+  --rf-sidebar-text-muted: rgba(28, 20, 16, 0.55);
+  --rf-sidebar-section: rgba(139, 69, 19, 0.7);
 
-  /* Accents */
+  /* Charte Rapido */
+  --rf-brown: #8b4513;
+  --rf-brown-deep: #5c2e0b;
   --rf-gold: #e8b54a;
   --rf-gold-soft: #f5d78a;
   --rf-amber: #c76d2e;
@@ -30,10 +32,10 @@
   --rf-text-muted: #7a6558;
   --rf-text-light: #a89486;
 
-  --rf-border: rgba(120, 90, 60, 0.12);
-  --rf-border-strong: rgba(120, 90, 60, 0.22);
+  --rf-border: rgba(120, 90, 60, 0.1);
+  --rf-border-strong: rgba(120, 90, 60, 0.2);
 
-  /* Status */
+  /* Status pills (Donezo-like) */
   --rf-success: #1fa971;
   --rf-success-bg: #e8faf3;
   --rf-danger: #dc3838;
@@ -43,24 +45,31 @@
   --rf-info: #2f6fed;
   --rf-info-bg: #eef4ff;
 
-  /* Typographie */
-  --font-display: 'Syne', sans-serif;
-  --font-body: 'DM Sans', sans-serif;
-  --font-numbers: 'Bebas Neue', cursive;
+  /* Typo — Montserrat dans le shell */
+  --font-display: 'Montserrat', sans-serif;
+  --font-body: 'Montserrat', sans-serif;
+  --font-numbers: 'Montserrat', sans-serif;
 
-  --radius-sm: 8px;
+  /* Rayons généreux (Donezo) */
+  --radius-sm: 10px;
   --radius-md: 14px;
   --radius-lg: 18px;
-  --radius-xl: 26px;
+  --radius-xl: 22px;
+  --radius-2xl: 28px;
 
+  /* Ombres douces */
   --shadow-card:
-    0 1px 0 rgba(255, 255, 255, 0.7) inset,
-    0 4px 24px rgba(26, 20, 16, 0.06),
-    0 1px 3px rgba(26, 20, 16, 0.04);
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 8px 28px rgba(26, 20, 16, 0.05),
+    0 1px 2px rgba(26, 20, 16, 0.03);
   --shadow-hover:
-    0 1px 0 rgba(255, 255, 255, 0.85) inset,
-    0 12px 40px rgba(26, 20, 16, 0.1),
-    0 4px 12px rgba(26, 20, 16, 0.05);
+    0 1px 0 rgba(255, 255, 255, 0.95) inset,
+    0 16px 40px rgba(26, 20, 16, 0.08),
+    0 4px 12px rgba(26, 20, 16, 0.04);
   --shadow-gold: 0 0 0 3px rgba(232, 181, 74, 0.28);
-  --shadow-sidebar: 4px 0 32px rgba(26, 20, 16, 0.04);
+  --shadow-sidebar: 1px 0 0 rgba(26, 20, 16, 0.06);
+
+  /* Espacement grille dashboard */
+  --rf-dash-gap: 1.15rem;
+  --rf-dash-pad: 1.5rem;
 }

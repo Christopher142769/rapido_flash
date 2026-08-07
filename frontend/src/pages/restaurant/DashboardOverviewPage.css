@@ -1,41 +1,41 @@
 /**
- * Tableau de bord « Vue d’ensemble » — thème vert forêt / premium (page seule).
- * Préfixe .rf-dash-overview--forest sous .rf-dashboard-outlet.
+ * Tableau de bord « Vue d’ensemble » — thème Rapido Donezo / premium (page seule).
+ * Préfixe .rf-dash-overview--rapido sous .rf-dashboard-outlet.
  */
 
-.rf-dashboard-outlet .rf-dash-overview--forest.rf-dash-overview.dashboard-page {
+.rf-dashboard-outlet .rf-dash-overview--rapido.rf-dash-overview.dashboard-page {
   min-height: 100%;
-  background: linear-gradient(165deg, #e4efe8 0%, #eef4f0 38%, #f6faf7 100%) !important;
+  background: linear-gradient(165deg, #f4f0e8 0%, #efe9e0 38%, #ebe4da 100%) !important;
   padding-bottom: 2.5rem;
 }
 
-.rf-dash-overview--forest .rf-do-inner {
+.rf-dash-overview--rapido .rf-do-inner {
   max-width: 1120px;
   margin: 0 auto;
   padding: 1.5rem 1rem 2rem;
 }
 
 @media (min-width: 768px) {
-  .rf-dash-overview--forest .rf-do-inner {
+  .rf-dash-overview--rapido .rf-do-inner {
     padding: 1.75rem 1.5rem 2.5rem;
   }
 }
 
-.rf-dash-overview--forest .dashboard-header {
+.rf-dash-overview--rapido .dashboard-header {
   margin-bottom: 1.75rem;
 }
 
-.rf-dashboard-outlet .rf-dash-overview--forest .dashboard-header h1 {
-  color: #0a1f14;
+.rf-dashboard-outlet .rf-dash-overview--rapido .dashboard-header h1 {
+  color: #1a1411;
   font-size: clamp(1.65rem, 3vw, 2.1rem);
   font-weight: 800;
   letter-spacing: -0.035em;
   line-height: 1.15;
 }
 
-.rf-dash-overview--forest .rf-do-sub {
+.rf-dash-overview--rapido .rf-do-sub {
   margin-top: 0.5rem;
-  color: #4d6658;
+  color: #7a6558;
   font-size: 0.95rem;
   line-height: 1.55;
   max-width: 38rem;
@@ -51,8 +51,8 @@
   margin-bottom: 1.25rem;
   background: #fff;
   border-radius: 22px;
-  border: 1px solid rgba(20, 83, 45, 0.08);
-  box-shadow: 0 20px 50px -28px rgba(12, 60, 35, 0.16);
+  border: 1px solid rgba(139, 69, 19, 0.1);
+  box-shadow: 0 20px 50px -28px rgba(26, 20, 16, 0.08);
 }
 
 .rf-do-dates {
@@ -74,8 +74,8 @@
   padding: 0.5rem 1rem;
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #143828;
-  background: #ecf4ee;
+  color: #8b4513;
+  background: rgba(199, 109, 46, 0.1);
   cursor: pointer;
   transition:
     background 0.2s ease,
@@ -85,7 +85,7 @@
 }
 
 .rf-do-pill:hover {
-  background: #dfece3;
+  background: rgba(199, 109, 46, 0.12);
 }
 
 .rf-do-pill:active {
@@ -94,13 +94,13 @@
 
 .rf-do-pill--active {
   color: #fff;
-  background: linear-gradient(145deg, #0f3d24 0%, #14532d 55%, #166534 100%);
-  box-shadow: 0 10px 28px -10px rgba(20, 83, 45, 0.55);
+  background: linear-gradient(145deg, #5c2e0b 0%, #8b4513 55%, #8b4513 100%);
+  box-shadow: 0 10px 28px -10px rgba(139, 69, 19, 0.55);
 }
 
 .rf-do-pill--active:hover {
   color: #fff;
-  background: linear-gradient(145deg, #124a2c 0%, #166534 55%, #15803d 100%);
+  background: linear-gradient(145deg, #8b4513 0%, #8b4513 55%, #a85a24 100%);
 }
 
 .rf-do-dates {
@@ -135,8 +135,8 @@
   margin-bottom: 1.75rem;
   background: #fff;
   border-radius: 18px;
-  border: 1px solid rgba(20, 83, 45, 0.08);
-  box-shadow: 0 16px 40px -28px rgba(12, 60, 35, 0.14);
+  border: 1px solid rgba(139, 69, 19, 0.1);
+  box-shadow: 0 16px 40px -28px rgba(26, 20, 16, 0.14);
 }
 
 .rf-do-city-table {
@@ -149,7 +149,7 @@
 .rf-do-city-table td {
   padding: 0.75rem 1rem;
   text-align: left;
-  border-bottom: 1px solid rgba(20, 83, 45, 0.07);
+  border-bottom: 1px solid rgba(139, 69, 19, 0.07);
 }
 
 .rf-do-city-table th {
@@ -158,7 +158,7 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: #5c7268;
-  background: #f3f8f4;
+  background: #f7f4ef;
 }
 
 .rf-do-city-table td:nth-child(n + 2),
@@ -185,12 +185,12 @@
 }
 
 .rf-do-date-input {
-  border: 1px solid rgba(20, 83, 45, 0.12);
+  border: 1px solid rgba(139, 69, 19, 0.12);
   border-radius: 14px;
   padding: 0.45rem 0.65rem;
   font-size: 0.8125rem;
   color: #0c1f14;
-  background: #fafcfb;
+  background: #fffefb;
   outline: none;
   min-width: 9.5rem;
   transition:
@@ -199,7 +199,7 @@
 }
 
 .rf-do-date-input:focus {
-  border-color: rgba(20, 83, 45, 0.35);
+  border-color: rgba(139, 69, 19, 0.35);
   box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.12);
 }
 
@@ -211,15 +211,15 @@
   font-weight: 700;
   color: #fff;
   cursor: pointer;
-  background: linear-gradient(145deg, #0f3d24 0%, #14532d 100%);
-  box-shadow: 0 8px 22px -8px rgba(20, 83, 45, 0.45);
+  background: linear-gradient(145deg, #5c2e0b 0%, #8b4513 100%);
+  box-shadow: 0 8px 22px -8px rgba(139, 69, 19, 0.45);
   transition:
     transform 0.15s ease,
     box-shadow 0.2s ease;
 }
 
 .rf-do-btn-primary:hover {
-  box-shadow: 0 12px 28px -8px rgba(20, 83, 45, 0.5);
+  box-shadow: 0 12px 28px -8px rgba(139, 69, 19, 0.5);
 }
 
 .rf-do-btn-primary:active {
@@ -237,7 +237,7 @@
   font-weight: 600;
   color: #1a3c2e;
   background: rgba(255, 255, 255, 0.75);
-  border: 1px solid rgba(20, 83, 45, 0.1);
+  border: 1px solid rgba(139, 69, 19, 0.1);
 }
 
 .rf-do-kpi-grid {
@@ -269,7 +269,7 @@
   position: relative;
   background: #fff;
   border-radius: 22px;
-  border: 1px solid rgba(20, 83, 45, 0.08);
+  border: 1px solid rgba(139, 69, 19, 0.1);
   box-shadow: 0 18px 44px -30px rgba(10, 50, 30, 0.2);
   padding: 1.25rem 1.2rem 1.15rem;
   transition:
@@ -283,7 +283,7 @@
 }
 
 .rf-do-card--featured {
-  background: linear-gradient(155deg, #0a2e1a 0%, #0f3d24 38%, #14532d 72%, #166534 100%);
+  background: linear-gradient(155deg, #3d1c08 0%, #5c2e0b 38%, #8b4513 72%, #8b4513 100%);
   border-color: rgba(255, 255, 255, 0.12);
   color: #fff;
   box-shadow: 0 26px 55px -22px rgba(8, 50, 28, 0.55);
@@ -304,8 +304,8 @@
   justify-content: center;
   border-radius: 999px;
   font-size: 0.85rem;
-  color: #14532d;
-  background: rgba(20, 83, 45, 0.08);
+  color: #8b4513;
+  background: rgba(139, 69, 19, 0.1);
 }
 
 .rf-do-card--featured .rf-do-card-icon {
@@ -333,7 +333,7 @@
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
   line-height: 1.05;
-  color: #0a1f14;
+  color: #1a1411;
 }
 
 .rf-do-card--featured .rf-do-card-value {
@@ -384,7 +384,7 @@
   background: #fff;
   border-radius: 16px;
   padding: 0.85rem 0.65rem;
-  border: 1px solid rgba(20, 83, 45, 0.07);
+  border: 1px solid rgba(139, 69, 19, 0.07);
   box-shadow: 0 10px 28px -22px rgba(10, 45, 28, 0.14);
   text-align: center;
   transition:
@@ -401,7 +401,7 @@
   font-size: 1.35rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  color: #0a1f14;
+  color: #1a1411;
   letter-spacing: -0.02em;
 }
 
@@ -430,7 +430,7 @@
 .rf-do-panel {
   background: #fff;
   border-radius: 22px;
-  border: 1px solid rgba(20, 83, 45, 0.08);
+  border: 1px solid rgba(139, 69, 19, 0.1);
   box-shadow: 0 18px 44px -30px rgba(10, 50, 30, 0.18);
   padding: 1.2rem 1.1rem 1.35rem;
 }
@@ -438,7 +438,7 @@
 .rf-do-panel-title {
   font-size: 1.05rem;
   font-weight: 800;
-  color: #0a1f14;
+  color: #1a1411;
   letter-spacing: -0.025em;
 }
 
@@ -470,7 +470,7 @@
   height: 100%;
   min-height: 200px;
   border-radius: 16px;
-  border: 1px dashed rgba(20, 83, 45, 0.2);
+  border: 1px dashed rgba(139, 69, 19, 0.2);
   color: #5c7268;
   font-size: 0.875rem;
   font-weight: 600;

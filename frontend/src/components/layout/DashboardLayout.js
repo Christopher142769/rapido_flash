@@ -42,7 +42,7 @@ export default function DashboardLayout() {
       ) : null}
 
       <aside
-        className={`fixed left-0 top-0 z-40 flex h-screen w-[200px] flex-col transition-transform duration-300 ease-out lg:w-[240px] ${
+        className={`fixed left-0 top-0 z-40 flex h-screen w-[220px] flex-col transition-transform duration-300 ease-out lg:w-[260px] ${
           mobileDrawerOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
         style={{
@@ -55,7 +55,7 @@ export default function DashboardLayout() {
         <DashboardSidebarPremium onNavigate={() => setMobileDrawerOpen(false)} />
       </aside>
 
-      <div className="flex min-h-screen flex-col md:pl-[200px] lg:pl-[240px]">
+      <div className="flex min-h-screen flex-col md:pl-[220px] lg:pl-[260px]">
         <DashboardHeaderPremium onOpenDrawer={() => setMobileDrawerOpen(true)} />
         <main
           className="rf-dashboard-outlet flex min-h-0 flex-1 flex-col overflow-auto pb-[calc(112px+env(safe-area-inset-bottom,0px))] md:pb-0"

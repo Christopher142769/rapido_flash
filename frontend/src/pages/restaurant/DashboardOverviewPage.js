@@ -49,7 +49,7 @@ const STATUS_ACCENT = {
   annulee: '#ef4444',
 };
 
-const BAR_FILLS = ['#14532d', '#22c55e', '#86efac'];
+const BAR_FILLS = ['#8b4513', '#c76d2e', '#e8b54a'];
 
 function KpiFeatured({ title, value, hint, Icon, delay, reduce }) {
   return (
@@ -219,7 +219,7 @@ export default function DashboardOverviewPage() {
   }
 
   return (
-    <div className="rf-dash-overview rf-dash-overview--forest dashboard-page">
+    <div className="rf-dash-overview rf-dash-overview--rapido dashboard-page">
       <div className="rf-do-inner">
         <header className="dashboard-header">
           <h1>{t('dashboardOverview', 'pageTitle')}</h1>
@@ -322,7 +322,7 @@ export default function DashboardOverviewPage() {
                 delay={0.04}
                 reduce={reduce}
               >
-                <FaMoneyBillWave className="pointer-events-none absolute bottom-3 right-3 text-3xl text-[#14532d] opacity-[0.12]" aria-hidden />
+                <FaMoneyBillWave className="pointer-events-none absolute bottom-3 right-3 text-3xl text-[#8b4513] opacity-[0.12]" aria-hidden />
               </KpiStandard>
               <KpiStandard
                 title={t('dashboardOverview', 'totalOrders')}
@@ -331,13 +331,13 @@ export default function DashboardOverviewPage() {
                 delay={0.08}
                 reduce={reduce}
               >
-                <FaShoppingBag className="pointer-events-none absolute bottom-3 right-3 text-3xl text-[#14532d] opacity-[0.12]" aria-hidden />
+                <FaShoppingBag className="pointer-events-none absolute bottom-3 right-3 text-3xl text-[#8b4513] opacity-[0.12]" aria-hidden />
               </KpiStandard>
               <KpiStandard title={t('dashboardOverview', 'kpiEntreprises')} value={payload.enterpriseCount} delay={0.1} reduce={reduce}>
-                <FaBuilding className="pointer-events-none absolute bottom-3 right-3 text-3xl text-[#14532d] opacity-[0.12]" aria-hidden />
+                <FaBuilding className="pointer-events-none absolute bottom-3 right-3 text-3xl text-[#8b4513] opacity-[0.12]" aria-hidden />
               </KpiStandard>
               <KpiStandard title={t('dashboardOverview', 'kpiMessages')} value={payload.unreadMessages} delay={0.12} reduce={reduce}>
-                <FaRegEnvelope className="pointer-events-none absolute bottom-3 right-3 text-3xl text-[#14532d] opacity-[0.12]" aria-hidden />
+                <FaRegEnvelope className="pointer-events-none absolute bottom-3 right-3 text-3xl text-[#8b4513] opacity-[0.12]" aria-hidden />
               </KpiStandard>
             </div>
 
