@@ -28,6 +28,7 @@ import {
   FaUserCheck,
   FaChartPie,
 } from 'react-icons/fa';
+import { toDashboardPath } from './config/dashboardPath';
 
 export const DASHBOARD_HOME_SECTION = 'dashboard_home';
 export const ADMIN_NAV_SECTION = 'administration';
@@ -48,7 +49,7 @@ function buildKitchenNavItems() {
   ];
 }
 
-function buildCommercialNavItems({ isAdmin, isResponsable = false, t }) {
+function buildCommercialNavItems({ isAdmin, isCommercial = false, isResponsable = false }) {
   if (isResponsable) {
     return [
       {
@@ -61,46 +62,66 @@ function buildCommercialNavItems({ isAdmin, isResponsable = false, t }) {
     ];
   }
 
+  // Espace dédié /commerciaux pour les comptes commerciaux uniquement.
+  // Admin / gestionnaire restent dans le dashboard (CommercialGate refuse le rôle restaurant).
+  const base = isCommercial
+    ? {
+        overview: '/commerciaux/app',
+        commandes: '/commerciaux/app/commandes',
+        repas: '/commerciaux/app/commandes-repas',
+        bilan: '/commerciaux/app/bilan',
+        relances: '/commerciaux/app/relances',
+        points: '/commerciaux/app/points',
+      }
+    : {
+        overview: toDashboardPath('/commercial'),
+        commandes: toDashboardPath('/commercial-commandes'),
+        repas: toDashboardPath('/commercial-commandes-repas'),
+        bilan: toDashboardPath('/commercial-bilan'),
+        relances: toDashboardPath('/commercial-relances'),
+        points: toDashboardPath('/commercial-points'),
+      };
+
   const items = [
     {
       id: 'commercial-overview',
       label: 'Vue d’ensemble',
-      path: '/commerciaux/app',
+      path: base.overview,
       section: COMMERCIAL_NAV_SECTION,
       Icon: FaChartLine,
     },
     {
       id: 'commercial-commandes',
       label: 'Commandes Shop',
-      path: '/commerciaux/app/commandes',
+      path: base.commandes,
       section: COMMERCIAL_NAV_SECTION,
       Icon: FaShoppingBag,
     },
     {
       id: 'commercial-commandes-repas',
       label: 'Commandes Repas',
-      path: '/commerciaux/app/commandes-repas',
+      path: base.repas,
       section: COMMERCIAL_NAV_SECTION,
       Icon: FaUtensils,
     },
     {
       id: 'commercial-bilan',
       label: 'Bilan',
-      path: '/commerciaux/app/bilan',
+      path: base.bilan,
       section: COMMERCIAL_NAV_SECTION,
       Icon: FaFileExcel,
     },
     {
       id: 'commercial-relances',
       label: 'Relances',
-      path: '/commerciaux/app/relances',
+      path: base.relances,
       section: COMMERCIAL_NAV_SECTION,
       Icon: FaBellRelance,
     },
     {
       id: 'commercial-points',
       label: 'Points',
-      path: '/commerciaux/app/points',
+      path: base.points,
       section: COMMERCIAL_NAV_SECTION,
       Icon: FaBullseye,
     },
@@ -109,28 +130,28 @@ function buildCommercialNavItems({ isAdmin, isResponsable = false, t }) {
     items.push({
       id: 'commerciaux',
       label: 'Commerciaux',
-      path: '/dashboard/commerciaux',
+      path: toDashboardPath('/commerciaux'),
       section: COMMERCIAL_NAV_SECTION,
       Icon: FaUserTie,
     });
     items.push({
       id: 'responsables',
       label: 'Responsables villes',
-      path: '/dashboard/responsables',
+      path: toDashboardPath('/responsables'),
       section: COMMERCIAL_NAV_SECTION,
       Icon: FaUsers,
     });
     items.push({
       id: 'champions',
       label: 'Livreurs Champion',
-      path: '/dashboard/champions',
+      path: toDashboardPath('/champions'),
       section: COMMERCIAL_NAV_SECTION,
       Icon: FaMotorcycle,
     });
     items.push({
       id: 'cuisiniers',
       label: 'Cuisiniers',
-      path: '/dashboard/cuisiniers',
+      path: toDashboardPath('/cuisiniers'),
       section: COMMERCIAL_NAV_SECTION,
       Icon: FaUtensils,
     });
@@ -146,7 +167,7 @@ export function buildDashboardNavItems({
   t,
   canManageMaintenance = false,
 }) {
-  const commercialItems = buildCommercialNavItems({ isAdmin, isResponsable, t });
+  const commercialItems = buildCommercialNavItems({ isAdmin, isCommercial, isResponsable });
   const kitchenItems = buildKitchenNavItems();
 
   if (isCuisinier) {
@@ -160,61 +181,61 @@ export function buildDashboardNavItems({
     {
       id: 'tableau',
       label: t('dashboardOverview', 'navLabel'),
-      path: '/dashboard/tableau',
+      path: toDashboardPath('/tableau'),
       section: DASHBOARD_HOME_SECTION,
       Icon: FaChartLine,
     },
     {
       id: 'analyse',
       label: 'Analyse',
-      path: '/dashboard/analyse',
+      path: toDashboardPath('/analyse'),
       section: DASHBOARD_HOME_SECTION,
       Icon: FaChartPie,
     },
   ];
 
   const administration = [
-    { id: 'structure', label: t('dashNav', 'entreprise'), path: '/dashboard', section: ADMIN_NAV_SECTION, Icon: FaBuilding },
-    { id: 'medias', label: t('dashNav', 'medias'), path: '/dashboard/medias', section: ADMIN_NAV_SECTION, Icon: FaImages },
-    { id: 'vitrine', label: t('dashNav', 'vitrine'), path: '/dashboard/vitrine-accueil', section: ADMIN_NAV_SECTION, Icon: FaStore },
+    { id: 'structure', label: t('dashNav', 'entreprise'), path: toDashboardPath(), section: ADMIN_NAV_SECTION, Icon: FaBuilding },
+    { id: 'medias', label: t('dashNav', 'medias'), path: toDashboardPath('/medias'), section: ADMIN_NAV_SECTION, Icon: FaImages },
+    { id: 'vitrine', label: t('dashNav', 'vitrine'), path: toDashboardPath('/vitrine-accueil'), section: ADMIN_NAV_SECTION, Icon: FaStore },
     {
       id: 'categories-domaine',
       label: t('dashNav', 'categoriesDomaine'),
-      path: '/dashboard/categories-domaine',
+      path: toDashboardPath('/categories-domaine'),
       section: ADMIN_NAV_SECTION,
       Icon: FaLayerGroup,
     },
-    { id: 'categories', label: t('dashNav', 'categories'), path: '/dashboard/categories', section: ADMIN_NAV_SECTION, Icon: FaTags },
-    { id: 'plats', label: t('dashNav', 'plats'), path: '/dashboard/plats', section: ADMIN_NAV_SECTION, Icon: FaBoxOpen },
-    { id: 'shop', label: t('dashNav', 'shop'), path: '/dashboard/shop', section: ADMIN_NAV_SECTION, Icon: FaShoppingBag },
-    { id: 'shop-repas', label: 'Shop repas', path: '/dashboard/shop-repas', section: ADMIN_NAV_SECTION, Icon: FaUtensils },
+    { id: 'categories', label: t('dashNav', 'categories'), path: toDashboardPath('/categories'), section: ADMIN_NAV_SECTION, Icon: FaTags },
+    { id: 'plats', label: t('dashNav', 'plats'), path: toDashboardPath('/plats'), section: ADMIN_NAV_SECTION, Icon: FaBoxOpen },
+    { id: 'shop', label: t('dashNav', 'shop'), path: toDashboardPath('/shop'), section: ADMIN_NAV_SECTION, Icon: FaShoppingBag },
+    { id: 'shop-repas', label: 'Shop repas', path: toDashboardPath('/shop-repas'), section: ADMIN_NAV_SECTION, Icon: FaUtensils },
   ];
 
   const gestion = [
-    { id: 'commandes', label: t('dashNav', 'commandes'), path: '/dashboard/commandes', section: GESTION_NAV_SECTION, Icon: FaClipboardList },
-    { id: 'messages', label: t('dashNav', 'messages'), path: '/dashboard/messages', section: GESTION_NAV_SECTION, Icon: FaComments },
-    { id: 'offres-promo', label: t('dashNav', 'offresPromo'), path: '/dashboard/offres-promo', section: GESTION_NAV_SECTION, Icon: FaPercent },
-    { id: 'utilisateurs-promo', label: t('dashNav', 'utilisateurs'), path: '/dashboard/utilisateurs-promo', section: GESTION_NAV_SECTION, Icon: FaUserFriends },
-    { id: 'avis', label: t('reviews', 'sidebarReviews'), path: '/dashboard/avis', section: GESTION_NAV_SECTION, Icon: FaStar },
-    { id: 'bannieres', label: t('dashNav', 'bannieres'), path: '/dashboard/bannieres', section: GESTION_NAV_SECTION, Icon: FaFlag },
+    { id: 'commandes', label: t('dashNav', 'commandes'), path: toDashboardPath('/commandes'), section: GESTION_NAV_SECTION, Icon: FaClipboardList },
+    { id: 'messages', label: t('dashNav', 'messages'), path: toDashboardPath('/messages'), section: GESTION_NAV_SECTION, Icon: FaComments },
+    { id: 'offres-promo', label: t('dashNav', 'offresPromo'), path: toDashboardPath('/offres-promo'), section: GESTION_NAV_SECTION, Icon: FaPercent },
+    { id: 'utilisateurs-promo', label: t('dashNav', 'utilisateurs'), path: toDashboardPath('/utilisateurs-promo'), section: GESTION_NAV_SECTION, Icon: FaUserFriends },
+    { id: 'avis', label: t('reviews', 'sidebarReviews'), path: toDashboardPath('/avis'), section: GESTION_NAV_SECTION, Icon: FaStar },
+    { id: 'bannieres', label: t('dashNav', 'bannieres'), path: toDashboardPath('/bannieres'), section: GESTION_NAV_SECTION, Icon: FaFlag },
     {
       id: 'notifications-push',
       label: t('dashNav', 'notifPush'),
-      path: '/dashboard/notifications-push',
+      path: toDashboardPath('/notifications-push'),
       section: GESTION_NAV_SECTION,
       Icon: FaBell,
     },
     {
       id: 'formulaires',
       label: t('dashNav', 'formulaires'),
-      path: '/dashboard/formulaires',
+      path: toDashboardPath('/formulaires'),
       section: GESTION_NAV_SECTION,
       Icon: FaWpforms,
     },
     {
       id: 'presence-personnel',
       label: 'Présence personnel',
-      path: '/dashboard/presence-personnel',
+      path: toDashboardPath('/presence-personnel'),
       section: GESTION_NAV_SECTION,
       Icon: FaUserCheck,
     },
@@ -224,7 +245,7 @@ export function buildDashboardNavItems({
     gestion.push({
       id: 'gestionnaires',
       label: t('dashNav', 'gestionnaires'),
-      path: '/dashboard/gestionnaires',
+      path: toDashboardPath('/gestionnaires'),
       section: GESTION_NAV_SECTION,
       Icon: FaUsers,
     });
@@ -235,14 +256,14 @@ export function buildDashboardNavItems({
     plateforme.push({
       id: 'maintenance',
       label: t('maintenance', 'navLabel'),
-      path: '/dashboard/maintenance',
+      path: toDashboardPath('/maintenance'),
       section: PLATFORM_NAV_SECTION,
       Icon: FaTools,
     });
     plateforme.push({
       id: 'demandes-compte',
       label: t('dashNav', 'demandesCompte'),
-      path: '/dashboard/demandes-compte',
+      path: toDashboardPath('/demandes-compte'),
       section: PLATFORM_NAV_SECTION,
       Icon: FaInbox,
     });
@@ -261,6 +282,9 @@ export function navBadgeCount(itemId, pendingOrders, unreadMessages, todayRelanc
 }
 
 export function isDashboardNavActive(pathname, itemPath) {
-  if (itemPath === '/dashboard') return pathname === '/dashboard';
+  const dashRoot = toDashboardPath();
+  if (itemPath === dashRoot || itemPath === '/dashboard') {
+    return pathname === dashRoot || pathname === '/dashboard';
+  }
   return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
 }

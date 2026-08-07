@@ -18,6 +18,7 @@ export default function DashboardMobileBottomNav({ onNavigate }) {
       buildDashboardNavItems({
         isAdmin: user?.role === 'restaurant',
         isCommercial: user?.role === 'commercial',
+        isResponsable: user?.role === 'responsable',
         isCuisinier: user?.role === 'cuisinier',
         t,
         canManageMaintenance: !!user?.canManageMaintenance,

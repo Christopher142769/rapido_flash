@@ -28,6 +28,9 @@ export default function DashboardLayout() {
   if (user?.role === 'responsable') {
     return <Navigate to="/responsables" replace />;
   }
+  if (user?.role === 'commercial') {
+    return <Navigate to="/commerciaux/app" replace />;
+  }
 
   return (
     <DashboardRefreshProvider>

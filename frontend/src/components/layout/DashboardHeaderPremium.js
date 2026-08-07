@@ -9,43 +9,46 @@ import { useNotifications } from '../../context/NotificationContext';
 import SectionRefreshButton from '../dashboard/SectionRefreshButton';
 import LangSwitcher from '../LangSwitcher';
 import '../dashboard/section-refresh.css';
+import { DASHBOARD_BASE_PATH, toDashboardPath } from '../../config/dashboardPath';
 
 function titleForPath(pathname, user, t) {
-  if (pathname === '/dashboard') {
+  if (pathname === DASHBOARD_BASE_PATH || pathname === '/dashboard') {
     return user?.role === 'gestionnaire' ? t('dashNav', 'monEntreprise') : t('dashNav', 'mesEntreprises');
   }
   const map = new Map([
-    ['/dashboard/tableau', t('dashboardOverview', 'pageTitle')],
-    ['/dashboard/analyse', 'Analyse'],
-    ['/dashboard/medias', t('dashNav', 'medias')],
-    ['/dashboard/vitrine-accueil', t('dashNav', 'vitrine')],
-    ['/dashboard/categories-domaine', t('dashNav', 'categoriesDomaine')],
-    ['/dashboard/categories', t('dashNav', 'categories')],
-    ['/dashboard/plats', t('dashNav', 'plats')],
-    ['/dashboard/shop', t('dashNav', 'shop')],
-    ['/dashboard/shop-repas', 'Shop repas'],
-    ['/dashboard/formulaires', t('dashNav', 'formulaires')],
-    ['/dashboard/commandes', t('dashNav', 'commandes')],
-    ['/dashboard/invites', 'Invités'],
-    ['/dashboard/presence-personnel', 'Présence personnel'],
-    ['/dashboard/messages', t('dashNav', 'messages')],
-    ['/dashboard/offres-promo', t('dashNav', 'offresPromo')],
-    ['/dashboard/utilisateurs-promo', t('dashNav', 'utilisateurs')],
-    ['/dashboard/avis', t('reviews', 'sidebarReviews')],
-    ['/dashboard/bannieres', t('dashNav', 'bannieres')],
-    ['/dashboard/gestionnaires', t('dashNav', 'gestionnaires')],
-    ['/dashboard/messages-moderation', t('chat', 'moderationTitle')],
-    ['/dashboard/maintenance', t('maintenance', 'dashboardTitle')],
-    ['/dashboard/demandes-compte', t('dashNav', 'demandesCompte')],
-    ['/dashboard/notifications-push', t('dashNav', 'notifPush')],
-    ['/dashboard/commercial', 'Vue d’ensemble commercial'],
-    ['/dashboard/commercial-commandes', 'Commandes Shop'],
-    ['/dashboard/commercial-commandes-repas', 'Commandes Repas'],
-    ['/dashboard/commercial-bilan', 'Bilan commercial'],
-    ['/dashboard/commercial-relances', 'Relances'],
-    ['/dashboard/commercial-points', 'Points'],
-    ['/dashboard/commerciaux', 'Commerciaux'],
-    ['/dashboard/responsables', 'Responsables villes'],
+    [toDashboardPath('/tableau'), t('dashboardOverview', 'pageTitle')],
+    [toDashboardPath('/analyse'), 'Analyse'],
+    [toDashboardPath('/medias'), t('dashNav', 'medias')],
+    [toDashboardPath('/vitrine-accueil'), t('dashNav', 'vitrine')],
+    [toDashboardPath('/categories-domaine'), t('dashNav', 'categoriesDomaine')],
+    [toDashboardPath('/categories'), t('dashNav', 'categories')],
+    [toDashboardPath('/plats'), t('dashNav', 'plats')],
+    [toDashboardPath('/shop'), t('dashNav', 'shop')],
+    [toDashboardPath('/shop-repas'), 'Shop repas'],
+    [toDashboardPath('/formulaires'), t('dashNav', 'formulaires')],
+    [toDashboardPath('/commandes'), t('dashNav', 'commandes')],
+    [toDashboardPath('/invites'), 'Invités'],
+    [toDashboardPath('/presence-personnel'), 'Présence personnel'],
+    [toDashboardPath('/messages'), t('dashNav', 'messages')],
+    [toDashboardPath('/offres-promo'), t('dashNav', 'offresPromo')],
+    [toDashboardPath('/utilisateurs-promo'), t('dashNav', 'utilisateurs')],
+    [toDashboardPath('/avis'), t('reviews', 'sidebarReviews')],
+    [toDashboardPath('/bannieres'), t('dashNav', 'bannieres')],
+    [toDashboardPath('/gestionnaires'), t('dashNav', 'gestionnaires')],
+    [toDashboardPath('/messages-moderation'), t('chat', 'moderationTitle')],
+    [toDashboardPath('/maintenance'), t('maintenance', 'dashboardTitle')],
+    [toDashboardPath('/demandes-compte'), t('dashNav', 'demandesCompte')],
+    [toDashboardPath('/notifications-push'), t('dashNav', 'notifPush')],
+    [toDashboardPath('/commercial'), 'Vue d’ensemble commercial'],
+    [toDashboardPath('/commercial-commandes'), 'Commandes Shop'],
+    [toDashboardPath('/commercial-commandes-repas'), 'Commandes Repas'],
+    [toDashboardPath('/commercial-bilan'), 'Bilan commercial'],
+    [toDashboardPath('/commercial-relances'), 'Relances'],
+    [toDashboardPath('/commercial-points'), 'Points'],
+    [toDashboardPath('/commerciaux'), 'Commerciaux'],
+    [toDashboardPath('/responsables'), 'Responsables villes'],
+    [toDashboardPath('/champions'), 'Livreurs Champion'],
+    [toDashboardPath('/cuisiniers'), 'Cuisiniers'],
   ]);
   if (map.has(pathname)) return map.get(pathname);
   for (const [path, label] of map) {
@@ -155,7 +158,7 @@ export default function DashboardHeaderPremium({ onOpenDrawer }) {
           className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--rf-border)] bg-white text-lg outline-none transition hover:shadow-[var(--shadow-hover)]"
           style={{ color: 'var(--rf-text-dark)', boxShadow: 'var(--shadow-card)' }}
           aria-label={t('dashNav', 'notifications')}
-          onClick={() => navigate('/dashboard/commandes')}
+          onClick={() => navigate(toDashboardPath('/commandes'))}
         >
           <FaBell />
           {notifTotal > 0 ? (

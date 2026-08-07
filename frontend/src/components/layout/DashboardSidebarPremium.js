@@ -15,6 +15,7 @@ import {
   buildDashboardNavItems,
   navBadgeCount,
 } from '../../dashboardNavConfig';
+import { toDashboardPath } from '../../config/dashboardPath';
 
 const containerVariants = {
   hidden: {},
@@ -128,7 +129,7 @@ export default function DashboardSidebarPremium({ onNavigate, className = '' }) 
           className="flex cursor-pointer items-center gap-3 border-0 bg-transparent p-0 text-left outline-none"
           onClick={() => {
             onNavigate?.();
-            navigate('/dashboard');
+            navigate(toDashboardPath());
           }}
         >
           <img
@@ -320,7 +321,7 @@ export default function DashboardSidebarPremium({ onNavigate, className = '' }) 
             className="relative mt-3 w-full rounded-xl border-0 bg-white/95 px-3 py-2 text-xs font-extrabold text-[var(--rf-brown)]"
             onClick={() => {
               onNavigate?.();
-              navigate('/dashboard/analyse');
+              navigate(toDashboardPath('/analyse'));
             }}
           >
             Ouvrir Analyse
