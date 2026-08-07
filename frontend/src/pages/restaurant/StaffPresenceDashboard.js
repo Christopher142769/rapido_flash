@@ -45,7 +45,8 @@ function formatCheckedAt(d) {
 function buildPublicUrl(code) {
   if (!code) return '';
   if (typeof window !== 'undefined' && window.location?.origin) {
-    return `${window.location.origin}/présence/${encodeURIComponent(code)}`;
+    // ASCII /presence/ — ouverture directe par l’appareil photo (pas « copier le lien »)
+    return `${window.location.origin}/presence/${encodeURIComponent(code)}`;
   }
   return '';
 }

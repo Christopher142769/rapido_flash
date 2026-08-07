@@ -13,6 +13,7 @@ import {
 import { formatPriceXof } from '../../utils/shopPromo';
 import { isEviscerationApplicable } from '../../utils/shopEvisceration';
 import { getPriceUnitSuffix } from '../../utils/shopQuantityUnit';
+import { trackPurchase } from '../../utils/analyticsBeacon';
 import './shopTypography.css';
 import './ShopOrderConfirmation.css';
 
@@ -27,6 +28,21 @@ export default function ShopOrderConfirmation() {
       return;
     }
     document.title = `Commande confirmée | Rapido Shop`;
+    const key = `rf_purchase_shop_${order.orderId || order.orderNumber || slug}`;
+    try {
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1');
+        trackPurchase(
+          { _id: order.orderId, total: order.totalPrice },
+          { channel: 'shop', orderModel: 'ShopOrder', productSlug: slug }
+        );
+      }
+    } catch {
+      trackPurchase(
+        { _id: order.orderId, total: order.totalPrice },
+        { channel: 'shop', orderModel: 'ShopOrder', productSlug: slug }
+      );
+    }
   }, [order, slug, navigate]);
 
   if (!order) return null;

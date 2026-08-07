@@ -19,6 +19,7 @@ import { resolveTrackingWhatsAppDigits } from '../../utils/shopOrder';
 import { getMealCatalogueUrgency } from '../../utils/mealShopUrgency';
 import { loadMealCart, mealCartCount, addMealToCart, estimateMealCartTotals } from '../../utils/mealCart';
 import { mealProductPath } from '../../utils/mealPaths';
+import { trackProductClick } from '../../utils/analyticsBeacon';
 import '../shop/shopTypography.css';
 import './MealShopPage.css';
 
@@ -219,7 +220,16 @@ export default function MealShopPage() {
                     <span className="meal-shop-badge meal-shop-badge--unavailable">Indisponible</span>
                   </div>
                 ) : (
-                  <Link to={href} className="meal-shop-card-media">
+                  <Link
+                    to={href}
+                    className="meal-shop-card-media"
+                    onClick={() =>
+                      trackProductClick(
+                        { _id: p._id, name: p.name, slug: p.slug },
+                        { channel: 'repas' }
+                      )
+                    }
+                  >
                     {img ? (
                       <img src={getImageUrl(img, null, BASE_URL)} alt={p.name} loading="lazy" />
                     ) : (

@@ -48,7 +48,9 @@ function publicPresenceBaseUrl() {
 }
 
 function publicPresenceUrl(code) {
-  return `${publicPresenceBaseUrl()}/présence/${encodeURIComponent(code)}`;
+  // Chemin ASCII uniquement : les scanners photo ouvrent /presence/ directement,
+  // alors que /présence/ (é) est souvent proposé en « copier le lien ».
+  return `${publicPresenceBaseUrl()}/presence/${encodeURIComponent(code)}`;
 }
 
 function newPresenceCode() {

@@ -14,6 +14,7 @@ import ShopDeliveryNotice, {
   DEFAULT_MEAL_DELIVERY_NOTICE_MESSAGE,
 } from '../../components/shop/ShopDeliveryNotice';
 import { getTodayDateKey } from '../../utils/shopDeliveryDate';
+import { trackPurchase } from '../../utils/analyticsBeacon';
 import '../shop/shopTypography.css';
 import '../shop/ShopOrderConfirmation.css';
 
@@ -33,6 +34,21 @@ export default function MealOrderConfirmation() {
       return;
     }
     document.title = 'Commande confirmée | Rapido Repas';
+    const key = `rf_purchase_meal_${order.orderId || order._id || order.orderNumber || 'x'}`;
+    try {
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1');
+        trackPurchase(
+          { _id: order.orderId || order._id, total: order.totalPrice || order.total },
+          { channel: 'repas', orderModel: 'MealOrder', productSlug: order.slug || slug }
+        );
+      }
+    } catch {
+      trackPurchase(
+        { _id: order.orderId || order._id, total: order.totalPrice || order.total },
+        { channel: 'repas', orderModel: 'MealOrder', productSlug: order.slug || slug }
+      );
+    }
   }, [order, slug, navigate]);
 
   if (!order) return null;

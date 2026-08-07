@@ -16,6 +16,7 @@ function titleForPath(pathname, user, t) {
   }
   const map = new Map([
     ['/dashboard/tableau', t('dashboardOverview', 'pageTitle')],
+    ['/dashboard/analyse', 'Analyse'],
     ['/dashboard/medias', t('dashNav', 'medias')],
     ['/dashboard/vitrine-accueil', t('dashNav', 'vitrine')],
     ['/dashboard/categories-domaine', t('dashNav', 'categoriesDomaine')],

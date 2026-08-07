@@ -26,6 +26,7 @@ import {
   FaUtensils,
   FaFire,
   FaUserCheck,
+  FaChartPie,
 } from 'react-icons/fa';
 
 export const DASHBOARD_HOME_SECTION = 'dashboard_home';
@@ -162,6 +163,13 @@ export function buildDashboardNavItems({
       path: '/dashboard/tableau',
       section: DASHBOARD_HOME_SECTION,
       Icon: FaChartLine,
+    },
+    {
+      id: 'analyse',
+      label: 'Analyse',
+      path: '/dashboard/analyse',
+      section: DASHBOARD_HOME_SECTION,
+      Icon: FaChartPie,
     },
   ];
 

@@ -33,6 +33,11 @@ import {
   submitMealOrderToApi,
 } from '../../utils/mealOrder';
 import { mealConfirmationPath } from '../../utils/mealPaths';
+import {
+  trackCtaClick,
+  trackProductView,
+  trackRapido,
+} from '../../utils/analyticsBeacon';
 import { loadMealCart, mealCartCount } from '../../utils/mealCart';
 import {
   buildOptionSelection,
@@ -108,6 +113,14 @@ export default function MealProductLanding() {
         return null;
       });
   }, [slug]);
+
+  useEffect(() => {
+    if (!product?._id) return;
+    trackProductView(
+      { _id: product._id, name: product.name, slug: product.slug, price: product.basePrice },
+      { channel: 'repas' }
+    );
+  }, [product?._id, product?.name, product?.slug, product?.basePrice]);
 
   useEffect(() => {
     let cancelled = false;
@@ -322,6 +335,20 @@ export default function MealProductLanding() {
         ...saved,
         orderId: saved._id,
         slug: product.slug,
+      });
+      trackCtaClick('Commander maintenant', {
+        channel: 'repas',
+        productId: product._id,
+        productName: product.name,
+        productSlug: product.slug,
+        ctaId: 'meal-order-submit',
+      });
+      trackRapido('begin_checkout', {
+        channel: 'repas',
+        productId: product._id,
+        productName: product.name,
+        productSlug: product.slug,
+        value: Number(saved.totalPrice || saved.total || 0) || 0,
       });
       setQtyModalOpen(false);
       setAccModalOpen(false);

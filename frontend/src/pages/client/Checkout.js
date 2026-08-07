@@ -9,6 +9,7 @@ import TopNavbar from '../../components/TopNavbar';
 import { cartQualifiesFreeDeliveryPromo } from '../../utils/cartPromo';
 import { openOrderTrackingWhatsApp } from '../../utils/orderTrackingWhatsApp';
 import { getBestCurrentPosition } from '../../utils/nativeGeolocation';
+import { trackPurchase, trackRapido } from '../../utils/analyticsBeacon';
 import './Checkout.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -285,6 +286,22 @@ const Checkout = () => {
     setCheckoutStep('success');
     localStorage.removeItem('cart');
     setCart([]);
+    const key = `rf_purchase_platform_${commande?._id || ''}`;
+    try {
+      if (commande?._id && !sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1');
+        trackRapido('begin_checkout', { channel: 'platform' });
+        trackPurchase(
+          { _id: commande._id, total: commande.montantTotal || commande.total },
+          { channel: 'platform', orderModel: 'Commande' }
+        );
+      }
+    } catch {
+      trackPurchase(
+        { _id: commande?._id, total: commande?.montantTotal || commande?.total },
+        { channel: 'platform', orderModel: 'Commande' }
+      );
+    }
   }, [navigate, paymentMode]);
 
   const handlePlaceOrder = async () => {

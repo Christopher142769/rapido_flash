@@ -32,6 +32,11 @@ import ShopQuantityPicker from '../../components/shop/ShopQuantityPicker';
 import ShopTrustCards from '../../components/shop/ShopTrustCards';
 import ShopUrgencyBar from '../../components/shop/ShopUrgencyBar';
 import { getShopAvailabilityState } from '../../utils/shopOrderLimit';
+import {
+  trackCtaClick,
+  trackProductView,
+  trackRapido,
+} from '../../utils/analyticsBeacon';
 import './shopTypography.css';
 import './ShopProductLanding.css';
 
@@ -174,6 +179,15 @@ export default function ShopProductLanding() {
     const id = setInterval(() => void fetchProduct(), 20 * 1000);
     return () => clearInterval(id);
   }, [fetchProduct, product?.dailyOrderLimit, product?.dailyOrderLimitEnabled]);
+
+  useEffect(() => {
+    if (!product?._id) return;
+    trackProductView(
+      { _id: product._id, name: product.name, slug: product.slug, price: product.basePrice },
+      { channel: 'shop' }
+    );
+  }, [product?._id, product?.name, product?.slug, product?.basePrice]);
+
   const gallery = useMemo(() => (product ? getProductGallery(product) : []), [product]);
   const canOrder = !!getShopWhatsAppDigits();
   const unitPrice = promoState?.isPromoLive ? promoState.promoPrice : product?.basePrice;
@@ -252,6 +266,20 @@ export default function ShopProductLanding() {
     try {
       const saved = await submitShopOrderToApi(order);
       const orderForSession = { ...order, orderId: saved._id, orderNumber: saved.orderNumber };
+      trackCtaClick(product.ctaLabel || 'Commander maintenant', {
+        channel: 'shop',
+        productId: product._id,
+        productName: product.name,
+        productSlug: product.slug,
+        ctaId: 'shop-order-submit',
+      });
+      trackRapido('begin_checkout', {
+        channel: 'shop',
+        productId: product._id,
+        productName: product.name,
+        productSlug: product.slug,
+        value: Number(order.totalPrice || grandTotal || 0) || 0,
+      });
       if (!saveShopOrder(orderForSession)) {
         alert('Commande enregistrée, mais le récapitulatif local a échoué. Contactez Rapido sur WhatsApp.');
       }

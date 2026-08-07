@@ -47,6 +47,7 @@ import PlatformChatModeration from './pages/restaurant/PlatformChatModeration';
 import MaintenanceDashboardPage from './pages/restaurant/MaintenanceDashboardPage';
 import AccountRequestsDashboard from './pages/restaurant/AccountRequestsDashboard';
 import DashboardOverviewPage from './pages/restaurant/DashboardOverviewPage';
+import AnalyticsDashboardPage from './pages/restaurant/AnalyticsDashboardPage';
 import PromoOffersDashboard from './pages/restaurant/PromoOffersDashboard';
 import PromoUsersDashboard from './pages/restaurant/PromoUsersDashboard';
 import ShopDashboard from './pages/restaurant/ShopDashboard';
@@ -94,8 +95,9 @@ import MaintenanceGate from './components/MaintenanceGate';
 import SeoRouteMeta from './components/SeoRouteMeta';
 import { DASHBOARD_BASE_PATH } from './config/dashboardPath';
 import { trackMetaForRoute } from './utils/metaPixel';
+import { trackPageView, shouldTrackPath } from './utils/analyticsBeacon';
 
-/** Meta Pixel sur navigations SPA (chargement initial = index.html). */
+/** Meta Pixel + tracking first-party Rapido sur navigations SPA. */
 function MetaPixelPageViewOnRoute() {
   const location = useLocation();
   const skipFirst = useRef(true);
@@ -104,10 +106,16 @@ function MetaPixelPageViewOnRoute() {
     const isRecrutementOrForm = p.startsWith('/recrutement') || p.startsWith('/form/');
     if (skipFirst.current && !isRecrutementOrForm) {
       skipFirst.current = false;
+      if (shouldTrackPath(p)) {
+        trackPageView({ path: p, url: window.location.href });
+      }
       return;
     }
     skipFirst.current = false;
     trackMetaForRoute(p);
+    if (shouldTrackPath(p)) {
+      trackPageView({ path: p, url: window.location.href });
+    }
   }, [location.pathname, location.search]);
   return null;
 }
@@ -250,6 +258,7 @@ function AppRoutes() {
         <Route path={DASHBOARD_BASE_PATH} element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
           <Route index element={<DashboardIndexRedirect />} />
           <Route path="tableau" element={<DashboardOverviewPage />} />
+          <Route path="analyse" element={<AnalyticsDashboardPage />} />
           <Route path="medias" element={<RestaurantMedias />} />
           <Route path="vitrine-accueil" element={<MiseEnAvantAccueil />} />
           <Route path="categories-domaine" element={<CategoriesDomaine />} />

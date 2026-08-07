@@ -27,6 +27,7 @@ import {
   saveMealOrder,
 } from '../../utils/mealOrder';
 import { mealConfirmationPath, mealProductPath } from '../../utils/mealPaths';
+import { trackCtaClick, trackRapido } from '../../utils/analyticsBeacon';
 import './MealCartPage.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -126,6 +127,14 @@ export default function MealCartPage() {
         ...order,
         orderId: order._id,
         slug: order.items?.[0]?.slug || items[0]?.slug,
+      });
+      trackCtaClick('Finaliser la commande', {
+        channel: 'repas',
+        ctaId: 'meal-cart-checkout',
+      });
+      trackRapido('begin_checkout', {
+        channel: 'repas',
+        value: Number(order.totalPrice || order.total || 0) || 0,
       });
       clearMealCart();
       setCheckoutOpen(false);
