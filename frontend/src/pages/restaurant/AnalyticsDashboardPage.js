@@ -121,13 +121,25 @@ export default function AnalyticsDashboardPage() {
   const [data, setData] = useState(null);
   const [pathDetail, setPathDetail] = useState(null);
   const [pathLoading, setPathLoading] = useState(false);
+  const [catalog, setCatalog] = useState([]);
+  const [productKey, setProductKey] = useState(''); // "" | "shop:id" | "repas:id"
 
-  const load = useCallback(async (f, tEnd, ch, path) => {
+  const selectedProduct = useMemo(() => {
+    if (!productKey) return null;
+    return catalog.find((p) => p.key === productKey) || null;
+  }, [catalog, productKey]);
+
+  const load = useCallback(async (f, tEnd, ch, path, product) => {
     setLoading(true);
     setError('');
     try {
       const params = { from: f, to: tEnd, channel: ch };
       if (path) params.path = path;
+      if (product?.id) {
+        params.productId = product.id;
+        params.productSlug = product.slug || '';
+        params.productKind = product.kind || 'shop';
+      }
       const res = await axios.get(`${API_URL}/analytics/overview`, {
         ...authHeaders(),
         params,
@@ -142,8 +154,38 @@ export default function AnalyticsDashboardPage() {
   }, []);
 
   useEffect(() => {
-    load(from, to, channel, pathFilter);
-  }, [load, from, to, channel, pathFilter]);
+    let cancelled = false;
+    Promise.all([
+      axios.get(`${API_URL}/shop-products`, authHeaders()).catch(() => ({ data: [] })),
+      axios.get(`${API_URL}/meal-products`, authHeaders()).catch(() => ({ data: [] })),
+    ]).then(([shopRes, mealRes]) => {
+      if (cancelled) return;
+      const shop = (Array.isArray(shopRes.data) ? shopRes.data : []).map((p) => ({
+        key: `shop:${p._id}`,
+        id: String(p._id),
+        name: p.name,
+        slug: p.slug,
+        kind: 'shop',
+        quantityUnit: p.quantityUnit || 'unit',
+      }));
+      const repas = (Array.isArray(mealRes.data) ? mealRes.data : []).map((p) => ({
+        key: `repas:${p._id}`,
+        id: String(p._id),
+        name: p.name,
+        slug: p.slug,
+        kind: 'repas',
+        quantityUnit: 'unit',
+      }));
+      setCatalog([...shop, ...repas].sort((a, b) => String(a.name).localeCompare(String(b.name), 'fr')));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    load(from, to, channel, pathFilter, selectedProduct);
+  }, [load, from, to, channel, pathFilter, selectedProduct]);
 
   const applyPreset = (key) => {
     setPreset(key);
@@ -165,6 +207,32 @@ export default function AnalyticsDashboardPage() {
 
   const applyUrl = async () => {
     const q = String(urlInput || '').trim();
+    // Si l’URL pointe un produit shop/repas, bascule aussi le sélecteur produit
+    const shopMatch = q.match(/\/shop\/([^/?#]+)/i);
+    const mealMatch = q.match(/\/repas\/(?:commandes\/)?([^/?#]+)/i);
+    if (shopMatch) {
+      const slug = decodeURIComponent(shopMatch[1]).toLowerCase();
+      const hit = catalog.find((p) => p.kind === 'shop' && p.slug === slug);
+      if (hit) {
+        setProductKey(hit.key);
+        setPathFilter('');
+        setPathDetail(null);
+        return;
+      }
+    } else if (mealMatch) {
+      const slug = decodeURIComponent(mealMatch[1]).toLowerCase();
+      if (!['panier', 'commande', 'commandes'].includes(slug)) {
+        const hit = catalog.find((p) => p.kind === 'repas' && p.slug === slug);
+        if (hit) {
+          setProductKey(hit.key);
+          setPathFilter('');
+          setPathDetail(null);
+          return;
+        }
+      }
+    }
+
+    setProductKey('');
     setPathFilter(q);
     if (!q) {
       setPathDetail(null);
@@ -282,6 +350,36 @@ export default function AnalyticsDashboardPage() {
             </button>
           ))}
         </div>
+        <div className="rf-an2-product-select">
+          <label htmlFor="rf-an2-product">Produit</label>
+          <select
+            id="rf-an2-product"
+            value={productKey}
+            onChange={(e) => {
+              const key = e.target.value;
+              setProductKey(key);
+              const p = catalog.find((x) => x.key === key);
+              if (p?.slug) {
+                const nextPath = p.kind === 'repas' ? `/repas/commandes/${p.slug}` : `/shop/${p.slug}`;
+                setUrlInput(nextPath);
+                setPathFilter('');
+                setPathDetail(null);
+              } else {
+                setUrlInput('');
+                setPathFilter('');
+                setPathDetail(null);
+              }
+            }}
+          >
+            <option value="">Tous les produits</option>
+            {catalog.map((p) => (
+              <option key={p.key} value={p.key}>
+                {p.kind === 'repas' ? 'Repas · ' : 'Shop · '}
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="rf-an2-url">
@@ -311,27 +409,90 @@ export default function AnalyticsDashboardPage() {
 
       {error ? <p className="rf-an2-error">{error}</p> : null}
 
+      {data?.product ? (
+        <section className="rf-an2-product-banner">
+          <div>
+            <p className="rf-an2-product-banner-kicker">
+              Analyse produit · {data.product.kind === 'repas' ? 'Repas' : 'Shop'}
+            </p>
+            <h2>{data.product.name}</h2>
+            <p>
+              /{data.product.kind === 'repas' ? 'repas/commandes' : 'shop'}/{data.product.slug}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="rf-an2-btn"
+            onClick={() => {
+              setProductKey('');
+              setUrlInput('');
+              setPathFilter('');
+              setPathDetail(null);
+            }}
+          >
+            Voir tous les produits
+          </button>
+        </section>
+      ) : null}
+
       <section className="rf-an2-kpi-row">
         <KpiCard
           featured
-          title="Sessions"
-          value={fmt(kpis.sessions)}
-          hint="Visiteurs uniques trackés"
+          title={kpis.scopedToProduct ? 'Commandes produit' : 'Sessions'}
+          value={fmt(kpis.scopedToProduct ? kpis.orders : kpis.sessions)}
+          hint={
+            kpis.scopedToProduct
+              ? `${fmt(kpis.totalQuantity)} ${kpis.quantityUnit || ''} commandés`
+              : 'Visiteurs uniques trackés'
+          }
         />
-        <KpiCard title="Pages vues" value={fmt(kpis.pageViews)} hint="Trafic total période" />
         <KpiCard
-          title="Clics CTA"
-          value={fmt(kpis.ctaClicks)}
-          hint={`${fmtPct(kpis.ctaRate)} des vues`}
+          title={kpis.scopedToProduct ? 'Panier moyen' : 'Pages vues'}
+          value={kpis.scopedToProduct ? fmtXof(kpis.panierMoyen) : fmt(kpis.pageViews)}
+          hint={
+            kpis.scopedToProduct
+              ? `Qté moy. ${fmt(kpis.quantiteMoyenne)} ${kpis.quantityUnit || ''}`
+              : 'Trafic total période'
+          }
+        />
+        <KpiCard
+          title={kpis.scopedToProduct ? 'CA produit' : 'Clics CTA'}
+          value={kpis.scopedToProduct ? fmtXof(kpis.revenue) : fmt(kpis.ctaClicks)}
+          hint={
+            kpis.scopedToProduct
+              ? `${fmt(kpis.ctaClicks)} CTA · ${fmtPct(kpis.ctaRate)}`
+              : `${fmtPct(kpis.ctaRate)} des vues`
+          }
           Icon={FaMousePointer}
         />
         <KpiCard
-          title="Commandes"
-          value={fmt(kpis.orders)}
-          hint={`Conv. ${fmtPct(kpis.conversionRate)}`}
+          title={kpis.scopedToProduct ? 'Conversion' : 'Commandes'}
+          value={kpis.scopedToProduct ? fmtPct(kpis.conversionRate) : fmt(kpis.orders)}
+          hint={
+            kpis.scopedToProduct
+              ? `${fmt(kpis.pageViews)} vues fiche`
+              : `Conv. ${fmtPct(kpis.conversionRate)} · panier moy. ${fmtXof(kpis.panierMoyen)}`
+          }
           Icon={FaChartPie}
         />
       </section>
+
+      {!kpis.scopedToProduct ? (
+        <section className="rf-an2-kpi-row rf-an2-kpi-row--compact">
+          <KpiCard title="Panier moyen Shop" value={fmtXof(kpis.panierMoyen)} hint="CA / commandes Shop" />
+          <KpiCard
+            title="Quantité Shop"
+            value={fmt(kpis.totalQuantity)}
+            hint={`Moy. ${fmt(kpis.quantiteMoyenne)} / commande`}
+          />
+          <KpiCard title="CA Shop" value={fmtXof(kpis.revenue)} hint="Hors hors-plateforme" />
+          <KpiCard
+            title="Shop / Repas / App"
+            value={`${fmt(kpis.ordersByChannel?.shop)} / ${fmt(kpis.ordersByChannel?.repas)} / ${fmt(kpis.ordersByChannel?.platform)}`}
+            hint="Répartition des commandes"
+          />
+        </section>
+      ) : null}
 
       <section className="rf-an2-mid">
         <article className="rf-an2-card rf-an2-card--chart">
@@ -666,8 +827,88 @@ export default function AnalyticsDashboardPage() {
 
       <section className="rf-an2-card">
         <div className="rf-an2-card-head">
-          <h2>Top produits</h2>
-          <p>Vues fiche & clics</p>
+          <h2>{kpis.scopedToProduct ? 'Produit sélectionné' : 'Panier moyen par produit Shop'}</h2>
+          <p>
+            {kpis.scopedToProduct
+              ? 'Détail commandes, quantité et panier moyen'
+              : 'Cliquez un produit pour l’analyse détaillée'}
+          </p>
+        </div>
+        <div className="rf-an2-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Produit</th>
+                <th>Commandes</th>
+                <th>Quantité</th>
+                <th>Qté moy.</th>
+                <th>Panier moyen</th>
+                <th>CA</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {kpis.scopedToProduct && data?.product ? (
+                <tr>
+                  <td>{data.product.name}</td>
+                  <td>{fmt(data.product.orders)}</td>
+                  <td>
+                    {fmt(data.product.totalQuantity)} {data.product.quantityUnit || ''}
+                  </td>
+                  <td>
+                    {fmt(data.product.quantiteMoyenne)} {data.product.quantityUnit || ''}
+                  </td>
+                  <td>{fmtXof(data.product.panierMoyen)}</td>
+                  <td>{fmtXof(data.product.revenue)}</td>
+                  <td />
+                </tr>
+              ) : (
+                (data?.productsBreakdown || []).map((p) => (
+                  <tr key={p.productId || p.slug}>
+                    <td>{p.name}</td>
+                    <td>{fmt(p.orders)}</td>
+                    <td>
+                      {fmt(p.totalQuantity)} {p.quantityUnit || ''}
+                    </td>
+                    <td>
+                      {fmt(p.quantiteMoyenne)} {p.quantityUnit || ''}
+                    </td>
+                    <td>{fmtXof(p.panierMoyen)}</td>
+                    <td>{fmtXof(p.revenue)}</td>
+                    <td>
+                      {p.productId ? (
+                        <button
+                          type="button"
+                          className="rf-an2-btn"
+                          onClick={() => {
+                            const key = `shop:${p.productId}`;
+                            setProductKey(key);
+                            if (p.slug) {
+                              setUrlInput(`/shop/${p.slug}`);
+                              setPathFilter('');
+                              setPathDetail(null);
+                            }
+                          }}
+                        >
+                          Analyser
+                        </button>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+          {!kpis.scopedToProduct && !data?.productsBreakdown?.length ? (
+            <p className="rf-an2-empty">Aucune commande Shop sur la période.</p>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="rf-an2-card">
+        <div className="rf-an2-card-head">
+          <h2>Top produits (trafic)</h2>
+          <p>Vues fiche & clics trackés</p>
         </div>
         <div className="rf-an2-table-wrap">
           <table>
@@ -704,12 +945,20 @@ export default function AnalyticsDashboardPage() {
           <div className="rf-an2-kpi-row rf-an2-kpi-row--compact">
             <KpiCard title="Sessions" value={fmt(pathDetail.sessions)} />
             <KpiCard title="Vues" value={fmt(pathDetail.kpis?.pageViews)} />
-            <KpiCard title="CTA" value={fmt(pathDetail.kpis?.ctaClicks)} />
+            <KpiCard
+              title="Commandes"
+              value={fmt(pathDetail.kpis?.orders ?? pathDetail.kpis?.purchases)}
+              hint={
+                pathDetail.kpis?.totalQuantity
+                  ? `Qté ${fmt(pathDetail.kpis.totalQuantity)}`
+                  : undefined
+              }
+            />
             <KpiCard
               featured
-              title="Conversion"
-              value={fmtPct(pathDetail.kpis?.conversionRate)}
-              hint={`${fmt(pathDetail.kpis?.purchases)} achats / merci`}
+              title="Panier moyen"
+              value={fmtXof(pathDetail.kpis?.panierMoyen)}
+              hint={`Conv. ${fmtPct(pathDetail.kpis?.conversionRate)}`}
             />
           </div>
         </section>

@@ -30,6 +30,79 @@
   gap: 0.4rem;
 }
 
+.rf-an2-product-select {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.rf-an2-product-select label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--an-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.rf-an2-product-select select {
+  min-width: 220px;
+  max-width: min(360px, 70vw);
+  border: 1px solid rgba(139, 69, 19, 0.15);
+  border-radius: 999px;
+  padding: 0.5rem 0.9rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--an-ink);
+  background: #fff8f0;
+}
+
+.rf-an2-product-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #3d1c08 0%, #8b4513 55%, #c76d2e 100%);
+  color: #fff;
+}
+
+.rf-an2-product-banner-kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.rf-an2-product-banner h2 {
+  margin: 0.2rem 0 0.15rem;
+  font-size: 1.25rem;
+}
+
+.rf-an2-product-banner p {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.rf-an2-kpi-row--compact {
+  margin-top: -0.35rem;
+}
+
+.rf-an2-kpi-row--compact .rf-an2-kpi {
+  padding: 0.9rem 1rem;
+}
+
+.rf-an2-kpi-row--compact .rf-an2-kpi strong {
+  font-size: 1.35rem;
+}
+
 .rf-an2-chip {
   border: 0;
   background: #f3ebe1;
