@@ -189,7 +189,7 @@ router.post('/', async (req, res) => {
       void sendToUserIds(staffIds, {
         title: 'Rapido Repas — Nouvelle commande',
         body: summary.slice(0, 120),
-        url: '/dashboard/commercial-commandes-repas',
+        url: '/commerciaux/app/commandes-repas',
         tag: `rapido-meal-order-${order._id}`,
       }).catch(() => {});
     }

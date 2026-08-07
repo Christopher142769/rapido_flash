@@ -34,8 +34,10 @@ const Login = () => {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      if (user.role === 'restaurant' || user.role === 'gestionnaire' || user.role === 'commercial') {
-        navigate(user.role === 'commercial' ? toDashboardPath('/commercial') : toDashboardPath());
+      if (user.role === 'restaurant' || user.role === 'gestionnaire') {
+        navigate(toDashboardPath());
+      } else if (user.role === 'commercial') {
+        navigate(safeNext.startsWith('/commerciaux') ? safeNext : '/commerciaux/app');
       } else if (user.role === 'cuisinier') {
         navigate('/cuisine/app');
       } else if (user.role === 'responsable') {

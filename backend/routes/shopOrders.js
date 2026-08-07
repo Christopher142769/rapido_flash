@@ -177,7 +177,7 @@ router.post('/', async (req, res) => {
     if (dashboardIds.length) {
       void sendToUserIds(dashboardIds, {
         ...pushBody,
-        url: '/dashboard/commercial-commandes',
+        url: '/commerciaux/app/commandes',
       }).catch(() => {});
     }
     if (responsableIds.length) {

@@ -76,6 +76,8 @@ import CuisineAppLayout from './pages/kitchen/CuisineAppLayout';
 import ResponsableGate from './pages/responsable/ResponsableGate';
 import ResponsableAppLayout from './pages/responsable/ResponsableAppLayout';
 import CommercialPointsPage from './pages/commercial/CommercialPointsPage';
+import CommercialGate from './pages/commercial/CommercialGate';
+import CommercialAppLayout from './pages/commercial/CommercialAppLayout';
 import ChatThread from './pages/client/ChatThread';
 import ChatsInbox from './pages/client/ChatsInbox';
 import ChatFab from './components/ChatFab';
@@ -156,6 +158,7 @@ function AppRoutes() {
     location.pathname.startsWith('/champion') ||
     location.pathname.startsWith('/cuisine') ||
     location.pathname.startsWith('/responsables') ||
+    location.pathname.startsWith('/commerciaux') ||
     location.pathname.startsWith('/présence') ||
     location.pathname.startsWith('/presence');
 
@@ -209,6 +212,19 @@ function AppRoutes() {
             <Route index element={<CommercialCommandesPage />} />
             <Route path="commandes" element={<CommercialCommandesPage />} />
             <Route path="commandes-repas" element={<ResponsableMealOrdersRoute />} />
+          </Route>
+        </Route>
+
+        {/* Espace commerciaux Rapido */}
+        <Route path="/commerciaux" element={<Navigate to="/commerciaux/app" replace />} />
+        <Route path="/commerciaux/app" element={<CommercialGate />}>
+          <Route element={<CommercialAppLayout />}>
+            <Route index element={<CommercialOverviewPage />} />
+            <Route path="commandes" element={<CommercialCommandesPage />} />
+            <Route path="commandes-repas" element={<MealCommandesPage />} />
+            <Route path="bilan" element={<CommercialBilanPage />} />
+            <Route path="relances" element={<CommercialRelancesPage />} />
+            <Route path="points" element={<CommercialPointsPage />} />
           </Route>
         </Route>
 
