@@ -51,6 +51,10 @@ export default function CommerciauxDashboard() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
+    if (!form.assignedShopProducts?.length) {
+      showError('Assignez au moins un produit Shop à ce commercial');
+      return;
+    }
     setBusy(true);
     try {
       await createCommercialAccount(form);
@@ -80,7 +84,7 @@ export default function CommerciauxDashboard() {
       showSuccess(
         assignedShopProducts.length
           ? 'Produits mis à jour'
-          : 'Tous les produits Shop sont visibles'
+          : 'Aucun produit assigné — le commercial ne verra aucune commande Shop'
       );
       await load();
     } catch (err) {
@@ -94,8 +98,8 @@ export default function CommerciauxDashboard() {
     <div className="commercial-page">
       <h1>Comptes commerciaux</h1>
       <p className="commercial-lead">
-        Créez des accès terrain. Vous pouvez limiter chaque commercial à certains produits Shop
-        (sinon tous). Ils reçoivent une notification à chaque commande de leurs produits.
+        Créez des accès terrain. Assignez à chaque commercial uniquement les produits Shop qu’il
+        peut traiter. Sans produit assigné, il ne voit aucune commande Shop.
       </p>
 
       <div className="commercial-card">
@@ -140,7 +144,8 @@ export default function CommerciauxDashboard() {
               products={products}
               selectedIds={form.assignedShopProducts}
               onChange={(assignedShopProducts) => setForm({ ...form, assignedShopProducts })}
-              hint="Optionnel : laisser vide = tous les produits Shop."
+              required
+              hint="Obligatoire : le commercial ne verra que ces produits."
             />
           </div>
           <button

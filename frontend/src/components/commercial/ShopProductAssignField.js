@@ -73,6 +73,6 @@ export function productIdsFromAccount(account) {
 
 export function productNamesLabel(account) {
   const list = account?.assignedShopProducts || [];
-  if (!list.length) return 'Tous';
+  if (!list.length) return 'Aucun';
   return list.map((p) => p.name || p.slug || String(p._id || p)).join(', ');
 }

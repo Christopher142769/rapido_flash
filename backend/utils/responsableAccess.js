@@ -52,10 +52,9 @@ function assertResponsableCityAccess(user, order) {
 function assertStaffShopProductAccess(user, order) {
   if (!isResponsable(user) && !isCommercial(user)) return null;
   const ids = getAssignedProductIds(user);
-  if (isResponsable(user) && !ids.length) {
+  if (!ids.length) {
     return 'Aucun produit Shop assigné à ce compte';
   }
-  if (!ids.length) return null; // commercial sans liste = tous les produits
   const pid = String(order?.shopProduct?._id || order?.shopProduct || '').trim();
   if (!pid || !ids.includes(pid)) {
     return 'Accès refusé — produit non assigné';
@@ -72,7 +71,7 @@ function assertStaffShopOrderAccess(user, order) {
 /**
  * Filtre Mongo des commandes Shop visibles.
  * - responsable : ville + produits assignés (obligatoires)
- * - commercial : produits assignés si la liste n’est pas vide, sinon tout
+ * - commercial : uniquement les produits assignés (liste vide = aucun accès)
  */
 function staffShopListFilter(user) {
   if (isResponsable(user)) {
@@ -90,9 +89,17 @@ function staffShopListFilter(user) {
   if (isCommercial(user)) {
     const products = getAssignedProductIds(user);
     if (products.length) return { shopProduct: { $in: products } };
-    return {};
+    return { _id: { $in: [] } };
   }
   return {};
+}
+
+/** Filtre catalogue ShopProduct pour commercial / responsable. */
+function staffShopProductCatalogFilter(user) {
+  if (!isCommercial(user) && !isResponsable(user)) return {};
+  const products = getAssignedProductIds(user);
+  if (!products.length) return { _id: { $in: [] } };
+  return { _id: { $in: products } };
 }
 
 /** Filtre repas pour responsable (ville seulement — pas de produits Shop). */
@@ -129,6 +136,7 @@ module.exports = {
   assertStaffShopProductAccess,
   assertStaffShopOrderAccess,
   staffShopListFilter,
+  staffShopProductCatalogFilter,
   responsableMealListFilter,
   responsableListFilter,
   normalizeAssignedShopProductIds,

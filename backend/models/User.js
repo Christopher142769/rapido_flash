@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema({
     enum: ['', 'Cotonou', 'Calavi'],
     default: '',
   },
-  /** Produits Shop que le compte peut voir / traiter (commercial, responsable). */
+  /** Produits Shop autorisés (commercial, responsable). Liste vide = aucun accès produit. */
   assignedShopProducts: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'ShopProduct',

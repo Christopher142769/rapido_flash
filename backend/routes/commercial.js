@@ -9,6 +9,10 @@ const { unconfirmShopOrder } = require('../utils/shopOrderStatus');
 const {
   assertStaffShopOrderAccess,
   staffShopListFilter,
+  staffShopProductCatalogFilter,
+  getAssignedProductIds,
+  isCommercial,
+  isResponsable,
   normalizeAssignedShopProductIds,
 } = require('../utils/responsableAccess');
 const {
@@ -79,8 +83,11 @@ function todayRange() {
   return { start: startOfDay(now), end: endOfDay(now) };
 }
 
-function buildBilanFilter(query) {
-  const filter = bilanBaseQuery();
+function buildBilanFilter(query, user) {
+  const filter = {
+    ...bilanBaseQuery(),
+    ...staffShopListFilter(user),
+  };
   if (query.product) {
     filter.productName = { $regex: String(query.product).trim(), $options: 'i' };
   }
@@ -130,6 +137,9 @@ router.post('/accounts', auth, isRestaurantAdmin, async (req, res) => {
       const ids = normalizeAssignedShopProductIds(req.body.assignedShopProducts);
       if (ids) user.assignedShopProducts = ids;
     }
+    if (!getAssignedProductIds(user).length) {
+      return res.status(400).json({ message: 'Assignez au moins un produit Shop' });
+    }
     await user.save();
     const out = user.toObject();
     delete out.password;
@@ -167,13 +177,14 @@ router.patch('/accounts/:id', auth, isRestaurantAdmin, async (req, res) => {
 
 router.get('/points/products', auth, isCommercialStaff, async (req, res) => {
   try {
-    const catalog = await ShopProduct.find()
+    const catalog = await ShopProduct.find(staffShopProductCatalogFilter(req.user))
       .select('name slug quantityUnit')
       .sort({ name: 1 })
       .lean();
 
     const orderNames = await ShopOrder.distinct('productName', {
       productName: { $exists: true, $ne: '' },
+      ...staffShopListFilter(req.user),
     });
 
     const catalogNames = new Set(catalog.map((p) => p.name.toLowerCase()));
@@ -205,6 +216,14 @@ router.get('/points/summary', auth, isCommercialStaff, async (req, res) => {
 
     if (!normalizeDateKey(dateFrom) && !normalizeDateKey(dateTo)) {
       return res.status(400).json({ message: 'Période invalide' });
+    }
+
+    const assignedIds = getAssignedProductIds(req.user);
+    if ((isCommercial(req.user) || isResponsable(req.user)) && !assignedIds.length) {
+      return res.status(403).json({ message: 'Aucun produit Shop assigné à ce compte' });
+    }
+    if (productId && assignedIds.length && !assignedIds.includes(productId)) {
+      return res.status(403).json({ message: 'Accès refusé — produit non assigné' });
     }
 
     let resolvedName = productName;
@@ -242,7 +261,11 @@ router.get('/points/summary', auth, isCommercialStaff, async (req, res) => {
       ];
     }
 
-    let orders = await ShopOrder.find(mongoFilter).sort({ confirmedAt: -1, orderDate: -1 }).lean();
+    const staffFilter = staffShopListFilter(req.user);
+    const finalFilter =
+      Object.keys(staffFilter).length > 0 ? { $and: [staffFilter, mongoFilter] } : mongoFilter;
+
+    let orders = await ShopOrder.find(finalFilter).sort({ confirmedAt: -1, orderDate: -1 }).lean();
     orders = orders.filter((o) => resolveCommercialStatus(o) === 'confirme');
     orders = orders.filter((o) => isOrderConfirmedInPeriod(o, dateFrom, dateTo));
 
@@ -278,7 +301,10 @@ router.get('/points/summary', auth, isCommercialStaff, async (req, res) => {
 
 router.get('/overview', auth, isCommercialStaff, async (req, res) => {
   try {
-    const base = bilanBaseQuery();
+    const base = {
+      ...bilanBaseQuery(),
+      ...staffShopListFilter(req.user),
+    };
     const orders = await ShopOrder.find(base).lean();
 
     let totalOrdersAmount = 0;
@@ -307,6 +333,7 @@ router.get('/overview', auth, isCommercialStaff, async (req, res) => {
     const todayRelances = await ShopOrder.countDocuments({
       commercialStatus: 'relance',
       scheduledDeliveryAt: { $gte: start, $lte: end },
+      ...staffShopListFilter(req.user),
     });
 
     const recent = orders
@@ -650,6 +677,9 @@ router.put('/orders/:id/commercial-status', auth, isCommercialStaff, async (req,
     const order = await ShopOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
 
+    const accessErr = assertStaffShopOrderAccess(req.user, order);
+    if (accessErr) return res.status(403).json({ message: accessErr });
+
     order.commercialStatus = commercialStatus;
     if (commercialStatus === 'livree') {
       order.statut = 'livree';
@@ -669,7 +699,7 @@ router.put('/orders/:id/commercial-status', auth, isCommercialStaff, async (req,
 
 router.get('/bilan', auth, isCommercialStaff, async (req, res) => {
   try {
-    const filter = buildBilanFilter(req.query);
+    const filter = buildBilanFilter(req.query, req.user);
     const orders = await ShopOrder.find(filter).sort({ orderDate: -1, createdAt: -1 }).lean();
     const rows = orders.map(bilanRowFromOrder);
     res.json({ bilanStartDate: BILAN_START_DATE, rows });
@@ -701,12 +731,46 @@ router.post('/bilan/off-platform', auth, isCommercialStaff, async (req, res) => 
       return res.status(400).json({ message: 'Statut : commande, relance ou livree' });
     }
 
+    let linkedProduct = null;
+    const assignedIds = getAssignedProductIds(req.user);
+    const mustScopeProduct = isCommercial(req.user) || isResponsable(req.user);
+
+    if (mustScopeProduct) {
+      if (!assignedIds.length) {
+        return res.status(403).json({ message: 'Aucun produit Shop assigné à ce compte' });
+      }
+      const requestedId = String(req.body?.shopProduct || req.body?.shopProductId || '').trim();
+      if (requestedId && assignedIds.includes(requestedId)) {
+        linkedProduct = await ShopProduct.findById(requestedId).select('name slug quantityUnit').lean();
+      }
+      if (!linkedProduct) {
+        const nameRx = new RegExp(`^${productName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+        linkedProduct = await ShopProduct.findOne({
+          _id: { $in: assignedIds },
+          name: nameRx,
+        })
+          .select('name slug quantityUnit')
+          .lean();
+      }
+      if (!linkedProduct) {
+        return res.status(403).json({
+          message: 'Choisissez un produit qui vous est assigné',
+        });
+      }
+    } else if (req.body?.shopProduct || req.body?.shopProductId) {
+      const requestedId = String(req.body.shopProduct || req.body.shopProductId).trim();
+      if (mongoose.Types.ObjectId.isValid(requestedId)) {
+        linkedProduct = await ShopProduct.findById(requestedId).select('name slug quantityUnit').lean();
+      }
+    }
+
     const order = new ShopOrder({
       orderNumber,
-      productName,
-      slug: 'hors-plateforme',
+      shopProduct: linkedProduct?._id,
+      productName: linkedProduct?.name || productName,
+      slug: linkedProduct?.slug || 'hors-plateforme',
       quantity,
-      quantityUnit: 'unit',
+      quantityUnit: linkedProduct?.quantityUnit || 'unit',
       quantityLabel: String(quantity),
       unitPrice: amount / quantity,
       totalPrice: Math.round(amount),
@@ -735,6 +799,7 @@ router.get('/relances/today', auth, isCommercialStaff, async (req, res) => {
     const orders = await ShopOrder.find({
       commercialStatus: 'relance',
       scheduledDeliveryAt: { $gte: start, $lte: end },
+      ...staffShopListFilter(req.user),
     })
       .sort({ scheduledDeliveryAt: 1 })
       .lean();
@@ -754,6 +819,8 @@ router.post('/relances/:id/ack', auth, isCommercialStaff, async (req, res) => {
   try {
     const order = await ShopOrder.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Commande non trouvée' });
+    const accessErr = assertStaffShopOrderAccess(req.user, order);
+    if (accessErr) return res.status(403).json({ message: accessErr });
     order.relanceNotifiedAt = new Date();
     await order.save();
     res.json({ ok: true });
@@ -770,6 +837,7 @@ router.post('/relances/notify-today', auth, isCommercialStaff, async (req, res) 
       commercialStatus: 'relance',
       scheduledDeliveryAt: { $gte: start, $lte: end },
       $or: [{ relanceNotifiedAt: null }, { relanceNotifiedAt: { $lt: start } }],
+      ...staffShopListFilter(req.user),
     }).lean();
 
     if (orders.length) {
@@ -781,7 +849,7 @@ router.post('/relances/notify-today', auth, isCommercialStaff, async (req, res) 
       void sendToUserIds(staffIds, {
         title: 'Rapido — Relances livraison',
         body: `${orders.length} livraison(s) à relancer aujourd'hui${names ? ` · ${names}` : ''}`,
-        url: '/dashboard/commercial-relances',
+        url: '/commerciaux/app/relances',
         tag: `rapido-relance-${start.toISOString().slice(0, 10)}`,
       }).catch(() => {});
     }

@@ -67,7 +67,7 @@ async function getShopOrderNotifyTargets(productId) {
       continue;
     }
     if (u.role === 'commercial') {
-      if (!assigned.length || assigned.includes(pid)) dashboardIds.push(String(u._id));
+      if (assigned.length && assigned.includes(pid)) dashboardIds.push(String(u._id));
       continue;
     }
     if (u.role === 'responsable') {

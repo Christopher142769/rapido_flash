@@ -4,6 +4,7 @@ import { useModal } from '../../context/ModalContext';
 import {
   createOffPlatformOrder,
   fetchCommercialBilan,
+  fetchPointsProducts,
   formatCommercialStatus,
   formatPrice,
 } from '../../utils/commercialApi';
@@ -12,6 +13,7 @@ import './commercial.css';
 
 const emptyOffPlatform = {
   orderDate: '',
+  shopProduct: '',
   productName: '',
   orderNumber: '',
   quantity: '1',
@@ -34,6 +36,7 @@ export default function CommercialBilanPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyOffPlatform);
   const [busy, setBusy] = useState(false);
+  const [products, setProducts] = useState([]);
 
   const load = useCallback(async () => {
     try {
@@ -44,8 +47,12 @@ export default function CommercialBilanPage() {
       if (filters.dateTo) params.dateTo = filters.dateTo;
       if (filters.status) params.status = filters.status;
       if (filters.offPlatform) params.offPlatform = filters.offPlatform;
-      const data = await fetchCommercialBilan(params);
+      const [data, productsList] = await Promise.all([
+        fetchCommercialBilan(params),
+        fetchPointsProducts().catch(() => []),
+      ]);
       setRows(data.rows || []);
+      setProducts(Array.isArray(productsList) ? productsList.filter((p) => p._id) : []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -66,9 +73,11 @@ export default function CommercialBilanPage() {
     e.preventDefault();
     setBusy(true);
     try {
+      const selected = products.find((p) => String(p._id) === String(form.shopProduct));
       await createOffPlatformOrder({
         orderDate: form.orderDate ? new Date(form.orderDate).toISOString() : new Date().toISOString(),
-        productName: form.productName,
+        shopProduct: form.shopProduct || undefined,
+        productName: selected?.name || form.productName,
         orderNumber: form.orderNumber,
         quantity: Number(form.quantity),
         location: form.location,
@@ -176,11 +185,34 @@ export default function CommercialBilanPage() {
               </div>
               <div className="commercial-form-field">
                 <label>Produit</label>
-                <input
-                  value={form.productName}
-                  onChange={(e) => setForm({ ...form, productName: e.target.value })}
-                  required
-                />
+                {products.length ? (
+                  <select
+                    value={form.shopProduct}
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      const selected = products.find((p) => String(p._id) === id);
+                      setForm({
+                        ...form,
+                        shopProduct: id,
+                        productName: selected?.name || '',
+                      });
+                    }}
+                    required
+                  >
+                    <option value="">Choisir un produit…</option>
+                    {products.map((p) => (
+                      <option key={p._id} value={p._id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    value={form.productName}
+                    onChange={(e) => setForm({ ...form, productName: e.target.value })}
+                    required
+                  />
+                )}
               </div>
               <div className="commercial-form-field">
                 <label>N° commande</label>
