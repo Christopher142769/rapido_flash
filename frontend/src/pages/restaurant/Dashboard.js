@@ -10,11 +10,12 @@ import PageLoader from '../../components/PageLoader';
 import MediaPickerModal from '../../components/MediaPickerModal';
 import { DashboardEditIconButton } from '../../components/ui/DashboardIconButtons';
 import './Dashboard.css';
+import { getMediaBaseUrl, resolveMediaUrl } from '../../utils/mediaUrl';
 
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', '');
+const BASE_URL = getMediaBaseUrl();
 
 const JOURS_SEMAINE = [
   { v: 1, label: 'Lundi' },
@@ -175,9 +176,9 @@ const Dashboard = () => {
       commanderVeille: !!resto?.commanderVeille
     });
     if (resto?.position?.latitude) setPosition([resto.position.latitude, resto.position.longitude]);
-    setLogoPreview(resto?.logo ? (String(resto.logo).startsWith('http') ? resto.logo : `${BASE_URL}${resto.logo}`) : null);
-    setBannierePreview(resto?.banniere ? (String(resto.banniere).startsWith('http') ? resto.banniere : `${BASE_URL}${resto.banniere}`) : null);
-    setVisuelCartePreview(resto?.visuelCarteAccueil ? (String(resto.visuelCarteAccueil).startsWith('http') ? resto.visuelCarteAccueil : `${BASE_URL}${resto.visuelCarteAccueil}`) : null);
+    setLogoPreview(resto?.logo ? (resolveMediaUrl(resto.logo, BASE_URL)) : null);
+    setBannierePreview(resto?.banniere ? (resolveMediaUrl(resto.banniere, BASE_URL)) : null);
+    setVisuelCartePreview(resto?.visuelCarteAccueil ? (resolveMediaUrl(resto.visuelCarteAccueil, BASE_URL)) : null);
     setLogoPathOverride(undefined);
     setBannierePathOverride(undefined);
     setVisuelCartePathOverride(undefined);
@@ -287,13 +288,13 @@ const Dashboard = () => {
   const onStructureMediaPicked = (path) => {
     if (mediaPickerTarget === 'logo') {
       setLogoPathOverride(path);
-      setLogoPreview(String(path).startsWith('http') ? path : `${BASE_URL}${path}`);
+      setLogoPreview(resolveMediaUrl(path, BASE_URL));
     } else if (mediaPickerTarget === 'banniere') {
       setBannierePathOverride(path);
-      setBannierePreview(String(path).startsWith('http') ? path : `${BASE_URL}${path}`);
+      setBannierePreview(resolveMediaUrl(path, BASE_URL));
     } else if (mediaPickerTarget === 'visuelCarte') {
       setVisuelCartePathOverride(path);
-      setVisuelCartePreview(String(path).startsWith('http') ? path : `${BASE_URL}${path}`);
+      setVisuelCartePreview(resolveMediaUrl(path, BASE_URL));
     }
     setMediaPickerTarget(null);
   };
@@ -439,7 +440,7 @@ const Dashboard = () => {
                   <div key={rid} className={`enterprise-card ${isCurrent ? 'enterprise-card-active' : ''}`}>
                     <div className="enterprise-card-header">
                       {r.logo ? (
-                        <img src={`${API_URL.replace('/api', '')}${r.logo}`} alt="" className="enterprise-card-logo" />
+                        <img src={resolveMediaUrl(r.logo, BASE_URL)} alt="" className="enterprise-card-logo" />
                       ) : (
                         <span className="enterprise-card-icon">🏪</span>
                       )}

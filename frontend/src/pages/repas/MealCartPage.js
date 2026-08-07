@@ -29,9 +29,10 @@ import {
 import { mealConfirmationPath, mealProductPath } from '../../utils/mealPaths';
 import { trackCtaClick, trackRapido } from '../../utils/analyticsBeacon';
 import './MealCartPage.css';
+import { getMediaBaseUrl } from '../../utils/mediaUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', '');
+const BASE_URL = getMediaBaseUrl();
 
 export default function MealCartPage() {
   const navigate = useNavigate();

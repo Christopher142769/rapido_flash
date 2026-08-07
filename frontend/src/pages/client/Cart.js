@@ -8,9 +8,10 @@ import TopNavbar from '../../components/TopNavbar';
 import { getImageUrl } from '../../utils/imagePlaceholder';
 import { cartQualifiesFreeDeliveryPromo } from '../../utils/cartPromo';
 import './Cart.css';
+import { getMediaBaseUrl } from '../../utils/mediaUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', '');
+const BASE_URL = getMediaBaseUrl();
 const VARIABLE_UNITS = ['m3', 'kg', 'tonne'];
 
 function unitShortLabel(unit, t) {

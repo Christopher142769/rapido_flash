@@ -18,8 +18,10 @@ import ChatThreadPanel from './ChatThreadPanel';
 import { pickLocalized } from '../utils/i18nContent';
 import './SupportWidget.css';
 
+import { getMediaBaseUrl } from '../utils/mediaUrl';
+
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const MEDIA_BASE = process.env.REACT_APP_BASE_URL || API_URL.replace(/\/api\/?$/, '');
+const MEDIA_BASE = getMediaBaseUrl();
 
 function firstName(nom) {
   if (!nom || typeof nom !== 'string') return '';

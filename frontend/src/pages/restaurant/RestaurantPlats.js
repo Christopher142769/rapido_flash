@@ -9,9 +9,10 @@ import ProductDescriptionRich from '../../components/ProductDescriptionRich';
 import { DashboardEditIconButton, DashboardDeleteIconButton } from '../../components/ui/DashboardIconButtons';
 import { useRegisterDashboardRefresh } from '../../context/DashboardRefreshContext';
 import './RestaurantPlats.css';
+import { getMediaBaseUrl, resolveMediaUrl } from '../../utils/mediaUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', '');
+const BASE_URL = getMediaBaseUrl();
 const STORAGE_CURRENT_RESTAURANT = 'dashboardCurrentRestaurantId';
 const VARIABLE_UNITS = ['m3', 'kg', 'tonne'];
 
@@ -230,13 +231,13 @@ const RestaurantPlats = () => {
       accompagnementsMode: p.accompagnementsMode === 'unique' ? 'unique' : 'multiple',
       uniteVente: VARIABLE_UNITS.includes(String(p.uniteVente || 'piece')) ? p.uniteVente : 'piece',
     });
-    const firstImg = (p.images && p.images[0]) ? (String(p.images[0]).startsWith('http') ? p.images[0] : `${BASE_URL}${p.images[0]}`) : null;
+    const firstImg = (p.images && p.images[0]) ? (resolveMediaUrl(p.images[0], BASE_URL)) : null;
     setImagePreview(firstImg);
     setGalleryImagePath(null);
     setCartePath(p.imageCarteHome || null);
-    setPreviewCarteHome(p.imageCarteHome ? (String(p.imageCarteHome).startsWith('http') ? p.imageCarteHome : `${BASE_URL}${p.imageCarteHome}`) : null);
+    setPreviewCarteHome(p.imageCarteHome ? (resolveMediaUrl(p.imageCarteHome, BASE_URL)) : null);
     setBannierePath(p.banniereProduit || null);
-    setPreviewBanniere(p.banniereProduit ? (String(p.banniereProduit).startsWith('http') ? p.banniereProduit : `${BASE_URL}${p.banniereProduit}`) : null);
+    setPreviewBanniere(p.banniereProduit ? (resolveMediaUrl(p.banniereProduit, BASE_URL)) : null);
     setShowForm(true);
   };
 
@@ -255,13 +256,13 @@ const RestaurantPlats = () => {
   const onMediaPicked = (path) => {
     if (pickerField === 'carte') {
       setCartePath(path);
-      setPreviewCarteHome(String(path).startsWith('http') ? path : `${BASE_URL}${path}`);
+      setPreviewCarteHome(resolveMediaUrl(path, BASE_URL));
     } else if (pickerField === 'banniere') {
       setBannierePath(path);
-      setPreviewBanniere(String(path).startsWith('http') ? path : `${BASE_URL}${path}`);
+      setPreviewBanniere(resolveMediaUrl(path, BASE_URL));
     } else if (pickerField === 'galerie') {
       setGalleryImagePath(path);
-      setImagePreview(String(path).startsWith('http') ? path : `${BASE_URL}${path}`);
+      setImagePreview(resolveMediaUrl(path, BASE_URL));
     }
     setPickerField(null);
   };
@@ -609,9 +610,9 @@ const RestaurantPlats = () => {
             {produits.map((p) => {
               const imgSrc =
                 (p.imageCarteHome &&
-                  (String(p.imageCarteHome).startsWith('http') ? p.imageCarteHome : `${BASE_URL}${p.imageCarteHome}`)) ||
+                  (resolveMediaUrl(p.imageCarteHome, BASE_URL))) ||
                 (p.images && p.images[0] &&
-                  (String(p.images[0]).startsWith('http') ? p.images[0] : `${BASE_URL}${p.images[0]}`)) ||
+                  (resolveMediaUrl(p.images[0], BASE_URL))) ||
                 getImageUrl(null, { nom: p.nom }, BASE_URL);
               return (
                 <div key={p._id} className="plat-card-admin">

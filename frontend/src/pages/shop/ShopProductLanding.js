@@ -39,9 +39,10 @@ import {
 } from '../../utils/analyticsBeacon';
 import './shopTypography.css';
 import './ShopProductLanding.css';
+import { getMediaBaseUrl } from '../../utils/mediaUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', '');
+const BASE_URL = getMediaBaseUrl();
 const CHECKOUT_FORM_ID = 'shop-checkout-form';
 
 export default function ShopProductLanding() {

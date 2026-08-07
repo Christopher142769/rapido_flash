@@ -6,9 +6,10 @@ import PageLoader from '../../components/PageLoader';
 import MediaPickerModal from '../../components/MediaPickerModal';
 import { DashboardEditIconButton, DashboardDeleteIconButton } from '../../components/ui/DashboardIconButtons';
 import './Categories.css';
+import { getMediaBaseUrl, resolveMediaUrl } from '../../utils/mediaUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', '');
+const BASE_URL = getMediaBaseUrl();
 
 const CategoriesDomaine = () => {
   const navigate = useNavigate();
@@ -69,7 +70,7 @@ const CategoriesDomaine = () => {
   const handleEdit = (cat) => {
     setEditingId(cat._id);
     setFormData({ nom: cat.nom, nomEn: cat.nomEn || '', ordre: cat.ordre != null ? cat.ordre : '' });
-    setIconePreview(cat.icone ? (String(cat.icone).startsWith('http') ? cat.icone : `${BASE_URL}${cat.icone}`) : null);
+    setIconePreview(cat.icone ? (resolveMediaUrl(cat.icone, BASE_URL)) : null);
     setIconePathOverride(undefined);
     setShowForm(true);
   };
@@ -103,7 +104,7 @@ const CategoriesDomaine = () => {
           {categories.map((cat) => (
             <div key={cat._id} className="category-card category-card-admin">
               {cat.icone ? (
-                <img src={String(cat.icone).startsWith('http') ? cat.icone : `${BASE_URL}${cat.icone}`} alt={cat.nom} className="category-icon-img" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} />
+                <img src={resolveMediaUrl(cat.icone, BASE_URL)} alt={cat.nom} className="category-icon-img" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} />
               ) : (
                 <span className="category-icon">📦</span>
               )}
@@ -168,7 +169,7 @@ const CategoriesDomaine = () => {
                   onClose={() => setMediaPickerOpen(false)}
                   onSelect={(path) => {
                     setIconePathOverride(path);
-                    setIconePreview(String(path).startsWith('http') ? path : `${BASE_URL}${path}`);
+                    setIconePreview(resolveMediaUrl(path, BASE_URL));
                     setMediaPickerOpen(false);
                   }}
                   title="Icône catégorie domaine"

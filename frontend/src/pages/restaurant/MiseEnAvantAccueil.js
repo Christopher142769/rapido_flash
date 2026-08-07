@@ -3,9 +3,10 @@ import axios from 'axios';
 import PageLoader from '../../components/PageLoader';
 import MediaPickerModal from '../../components/MediaPickerModal';
 import './MiseEnAvantAccueil.css';
+import { getMediaBaseUrl, resolveMediaUrl } from '../../utils/mediaUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', '');
+const BASE_URL = getMediaBaseUrl();
 const STORAGE_CURRENT_RESTAURANT = 'dashboardCurrentRestaurantId';
 
 const MiseEnAvantAccueil = () => {
@@ -172,7 +173,7 @@ const MiseEnAvantAccueil = () => {
                         <div className="vitrine-cell">
                           <div className="vitrine-thumb">
                             {p.imageCarteHome ? (
-                              <img src={String(p.imageCarteHome).startsWith('http') ? p.imageCarteHome : `${BASE_URL}${p.imageCarteHome}`} alt="" />
+                              <img src={resolveMediaUrl(p.imageCarteHome, BASE_URL)} alt="" />
                             ) : (
                               <span className="vitrine-ph">—</span>
                             )}
@@ -197,7 +198,7 @@ const MiseEnAvantAccueil = () => {
                         <div className="vitrine-cell">
                           <div className="vitrine-thumb">
                             {p.banniereProduit ? (
-                              <img src={String(p.banniereProduit).startsWith('http') ? p.banniereProduit : `${BASE_URL}${p.banniereProduit}`} alt="" />
+                              <img src={resolveMediaUrl(p.banniereProduit, BASE_URL)} alt="" />
                             ) : (
                               <span className="vitrine-ph">—</span>
                             )}

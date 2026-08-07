@@ -5,8 +5,9 @@ import AuthContext from '../context/AuthContext';
 import LanguageContext from '../context/LanguageContext';
 import { useNotifications } from '../context/NotificationContext';
 import './BottomNavbar.css';
+import { getMediaBaseUrl, resolveMediaUrl } from '../utils/mediaUrl';
 
-const BASE_URL = process.env.REACT_APP_BASE_URL || 'http://localhost:5000';
+const BASE_URL = getMediaBaseUrl();
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const BottomNavbar = () => {
@@ -207,7 +208,7 @@ const BottomNavbar = () => {
               {user?.photo ? (
                 <div className="nav-icon-user-photo">
                   <img
-                    src={user.photo.startsWith('http') ? user.photo : `${BASE_URL}${user.photo}`}
+                    src={resolveMediaUrl(user.photo)}
                     alt=""
                   />
                 </div>

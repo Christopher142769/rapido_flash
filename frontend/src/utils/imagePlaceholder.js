@@ -1,3 +1,5 @@
+import { resolveMediaUrl, getMediaBaseUrl } from './mediaUrl';
+
 // Couleurs par catégorie
 const categoryColors = {
   '🐟 Nos Spécialités de Poisson': '#E8F4F8', // Bleu clair
@@ -43,10 +45,8 @@ export function generatePlaceholderSVG(color, width = 400, height = 300, text = 
 
 // Obtenir l'URL de l'image ou le placeholder
 export function getImageUrl(image, plat, baseUrl = '') {
-  const src = typeof image === 'string' ? image.trim() : '';
-  if (src && !src.includes('placeholder.com')) {
-    return src.startsWith('http') ? src : `${baseUrl}${src}`;
-  }
+  const resolved = resolveMediaUrl(image, baseUrl || getMediaBaseUrl());
+  if (resolved) return resolved;
   // Générer un placeholder coloré
   const color = getPlaceholderColor(plat);
   return generatePlaceholderSVG(color, 400, 300, plat?.nom || '');

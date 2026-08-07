@@ -22,9 +22,10 @@ import { mealProductPath } from '../../utils/mealPaths';
 import { trackProductClick } from '../../utils/analyticsBeacon';
 import '../shop/shopTypography.css';
 import './MealShopPage.css';
+import { getMediaBaseUrl } from '../../utils/mediaUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', '');
+const BASE_URL = getMediaBaseUrl();
 
 const DEFAULT_TRUST_ICONS = [FaShippingFast, FaMoneyBillWave, FaStar, FaHeadset];
 

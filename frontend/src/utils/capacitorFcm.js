@@ -88,7 +88,6 @@ export async function syncStoredFcmTokenWithServer() {
   const jwt = localStorage.getItem('token');
   const tok = lastFcmToken;
   if (!jwt || !tok || !isNativeMobile()) {
-    console.info('[FCM] sync skipped: missing jwt/token or not native');
     return;
   }
   try {

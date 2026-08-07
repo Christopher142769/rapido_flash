@@ -9,14 +9,13 @@ import { pickLocalized } from '../../utils/i18nContent';
 import { playNotificationChime } from '../../utils/notificationSound';
 import { playIncomingCallSound } from '../../utils/incomingCallSound';
 import './RestaurantMessages.css';
+import { getMediaBaseUrl, resolveMediaUrl } from '../../utils/mediaUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace(/\/api\/?$/, '');
+const BASE_URL = getMediaBaseUrl();
 
 function mediaUrl(path) {
-  if (!path) return null;
-  if (path.startsWith('http')) return path;
-  return `${BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
+  return resolveMediaUrl(path, BASE_URL) || null;
 }
 
 function digitsOnly(phone) {

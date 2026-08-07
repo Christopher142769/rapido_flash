@@ -32,6 +32,7 @@ import { effectiveProductPrice, hasFreeDeliveryPromo, hasPricePromo } from '../.
 import { useModal } from '../../context/ModalContext';
 import Modal from '../../components/Modal';
 import './RestaurantDetail.css';
+import { getMediaBaseUrl, resolveMediaUrl } from '../../utils/mediaUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const VARIABLE_UNITS = ['m3', 'kg', 'tonne'];
@@ -167,7 +168,7 @@ const RestaurantDetail = () => {
     setReviewStats(s);
   }, []);
 
-  const BASE_URL = API_URL.replace('/api', '');
+  const BASE_URL = getMediaBaseUrl();
 
   const highlightedProduct = useMemo(() => {
     if (!produitFocusId || !allProducts.length) return null;
@@ -465,7 +466,7 @@ const RestaurantDetail = () => {
 
   const bannerUrl =
     restaurant.banniere && !restaurant.banniere.includes('placeholder.com')
-      ? (String(restaurant.banniere).startsWith('http') ? restaurant.banniere : `${BASE_URL}${restaurant.banniere}`)
+      ? (resolveMediaUrl(restaurant.banniere, BASE_URL))
       : generateBannerPlaceholderSVG(0);
 
   const contactPhoneRaw = String(restaurant?.telephone || '').trim();
@@ -543,7 +544,7 @@ const RestaurantDetail = () => {
           <div className="store-info-logo-mobile">
             {restaurant.logo ? (
               <img
-                src={String(restaurant.logo).startsWith('http') ? restaurant.logo : `${BASE_URL}${restaurant.logo}`}
+                src={resolveMediaUrl(restaurant.logo, BASE_URL)}
                 alt={localized(restaurant, 'nom')}
                 onError={(e) => { e.target.style.display = 'none'; if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex'; }}
               />
@@ -573,7 +574,7 @@ const RestaurantDetail = () => {
         <div className="store-hero-logo-corner">
           {restaurant.logo ? (
             <img
-              src={String(restaurant.logo).startsWith('http') ? restaurant.logo : `${BASE_URL}${restaurant.logo}`}
+              src={resolveMediaUrl(restaurant.logo, BASE_URL)}
               alt={localized(restaurant, 'nom')}
               onError={(e) => { e.target.style.display = 'none'; if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex'; }}
             />
@@ -837,7 +838,7 @@ const RestaurantDetail = () => {
                 >
                   {cat.image ? (
                     <img
-                      src={String(cat.image).startsWith('http') ? cat.image : `${BASE_URL}${cat.image}`}
+                      src={resolveMediaUrl(cat.image, BASE_URL)}
                       alt={pickLocalized(language, cat, 'nom')}
                       className="category-btn-img"
                     />

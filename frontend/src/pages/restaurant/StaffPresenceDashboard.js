@@ -13,15 +13,13 @@ import {
 } from '../../utils/exportStaffPresence';
 import '../commercial/commercial.css';
 import './StaffPresenceDashboard.css';
+import { getMediaBaseUrl, resolveMediaUrl } from '../../utils/mediaUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const MEDIA_BASE = API_URL.replace(/\/api\/?$/, '');
+const MEDIA_BASE = getMediaBaseUrl();
 
 function absoluteMediaUrl(path) {
-  if (!path) return '';
-  const s = String(path);
-  if (/^https?:\/\//i.test(s)) return s;
-  return `${MEDIA_BASE}${s.startsWith('/') ? '' : '/'}${s}`;
+  return resolveMediaUrl(path, MEDIA_BASE);
 }
 
 function authHeaders() {

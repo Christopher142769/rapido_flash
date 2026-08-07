@@ -20,8 +20,9 @@ import {
 } from 'react-icons/fa';
 import { IoSearchOutline } from 'react-icons/io5';
 import './TopNavbar.css';
+import { getMediaBaseUrl, resolveMediaUrl } from '../utils/mediaUrl';
 
-const BASE_URL = process.env.REACT_APP_BASE_URL || 'http://localhost:5000';
+const BASE_URL = getMediaBaseUrl();
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const TopNavbar = ({
@@ -246,7 +247,7 @@ const TopNavbar = ({
           >
             <div className="user-avatar">
               {user?.photo ? (
-                <img src={user.photo.startsWith('http') ? user.photo : `${BASE_URL}${user.photo}`} alt={user?.nom || 'User'} className="user-avatar-img" />
+                <img src={resolveMediaUrl(user.photo)} alt={user?.nom || 'User'} className="user-avatar-img" />
               ) : (
                 <span className="user-avatar-initial">{user?.nom?.charAt(0).toUpperCase() || 'U'}</span>
               )}

@@ -9,9 +9,10 @@ import BottomNavbar from '../../components/BottomNavbar';
 import PageLoader from '../../components/PageLoader';
 import { exportElementToPdf } from '../../utils/receiptPdf';
 import './ReceiptPage.css';
+import { getMediaBaseUrl, resolveMediaUrl } from '../../utils/mediaUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', '');
+const BASE_URL = getMediaBaseUrl();
 
 const ReceiptPage = () => {
   const { id } = useParams();
@@ -134,7 +135,7 @@ const ReceiptPage = () => {
           <div className="receipt-logo-wrap">
             {r?.logo && (
               <img
-                src={String(r.logo).startsWith('http') ? r.logo : `${BASE_URL}${r.logo}`}
+                src={resolveMediaUrl(r.logo, BASE_URL)}
                 alt=""
                 className="receipt-logo-structure"
               />

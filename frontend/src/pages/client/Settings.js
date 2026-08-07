@@ -10,9 +10,10 @@ import LangSwitcher from '../../components/LangSwitcher';
 import { FaMapMarkerAlt } from 'react-icons/fa';
 import LocationEditor from '../../components/LocationEditor';
 import './Settings.css';
+import { getMediaBaseUrl, resolveMediaUrl } from '../../utils/mediaUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const BASE_URL = process.env.REACT_APP_BASE_URL || 'http://localhost:5000';
+const BASE_URL = getMediaBaseUrl();
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -100,9 +101,7 @@ const Settings = () => {
       // Mettre à jour l'utilisateur dans le contexte
       const updatedUser = {
         ...user,
-        photo: String(response.data.photo).startsWith('http')
-          ? response.data.photo
-          : `${BASE_URL}${response.data.photo}`,
+        photo: resolveMediaUrl(response.data.photo, BASE_URL),
       };
       setUser(updatedUser);
       
@@ -145,7 +144,7 @@ const Settings = () => {
               {photoPreview ? (
                 <img src={photoPreview} alt="" />
               ) : user?.photo ? (
-                <img src={user.photo.startsWith('http') ? user.photo : `${BASE_URL}${user.photo}`} alt="" />
+                <img src={resolveMediaUrl(user.photo, BASE_URL)} alt="" />
               ) : (
                 <div className="profile-placeholder">
                   {user?.nom?.charAt(0).toUpperCase() || 'U'}

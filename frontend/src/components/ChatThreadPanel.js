@@ -8,16 +8,10 @@ import { pickLocalized } from '../utils/i18nContent';
 import { getMessagerieDirectTelDisplay, getMessagerieDirectTelHref } from '../config/rapidoWhatsApp';
 import '../pages/client/ChatThread.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const BASE_URL = process.env.REACT_APP_BASE_URL || API_URL.replace(/\/api\/?$/, '');
+import { getMediaBaseUrl, resolveMediaUrl } from '../utils/mediaUrl';
 
-function resolveMediaUrl(url) {
-  if (!url) return '';
-  const s = String(url).trim();
-  if (!s) return '';
-  if (s.startsWith('http://') || s.startsWith('https://')) return s;
-  return `${BASE_URL}${s.startsWith('/') ? '' : '/'}${s}`;
-}
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const BASE_URL = getMediaBaseUrl();
 
 function formatMsgTime(iso, language) {
   if (!iso) return '';

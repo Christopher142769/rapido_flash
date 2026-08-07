@@ -10,9 +10,10 @@ import PageLoader from '../../components/PageLoader';
 import { openOrderTrackingWhatsApp } from '../../utils/orderTrackingWhatsApp';
 import { useModal } from '../../context/ModalContext';
 import './Orders.css';
+import { getMediaBaseUrl, resolveMediaUrl } from '../../utils/mediaUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', '');
+const BASE_URL = getMediaBaseUrl();
 
 const isReceiptEligible = (commande) => {
   const mode = String(commande?.modePaiement || '');
@@ -167,9 +168,7 @@ const Orders = () => {
                     {commande.restaurant?.logo && (
                       <img
                         src={
-                          String(commande.restaurant.logo).startsWith('http')
-                            ? commande.restaurant.logo
-                            : `${BASE_URL}${commande.restaurant.logo}`
+                          resolveMediaUrl(commande.restaurant.logo, BASE_URL)
                         }
                         alt=""
                       />

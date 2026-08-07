@@ -4,6 +4,7 @@ import PageLoader from '../../components/PageLoader';
 import MediaPickerModal from '../../components/MediaPickerModal';
 import { DashboardDeleteIconButton } from '../../components/ui/DashboardIconButtons';
 import './Bannieres.css';
+import { getMediaBaseUrl, resolveMediaUrl } from '../../utils/mediaUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -52,11 +53,11 @@ const Bannieres = () => {
     }
   };
 
-  const BASE_URL = API_URL.replace('/api', '');
+  const BASE_URL = getMediaBaseUrl();
 
   const onMediaChosen = (path) => {
     setSelectedMediaPath(path);
-    setPreview(String(path).startsWith('http') ? path : `${BASE_URL}${path}`);
+    setPreview(resolveMediaUrl(path, BASE_URL));
     setMediaPickerOpen(false);
   };
 
@@ -265,7 +266,7 @@ const Bannieres = () => {
                 <div key={banniere._id} className={`banniere-card ${!banniere.actif ? 'inactive' : ''}`}>
                   <div className="banniere-image">
                     <img
-                      src={String(banniere.image || '').startsWith('http') ? banniere.image : `${API_URL.replace('/api', '')}${banniere.image}`}
+                      src={resolveMediaUrl(banniere.image)}
                       alt={`Bannière ${banniere.ordre + 1}`}
                     />
                     {!banniere.actif && (

@@ -5,9 +5,10 @@ import SectionRefreshButton from '../../components/dashboard/SectionRefreshButto
 import { useRegisterDashboardRefresh } from '../../context/DashboardRefreshContext';
 import '../../components/dashboard/section-refresh.css';
 import './RestaurantMedias.css';
+import { getMediaBaseUrl, resolveMediaUrl } from '../../utils/mediaUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', '');
+const BASE_URL = getMediaBaseUrl();
 
 const RestaurantMedias = () => {
   const [medias, setMedias] = useState([]);
@@ -177,7 +178,7 @@ const RestaurantMedias = () => {
                 <div key={m._id} className="medias-card">
                   <div className="medias-thumb-wrap">
                     <img
-                      src={String(m.path).startsWith('http') ? m.path : `${BASE_URL}${m.path}`}
+                      src={resolveMediaUrl(m.path, BASE_URL)}
                       alt=""
                       loading="lazy"
                     />

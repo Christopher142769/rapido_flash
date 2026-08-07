@@ -6,9 +6,10 @@ import PageLoader from '../../components/PageLoader';
 import MediaPickerModal from '../../components/MediaPickerModal';
 import { DashboardEditIconButton, DashboardDeleteIconButton } from '../../components/ui/DashboardIconButtons';
 import './Categories.css';
+import { getMediaBaseUrl, resolveMediaUrl } from '../../utils/mediaUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', '');
+const BASE_URL = getMediaBaseUrl();
 const STORAGE_CURRENT_RESTAURANT = 'dashboardCurrentRestaurantId';
 
 const Categories = () => {
@@ -109,7 +110,7 @@ const Categories = () => {
   const handleEdit = (cat) => {
     setEditingCat(cat);
     setFormData({ nom: cat.nom, nomEn: cat.nomEn || '', ordre: cat.ordre != null ? cat.ordre : '' });
-    setImagePreview(cat.image ? (String(cat.image).startsWith('http') ? cat.image : `${BASE_URL}${cat.image}`) : null);
+    setImagePreview(cat.image ? (resolveMediaUrl(cat.image, BASE_URL)) : null);
     setImagePathOverride(undefined);
     setShowForm(true);
   };
@@ -160,7 +161,7 @@ const Categories = () => {
           {categories.map((cat) => (
             <div key={cat._id} className="category-card category-card-admin">
               {cat.image ? (
-                <img src={String(cat.image).startsWith('http') ? cat.image : `${BASE_URL}${cat.image}`} alt={cat.nom} className="category-icon-img" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} />
+                <img src={resolveMediaUrl(cat.image, BASE_URL)} alt={cat.nom} className="category-icon-img" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} />
               ) : (
                 <span className="category-icon">📦</span>
               )}
@@ -222,7 +223,7 @@ const Categories = () => {
                   onClose={() => setMediaPickerOpen(false)}
                   onSelect={(path) => {
                     setImagePathOverride(path);
-                    setImagePreview(String(path).startsWith('http') ? path : `${BASE_URL}${path}`);
+                    setImagePreview(resolveMediaUrl(path, BASE_URL));
                     setMediaPickerOpen(false);
                   }}
                   title="Image de la catégorie produit"

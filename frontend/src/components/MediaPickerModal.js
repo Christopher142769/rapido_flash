@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import './MediaPickerModal.css';
+import { getMediaBaseUrl, resolveMediaUrl } from '../utils/mediaUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', '');
+const BASE_URL = getMediaBaseUrl();
 
 /**
  * Sélection d’une image de la galerie du compte connecté.
@@ -64,7 +65,7 @@ const MediaPickerModal = ({ open, onClose, onSelect, title }) => {
                 }}
               >
                 <img
-                  src={String(m.path).startsWith('http') ? m.path : `${BASE_URL}${m.path}`}
+                  src={resolveMediaUrl(m.path, BASE_URL)}
                   alt=""
                   loading="lazy"
                 />

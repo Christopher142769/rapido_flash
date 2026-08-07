@@ -18,9 +18,10 @@ import ProductPromoBadges from '../../components/ProductPromoBadges';
 import { effectiveProductPrice, hasPricePromo } from '../../utils/productPromo';
 import { getRapidoTelHref, getRapidoWhatsAppLink } from '../../config/rapidoWhatsApp';
 import './Home.css';
+import { getMediaBaseUrl, resolveMediaUrl } from '../../utils/mediaUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const BASE_URL = API_URL.replace('/api', '');
+const BASE_URL = getMediaBaseUrl();
 
 function distanceToMinutes(distanceKm) {
   if (distanceKm == null || typeof distanceKm !== 'number') return null;
@@ -845,7 +846,7 @@ const Home = () => {
             {bannieresForMobile.map((banniere, index) => {
               const imageUrl =
                 banniere.image && !banniere.image.includes('placeholder.com')
-                  ? (String(banniere.image).startsWith('http') ? banniere.image : `${BASE_URL}${banniere.image}`)
+                  ? (resolveMediaUrl(banniere.image, BASE_URL))
                   : generateBannerPlaceholderSVG(index);
               return (
                 <div key={banniere._id} className="banner-slide">
@@ -1002,9 +1003,7 @@ const Home = () => {
                 <img src="/images/logo.png" alt="" className="home-promo-modal-logo" />
                 {promoModalCode.offer?.restaurantLogo ? (
                   <img
-                    src={String(promoModalCode.offer.restaurantLogo).startsWith('http')
-                      ? promoModalCode.offer.restaurantLogo
-                      : `${BASE_URL}${promoModalCode.offer.restaurantLogo}`}
+                    src={resolveMediaUrl(promoModalCode.offer.restaurantLogo, BASE_URL)}
                     alt=""
                     className="home-promo-modal-logo"
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
@@ -1073,9 +1072,7 @@ const Home = () => {
                         <img src="/images/logo.png" alt="" className="home-promo-drawer-item-logo" />
                         {promo.offer?.restaurantLogo ? (
                           <img
-                            src={String(promo.offer.restaurantLogo).startsWith('http')
-                              ? promo.offer.restaurantLogo
-                              : `${BASE_URL}${promo.offer.restaurantLogo}`}
+                            src={resolveMediaUrl(promo.offer.restaurantLogo, BASE_URL)}
                             alt=""
                             className="home-promo-drawer-item-logo"
                             onError={(e) => { e.currentTarget.style.display = 'none'; }}
@@ -1117,7 +1114,7 @@ const Home = () => {
               {bannieresForDesktop.map((banniere, index) => {
                 const imageUrl =
                   banniere.image && !banniere.image.includes('placeholder.com')
-                    ? (String(banniere.image).startsWith('http') ? banniere.image : `${BASE_URL}${banniere.image}`)
+                    ? (resolveMediaUrl(banniere.image, BASE_URL))
                     : generateBannerPlaceholderSVG(index);
                 return <img key={banniere._id} src={imageUrl} alt="" className="hero-carousel-img-desktop" onError={(e) => { e.target.src = generateBannerPlaceholderSVG(index); }} />;
               })}
