@@ -63,6 +63,8 @@ export default function ShopProductLanding() {
   const [promoClock, setPromoClock] = useState(() => Date.now());
   const topBarRef = useRef(null);
 
+  const eviscerationAvailable = product?.eviscerationEnabled !== false;
+
   const fetchProduct = React.useCallback(() => {
     return axios
       .get(`${API_URL}/shop-products/public/${encodeURIComponent(slug)}`, {
@@ -125,6 +127,12 @@ export default function ShopProductLanding() {
       document.head.appendChild(meta);
     }
     meta.setAttribute('content', desc);
+  }, [product]);
+
+  useEffect(() => {
+    if (product && product.eviscerationEnabled === false) {
+      setEviscerationCleaning(false);
+    }
   }, [product]);
 
   const promoState = useMemo(
@@ -202,7 +210,7 @@ export default function ShopProductLanding() {
   const totalBasePrice = hasQuantity ? unitBasePrice * quantity : 0;
   const orderTotals = hasQuantity
     ? computeShopOrderTotals(unitPrice, quantity, deliveryFee, {
-        eviscerationCleaning,
+        eviscerationCleaning: eviscerationAvailable && eviscerationCleaning,
         quantityUnit,
       })
     : null;
@@ -260,7 +268,7 @@ export default function ShopProductLanding() {
     }
 
     const order = buildShopOrderPayload(product, promoState, orderQuantity, customer, {
-      eviscerationCleaning,
+      eviscerationCleaning: eviscerationAvailable && eviscerationCleaning,
     });
     setSubmitting(true);
     try {
@@ -482,12 +490,14 @@ export default function ShopProductLanding() {
               highlight={highlightQty && !hasQuantity}
             />
 
-            <ShopEviscerationOption
-              enabled={eviscerationCleaning}
-              onChange={setEviscerationCleaning}
-              quantity={quantity}
-              quantityUnit={quantityUnit}
-            />
+            {eviscerationAvailable ? (
+              <ShopEviscerationOption
+                enabled={eviscerationCleaning}
+                onChange={setEviscerationCleaning}
+                quantity={quantity}
+                quantityUnit={quantityUnit}
+              />
+            ) : null}
 
             <div id="shop-order-fields">
               <ShopOrderForm

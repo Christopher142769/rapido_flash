@@ -159,6 +159,8 @@ router.post('/', auth, isRestaurant, upload.fields(upload.uploadShopFields), asy
       ctaLabel: req.body.ctaLabel || 'Commander maintenant',
       showDeliveryNotice:
         req.body.showDeliveryNotice !== false && req.body.showDeliveryNotice !== 'false',
+      eviscerationEnabled:
+        req.body.eviscerationEnabled !== false && req.body.eviscerationEnabled !== 'false',
       sortOrder: Number(req.body.sortOrder || 0),
     });
 
@@ -220,6 +222,10 @@ router.put('/:id', auth, isRestaurant, upload.fields(upload.uploadShopFields), a
     if (req.body.showDeliveryNotice != null) {
       product.showDeliveryNotice =
         req.body.showDeliveryNotice === true || req.body.showDeliveryNotice === 'true';
+    }
+    if (req.body.eviscerationEnabled != null) {
+      product.eviscerationEnabled =
+        req.body.eviscerationEnabled === true || req.body.eviscerationEnabled === 'true';
     }
     if (req.body.sortOrder != null) product.sortOrder = Number(req.body.sortOrder);
 

@@ -92,6 +92,7 @@ const emptyForm = () => ({
   contactPhone: '',
   ctaLabel: 'Commander maintenant',
   showDeliveryNotice: true,
+  eviscerationEnabled: true,
 });
 
 function toDatetimeLocal(iso) {
@@ -165,6 +166,7 @@ function buildProductPayload(f, galleryList) {
     contactPhone: f.contactPhone,
     ctaLabel: f.ctaLabel,
     showDeliveryNotice: f.showDeliveryNotice !== false,
+    eviscerationEnabled: f.eviscerationEnabled !== false,
   };
 }
 
@@ -285,6 +287,7 @@ export default function ShopDashboard() {
       contactPhone: p.contactPhone || '',
       ctaLabel: p.ctaLabel || 'Commander maintenant',
       showDeliveryNotice: p.showDeliveryNotice !== false,
+      eviscerationEnabled: p.eviscerationEnabled !== false,
     };
     setEditingId(p._id);
     editingIdRef.current = p._id;
@@ -959,6 +962,14 @@ export default function ShopDashboard() {
             <label className="shop-dash-check">
               <input
                 type="checkbox"
+                checked={form.eviscerationEnabled !== false}
+                onChange={(e) => setForm((f) => ({ ...f, eviscerationEnabled: e.target.checked }))}
+              />
+              Proposer l’éviscération et le nettoyage (200 FCFA/kg)
+            </label>
+            <label className="shop-dash-check">
+              <input
+                type="checkbox"
                 checked={form.published}
                 onChange={(e) => setForm((f) => ({ ...f, published: e.target.checked }))}
               />
@@ -1597,6 +1608,48 @@ export default function ShopDashboard() {
         </div>
       </div>
 
+      <div className="shop-dash-card shop-dash-form" style={{ marginBottom: 20 }}>
+        <header className="shop-dash-form-header">
+          <div>
+            <h3 className="shop-dash-form-title">Éviscération et nettoyage</h3>
+            <p className="shop-dash-form-sub">
+              Activez l’option uniquement pour les produits qui en ont besoin (200&nbsp;FCFA/kg). Les
+              autres fiches ne proposeront plus le choix au client.
+            </p>
+          </div>
+        </header>
+        {products.length ? (
+          <div className="shop-repas-nb-assign-list">
+            {products.map((p) => (
+              <label key={p._id} className="shop-dash-check">
+                <input
+                  type="checkbox"
+                  checked={p.eviscerationEnabled !== false}
+                  onChange={async (e) => {
+                    const checked = e.target.checked;
+                    try {
+                      await axios.put(
+                        `${API_URL}/shop-products/${p._id}`,
+                        { eviscerationEnabled: checked },
+                        authHeaders
+                      );
+                      setProducts((list) =>
+                        list.map((x) => (x._id === p._id ? { ...x, eviscerationEnabled: checked } : x))
+                      );
+                    } catch (err) {
+                      alert(err.response?.data?.message || 'Erreur');
+                    }
+                  }}
+                />
+                {p.name}
+              </label>
+            ))}
+          </div>
+        ) : (
+          <p className="shop-dash-hint">Créez un produit pour activer ou désactiver l’éviscération.</p>
+        )}
+      </div>
+
       <div className="shop-dash-card">
         <div className="shop-dash-list-head">
           <h3 className="shop-dash-list-title">
@@ -1637,6 +1690,9 @@ export default function ShopDashboard() {
                     <span className="shop-dash-tag">Livraison gratuite</span>
                   ) : Number(p.deliveryFee) > 0 ? (
                     <span className="shop-dash-tag">Livraison {formatPriceXof(p.deliveryFee)}</span>
+                  ) : null}
+                  {p.eviscerationEnabled !== false ? (
+                    <span className="shop-dash-tag">Éviscération</span>
                   ) : null}
                   <a className="shop-dash-link" href={pubUrl} target="_blank" rel="noopener noreferrer">
                     <FaExternalLinkAlt size={11} /> Voir la page

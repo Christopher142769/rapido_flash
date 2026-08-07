@@ -113,7 +113,9 @@ router.post('/', async (req, res) => {
     const unitPrice = promoState.isPromoLive ? promoState.promoPrice : promoState.basePrice;
     const deliveryFee = getShopDeliveryFee(product, promoState);
     const eviscerationCleaning =
-      !!req.body?.eviscerationCleaning && isEviscerationApplicable(quantityUnit);
+      product.eviscerationEnabled !== false &&
+      !!req.body?.eviscerationCleaning &&
+      isEviscerationApplicable(quantityUnit);
     const totals = computeShopOrderTotals(unitPrice, quantity, deliveryFee, {
       eviscerationCleaning,
       quantityUnit,
