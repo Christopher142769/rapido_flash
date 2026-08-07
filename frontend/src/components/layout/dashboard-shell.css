@@ -72,6 +72,7 @@
 .rf-dashboard-outlet .platform-chat-mod-main,
 .rf-dashboard-outlet .commercial-page,
 .rf-dashboard-outlet .rf-an-page,
+.rf-dashboard-outlet .rf-an2,
 .rf-dashboard-outlet .staff-presence-dash,
 .rf-dashboard-outlet .shop-dash,
 .rf-dashboard-outlet .shop-repas-dash,
@@ -99,6 +100,7 @@
 
 .rf-dashboard-outlet .commercial-page,
 .rf-dashboard-outlet .rf-an-page,
+.rf-dashboard-outlet .rf-an2,
 .rf-dashboard-outlet .staff-presence-dash {
   padding: var(--rf-dash-pad) var(--rf-dash-pad) 3.5rem !important;
 }
@@ -635,7 +637,25 @@
   padding: 0.55rem 0.75rem !important;
 }
 
-/* Sidebar aside blanc Donezo */
-.rf-dashboard-root > aside {
-  background: var(--rf-sidebar-bg) !important;
+/* Analyse v2 : ne pas forcer les fonds crème du shell sur les cartes blanches Donezo */
+.rf-dashboard-outlet .rf-an2 .rf-an2-card,
+.rf-dashboard-outlet .rf-an2 .rf-an2-kpi:not(.rf-an2-kpi--featured),
+.rf-dashboard-outlet .rf-an2 .rf-an2-toolbar {
+  background: #fff !important;
+}
+
+.rf-dashboard-outlet .rf-an2 .rf-an2-kpi--featured {
+  background: linear-gradient(155deg, #3d1c08 0%, #5c2e0b 36%, #8b4513 70%, #c76d2e 100%) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+
+.rf-dashboard-outlet .rf-an2 .rf-an2-card--dark {
+  background: linear-gradient(160deg, #3d1c08 0%, #5c2e0b 42%, #8b4513 100%) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+
+.rf-dashboard-outlet .rf-an2 .rf-an2-url {
+  background: #fff1e4 !important;
 }

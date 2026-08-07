@@ -165,7 +165,7 @@ export default function DashboardSidebarPremium({ onNavigate, className = '' }) 
               className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.14em]"
               style={{ color: 'var(--rf-sidebar-section)' }}
             >
-              {t('dashboardOverview', 'navSection')}
+              Menu
             </p>
             <motion.ul className="mb-6 space-y-1" initial="hidden" animate="visible" variants={containerVariants}>
               {homeItems.map((item) => (
@@ -300,10 +300,35 @@ export default function DashboardSidebarPremium({ onNavigate, className = '' }) 
         ) : null}
       </nav>
 
-      <div className="mt-auto shrink-0 border-t px-3 py-4" style={{ borderColor: 'var(--rf-sidebar-border)' }}>
+      <div className="mt-auto shrink-0 space-y-3 px-3 pb-4 pt-2">
+        <div
+          className="relative overflow-hidden rounded-[22px] px-4 py-4 text-white"
+          style={{
+            background: 'linear-gradient(155deg, #3d1c08 0%, #5c2e0b 40%, #8b4513 78%, #c76d2e 100%)',
+            boxShadow: '0 16px 32px rgba(92, 46, 11, 0.28)',
+          }}
+        >
+          <div
+            className="pointer-events-none absolute -right-6 -top-8 h-28 w-28 rounded-full opacity-30"
+            style={{ background: 'radial-gradient(circle, #e8b54a, transparent 70%)' }}
+            aria-hidden
+          />
+          <p className="relative text-[11px] font-bold uppercase tracking-[0.14em] opacity-80">Rapido</p>
+          <p className="relative mt-1 text-sm font-extrabold leading-snug">Suivez vos pubs & conversions</p>
+          <button
+            type="button"
+            className="relative mt-3 w-full rounded-xl border-0 bg-white/95 px-3 py-2 text-xs font-extrabold text-[var(--rf-brown)]"
+            onClick={() => {
+              onNavigate?.();
+              navigate('/dashboard/analyse');
+            }}
+          >
+            Ouvrir Analyse
+          </button>
+        </div>
         <button
           type="button"
-          className="flex w-full items-center justify-center gap-2 rounded-[10px] border border-transparent bg-transparent py-2.5 text-sm font-semibold outline-none transition hover:border-[var(--rf-border)] hover:bg-[var(--rf-sidebar-hover)]"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-transparent py-2.5 text-sm font-semibold outline-none transition hover:border-[var(--rf-border)] hover:bg-[var(--rf-sidebar-hover)]"
           style={{ color: 'var(--rf-danger)' }}
           onClick={() => {
             onNavigate?.();
