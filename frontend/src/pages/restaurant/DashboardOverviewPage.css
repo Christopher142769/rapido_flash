@@ -49,7 +49,7 @@
   gap: 1rem 1.25rem;
   padding: 1rem 1.15rem;
   margin-bottom: 1.25rem;
-  background: #fff;
+  background: var(--rf-card-cream, #fff8f0);
   border-radius: 22px;
   border: 1px solid rgba(139, 69, 19, 0.1);
   box-shadow: 0 20px 50px -28px rgba(26, 20, 16, 0.08);
@@ -133,7 +133,7 @@
 .rf-do-city-table-wrap {
   overflow-x: auto;
   margin-bottom: 1.75rem;
-  background: #fff;
+  background: var(--rf-card-cream, #fff8f0);
   border-radius: 18px;
   border: 1px solid rgba(139, 69, 19, 0.1);
   box-shadow: 0 16px 40px -28px rgba(26, 20, 16, 0.14);
@@ -190,7 +190,7 @@
   padding: 0.45rem 0.65rem;
   font-size: 0.8125rem;
   color: #0c1f14;
-  background: #fffefb;
+  background: var(--rf-card-gold, #fff8e8);
   outline: none;
   min-width: 9.5rem;
   transition:
@@ -267,30 +267,42 @@
 
 .rf-do-card {
   position: relative;
-  background: #fff;
+  background: var(--rf-card-cream, #fff8f0);
   border-radius: 22px;
   border: 1px solid rgba(139, 69, 19, 0.1);
-  box-shadow: 0 18px 44px -30px rgba(10, 50, 30, 0.2);
+  box-shadow: 0 18px 44px -30px rgba(26, 20, 16, 0.12);
   padding: 1.25rem 1.2rem 1.15rem;
   transition:
     transform 0.22s ease,
     box-shadow 0.22s ease;
 }
 
+.rf-do-kpi-grid .rf-do-card:nth-child(4n + 2):not(.rf-do-card--featured) {
+  background: var(--rf-card-amber, #fff1e4);
+}
+
+.rf-do-kpi-grid .rf-do-card:nth-child(4n + 3):not(.rf-do-card--featured) {
+  background: var(--rf-card-gold, #fff8e8);
+}
+
+.rf-do-kpi-grid .rf-do-card:nth-child(4n + 4):not(.rf-do-card--featured) {
+  background: var(--rf-card-blush, #fceee6);
+}
+
 .rf-do-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 26px 55px -28px rgba(10, 50, 30, 0.24);
+  box-shadow: 0 26px 55px -28px rgba(26, 20, 16, 0.16);
 }
 
 .rf-do-card--featured {
-  background: linear-gradient(155deg, #3d1c08 0%, #5c2e0b 38%, #8b4513 72%, #8b4513 100%);
+  background: linear-gradient(155deg, #3d1c08 0%, #5c2e0b 38%, #8b4513 72%, #c76d2e 100%);
   border-color: rgba(255, 255, 255, 0.12);
   color: #fff;
-  box-shadow: 0 26px 55px -22px rgba(8, 50, 28, 0.55);
+  box-shadow: 0 26px 55px -22px rgba(92, 46, 11, 0.45);
 }
 
 .rf-do-card--featured:hover {
-  box-shadow: 0 32px 60px -22px rgba(8, 50, 28, 0.58);
+  box-shadow: 0 32px 60px -22px rgba(92, 46, 11, 0.5);
 }
 
 .rf-do-card-icon {
@@ -381,7 +393,7 @@
 }
 
 .rf-do-stat-mini {
-  background: #fff;
+  background: var(--rf-card-cream, #fff8f0);
   border-radius: 16px;
   padding: 0.85rem 0.65rem;
   border: 1px solid rgba(139, 69, 19, 0.07);
@@ -428,7 +440,7 @@
 }
 
 .rf-do-panel {
-  background: #fff;
+  background: var(--rf-card-cream, #fff8f0);
   border-radius: 22px;
   border: 1px solid rgba(139, 69, 19, 0.1);
   box-shadow: 0 18px 44px -30px rgba(10, 50, 30, 0.18);
@@ -480,7 +492,7 @@
   margin-bottom: 1.25rem;
   padding: 1rem 1.15rem;
   border-radius: 18px;
-  background: #fff;
+  background: var(--rf-card-cream, #fff8f0);
   border: 1px solid rgba(220, 38, 38, 0.2);
   box-shadow: 0 12px 32px -24px rgba(180, 30, 30, 0.15);
 }

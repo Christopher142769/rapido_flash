@@ -40,7 +40,7 @@
   margin: 1.35rem 0 1.15rem;
   padding: 1.15rem 1.25rem;
   border-radius: 22px;
-  background: #fff;
+  background: var(--rf-card-sand, #f3ebe1);
   border: 1px solid var(--rf-border);
   box-shadow: var(--shadow-card);
 }
@@ -116,7 +116,7 @@
   margin-bottom: 1.15rem;
   padding: 1.15rem 1.25rem;
   border-radius: 22px;
-  background: #fff;
+  background: var(--rf-card-amber, #fff1e4);
   border: 1px solid var(--rf-border);
   box-shadow: var(--shadow-card);
 }
@@ -176,7 +176,7 @@
   position: relative;
   padding: 1.15rem 1.2rem 1rem;
   border-radius: 22px;
-  background: #fff;
+  background: var(--rf-card-cream, #fff8f0);
   border: 1px solid var(--rf-border);
   box-shadow: var(--shadow-card);
 }
@@ -220,7 +220,7 @@
   margin-bottom: 1.15rem;
   padding: 1.25rem 1.3rem 1.35rem;
   border-radius: 22px;
-  background: #fff;
+  background: var(--rf-card-cream, #fff8f0);
   border: 1px solid var(--rf-border);
   box-shadow: var(--shadow-card);
 }

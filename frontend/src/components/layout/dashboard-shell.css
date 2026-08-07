@@ -139,7 +139,7 @@
   background: transparent;
 }
 
-/* ——— Cartes : jamais collées, rayons Donezo ——— */
+/* ——— Cartes : surfaces variées (plus tout blanc) ——— */
 .rf-dashboard-outlet .dashboard-card,
 .rf-dashboard-outlet .commercial-card,
 .rf-dashboard-outlet .commande-card,
@@ -154,13 +154,73 @@
 .rf-dashboard-outlet .platform-chat-mod-table-wrap,
 .rf-dashboard-outlet .plat-card-admin,
 .rf-dashboard-outlet .rf-an-card,
-.rf-dashboard-outlet .rf-an-kpi,
 .rf-dashboard-outlet .rf-do-toolbar,
 .rf-dashboard-outlet .rf-do-card {
-  background: var(--rf-surface) !important;
   border: 1px solid var(--rf-border) !important;
   border-radius: var(--radius-xl) !important;
   box-shadow: var(--shadow-card) !important;
+}
+
+.rf-dashboard-outlet .dashboard-card,
+.rf-dashboard-outlet .commercial-card,
+.rf-dashboard-outlet .rf-an-card {
+  background: var(--rf-card-cream) !important;
+}
+
+.rf-dashboard-outlet .commercial-page > .commercial-card:nth-of-type(2n),
+.rf-dashboard-outlet .rf-an-page > .rf-an-card:nth-of-type(2n),
+.rf-dashboard-outlet .staff-presence-dash > .commercial-card:nth-of-type(2n) {
+  background: var(--rf-card-amber) !important;
+}
+
+.rf-dashboard-outlet .commercial-page > .commercial-card:nth-of-type(3n),
+.rf-dashboard-outlet .rf-an-page > .rf-an-card:nth-of-type(3n) {
+  background: var(--rf-card-gold) !important;
+}
+
+.rf-dashboard-outlet .commercial-page > .commercial-card:nth-of-type(4n),
+.rf-dashboard-outlet .rf-an-page > .rf-an-card:nth-of-type(4n) {
+  background: var(--rf-card-sand) !important;
+}
+
+.rf-dashboard-outlet .commande-card,
+.rf-dashboard-outlet .enterprises-list,
+.rf-dashboard-outlet .restaurant-form,
+.rf-dashboard-outlet .upload-section,
+.rf-dashboard-outlet .bannieres-list,
+.rf-dashboard-outlet .vitrine-table-wrap,
+.rf-dashboard-outlet .avis-dash-table-wrap,
+.rf-dashboard-outlet .platform-chat-mod-table-wrap,
+.rf-dashboard-outlet .rf-do-toolbar {
+  background: var(--rf-card-cream) !important;
+}
+
+.rf-dashboard-outlet .category-card:nth-child(4n + 1),
+.rf-dashboard-outlet .plat-card-admin:nth-child(4n + 1),
+.rf-dashboard-outlet .medias-card:nth-child(4n + 1),
+.rf-dashboard-outlet .banniere-card:nth-child(4n + 1) {
+  background: var(--rf-card-cream) !important;
+}
+
+.rf-dashboard-outlet .category-card:nth-child(4n + 2),
+.rf-dashboard-outlet .plat-card-admin:nth-child(4n + 2),
+.rf-dashboard-outlet .medias-card:nth-child(4n + 2),
+.rf-dashboard-outlet .banniere-card:nth-child(4n + 2) {
+  background: var(--rf-card-amber) !important;
+}
+
+.rf-dashboard-outlet .category-card:nth-child(4n + 3),
+.rf-dashboard-outlet .plat-card-admin:nth-child(4n + 3),
+.rf-dashboard-outlet .medias-card:nth-child(4n + 3),
+.rf-dashboard-outlet .banniere-card:nth-child(4n + 3) {
+  background: var(--rf-card-gold) !important;
+}
+
+.rf-dashboard-outlet .category-card:nth-child(4n + 4),
+.rf-dashboard-outlet .plat-card-admin:nth-child(4n + 4),
+.rf-dashboard-outlet .medias-card:nth-child(4n + 4),
+.rf-dashboard-outlet .banniere-card:nth-child(4n + 4) {
+  background: var(--rf-card-blush) !important;
 }
 
 .rf-dashboard-outlet .dashboard-card,
@@ -485,17 +545,75 @@
   color: var(--rf-danger) !important;
 }
 
-/* ——— KPI cards ——— */
-.rf-dashboard-outlet .commercial-kpi {
+/* ——— KPI cards : palette alternée ——— */
+.rf-dashboard-outlet .commercial-kpi,
+.rf-dashboard-outlet .rf-an-kpi {
   border-radius: var(--radius-xl) !important;
   padding: 1.15rem 1.2rem !important;
-  background: var(--rf-surface);
   border: 1px solid var(--rf-border);
   box-shadow: var(--shadow-card);
+  color: var(--rf-text-dark);
+}
+
+.rf-dashboard-outlet .commercial-kpi:nth-child(5n + 1),
+.rf-dashboard-outlet .rf-an-kpi:nth-child(5n + 1) {
+  background: var(--rf-card-ink) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+
+.rf-dashboard-outlet .commercial-kpi:nth-child(5n + 1) .commercial-kpi-label,
+.rf-dashboard-outlet .commercial-kpi:nth-child(5n + 1) .commercial-kpi-value,
+.rf-dashboard-outlet .rf-an-kpi:nth-child(5n + 1) p,
+.rf-dashboard-outlet .rf-an-kpi:nth-child(5n + 1) strong,
+.rf-dashboard-outlet .rf-an-kpi:nth-child(5n + 1) span {
+  color: #fff !important;
+}
+
+.rf-dashboard-outlet .commercial-kpi:nth-child(5n + 2),
+.rf-dashboard-outlet .rf-an-kpi:nth-child(5n + 2) {
+  background: var(--rf-card-amber) !important;
+}
+
+.rf-dashboard-outlet .commercial-kpi:nth-child(5n + 3),
+.rf-dashboard-outlet .rf-an-kpi:nth-child(5n + 3) {
+  background: var(--rf-card-gold) !important;
+}
+
+.rf-dashboard-outlet .commercial-kpi:nth-child(5n + 4),
+.rf-dashboard-outlet .rf-an-kpi:nth-child(5n + 4) {
+  background: var(--rf-card-blush) !important;
+}
+
+.rf-dashboard-outlet .commercial-kpi:nth-child(5n + 5),
+.rf-dashboard-outlet .rf-an-kpi:nth-child(5n + 5) {
+  background: var(--rf-card-ink-soft) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+
+.rf-dashboard-outlet .commercial-kpi:nth-child(5n + 5) .commercial-kpi-label,
+.rf-dashboard-outlet .commercial-kpi:nth-child(5n + 5) .commercial-kpi-value,
+.rf-dashboard-outlet .rf-an-kpi:nth-child(5n + 5) p,
+.rf-dashboard-outlet .rf-an-kpi:nth-child(5n + 5) strong,
+.rf-dashboard-outlet .rf-an-kpi:nth-child(5n + 5) span {
+  color: #fff !important;
 }
 
 .rf-dashboard-outlet .commercial-kpi-value--gold {
   color: var(--rf-brown) !important;
+}
+
+.rf-dashboard-outlet .commercial-kpi:nth-child(5n + 1) .commercial-kpi-value--gold,
+.rf-dashboard-outlet .commercial-kpi:nth-child(5n + 5) .commercial-kpi-value--gold {
+  color: #fff !important;
+}
+
+/* rf-an accent class still wins when present */
+.rf-dashboard-outlet .rf-an-kpi--accent {
+  background: var(--rf-card-ink) !important;
+  border-color: transparent !important;
+  color: #fff !important;
 }
 
 /* Tables dans cartes */

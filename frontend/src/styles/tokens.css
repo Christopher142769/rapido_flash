@@ -69,6 +69,15 @@
   --shadow-gold: 0 0 0 3px rgba(232, 181, 74, 0.28);
   --shadow-sidebar: 1px 0 0 rgba(26, 20, 16, 0.06);
 
+  /* Surfaces de cartes variées (Donezo / Rapido) */
+  --rf-card-cream: #fff8f0;
+  --rf-card-amber: #fff1e4;
+  --rf-card-gold: #fff8e8;
+  --rf-card-sand: #f3ebe1;
+  --rf-card-blush: #fceee6;
+  --rf-card-ink: linear-gradient(155deg, #5c2e0b 0%, #8b4513 55%, #c76d2e 100%);
+  --rf-card-ink-soft: linear-gradient(155deg, #a85a24 0%, #c76d2e 60%, #e0914a 100%);
+
   /* Espacement grille dashboard */
   --rf-dash-gap: 1.15rem;
   --rf-dash-pad: 1.5rem;

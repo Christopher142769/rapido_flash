@@ -26,11 +26,47 @@
 }
 
 .commercial-kpi {
-  background: var(--rf-surface, #fff);
+  background: var(--rf-card-cream, #fff8f0);
   border: 1px solid var(--rf-border, #e8e0d8);
   border-radius: 22px;
   padding: 1.15rem 1.2rem;
   box-shadow: var(--shadow-card, 0 8px 28px rgba(26, 20, 16, 0.05));
+}
+
+.commercial-kpi:nth-child(5n + 1) {
+  background: linear-gradient(155deg, #5c2e0b 0%, #8b4513 55%, #c76d2e 100%);
+  border-color: transparent;
+  color: #fff;
+}
+
+.commercial-kpi:nth-child(5n + 1) .commercial-kpi-label,
+.commercial-kpi:nth-child(5n + 1) .commercial-kpi-value,
+.commercial-kpi:nth-child(5n + 1) .commercial-kpi-value--gold {
+  color: #fff;
+}
+
+.commercial-kpi:nth-child(5n + 2) {
+  background: var(--rf-card-amber, #fff1e4);
+}
+
+.commercial-kpi:nth-child(5n + 3) {
+  background: var(--rf-card-gold, #fff8e8);
+}
+
+.commercial-kpi:nth-child(5n + 4) {
+  background: var(--rf-card-blush, #fceee6);
+}
+
+.commercial-kpi:nth-child(5n + 5) {
+  background: linear-gradient(155deg, #a85a24 0%, #c76d2e 60%, #e0914a 100%);
+  border-color: transparent;
+  color: #fff;
+}
+
+.commercial-kpi:nth-child(5n + 5) .commercial-kpi-label,
+.commercial-kpi:nth-child(5n + 5) .commercial-kpi-value,
+.commercial-kpi:nth-child(5n + 5) .commercial-kpi-value--gold {
+  color: #fff;
 }
 
 .commercial-kpi-label {
@@ -54,12 +90,24 @@
 }
 
 .commercial-card {
-  background: var(--rf-surface, #fff);
+  background: var(--rf-card-cream, #fff8f0);
   border: 1px solid var(--rf-border, #e8e0d8);
   border-radius: 22px;
   padding: 1.35rem 1.4rem;
   margin-bottom: 1.15rem;
   box-shadow: var(--shadow-card, 0 8px 28px rgba(26, 20, 16, 0.05));
+}
+
+.commercial-page > .commercial-card:nth-of-type(2n) {
+  background: var(--rf-card-amber, #fff1e4);
+}
+
+.commercial-page > .commercial-card:nth-of-type(3n) {
+  background: var(--rf-card-gold, #fff8e8);
+}
+
+.commercial-page > .commercial-card:nth-of-type(4n) {
+  background: var(--rf-card-sand, #f3ebe1);
 }
 
 .commercial-filters {
