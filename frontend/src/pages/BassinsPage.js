@@ -203,6 +203,16 @@ function BassinsPage() {
             </div>
           </div>
 
+          <div className="ipeb-badge">
+            <img
+              src="/bassins/ipeb-logo.png"
+              alt="iPEB — Interprofession Poisson d'Élevage du Bénin"
+              width={512}
+              height={512}
+              loading="lazy"
+            />
+          </div>
+
           <div className="press">
             <span className="p-use">Tilapia</span>
             <span className="p-use">Clarias</span>

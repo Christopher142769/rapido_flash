@@ -11,7 +11,7 @@ const customFormOptionSchema = new mongoose.Schema(
 const customFormSectionSchema = new mongoose.Schema(
   {
     id: { type: String, required: true },
-    title: { type: String, required: true, trim: true },
+    title: { type: String, default: '', trim: true },
     /** Texte d’introduction de la section (HTML limité : gras, liens, etc.) */
     description: { type: String, default: '' },
     imageUrl: { type: String, default: '' },
@@ -46,6 +46,10 @@ const customFormSettingsSchema = new mongoose.Schema(
     requireName: { type: Boolean, default: false },
     requireEmail: { type: Boolean, default: false },
     confirmationMessage: { type: String, default: '' },
+    /** Pas d’écran d’accueil titre/description */
+    skipWelcome: { type: Boolean, default: false },
+    /** Pas d’écrans intermédiaires « Section » (titre / desc / image) */
+    skipSectionIntros: { type: Boolean, default: false },
   },
   { _id: false }
 );

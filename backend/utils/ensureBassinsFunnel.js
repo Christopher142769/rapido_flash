@@ -26,28 +26,28 @@ function bassinsFormDoc() {
     .filter(Boolean);
 
   return {
-    title: 'Demande bassin Rapido : qualification projet',
+    title: 'Demande bassin Rapido',
     slug: FORM_SLUG,
-    description:
-      'Vous êtes à 2 minutes de recevoir votre devis personnalisé. Un technicien Rapido vous rappelle sous 24 h.',
+    description: '',
     notifyEmails,
-    redirectUrl: `/shop/${SHOP_SLUG}`,
+    redirectUrl: '',
     isPublished: true,
     settings: {
       showProgressBar: true,
       collectContact: true,
       requireName: true,
       requireEmail: false,
+      skipWelcome: true,
+      skipSectionIntros: true,
       confirmationMessage:
-        'Merci ! Votre demande est enregistrée. Découvrez maintenant votre offre bassin à prix promotionnel.',
+        'Merci ! Votre demande est bien enregistrée. Un technicien Rapido vous rappelle sous 24 h pour valider la quantité, l’adresse et la date de montage.',
     },
     sections: [
       {
         id: uid(),
-        title: 'Votre profil',
-        description:
-          'Ces informations nous permettent de dimensionner le bon bassin et de vous proposer la meilleure offre.',
-        imageUrl: '/bassins/bassin-produit.png',
+        title: '',
+        description: '',
+        imageUrl: '',
         blocks: [
           {
             id: uid(),
@@ -56,20 +56,27 @@ function bassinsFormDoc() {
             label: 'Numéro WhatsApp / téléphone (obligatoire pour vous rappeler)',
             required: true,
           },
-        ],
-      },
-      {
-        id: uid(),
-        title: 'Votre situation',
-        description: '',
-        imageUrl: '',
-        blocks: [
+          {
+            id: uid(),
+            kind: 'field',
+            fieldType: 'number',
+            label: 'Combien de bassins souhaitez-vous ?',
+            required: true,
+          },
+          {
+            id: uid(),
+            kind: 'field',
+            fieldType: 'textarea',
+            label:
+              'Adresse de livraison / installation (quartier, ville, indications pour nous trouver)',
+            required: true,
+          },
           {
             id: uid(),
             kind: 'field',
             fieldType: 'choice',
             label:
-              "1. Avez-vous déjà une activité économique en cours (commerce, entreprise, autre) aujourd'hui ?",
+              "Avez-vous déjà une activité économique en cours (commerce, entreprise, autre) aujourd'hui ?",
             required: true,
             options: [
               opt("Oui : j'ai déjà une activité (commerce, entreprise…)"),
@@ -82,7 +89,7 @@ function bassinsFormDoc() {
             kind: 'field',
             fieldType: 'choice',
             label:
-              "2. Disposez-vous d'un espace chez vous (cour, parcelle, terrain) où le bassin pourrait être installé ?",
+              "Disposez-vous d'un espace chez vous (cour, parcelle, terrain) où le bassin pourrait être installé ?",
             required: true,
             options: [
               opt('Oui : cour, parcelle ou terrain disponible'),
@@ -91,20 +98,12 @@ function bassinsFormDoc() {
               opt('Je loue ou j’achète un terrain prochainement'),
             ],
           },
-        ],
-      },
-      {
-        id: uid(),
-        title: 'Budget & calendrier',
-        description: '',
-        imageUrl: '',
-        blocks: [
           {
             id: uid(),
             kind: 'field',
             fieldType: 'choice',
             label:
-              '3. Avez-vous déjà une idée du budget nécessaire pour ce type de projet (670 000 FCFA) ?',
+              'Avez-vous déjà une idée du budget nécessaire pour ce type de projet (670 000 FCFA) ?',
             required: true,
             options: [
               opt('Oui : ce budget me convient'),
@@ -117,7 +116,7 @@ function bassinsFormDoc() {
             id: uid(),
             kind: 'field',
             fieldType: 'choice',
-            label: '4. Dans quel délai souhaiteriez-vous démarrer, si le projet vous convient ?',
+            label: 'Dans quel délai souhaiteriez-vous démarrer, si le projet vous convient ?',
             required: true,
             options: [
               opt('Immédiatement (sous 15 jours)'),
@@ -131,7 +130,7 @@ function bassinsFormDoc() {
             kind: 'field',
             fieldType: 'choice',
             label:
-              "5. Est-ce un projet que vous financez vous-même, ou avec l'appui de votre famille / d'un partenaire ?",
+              "Est-ce un projet que vous financez vous-même, ou avec l'appui de votre famille / d'un partenaire ?",
             required: true,
             options: [
               opt('Je finance seul(e)'),
@@ -140,20 +139,12 @@ function bassinsFormDoc() {
               opt('Je cherche encore un financement'),
             ],
           },
-        ],
-      },
-      {
-        id: uid(),
-        title: 'Commercialisation',
-        description: '',
-        imageUrl: '',
-        blocks: [
           {
             id: uid(),
             kind: 'field',
             fieldType: 'choice',
             label:
-              '6. Avez-vous déjà une piste pour écouler vos poissons (marché, quartier, restaurant, revendeurs) ou souhaitez-vous des conseils sur ce point ?',
+              'Avez-vous déjà une piste pour écouler vos poissons (marché, quartier, restaurant, revendeurs) ou souhaitez-vous des conseils sur ce point ?',
             required: true,
             options: [
               opt('Oui : j’ai déjà des clients (marché, quartier, restaurant…)'),
@@ -167,7 +158,7 @@ function bassinsFormDoc() {
             kind: 'field',
             fieldType: 'choice',
             label:
-              "7. Qu'est-ce qui vous freine le plus aujourd'hui pour vous lancer : le prix, le manque d'expérience, ou autre chose ?",
+              "Qu'est-ce qui vous freine le plus aujourd'hui pour vous lancer : le prix, le manque d'expérience, ou autre chose ?",
             required: true,
             options: [
               opt('Le prix / le budget'),
@@ -288,16 +279,11 @@ async function ensureBassinsFunnel({ force = false } = {}) {
   if (!form) {
     form = await CustomForm.create(formData);
     console.log(`✅ Funnel bassins — formulaire créé : /form/${FORM_SLUG}`);
-  } else if (force) {
+  } else {
+    // Funnel géré en code : toujours resynchroniser (quantité, adresse, merci, sans sections)
     Object.assign(form, formData);
     await form.save();
-    console.log(`✅ Funnel bassins — formulaire forcé : /form/${FORM_SLUG}`);
-  } else if (!form.isPublished) {
-    form.isPublished = true;
-    await form.save();
-    console.log(`✅ Funnel bassins — formulaire publié : /form/${FORM_SLUG}`);
-  } else {
-    console.log(`ℹ️ Funnel bassins — formulaire déjà présent : /form/${FORM_SLUG}`);
+    console.log(`✅ Funnel bassins — formulaire synchronisé : /form/${FORM_SLUG}`);
   }
 
   const shopData = bassinsShopDoc();

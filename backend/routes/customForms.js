@@ -62,6 +62,8 @@ function normalizeSettings(raw) {
     requireName: !!s.requireName,
     requireEmail: !!s.requireEmail,
     confirmationMessage: String(s.confirmationMessage || '').slice(0, 2000),
+    skipWelcome: !!s.skipWelcome,
+    skipSectionIntros: !!s.skipSectionIntros,
   };
 }
 
@@ -176,8 +178,13 @@ function validateSubmission(form, payload, fileMap) {
 const DEFAULT_FORM_THANKS_PATH = '/recrutement/merci';
 
 function normalizeRedirectUrl(raw) {
-  const s = String(raw || '').trim();
-  if (!s) return DEFAULT_FORM_THANKS_PATH;
+  // Chaîne vide volontaire = remerciement inline (pas de redirection)
+  if (raw === '' || raw === null || raw === undefined) {
+    if (raw === '') return '';
+    return DEFAULT_FORM_THANKS_PATH;
+  }
+  const s = String(raw).trim();
+  if (!s) return '';
   if (s.startsWith('/') && !s.startsWith('//')) return s.slice(0, 500);
   try {
     const u = new URL(s);
@@ -329,7 +336,7 @@ router.post('/public/:slug/submit', uploadCustomForm.any(), async (req, res) => 
       ok: true,
       message: 'Réponse enregistrée. Merci !',
       emailSent: submission.emailSent,
-      redirectUrl: form.redirectUrl?.trim() || DEFAULT_FORM_THANKS_PATH,
+      redirectUrl: String(form.redirectUrl || '').trim(),
     });
   } catch (err) {
     console.error('[customForms submit]', err);

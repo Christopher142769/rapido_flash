@@ -239,7 +239,19 @@ export default function SteppedCustomForm({ form, slug, onDone, trackingCategory
         content_category: trackingCategory,
       });
 
-      const thanksPath = toInAppThanksPath(res.data?.redirectUrl || form.redirectUrl);
+      const formRedirect =
+        form.redirectUrl != null ? String(form.redirectUrl).trim() : null;
+      const rawRedirect =
+        formRedirect !== null
+          ? formRedirect
+          : String(res.data?.redirectUrl || '').trim();
+      // Pas d’URL → remerciement inline (ex. formulaire bassins)
+      if (!rawRedirect) {
+        onDone?.({ confirmationMessage: settings.confirmationMessage });
+        return;
+      }
+
+      const thanksPath = toInAppThanksPath(rawRedirect);
       if (thanksPath) {
         window.location.assign(thanksPath);
         return;

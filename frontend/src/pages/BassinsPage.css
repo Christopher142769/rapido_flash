@@ -407,9 +407,27 @@
   }
 }
 
+/* ---------- LOGO iPEB ---------- */
+.bassins-page .ipeb-badge {
+  margin-top: 36px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 12px;
+}
+
+.bassins-page .ipeb-badge img {
+  width: clamp(76px, 13vw, 112px);
+  height: auto;
+  max-height: 112px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.14));
+}
+
 /* ---------- PRESS ---------- */
 .bassins-page .press {
-  margin-top: 40px;
+  margin-top: 22px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -561,14 +579,15 @@
   }
 
   .bassins-page .stage {
-    --player-w: min(100%, calc(100vw - 56px));
-    --collage-w: clamp(48px, 14vw, 72px);
-    --snap-w: clamp(46px, 13.5vw, 68px);
-    --snap-h: clamp(44px, 12.5vw, 62px);
-    --overlap: clamp(-22px, -6vw, -28px);
-    --snap-gap: 6px;
+    --player-w: clamp(168px, 46vw, 248px);
+    --collage-w: clamp(36px, 10.5vw, 52px);
+    --snap-w: clamp(34px, 10vw, 48px);
+    --snap-h: clamp(28px, 8.2vw, 40px);
+    --overlap: clamp(-12px, -3.5vw, -8px);
+    --snap-gap: 4px;
     margin-top: 22px;
     padding: 0 2px;
+    max-width: 100%;
   }
 
   .bassins-page .snap {
@@ -576,10 +595,6 @@
     padding: 0;
     border-radius: 2px;
     box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
-  }
-
-  .bassins-page .collage .snap:nth-child(2) {
-    display: none;
   }
 
   .bassins-page .play {
@@ -658,8 +673,16 @@
 
   .bassins-page .press {
     gap: 12px 18px;
-    margin-top: 28px;
+    margin-top: 20px;
     padding: 0 4px;
+  }
+
+  .bassins-page .ipeb-badge {
+    margin-top: 28px;
+  }
+
+  .bassins-page .ipeb-badge img {
+    width: clamp(68px, 18vw, 88px);
   }
 
   .bassins-page .p-use {
@@ -682,12 +705,16 @@
   }
 
   .bassins-page .stage {
-    --player-w: min(100%, calc(100vw - 44px));
-    --collage-w: 42px;
-    --snap-w: 40px;
-    --snap-h: 48px;
-    --overlap: -18px;
-    --snap-gap: 5px;
+    --player-w: clamp(152px, 44vw, 220px);
+    --collage-w: 34px;
+    --snap-w: 32px;
+    --snap-h: 26px;
+    --overlap: -10px;
+    --snap-gap: 3px;
+  }
+
+  .bassins-page .ipeb-badge img {
+    width: clamp(64px, 17vw, 80px);
   }
 
   .bassins-page .cta {
@@ -710,13 +737,13 @@
 }
 
 @media (max-width: 360px) {
-  .bassins-page .collage {
-    display: none;
-  }
-
   .bassins-page .stage {
-    --player-w: 100%;
-    --overlap: 0;
+    --player-w: clamp(140px, 42vw, 200px);
+    --collage-w: 30px;
+    --snap-w: 28px;
+    --snap-h: 24px;
+    --overlap: -8px;
+    --snap-gap: 3px;
   }
 
   .bassins-page .rating .txt {
@@ -748,16 +775,12 @@
   }
 
   .bassins-page .stage {
-    --player-w: min(520px, 62vw);
-    --collage-w: 56px;
-    --snap-w: 52px;
-    --snap-h: 44px;
-    --overlap: -20px;
+    --player-w: min(320px, 52vw);
+    --collage-w: 44px;
+    --snap-w: 40px;
+    --snap-h: 32px;
+    --overlap: -14px;
     margin-top: 14px;
-  }
-
-  .bassins-page .collage .snap:nth-child(3) {
-    display: none;
   }
 
   .bassins-page .cta {

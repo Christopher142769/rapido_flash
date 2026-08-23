@@ -19,7 +19,7 @@ import {
   FaHashtag,
 } from 'react-icons/fa';
 import { defaultFormSettings } from '../../utils/customFormSteps';
-import { buildBassinsFormDraft, BASSINS_FORM_PATH, BASSINS_SHOP_PATH } from '../../data/bassinsFunnel';
+import { buildBassinsFormDraft, BASSINS_FORM_PATH } from '../../data/bassinsFunnel';
 import FormRichTextEditor from '../../components/forms/FormRichTextEditor';
 import FormAnswerFilePreview from '../../components/forms/FormAnswerFilePreview';
 import { useModal } from '../../context/ModalContext';
@@ -268,7 +268,7 @@ export default function CustomFormsDashboard() {
       notifyEmails: draft.notifyEmails || tpl.notifyEmails,
     });
     setTab('forms');
-    showSuccess(`Modèle bassins chargé — lien public : ${BASSINS_FORM_PATH} → ${BASSINS_SHOP_PATH}`);
+    showSuccess(`Modèle bassins chargé : lien public ${BASSINS_FORM_PATH} (page remerciement à l’envoi)`);
   };
 
   const updateSection = (idx, patch) => {
@@ -531,7 +531,7 @@ export default function CustomFormsDashboard() {
               <FaPlus /> Nouveau formulaire
             </button>
             <button type="button" className="cforms-btn ghost block" onClick={loadBassinsTemplate}>
-              <FaWpforms /> Modèle bassins (7 questions)
+              <FaWpforms /> Modèle bassins
             </button>
             <div className="cforms-sidebar-list">
               {forms.length === 0 ? (

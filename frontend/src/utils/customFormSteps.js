@@ -10,6 +10,8 @@ export function defaultFormSettings(raw) {
     requireName: !!s.requireName,
     requireEmail: !!s.requireEmail,
     confirmationMessage: String(s.confirmationMessage || ''),
+    skipWelcome: !!s.skipWelcome,
+    skipSectionIntros: !!s.skipSectionIntros,
   };
 }
 
@@ -19,12 +21,14 @@ export function buildFormSteps(form) {
   const settings = defaultFormSettings(form.settings);
   const steps = [];
 
-  steps.push({
-    id: '__welcome__',
-    type: 'welcome',
-    title: form.title,
-    description: form.description,
-  });
+  if (!settings.skipWelcome) {
+    steps.push({
+      id: '__welcome__',
+      type: 'welcome',
+      title: form.title,
+      description: form.description,
+    });
+  }
 
   if (settings.collectContact) {
     steps.push({
@@ -37,9 +41,10 @@ export function buildFormSteps(form) {
 
   for (const sec of form.sections || []) {
     const hasIntro =
-      String(sec.title || '').trim() ||
-      String(sec.description || '').trim() ||
-      sec.imageUrl;
+      !settings.skipSectionIntros &&
+      (String(sec.title || '').trim() ||
+        String(sec.description || '').trim() ||
+        sec.imageUrl);
     if (hasIntro) {
       steps.push({
         id: `intro_${sec.id}`,

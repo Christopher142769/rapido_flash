@@ -134,10 +134,26 @@ export default function PublicCustomFormPage() {
     );
   }
 
+  const formForSteps =
+    bassins && form
+      ? {
+          ...form,
+          redirectUrl: '',
+          settings: {
+            ...(form.settings || {}),
+            skipWelcome: true,
+            skipSectionIntros: true,
+            confirmationMessage:
+              form.settings?.confirmationMessage ||
+              'Merci ! Votre demande est bien enregistrée. Un technicien Rapido vous rappelle sous 24 h pour valider la quantité, l’adresse et la date de montage.',
+          },
+        }
+      : form;
+
   return (
     <FormShell minimal bassins={bassins}>
       <SteppedCustomForm
-        form={form}
+        form={formForSteps}
         slug={slug}
         trackingCategory={bassins ? 'Bassins' : 'Recrutement'}
         onDone={({ confirmationMessage }) => {
