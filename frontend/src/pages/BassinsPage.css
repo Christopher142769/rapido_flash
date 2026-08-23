@@ -530,43 +530,58 @@
   }
 
   .bassins-page .proof {
-    display: flex;
-    flex-wrap: wrap;
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: center;
     justify-content: center;
-    gap: 8px 10px;
-    padding: 6px 12px 6px 6px;
+    gap: clamp(4px, 1.6vw, 10px);
+    padding: clamp(4px, 1.2vw, 6px) clamp(8px, 2.2vw, 12px) clamp(4px, 1.2vw, 6px)
+      clamp(4px, 1.2vw, 6px);
     margin-bottom: 18px;
-    border-radius: 18px;
-    max-width: 100%;
+    border-radius: 999px;
+    max-width: calc(100vw - 28px);
+    width: max-content;
+    box-sizing: border-box;
+    overflow: hidden;
   }
 
   .bassins-page .proof .tag {
-    font-size: 11px;
-    padding: 7px 12px;
+    font-size: clamp(8px, 2.35vw, 11px);
+    padding: clamp(5px, 1.4vw, 7px) clamp(8px, 2.2vw, 12px);
+    letter-spacing: 0.01em;
+    flex: none;
   }
 
   .bassins-page .proof .give {
-    display: none;
+    display: inline;
+    font-size: clamp(8px, 2.45vw, 12px);
+    letter-spacing: 0.01em;
+    flex: none;
   }
 
   .bassins-page .rating {
-    gap: 6px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .bassins-page .stars {
-    font-size: 13px;
-  }
-
-  .bassins-page .rating .txt {
-    font-size: 11px;
-    letter-spacing: 0.01em;
+    display: inline-flex;
+    align-items: center;
+    gap: clamp(2px, 0.8vw, 6px);
+    flex-wrap: nowrap;
+    flex: none;
+    min-width: 0;
   }
 
   .bassins-page .laurel {
-    width: 14px;
-    height: 20px;
+    width: clamp(9px, 2.6vw, 14px);
+    height: auto;
+    flex: none;
+  }
+
+  .bassins-page .stars {
+    font-size: clamp(9px, 2.7vw, 13px);
+    letter-spacing: 0.5px;
+  }
+
+  .bassins-page .rating .txt {
+    font-size: clamp(8px, 2.35vw, 11px);
+    letter-spacing: 0.01em;
   }
 
   .bassins-page h1 {
@@ -716,6 +731,13 @@
     display: none;
   }
 
+  .bassins-page .proof {
+    gap: clamp(3px, 1.2vw, 6px);
+    padding: 4px 8px 4px 4px;
+    transform: scale(0.96);
+    transform-origin: top center;
+  }
+
   .bassins-page h1 {
     font-size: clamp(22px, 6.8vw, 28px);
   }
@@ -753,6 +775,11 @@
 }
 
 @media (max-width: 360px) {
+  .bassins-page .proof {
+    transform: scale(0.9);
+    margin-bottom: 14px;
+  }
+
   .bassins-page .stage {
     --player-w: min(100%, calc(100vw - 40px));
     --collage-w: 34px;
