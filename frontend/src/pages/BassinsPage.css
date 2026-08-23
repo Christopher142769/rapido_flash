@@ -585,12 +585,13 @@
   }
 
   .bassins-page .stage {
-    --player-w: clamp(168px, 46vw, 248px);
-    --collage-w: clamp(36px, 10.5vw, 52px);
-    --snap-w: clamp(34px, 10vw, 48px);
-    --snap-h: clamp(28px, 8.2vw, 40px);
-    --overlap: clamp(-12px, -3.5vw, -8px);
-    --snap-gap: 4px;
+    /* Vidéo dominante comme avant, cartes qui dépassent de chaque côté */
+    --player-w: min(100%, calc(100vw - 56px));
+    --collage-w: clamp(44px, 12.5vw, 64px);
+    --snap-w: clamp(42px, 12vw, 60px);
+    --snap-h: clamp(36px, 10vw, 52px);
+    --overlap: clamp(-22px, -6vw, -28px);
+    --snap-gap: 5px;
     margin-top: 22px;
     padding: 0 2px;
     max-width: 100%;
@@ -601,6 +602,15 @@
     padding: 0;
     border-radius: 2px;
     box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
+  }
+
+  /* Les 3 cartes restent visibles de chaque côté */
+  .bassins-page .collage {
+    display: flex;
+  }
+
+  .bassins-page .collage .snap {
+    display: flex;
   }
 
   .bassins-page .play {
@@ -711,12 +721,12 @@
   }
 
   .bassins-page .stage {
-    --player-w: clamp(152px, 44vw, 220px);
-    --collage-w: 34px;
-    --snap-w: 32px;
-    --snap-h: 26px;
-    --overlap: -10px;
-    --snap-gap: 3px;
+    --player-w: min(100%, calc(100vw - 44px));
+    --collage-w: 40px;
+    --snap-w: 38px;
+    --snap-h: 34px;
+    --overlap: -18px;
+    --snap-gap: 4px;
   }
 
   .bassins-page .ipeb-badge img {
@@ -744,11 +754,11 @@
 
 @media (max-width: 360px) {
   .bassins-page .stage {
-    --player-w: clamp(140px, 42vw, 200px);
-    --collage-w: 30px;
-    --snap-w: 28px;
-    --snap-h: 24px;
-    --overlap: -8px;
+    --player-w: min(100%, calc(100vw - 40px));
+    --collage-w: 34px;
+    --snap-w: 32px;
+    --snap-h: 30px;
+    --overlap: -14px;
     --snap-gap: 3px;
   }
 
@@ -781,11 +791,12 @@
   }
 
   .bassins-page .stage {
-    --player-w: min(320px, 52vw);
-    --collage-w: 44px;
-    --snap-w: 40px;
-    --snap-h: 32px;
-    --overlap: -14px;
+    --player-w: min(520px, 62vw);
+    --collage-w: 48px;
+    --snap-w: 44px;
+    --snap-h: 36px;
+    --overlap: -18px;
+    --snap-gap: 4px;
     margin-top: 14px;
   }
 
