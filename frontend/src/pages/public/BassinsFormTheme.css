@@ -41,19 +41,33 @@
 }
 
 .rform-root--bassins .rform-header {
-  background: linear-gradient(105deg, #3d1c08 0%, #5c2e0b 50%, #8b4513 100%);
-  border-bottom: none;
-  box-shadow: 0 8px 24px rgba(61, 28, 8, 0.2);
+  background: #ffffff;
+  border-bottom: 1px solid rgba(92, 46, 11, 0.12);
+  box-shadow: 0 4px 18px rgba(28, 23, 18, 0.06);
 }
 
 .rform-root--bassins .rform-logo img {
   height: 52px;
-  filter: brightness(0) invert(1);
+  filter: none;
 }
 
 .rform-root--bassins .rform-logo small {
-  color: rgba(255, 255, 255, 0.88);
+  color: var(--bronze);
   font-family: 'Poppins', sans-serif;
+}
+
+.rform-root--bassins .rform-footer {
+  background: #ffffff;
+  border-top: 1px solid rgba(92, 46, 11, 0.12);
+}
+
+.rform-root--bassins .rform-footer .rform-logo img {
+  filter: none;
+}
+
+.rform-root--bassins .rform-footer .rform-logo small,
+.rform-root--bassins .rform-footer p {
+  color: var(--ink-mute);
 }
 
 .rform-root--bassins .rform-stepped {

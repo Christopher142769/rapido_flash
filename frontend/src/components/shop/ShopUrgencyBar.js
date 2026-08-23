@@ -8,7 +8,7 @@ import './ShopUrgencyBar.css';
  * label + minuteur + commandes restantes + barre de progression.
  */
 export default function ShopUrgencyBar({
-  label = 'Offre limitée — commandez vite',
+  label = 'Offre limitée : commandez vite',
   endsAt = null,
   autoRestart = false,
   onCountdownComplete,
@@ -18,6 +18,7 @@ export default function ShopUrgencyBar({
   progressPct = null,
   showCountdown = true,
   showQuota = true,
+  quotaPeriodLabel = 'aujourd’hui',
 }) {
   const max = Math.max(0, Number(maxOrders) || 0);
   const remaining =
@@ -65,10 +66,10 @@ export default function ShopUrgencyBar({
               {remaining > 0 ? (
                 <>
                   Il reste <strong className="shop-urgency-bar-accent">{remaining}</strong> commande
-                  {remaining > 1 ? 's' : ''} sur {max} aujourd&apos;hui
+                  {remaining > 1 ? 's' : ''} sur {max} {quotaPeriodLabel}
                 </>
               ) : (
-                <>Quota du jour presque atteint — commandez maintenant</>
+                <>Quota presque atteint : commandez maintenant</>
               )}
             </p>
             <div className="shop-urgency-bar-track" aria-hidden>

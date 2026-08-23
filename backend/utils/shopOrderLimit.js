@@ -22,6 +22,22 @@ async function countTodayOrdersForProduct(shopProductId) {
   return ShopOrder.countDocuments(filter);
 }
 
+/** Commandes du mois calendaire (fuseau Bénin) pour un produit shop. */
+async function countMonthOrdersForProduct(shopProductId) {
+  if (!shopProductId) return 0;
+  const today = beninDateKey(); // YYYY-MM-DD
+  const monthStart = `${today.slice(0, 7)}-01`;
+  const periodFilter = buildPeriodFilter(monthStart, today);
+  const filter = {
+    shopProduct: shopProductId,
+    isOffPlatform: { $ne: true },
+    statut: { $ne: 'annulee' },
+    commercialStatus: { $ne: 'annulee' },
+  };
+  if (periodFilter) Object.assign(filter, periodFilter);
+  return ShopOrder.countDocuments(filter);
+}
+
 function getShopOrderLimitConfig(product) {
   const limit = product?.dailyOrderLimit || {};
   const enabled = !!limit.enabled;
@@ -102,8 +118,12 @@ async function getShopAvailabilityState(product, now = new Date()) {
   const limitConfig = getShopOrderLimitConfig(product);
   let ordersToday = 0;
   const productId = product?._id || product?.id;
+  const slug = product?.slug || (typeof product?.toObject === 'function' ? product.toObject().slug : '');
   if (limitConfig.enabled && productId) {
-    ordersToday = await countTodayOrdersForProduct(productId);
+    ordersToday =
+      slug === 'bassin'
+        ? await countMonthOrdersForProduct(productId)
+        : await countTodayOrdersForProduct(productId);
   }
   const limitState = getShopOrderLimitState(product, ordersToday);
   return mergeClosureWithOrderLimit(closureState, limitState, now);
@@ -130,6 +150,7 @@ function buildDailyOrderLimitFromBody(body) {
 module.exports = {
   beninDateKey,
   countTodayOrdersForProduct,
+  countMonthOrdersForProduct,
   getShopOrderLimitConfig,
   getShopOrderLimitState,
   mergeClosureWithOrderLimit,

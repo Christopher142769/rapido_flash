@@ -26,7 +26,7 @@ function bassinsFormDoc() {
     .filter(Boolean);
 
   return {
-    title: 'Demande bassin Rapido — Qualification projet',
+    title: 'Demande bassin Rapido : qualification projet',
     slug: FORM_SLUG,
     description:
       'Vous êtes à 2 minutes de recevoir votre devis personnalisé. Un technicien Rapido vous rappelle sous 24 h.',
@@ -72,8 +72,8 @@ function bassinsFormDoc() {
               "1. Avez-vous déjà une activité économique en cours (commerce, entreprise, autre) aujourd'hui ?",
             required: true,
             options: [
-              opt("Oui — j'ai déjà une activité (commerce, entreprise…)"),
-              opt('Non — je démarre un nouveau projet'),
+              opt("Oui : j'ai déjà une activité (commerce, entreprise…)"),
+              opt('Non : je démarre un nouveau projet'),
               opt("J'ai une activité informelle / en cours de formalisation"),
             ],
           },
@@ -85,9 +85,9 @@ function bassinsFormDoc() {
               "2. Disposez-vous d'un espace chez vous (cour, parcelle, terrain) où le bassin pourrait être installé ?",
             required: true,
             options: [
-              opt('Oui — cour, parcelle ou terrain disponible'),
-              opt("Oui — mais je dois encore aménager l'espace"),
-              opt('Non — je cherche encore un emplacement'),
+              opt('Oui : cour, parcelle ou terrain disponible'),
+              opt("Oui : mais je dois encore aménager l'espace"),
+              opt('Non : je cherche encore un emplacement'),
               opt('Je loue ou j’achète un terrain prochainement'),
             ],
           },
@@ -107,10 +107,10 @@ function bassinsFormDoc() {
               '3. Avez-vous déjà une idée du budget nécessaire pour ce type de projet (670 000 FCFA) ?',
             required: true,
             options: [
-              opt('Oui — ce budget me convient'),
-              opt('Oui — avec un apport familial ou partenaire'),
+              opt('Oui : ce budget me convient'),
+              opt('Oui : avec un apport familial ou partenaire'),
               opt("J'ai besoin d'échéancier ou de conseil financement"),
-              opt('Non — mon budget est inférieur pour l’instant'),
+              opt('Non : mon budget est inférieur pour l’instant'),
             ],
           },
           {
@@ -156,9 +156,9 @@ function bassinsFormDoc() {
               '6. Avez-vous déjà une piste pour écouler vos poissons (marché, quartier, restaurant, revendeurs) ou souhaitez-vous des conseils sur ce point ?',
             required: true,
             options: [
-              opt('Oui — j’ai déjà des clients (marché, quartier, restaurant…)'),
-              opt('Oui — des pistes mais pas encore confirmées'),
-              opt('Non — j’aimerais des conseils Rapido'),
+              opt('Oui : j’ai déjà des clients (marché, quartier, restaurant…)'),
+              opt('Oui : des pistes mais pas encore confirmées'),
+              opt('Non : j’aimerais des conseils Rapido'),
               opt('Je vends via revendeurs / grossistes'),
             ],
           },
@@ -192,10 +192,10 @@ function bassinsFormDoc() {
 
 function bassinsShopDoc() {
   return {
-    name: 'Bassin hors-sol Rapido — Montage & livraison 72 h',
+    name: 'Bassin hors-sol Rapido : montage et livraison 72 h',
     slug: SHOP_SLUG,
     shortDescription:
-      'Bassin professionnel clé en main : montage, remplissage et livraison prêt à empoissonner. Offre limitée −50 %.',
+      'Bassin professionnel clé en main : montage, remplissage et livraison prêt à empoissonner. Offre limitée moins 50 %.',
     basePrice: BASE_PRICE,
     deliveryFee: 0,
     quantityUnit: 'unit',
@@ -206,6 +206,10 @@ function bassinsShopDoc() {
     ctaLabel: 'Réserver mon bassin à 670 000 FCFA',
     showDeliveryNotice: false,
     eviscerationEnabled: false,
+    dailyOrderLimit: {
+      enabled: true,
+      maxOrders: 20,
+    },
     promo: {
       active: true,
       priceMode: 'percent',
@@ -229,7 +233,7 @@ function bassinsShopDoc() {
       {
         type: 'image',
         title: 'Installation clé en main sur votre site',
-        body: 'Montage, tuyauterie, remplissage et mise en route — partout au Bénin.',
+        body: 'Montage, tuyauterie, remplissage et mise en route, partout au Bénin.',
         mediaUrl: '/bassins/bassin-installation.png',
       },
       {
@@ -241,15 +245,15 @@ function bassinsShopDoc() {
         type: 'text',
         title: '',
         body: `<ul>
-<li><strong>Production maîtrisée</strong> — eau contrôlée, densité optimale</li>
-<li><strong>Gain de place</strong> — 12 m² pour une production sérieuse</li>
-<li><strong>ROI rapide</strong> — premier cycle rentable en quelques mois</li>
-<li><strong>Accompagnement Rapido</strong> — dimensionnement et écoulement</li>
+<li><strong>Production maîtrisée</strong> : eau contrôlée, densité optimale</li>
+<li><strong>Gain de place</strong> : 12 m² pour une production sérieuse</li>
+<li><strong>ROI rapide</strong> : premier cycle rentable en quelques mois</li>
+<li><strong>Accompagnement Rapido</strong> : dimensionnement et écoulement</li>
 </ul>`,
       },
       {
         type: 'image',
-        title: 'Bassin professionnel — liner bleu, structure galvanisée',
+        title: 'Bassin professionnel : liner bleu, structure galvanisée',
         body: 'Matériaux durables pour le climat tropical.',
         mediaUrl: '/bassins/bassin-produit.png',
       },
@@ -269,7 +273,7 @@ function bassinsShopDoc() {
           },
           {
             question: 'Délai de mise en service ?',
-            answer: '72 heures après validation — selon stock disponible.',
+            answer: '72 heures après validation, selon stock disponible.',
           },
         ],
       },
@@ -305,12 +309,26 @@ async function ensureBassinsFunnel({ force = false } = {}) {
     Object.assign(product, shopData);
     await product.save();
     console.log(`✅ Funnel bassins — produit forcé : /shop/${SHOP_SLUG}`);
-  } else if (!product.published) {
-    product.published = true;
-    await product.save();
-    console.log(`✅ Funnel bassins — produit publié : /shop/${SHOP_SLUG}`);
   } else {
-    console.log(`ℹ️ Funnel bassins — produit déjà présent : /shop/${SHOP_SLUG}`);
+    let patched = false;
+    if (!product.published) {
+      product.published = true;
+      patched = true;
+    }
+    // Stock mensuel 20 (quota commande)
+    if (
+      !product.dailyOrderLimit?.enabled ||
+      Number(product.dailyOrderLimit?.maxOrders) !== 20
+    ) {
+      product.dailyOrderLimit = { enabled: true, maxOrders: 20 };
+      patched = true;
+    }
+    if (patched) {
+      await product.save();
+      console.log(`✅ Funnel bassins — produit synchronisé (stock 20) : /shop/${SHOP_SLUG}`);
+    } else {
+      console.log(`ℹ️ Funnel bassins — produit déjà présent : /shop/${SHOP_SLUG}`);
+    }
   }
 
   return { form, product };

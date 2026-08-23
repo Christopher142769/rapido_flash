@@ -360,8 +360,10 @@ export default function ShopProductLanding() {
             <ShopUrgencyBar
               label={
                 showCountdown
-                  ? 'Offre limitée — commandez vite'
-                  : 'Commandes du jour limitées'
+                  ? 'Offre limitée : commandez vite'
+                  : slug === 'bassin'
+                    ? 'Stock mensuel limité'
+                    : 'Commandes du jour limitées'
               }
               endsAt={showCountdown ? countdownEndsAt : null}
               autoRestart={countdownAutoRestart}
@@ -378,6 +380,7 @@ export default function ShopProductLanding() {
               }
               showCountdown={showCountdown}
               showQuota={showOrderLimitBanner}
+              quotaPeriodLabel={slug === 'bassin' ? 'ce mois-ci' : 'aujourd’hui'}
             />
             <ShopBrandHeader sections={navSections} inTopBar />
           </div>

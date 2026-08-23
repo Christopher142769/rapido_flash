@@ -27,7 +27,7 @@ function FormShell({ children, minimal, bassins }) {
       <header className="rform-header">
         <nav className="rform-nav">
           <Link to={bassins ? '/bassins' : '/home'} className="rform-logo">
-            <img src={LOGO_SRC} alt="RAPIDO — Livraison Express" width="512" height="512" />
+            <img src={LOGO_SRC} alt="RAPIDO Livraison Express" width="512" height="512" />
             <small>{bassins ? 'Bassins Rapido' : 'Formulaire'}</small>
           </Link>
         </nav>
@@ -38,7 +38,11 @@ function FormShell({ children, minimal, bassins }) {
           <Link to="/home" className="rform-logo">
             <img src={LOGO_SRC} alt="RAPIDO" width="512" height="512" />
           </Link>
-          <p>Plateforme e-commerce &amp; marketplace · Cotonou, Bénin — Rapido Flash</p>
+          <p>
+            {bassins
+              ? 'Plateforme e-commerce et marketplace · Cotonou, Bénin · Rapido Flash'
+              : 'Plateforme e-commerce &amp; marketplace · Cotonou, Bénin — Rapido Flash'}
+          </p>
         </div>
       </footer>
     </div>

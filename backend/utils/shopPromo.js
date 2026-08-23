@@ -1,6 +1,7 @@
 const { getShopClosureState } = require('./shopClosure');
 const {
   countTodayOrdersForProduct,
+  countMonthOrdersForProduct,
   getShopOrderLimitState,
   mergeClosureWithOrderLimit,
 } = require('./shopOrderLimit');
@@ -164,7 +165,11 @@ async function serializeShopProduct(product, { publicView = false, includeOrderC
   let ordersToday = 0;
   const productId = doc._id || product._id;
   if (includeOrderCount && productId) {
-    ordersToday = await countTodayOrdersForProduct(productId);
+    // Produit bassin : stock mensuel (20) plutôt que quota journalier
+    ordersToday =
+      doc.slug === 'bassin'
+        ? await countMonthOrdersForProduct(productId)
+        : await countTodayOrdersForProduct(productId);
   }
 
   const limitState = getShopOrderLimitState(doc, ordersToday);

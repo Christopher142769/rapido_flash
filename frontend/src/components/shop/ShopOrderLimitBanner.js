@@ -1,7 +1,13 @@
 import React from 'react';
 import './ShopOrderLimitBanner.css';
 
-export default function ShopOrderLimitBanner({ ordersRemaining, maxOrders, progressPct, ordersToday }) {
+export default function ShopOrderLimitBanner({
+  ordersRemaining,
+  maxOrders,
+  progressPct,
+  ordersToday,
+  periodLabel = 'aujourd’hui',
+}) {
   const remaining = Math.max(0, ordersRemaining ?? 0);
   const max = Math.max(1, maxOrders || 1);
   const taken = Math.min(max, ordersToday ?? max - remaining);
@@ -12,12 +18,12 @@ export default function ShopOrderLimitBanner({ ordersRemaining, maxOrders, progr
       className="shop-pdp-limit-strip"
       role="status"
       aria-live="polite"
-      aria-label={`${remaining} commande${remaining > 1 ? 's' : ''} restante${remaining > 1 ? 's' : ''} sur ${max} aujourd'hui`}
+      aria-label={`${remaining} commande${remaining > 1 ? 's' : ''} restante${remaining > 1 ? 's' : ''} sur ${max} ${periodLabel}`}
     >
       <p className="shop-pdp-limit-strip-headline">
         Il reste{' '}
         <span className="shop-pdp-limit-strip-accent">{remaining}</span>
-        {' '}commande{remaining > 1 ? 's' : ''} sur {max} aujourd’hui
+        {' '}commande{remaining > 1 ? 's' : ''} sur {max} {periodLabel}
       </p>
       <div className="shop-pdp-limit-strip-track" aria-hidden>
         <span className="shop-pdp-limit-strip-fill" style={{ width: `${pct}%` }} />

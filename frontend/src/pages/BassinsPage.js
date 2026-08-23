@@ -1,11 +1,57 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BASSINS_FORM_PATH } from '../data/bassinsFunnel';
+import axios from 'axios';
+import {
+  BASSINS_FORM_PATH,
+  BASSINS_SHOP_SLUG,
+  BASSINS_STOCK_MAX,
+} from '../data/bassinsFunnel';
 import { trackMeta } from '../utils/metaPixel';
 import './BassinsPage.css';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 function BassinsPage() {
   const [muted, setMuted] = useState(true);
+  const [stockRemaining, setStockRemaining] = useState(BASSINS_STOCK_MAX);
+
+  useEffect(() => {
+    let cancelled = false;
+    axios
+      .get(`${API_URL}/shop-products/public/${encodeURIComponent(BASSINS_SHOP_SLUG)}`, {
+        timeout: 12000,
+      })
+      .then((res) => {
+        if (cancelled) return;
+        const max = Math.max(
+          1,
+          Math.floor(Number(res.data?.dailyOrderLimitMax || res.data?.dailyOrderLimit?.maxOrders || BASSINS_STOCK_MAX))
+        );
+        const remaining = Math.max(
+          0,
+          Math.min(
+            max,
+            Math.floor(
+              Number(
+                res.data?.ordersRemaining != null
+                  ? res.data.ordersRemaining
+                  : max - Number(res.data?.ordersToday || 0)
+              )
+            )
+          )
+        );
+        setStockRemaining(remaining);
+      })
+      .catch(() => {
+        if (!cancelled) setStockRemaining(BASSINS_STOCK_MAX);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const stockMax = BASSINS_STOCK_MAX;
+  const lit = Math.min(stockMax, Math.max(0, stockRemaining));
 
   return (
     <div className="bassins-page">
@@ -56,7 +102,7 @@ function BassinsPage() {
                 />
               </svg>
               <span className="stars">★★★★★</span>
-              <span className="txt">4,9/5 — 312 bassins installés</span>
+              <span className="txt">4,9/5 · 312 bassins installés</span>
               <svg
                 className="laurel"
                 style={{ transform: 'scaleX(-1)' }}
@@ -78,7 +124,7 @@ function BassinsPage() {
           </div>
 
           <h1>
-            «&nbsp;Ce bassin de 12&nbsp;m² sort plus de poisson que votre étang de 500&nbsp;m² —
+            «&nbsp;Ce bassin de 12&nbsp;m² sort plus de poisson que votre étang de 500&nbsp;m²
             et Rapido vous le monte, le remplit et vous le livre prêt à empoissonner en
             72&nbsp;heures&nbsp;»
           </h1>
@@ -138,10 +184,21 @@ function BassinsPage() {
           </p>
 
           <div className="stock">
-            <p>Attention&nbsp;! Il ne reste que 4 bassins montables ce mois-ci</p>
-            <div className="bars" role="img" aria-label="Stock presque épuisé">
-              {Array.from({ length: 21 }, (_, i) => (
-                <i key={i} className={i >= 19 ? 'on' : undefined} />
+            <p>
+              Attention&nbsp;! Il ne reste que {lit} bassin{lit > 1 ? 's' : ''} montable
+              {lit > 1 ? 's' : ''} ce mois-ci
+            </p>
+            <div
+              className="bars"
+              role="img"
+              aria-label={`${lit} bassins restants sur ${stockMax}`}
+            >
+              {Array.from({ length: stockMax }, (_, i) => (
+                <i
+                  key={i}
+                  className={i < lit ? 'on' : undefined}
+                  style={i < lit ? { animationDelay: `${i * 0.05}s` } : undefined}
+                />
               ))}
             </div>
           </div>
