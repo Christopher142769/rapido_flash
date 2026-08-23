@@ -177,8 +177,16 @@ app.get('/healthz', (req, res) => {
     isPushConfigured,
     getFcmEnvPresence,
   } = require('./services/pushNotifications');
+  const mongoStates = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+  const mongoReady = mongoose.connection.readyState;
   res.status(200).json({
     ok: true,
+    mongo: {
+      readyState: mongoReady,
+      status: mongoStates[mongoReady] || String(mongoReady),
+      hasUri: Boolean(String(process.env.MONGODB_URI || '').trim()),
+      db: mongoose.connection.name || null,
+    },
     fcm: isFcmConfigured(),
     fcmEnv: getFcmEnvPresence(),
     webPush: isPushConfigured(),
