@@ -52,6 +52,17 @@ const getAllowedOrigins = () => {
     if (!origins.includes(o)) origins.push(o);
   }
 
+  // Hostinger preview / sous-domaine gratuit (avant branchement .bj)
+  const hostingerPreview = [
+    'https://white-goldfish-867682.hostingersite.com',
+    'http://white-goldfish-867682.hostingersite.com',
+    'https://white-rat-543905.hostingersite.com',
+    'http://white-rat-543905.hostingersite.com',
+  ];
+  for (const o of hostingerPreview) {
+    if (!origins.includes(o)) origins.push(o);
+  }
+
   // Si aucune URL n'est définie, autoriser toutes les origines (développement uniquement)
   return origins.length > 0 ? origins : '*';
 };
@@ -68,6 +79,22 @@ const corsOptions = {
     // Si toutes les origines sont autorisées (développement)
     if (allowedOrigins === '*') {
       return callback(null, true);
+    }
+
+    // Sous-domaines Hostinger + rapido.bj / rapido.online
+    try {
+      const host = new URL(origin).hostname;
+      if (
+        host.endsWith('.hostingersite.com') ||
+        host === 'rapido.bj' ||
+        host === 'www.rapido.bj' ||
+        host === 'rapido.online' ||
+        host === 'www.rapido.online'
+      ) {
+        return callback(null, true);
+      }
+    } catch (_) {
+      /* ignore */
     }
     
     // Vérifier si l'origine est autorisée
@@ -158,6 +185,34 @@ app.get('/healthz', (req, res) => {
   });
 });
 
+// Frontend React (build) — même origine que l’API (Hostinger / futur .bj)
+const fs = require('fs');
+const clientBuildPath = path.join(__dirname, '..', 'frontend', 'build');
+if (fs.existsSync(path.join(clientBuildPath, 'index.html'))) {
+  app.use(express.static(clientBuildPath, { index: false, maxAge: '1h' }));
+  app.get('*', (req, res, next) => {
+    if (
+      req.method !== 'GET' &&
+      req.method !== 'HEAD'
+    ) {
+      return next();
+    }
+    const p = req.path || '';
+    if (
+      p.startsWith('/api') ||
+      p.startsWith('/uploads') ||
+      p === '/healthz' ||
+      p.startsWith('/socket')
+    ) {
+      return next();
+    }
+    res.sendFile(path.join(clientBuildPath, 'index.html'), (err) => {
+      if (err) next(err);
+    });
+  });
+  console.log('🌐 Frontend SPA servi depuis frontend/build');
+}
+
 // Gestionnaire d'erreur global pour Multer
 app.use((error, req, res, next) => {
   if (error instanceof require('multer').MulterError) {
@@ -181,6 +236,7 @@ const ensureDefaultCategoriesDomaine = require('./utils/ensureDefaultCategoriesD
 const ensureAppSettings = require('./utils/ensureAppSettings');
 const ensurePlatformLineCodes = require('./utils/ensurePlatformLineCodes');
 const ensureShopOrderDates = require('./utils/ensureShopOrderDates');
+const ensureBassinsFunnel = require('./utils/ensureBassinsFunnel');
 
 // MongoDB : par défaut instance locale (voir backend/.env ou .env racine pour Atlas)
 const DEFAULT_LOCAL_MONGODB = 'mongodb://127.0.0.1:27017/rapido_flash';
@@ -209,6 +265,11 @@ async function connectMongoWithRetry() {
       await ensureAppSettings();
       await ensurePlatformLineCodes();
       await ensureShopOrderDates();
+      try {
+        await ensureBassinsFunnel();
+      } catch (e) {
+        console.error('⚠️ ensureBassinsFunnel:', e.message);
+      }
 
       // Initialiser l'admin par défaut après la connexion MongoDB (plus de plats par défaut)
       setTimeout(async () => {
