@@ -72,42 +72,50 @@ function BassinsPage() {
       {/* HERO */}
       <section className="hero">
         <div className="wrap">
-          <div className="proof">
-            <span className="tag">Stock août</span>
-            <span className="give">Installation en 72 heures</span>
-            <span className="rating">
-              <svg className="laurel" viewBox="0 0 24 32" aria-hidden="true">
-                <path
-                  d="M20 2C10 4 4 12 4 22c0 4 1 7 3 8-4-6-3-16 4-22 3-3 7-5 9-6z"
-                  fill="#2B2B2B"
-                />
-                <path
-                  d="M18 8c-6 2-10 7-10 13"
-                  stroke="#2B2B2B"
-                  strokeWidth="1.6"
-                  fill="none"
-                />
-              </svg>
-              <span className="stars">★★★★★</span>
-              <span className="txt">4,9/5 · 312 bassins installés</span>
-              <svg
-                className="laurel"
-                style={{ transform: 'scaleX(-1)' }}
-                viewBox="0 0 24 32"
-                aria-hidden="true"
-              >
-                <path
-                  d="M20 2C10 4 4 12 4 22c0 4 1 7 3 8-4-6-3-16 4-22 3-3 7-5 9-6z"
-                  fill="#2B2B2B"
-                />
-                <path
-                  d="M18 8c-6 2-10 7-10 13"
-                  stroke="#2B2B2B"
-                  strokeWidth="1.6"
-                  fill="none"
-                />
-              </svg>
-            </span>
+          <div className="proof-wrap">
+            <div className="proof">
+              <span className="tag">Stock août</span>
+              <span className="give">
+                <span className="proof-txt proof-txt--long">Installation en 72 heures</span>
+                <span className="proof-txt proof-txt--short">Montage 72 h</span>
+              </span>
+              <span className="rating">
+                <svg className="laurel" viewBox="0 0 24 32" aria-hidden="true">
+                  <path
+                    d="M20 2C10 4 4 12 4 22c0 4 1 7 3 8-4-6-3-16 4-22 3-3 7-5 9-6z"
+                    fill="#2B2B2B"
+                  />
+                  <path
+                    d="M18 8c-6 2-10 7-10 13"
+                    stroke="#2B2B2B"
+                    strokeWidth="1.6"
+                    fill="none"
+                  />
+                </svg>
+                <span className="stars">★★★★★</span>
+                <span className="txt">
+                  <span className="proof-txt proof-txt--long">4,9/5 · 312 bassins installés</span>
+                  <span className="proof-txt proof-txt--short">4,9/5 · 312</span>
+                </span>
+                <svg
+                  className="laurel"
+                  style={{ transform: 'scaleX(-1)' }}
+                  viewBox="0 0 24 32"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M20 2C10 4 4 12 4 22c0 4 1 7 3 8-4-6-3-16 4-22 3-3 7-5 9-6z"
+                    fill="#2B2B2B"
+                  />
+                  <path
+                    d="M18 8c-6 2-10 7-10 13"
+                    stroke="#2B2B2B"
+                    strokeWidth="1.6"
+                    fill="none"
+                  />
+                </svg>
+              </span>
+            </div>
           </div>
 
           <h1>

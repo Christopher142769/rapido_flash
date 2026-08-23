@@ -81,6 +81,19 @@
 }
 
 /* proof pill */
+.bassins-page .proof-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 34px;
+  padding: 0 4px;
+  box-sizing: border-box;
+}
+
+.bassins-page .proof-txt--short {
+  display: none;
+}
+
 .bassins-page .proof {
   display: inline-flex;
   align-items: center;
@@ -88,7 +101,6 @@
   background: #fff;
   border-radius: 999px;
   padding: 9px 22px 9px 9px;
-  margin-bottom: 34px;
   max-width: 100%;
   flex-wrap: nowrap;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
@@ -529,59 +541,75 @@
     padding-right: max(14px, env(safe-area-inset-right));
   }
 
+  .bassins-page .proof-wrap {
+    margin-bottom: 18px;
+    padding: 0 2px;
+  }
+
+  .bassins-page .proof-txt--long {
+    display: none;
+  }
+
+  .bassins-page .proof-txt--short {
+    display: inline;
+  }
+
   .bassins-page .proof {
-    display: inline-flex;
+    display: flex;
     flex-wrap: nowrap;
     align-items: center;
     justify-content: center;
-    gap: clamp(4px, 1.6vw, 10px);
-    padding: clamp(4px, 1.2vw, 6px) clamp(8px, 2.2vw, 12px) clamp(4px, 1.2vw, 6px)
-      clamp(4px, 1.2vw, 6px);
-    margin-bottom: 18px;
+    gap: 5px;
+    padding: 4px 8px 4px 4px;
     border-radius: 999px;
-    max-width: calc(100vw - 28px);
-    width: max-content;
+    max-width: 100%;
+    width: 100%;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .bassins-page .proof .tag {
-    font-size: clamp(8px, 2.35vw, 11px);
-    padding: clamp(5px, 1.4vw, 7px) clamp(8px, 2.2vw, 12px);
-    letter-spacing: 0.01em;
-    flex: none;
+    font-size: clamp(8px, 2.4vw, 10px);
+    padding: 5px 8px;
+    letter-spacing: 0;
+    flex: 0 0 auto;
   }
 
   .bassins-page .proof .give {
-    display: inline;
-    font-size: clamp(8px, 2.45vw, 12px);
-    letter-spacing: 0.01em;
-    flex: none;
+    display: block;
+    font-size: clamp(8px, 2.4vw, 10px);
+    letter-spacing: 0;
+    flex: 0 0 auto;
+    font-weight: 600;
   }
 
   .bassins-page .rating {
     display: inline-flex;
     align-items: center;
-    gap: clamp(2px, 0.8vw, 6px);
+    gap: 4px;
     flex-wrap: nowrap;
-    flex: none;
+    flex: 1 1 auto;
     min-width: 0;
+    justify-content: flex-end;
   }
 
-  .bassins-page .laurel {
-    width: clamp(9px, 2.6vw, 14px);
-    height: auto;
-    flex: none;
+  .bassins-page .rating .laurel {
+    display: none;
   }
 
   .bassins-page .stars {
-    font-size: clamp(9px, 2.7vw, 13px);
-    letter-spacing: 0.5px;
+    font-size: clamp(9px, 2.6vw, 11px);
+    letter-spacing: 0;
+    flex: 0 0 auto;
   }
 
   .bassins-page .rating .txt {
-    font-size: clamp(8px, 2.35vw, 11px);
-    letter-spacing: 0.01em;
+    font-size: clamp(8px, 2.4vw, 10px);
+    letter-spacing: 0;
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: visible;
+    text-overflow: clip;
   }
 
   .bassins-page h1 {
@@ -727,15 +755,9 @@
     display: none;
   }
 
-  .bassins-page .proof .rating .laurel {
-    display: none;
-  }
-
   .bassins-page .proof {
-    gap: clamp(3px, 1.2vw, 6px);
-    padding: 4px 8px 4px 4px;
-    transform: scale(0.96);
-    transform-origin: top center;
+    gap: 5px;
+    padding: 4px 7px 4px 4px;
   }
 
   .bassins-page h1 {
@@ -776,8 +798,8 @@
 
 @media (max-width: 360px) {
   .bassins-page .proof {
-    transform: scale(0.9);
-    margin-bottom: 14px;
+    gap: 4px;
+    padding: 3px 6px 3px 3px;
   }
 
   .bassins-page .stage {
