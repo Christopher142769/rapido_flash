@@ -90,6 +90,7 @@ export function inferChannelFromPath(pathname) {
   if (p.startsWith('/shop')) return 'shop';
   if (p.startsWith('/repas')) return 'repas';
   if (p.startsWith('/recrutement') || p.startsWith('/form')) return 'recrutement';
+  if (p.startsWith('/bassins')) return 'bassins';
   if (
     p.startsWith('/cart') ||
     p.startsWith('/checkout') ||

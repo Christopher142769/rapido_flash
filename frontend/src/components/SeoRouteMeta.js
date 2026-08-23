@@ -240,6 +240,30 @@ function metaForPath(pathname) {
       robots: 'index, follow',
     };
   }
+  if (pathname.startsWith('/bassins')) {
+    return {
+      title: 'Bassins hors-sol Rapido — Multipliez votre production de poisson',
+      description:
+        'Bassins et tanques hors-sol Rapido au Bénin : montage, remplissage et livraison prêts à empoissonner en 72 heures. Tilapia, Clarias, alevinage et grossissement.',
+      robots: 'index, follow',
+    };
+  }
+  if (pathname.startsWith('/form/bassins')) {
+    return {
+      title: 'Demande bassin Rapido — Qualification projet',
+      description:
+        'Répondez à 7 questions : un technicien Rapido vous rappelle sous 24 h avec dimensionnement, prix ferme et date de montage.',
+      robots: 'index, follow',
+    };
+  }
+  if (pathname.startsWith('/shop/bassin')) {
+    return {
+      title: 'Bassin hors-sol Rapido — Offre −50 % · 670 000 FCFA',
+      description:
+        'Réservez votre bassin professionnel clé en main : montage, remplissage et livraison prêt à empoissonner en 72 heures.',
+      robots: 'index, follow',
+    };
+  }
   const base = ROUTES[pathname];
   if (base) {
     return { ...base, robots: 'index, follow' };

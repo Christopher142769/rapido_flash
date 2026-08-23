@@ -34,5 +34,13 @@ export function trackMetaForRoute(pathname) {
     return;
   }
 
+  if (p.startsWith('/bassins')) {
+    trackMeta('ViewContent', {
+      content_name: 'Page Bassins',
+      content_category: 'Bassins',
+    });
+    return;
+  }
+
   trackMeta('PageView');
 }

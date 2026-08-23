@@ -112,7 +112,7 @@ function initStateFromForm(form) {
   return { textValues, choiceValues, tableValues, files: {}, fileLists: {} };
 }
 
-export default function SteppedCustomForm({ form, slug, onDone }) {
+export default function SteppedCustomForm({ form, slug, onDone, trackingCategory = 'Recrutement' }) {
   const settings = useMemo(() => defaultFormSettings(form.settings), [form.settings]);
   const steps = useMemo(() => buildFormSteps(form), [form]);
   const [stepIndex, setStepIndex] = useState(0);
@@ -236,7 +236,7 @@ export default function SteppedCustomForm({ form, slug, onDone }) {
       const res = await axios.post(`${API_URL}/custom-forms/public/${encodeURIComponent(slug)}/submit`, fd);
       trackMeta('CompleteRegistration', {
         content_name: form.title || slug,
-        content_category: 'Recrutement',
+        content_category: trackingCategory,
       });
 
       const thanksPath = toInAppThanksPath(res.data?.redirectUrl || form.redirectUrl);
@@ -260,6 +260,7 @@ export default function SteppedCustomForm({ form, slug, onDone }) {
     respondentName,
     settings.confirmationMessage,
     slug,
+    trackingCategory,
     validateAll,
   ]);
 

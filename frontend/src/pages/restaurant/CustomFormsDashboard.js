@@ -19,6 +19,7 @@ import {
   FaHashtag,
 } from 'react-icons/fa';
 import { defaultFormSettings } from '../../utils/customFormSteps';
+import { buildBassinsFormDraft, BASSINS_FORM_PATH, BASSINS_SHOP_PATH } from '../../data/bassinsFunnel';
 import FormRichTextEditor from '../../components/forms/FormRichTextEditor';
 import FormAnswerFilePreview from '../../components/forms/FormAnswerFilePreview';
 import { useModal } from '../../context/ModalContext';
@@ -256,6 +257,18 @@ export default function CustomFormsDashboard() {
     const urls = getFormPublicUrls(slug);
     const text = urls.length ? urls.join('\n') : '';
     navigator.clipboard.writeText(text).then(() => showSuccess('Liens copiés'));
+  };
+
+  const loadBassinsTemplate = () => {
+    const tpl = buildBassinsFormDraft();
+    setSelectedId(null);
+    setEditorOpen(true);
+    setDraft({
+      ...tpl,
+      notifyEmails: draft.notifyEmails || tpl.notifyEmails,
+    });
+    setTab('forms');
+    showSuccess(`Modèle bassins chargé — lien public : ${BASSINS_FORM_PATH} → ${BASSINS_SHOP_PATH}`);
   };
 
   const updateSection = (idx, patch) => {
@@ -516,6 +529,9 @@ export default function CustomFormsDashboard() {
           <aside className="cforms-card cforms-sidebar">
             <button type="button" className="cforms-btn primary block" onClick={() => selectForm(null)}>
               <FaPlus /> Nouveau formulaire
+            </button>
+            <button type="button" className="cforms-btn ghost block" onClick={loadBassinsTemplate}>
+              <FaWpforms /> Modèle bassins (7 questions)
             </button>
             <div className="cforms-sidebar-list">
               {forms.length === 0 ? (

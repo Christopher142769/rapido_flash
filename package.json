@@ -11,6 +11,7 @@
     "install-all": "npm install && cd frontend && npm install && cd ../mobile && npm install",
     "mobile": "cd mobile && npx expo start",
     "android:cap": "cd frontend && npm run android:studio",
+    "seed-bassins": "node backend/scripts/seedBassinsFunnel.js",
     "create-admin": "node backend/scripts/createAdmin.js",
     "create-admin-direct": "node backend/scripts/createAdminDirect.js",
     "create-default-plats": "node backend/scripts/createDefaultPlats.js",

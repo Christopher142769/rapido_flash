@@ -28,6 +28,7 @@ import Settings from './pages/client/Settings';
 import AccountDeletion from './pages/AccountDeletion';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import RecrutementPage from './pages/RecrutementPage';
+import BassinsPage from './pages/BassinsPage';
 import CustomFormsDashboard from './pages/restaurant/CustomFormsDashboard';
 import PublicCustomFormPage from './pages/public/PublicCustomFormPage';
 
@@ -105,7 +106,8 @@ function MetaPixelPageViewOnRoute() {
   const skipFirst = useRef(true);
   useEffect(() => {
     const p = location.pathname;
-    const isRecrutementOrForm = p.startsWith('/recrutement') || p.startsWith('/form/');
+    const isRecrutementOrForm =
+      p.startsWith('/recrutement') || p.startsWith('/form/') || p.startsWith('/bassins');
     if (skipFirst.current && !isRecrutementOrForm) {
       skipFirst.current = false;
       if (shouldTrackPath(p)) {
@@ -154,7 +156,9 @@ function AppRoutes() {
   const location = useLocation();
   const isRecrutement =
     location.pathname.startsWith('/recrutement') ||
+    location.pathname.startsWith('/bassins') ||
     location.pathname.startsWith('/form') ||
+    location.pathname.startsWith('/shop/bassin') ||
     location.pathname.startsWith('/champion') ||
     location.pathname.startsWith('/cuisine') ||
     location.pathname.startsWith('/responsables') ||
@@ -184,6 +188,7 @@ function AppRoutes() {
         {/* Recrutement : HTML statique recrutement/carrieres.html */}
         <Route path="/recrutement/merci" element={<RecrutementPage page="merci" />} />
         <Route path="/recrutement" element={<RecrutementPage page="index" />} />
+        <Route path="/bassins" element={<BassinsPage />} />
         <Route path="/form/:slug" element={<PublicCustomFormPage />} />
         <Route path="/formulaire/:slug" element={<FormLegacyRedirect />} />
 

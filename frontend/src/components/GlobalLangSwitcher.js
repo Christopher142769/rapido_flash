@@ -9,7 +9,7 @@ export default function GlobalLangSwitcher() {
   const location = useLocation();
   const { t } = useContext(LanguageContext);
 
-  if (location.pathname.startsWith('/recrutement')) {
+  if (location.pathname.startsWith('/recrutement') || location.pathname.startsWith('/bassins')) {
     return null;
   }
 

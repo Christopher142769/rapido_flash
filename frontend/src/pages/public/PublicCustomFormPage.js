@@ -2,19 +2,33 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import axios from 'axios';
 import SteppedCustomForm from '../../components/forms/SteppedCustomForm';
+import { BASSINS_FORM_SLUG } from '../../data/bassinsFunnel';
 import './RapidoFormTheme.css';
+import './BassinsFormTheme.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const LOGO_SRC = '/recrutement/logo.png';
 
-function FormShell({ children, minimal }) {
+function isBassinsForm(slug) {
+  return String(slug || '').toLowerCase().includes('bassin');
+}
+
+function FormShell({ children, minimal, bassins }) {
+  const rootClass = [
+    'rform-root',
+    minimal ? 'rform-root--stepped' : '',
+    bassins ? 'rform-root--bassins' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <div className={`rform-root${minimal ? ' rform-root--stepped' : ''}`}>
+    <div className={rootClass}>
       <header className="rform-header">
         <nav className="rform-nav">
-          <Link to="/home" className="rform-logo">
+          <Link to={bassins ? '/bassins' : '/home'} className="rform-logo">
             <img src={LOGO_SRC} alt="RAPIDO — Livraison Express" width="512" height="512" />
-            <small>Formulaire</small>
+            <small>{bassins ? 'Bassins Rapido' : 'Formulaire'}</small>
           </Link>
         </nav>
       </header>
@@ -63,6 +77,7 @@ function ThanksInline({ title, message }) {
 
 export default function PublicCustomFormPage() {
   const { slug } = useParams();
+  const bassins = isBassinsForm(slug) || slug === BASSINS_FORM_SLUG;
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -89,7 +104,7 @@ export default function PublicCustomFormPage() {
 
   if (loading) {
     return (
-      <FormShell minimal>
+      <FormShell minimal bassins={bassins}>
         <div className="rform-wrap rform-stepped-loading">
           <p className="rform-lead">Chargement du formulaire…</p>
         </div>
@@ -99,7 +114,7 @@ export default function PublicCustomFormPage() {
 
   if (error && !form) {
     return (
-      <FormShell>
+      <FormShell bassins={bassins}>
         <div className="rform-wrap" style={{ padding: '80px 0' }}>
           <p className="rform-error">{error}</p>
         </div>
@@ -109,17 +124,18 @@ export default function PublicCustomFormPage() {
 
   if (done) {
     return (
-      <FormShell>
+      <FormShell bassins={bassins}>
         <ThanksInline title={form?.title} message={thanksMessage} />
       </FormShell>
     );
   }
 
   return (
-    <FormShell minimal>
+    <FormShell minimal bassins={bassins}>
       <SteppedCustomForm
         form={form}
         slug={slug}
+        trackingCategory={bassins ? 'Bassins' : 'Recrutement'}
         onDone={({ confirmationMessage }) => {
           if (confirmationMessage) setThanksMessage(confirmationMessage);
           setDone(true);
