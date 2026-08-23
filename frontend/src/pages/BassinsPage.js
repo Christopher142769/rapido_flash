@@ -60,26 +60,13 @@ function BassinsPage() {
         <span className="label">Offre exclusive pour&nbsp;:</span>
         <span className="flag">🇧🇯</span>
         <span className="rank">Les pisciculteurs du Bénin</span>
-        <svg className="amazon" viewBox="0 0 130 40" aria-label="Rapido" role="img">
-          <text
-            x="0"
-            y="26"
-            fontFamily="Poppins, sans-serif"
-            fontSize="27"
-            fontWeight="700"
-            fill="#fff"
-          >
-            rapido
-          </text>
-          <path
-            d="M4 32c16 8 38 9 52 3"
-            stroke="#e8b54a"
-            strokeWidth="3.4"
-            fill="none"
-            strokeLinecap="round"
-          />
-          <path d="M56 33.5l6-2.2-1.4 5.6z" fill="#e8b54a" />
-        </svg>
+        <img
+          className="amazon"
+          src="/images/logo.png"
+          alt="Rapido"
+          width="160"
+          height="40"
+        />
       </div>
 
       {/* HERO */}

@@ -33,18 +33,6 @@ function FormShell({ children, minimal, bassins }) {
         </nav>
       </header>
       {children}
-      <footer className="rform-footer">
-        <div className="rform-wrap">
-          <Link to="/home" className="rform-logo">
-            <img src={LOGO_SRC} alt="RAPIDO" width="512" height="512" />
-          </Link>
-          <p>
-            {bassins
-              ? 'Plateforme e-commerce et marketplace · Cotonou, Bénin · Rapido Flash'
-              : 'Plateforme e-commerce &amp; marketplace · Cotonou, Bénin — Rapido Flash'}
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }

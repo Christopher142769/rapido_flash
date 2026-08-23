@@ -295,10 +295,7 @@
 }
 
 .rform-footer {
-  background: var(--paper-2);
-  border-top: 1px solid var(--line);
-  padding: 40px 0;
-  margin-top: 40px;
+  display: none;
 }
 
 .rform-footer p {

@@ -58,8 +58,13 @@
 }
 
 .bassins-page .amazon {
-  height: 26px;
+  height: 34px;
+  width: auto;
+  max-width: 140px;
   display: block;
+  object-fit: contain;
+  /* Logo Rapido en blanc sur la barre marron */
+  filter: brightness(0) invert(1);
 }
 
 /* ---------- HERO ---------- */
@@ -510,8 +515,9 @@
   }
 
   .bassins-page .amazon {
-    height: 18px;
+    height: 26px;
     width: auto;
+    max-width: 110px;
   }
 
   .bassins-page .hero {

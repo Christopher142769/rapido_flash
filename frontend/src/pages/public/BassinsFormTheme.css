@@ -56,20 +56,6 @@
   font-family: 'Poppins', sans-serif;
 }
 
-.rform-root--bassins .rform-footer {
-  background: #ffffff;
-  border-top: 1px solid rgba(92, 46, 11, 0.12);
-}
-
-.rform-root--bassins .rform-footer .rform-logo img {
-  filter: none;
-}
-
-.rform-root--bassins .rform-footer .rform-logo small,
-.rform-root--bassins .rform-footer p {
-  color: var(--ink-mute);
-}
-
 .rform-root--bassins .rform-stepped {
   max-width: 680px;
   padding: 24px 20px 48px;
