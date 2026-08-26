@@ -46,7 +46,7 @@ function bassinsFormDoc() {
       skipWelcome: true,
       skipSectionIntros: true,
       confirmationMessage:
-        'Merci ! Votre demande est bien enregistrée. Un technicien Rapido vous rappelle sous 24 h pour valider la quantité, l’adresse et la date de montage.',
+        'Un technicien Rapido vous rappelle sous 24 h pour valider la quantité, l’adresse et la date de montage.',
     },
     sections: [
       {

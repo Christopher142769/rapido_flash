@@ -210,8 +210,8 @@
   padding:11px 20px;
 }
 .bassins-landing .hero__content h1{
-  font-size:clamp(2.4rem,1.35rem + 3.6vw,3.75rem);
-  margin:18px 0 20px;
+  font-size:clamp(2.2rem,1.25rem + 3.1vw,3.35rem);
+  margin:16px 0 18px;
   letter-spacing:-.03em;
   line-height:1.06;
   font-weight:900;
@@ -222,10 +222,10 @@
   font-weight:800;
 }
 .bassins-landing .hero__sub{
-  font-size:clamp(1.05rem,1rem + .35vw,1.22rem);
+  font-size:clamp(1rem,.95rem + .28vw,1.14rem);
   color:var(--ink-muted);
-  max-width:36rem;
-  margin-bottom:28px;
+  max-width:34rem;
+  margin-bottom:24px;
   line-height:1.55;
 }
 .bassins-landing .hero__cta-row{display:flex;flex-wrap:wrap;align-items:center;gap:20px;margin-bottom:18px;}
@@ -403,8 +403,11 @@
 .bassins-landing .testimonial-card{background:#fff;border-radius:var(--radius-md);padding:28px 26px;box-shadow:var(--shadow-sm);}
 .bassins-landing .testimonial-card__head{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
 .bassins-landing .avatar{
-  width:46px;height:46px;border-radius:50%;background:var(--brown);color:var(--gold);
-  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.92rem;flex-shrink:0;
+  width:52px;height:52px;border-radius:50%;
+  object-fit:cover;object-position:center top;
+  background:var(--brown);color:var(--gold);
+  display:block;flex-shrink:0;
+  box-shadow:0 4px 12px rgba(56,24,8,.12);
 }
 .bassins-landing .testimonial-card__name{font-weight:700;font-size:.96rem;color:var(--brown);}
 .bassins-landing .testimonial-card__city{font-size:.82rem;color:var(--ink-muted);}

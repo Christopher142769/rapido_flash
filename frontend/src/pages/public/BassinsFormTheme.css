@@ -179,3 +179,29 @@
     font-size: 12px;
   }
 }
+
+/* Page de remerciement bassins */
+.rform-root--bassins .rform-thanks--bassins {
+  min-height: calc(100vh - 88px);
+  display: flex;
+  align-items: center;
+}
+
+.rform-root--bassins .rform-thanks--bassins .rform-thanks-title {
+  font-family: 'Anton', Impact, sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 1.05;
+  font-size: clamp(2.4rem, 1.4rem + 5vw, 4.25rem);
+  max-width: 14ch;
+  margin-top: 20px;
+  color: var(--ink);
+}
+
+.rform-root--bassins .rform-thanks--bassins .rform-lead {
+  font-size: clamp(1rem, 0.95rem + 0.4vw, 1.15rem);
+  max-width: 36ch;
+  margin-top: 20px;
+  color: var(--ink-soft);
+}

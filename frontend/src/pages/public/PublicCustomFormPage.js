@@ -37,9 +37,9 @@ function FormShell({ children, minimal, bassins }) {
   );
 }
 
-function ThanksInline({ title, message }) {
+function ThanksInline({ title, message, bassins }) {
   return (
-    <section className="rform-hero rform-thanks">
+    <section className={`rform-hero rform-thanks${bassins ? ' rform-thanks--bassins' : ''}`}>
       <div className="rform-hero-glow" />
       <div className="rform-hero-glow two" />
       <div className="rform-wrap">
@@ -47,21 +47,37 @@ function ThanksInline({ title, message }) {
           <circle className="ring" cx="60" cy="60" r="38" />
           <path className="check" d="M 44,61 L 55,72 L 78,49" />
         </svg>
-        <span className="rform-eyebrow">Réponse enregistrée</span>
-        <h1>
-          Merci. Votre réponse est entre <span className="serif-i">nos mains</span>.
-        </h1>
-        <p className="rform-lead">
-          {message ||
-            (title ? (
-              <>
-                Votre formulaire <strong>{title}</strong> a bien été transmis. Notre équipe le traitera dans les
-                meilleurs délais.
-              </>
-            ) : (
-              <>Votre formulaire a bien été transmis. Notre équipe le traitera dans les meilleurs délais.</>
-            ))}
-        </p>
+        {bassins ? (
+          <>
+            <h1 className="rform-thanks-title">
+              Merci,
+              <br />
+              votre réponse a été enregistrée
+            </h1>
+            <p className="rform-lead">
+              {message ||
+                'Un technicien Rapido vous rappelle sous 24 h pour valider la quantité, l’adresse et la date de montage.'}
+            </p>
+          </>
+        ) : (
+          <>
+            <span className="rform-eyebrow">Réponse enregistrée</span>
+            <h1>
+              Merci. Votre réponse est entre <span className="serif-i">nos mains</span>.
+            </h1>
+            <p className="rform-lead">
+              {message ||
+                (title ? (
+                  <>
+                    Votre formulaire <strong>{title}</strong> a bien été transmis. Notre équipe le
+                    traitera dans les meilleurs délais.
+                  </>
+                ) : (
+                  <>Votre formulaire a bien été transmis. Notre équipe le traitera dans les meilleurs délais.</>
+                ))}
+            </p>
+          </>
+        )}
       </div>
     </section>
   );
@@ -117,7 +133,7 @@ export default function PublicCustomFormPage() {
   if (done) {
     return (
       <FormShell bassins={bassins}>
-        <ThanksInline title={form?.title} message={thanksMessage} />
+        <ThanksInline title={form?.title} message={thanksMessage} bassins={bassins} />
       </FormShell>
     );
   }
@@ -133,7 +149,7 @@ export default function PublicCustomFormPage() {
             skipSectionIntros: true,
             confirmationMessage:
               form.settings?.confirmationMessage ||
-              'Merci ! Votre demande est bien enregistrée. Un technicien Rapido vous rappelle sous 24 h pour valider la quantité, l’adresse et la date de montage.',
+              'Un technicien Rapido vous rappelle sous 24 h pour valider la quantité, l’adresse et la date de montage.',
           },
         }
       : form;

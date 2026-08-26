@@ -507,7 +507,14 @@ function BassinsPage() {
             <div className="testimonials__grid">
               <div className="testimonial-card reveal">
                 <div className="testimonial-card__head">
-                  <div className="avatar">BK</div>
+                  <img
+                    className="avatar"
+                    src="/bassins/avis-bruno.png"
+                    alt="Bruno K."
+                    width="92"
+                    height="92"
+                    loading="lazy"
+                  />
                   <div>
                     <div className="testimonial-card__name">Bruno K.</div>
                     <div className="testimonial-card__city">Abomey Calavi</div>
@@ -522,7 +529,14 @@ function BassinsPage() {
               </div>
               <div className="testimonial-card reveal">
                 <div className="testimonial-card__head">
-                  <div className="avatar">CA</div>
+                  <img
+                    className="avatar"
+                    src="/bassins/avis-chantal.png"
+                    alt="Chantal A."
+                    width="92"
+                    height="92"
+                    loading="lazy"
+                  />
                   <div>
                     <div className="testimonial-card__name">Chantal A.</div>
                     <div className="testimonial-card__city">Cotonou</div>
@@ -537,7 +551,14 @@ function BassinsPage() {
               </div>
               <div className="testimonial-card reveal">
                 <div className="testimonial-card__head">
-                  <div className="avatar">SD</div>
+                  <img
+                    className="avatar"
+                    src="/bassins/avis-serge.png"
+                    alt="Serge D."
+                    width="92"
+                    height="92"
+                    loading="lazy"
+                  />
                   <div>
                     <div className="testimonial-card__name">Serge D.</div>
                     <div className="testimonial-card__city">Porto Novo</div>
