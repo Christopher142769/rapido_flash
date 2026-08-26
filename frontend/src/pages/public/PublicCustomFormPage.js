@@ -56,7 +56,7 @@ function ThanksInline({ title, message, bassins }) {
             </h1>
             <p className="rform-lead">
               {message ||
-                'Un technicien Rapido vous rappelle sous 24 h pour valider la quantité, l’adresse et la date de montage.'}
+                'Un technicien Rapido vous rappelle sous 24 h pour valider votre commande.'}
             </p>
           </>
         ) : (
@@ -149,7 +149,7 @@ export default function PublicCustomFormPage() {
             skipSectionIntros: true,
             confirmationMessage:
               form.settings?.confirmationMessage ||
-              'Un technicien Rapido vous rappelle sous 24 h pour valider la quantité, l’adresse et la date de montage.',
+              'Un technicien Rapido vous rappelle sous 24 h pour valider votre commande.',
           },
         }
       : form;

@@ -252,7 +252,7 @@ function metaForPath(pathname) {
     return {
       title: 'Demande bassin Rapido',
       description:
-        'Remplissez votre demande : un technicien Rapido vous rappelle sous 24 h pour valider quantité, adresse et date de montage.',
+        'Remplissez votre demande : un technicien Rapido vous rappelle sous 24 h pour valider votre commande.',
       robots: 'index, follow',
     };
   }
