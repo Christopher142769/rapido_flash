@@ -53,9 +53,14 @@ async function notifyFormSubmission({ form, submission }) {
   const emails = (form.notifyEmails || []).filter(Boolean);
   if (!emails.length) return { sent: false, reason: 'no_recipients' };
 
-  const subject = `[Rapido] Nouvelle réponse — ${form.title}`;
+  const slug = String(form.slug || '').toLowerCase();
+  const isBassins = slug.includes('bassin');
+  const name = String(submission.respondentName || '').trim() || 'Prospect';
+  const subject = isBassins
+    ? `🔥 LEAD BASSIN HOT — ${name} vient de demander son devis Rapido`
+    : `[Rapido] Nouvelle réponse — ${form.title}`;
   const html = `
-    <h2 style="color:#8b4513">Nouvelle réponse au formulaire</h2>
+    <h2 style="color:#381808">${isBassins ? 'Nouvelle demande bassin (chaud)' : 'Nouvelle réponse au formulaire'}</h2>
     <p><strong>Formulaire :</strong> ${escapeHtml(form.title)}</p>
     <p><strong>Nom :</strong> ${escapeHtml(submission.respondentName || '—')}</p>
     <p><strong>Email :</strong> ${escapeHtml(submission.respondentEmail || '—')}</p>

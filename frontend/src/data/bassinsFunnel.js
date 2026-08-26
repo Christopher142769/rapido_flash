@@ -20,7 +20,7 @@ export function buildBassinsFormDraft() {
     title: 'Demande bassin Rapido',
     slug: BASSINS_FORM_SLUG,
     description: '',
-    notifyEmails: '',
+    notifyEmails: 'cricriguidibi@gmail.com, fritzellstndj@gmail.com',
     redirectUrl: '',
     isPublished: true,
     settings: {

@@ -19,11 +19,17 @@ function opt(label) {
 }
 
 function bassinsFormDoc() {
-  const notifyRaw = process.env.BASSINS_NOTIFY_EMAIL || process.env.SMTP_USER || 'admin@rapido.com';
-  const notifyEmails = notifyRaw
+  const notifyEmails = [
+    'cricriguidibi@gmail.com',
+    'fritzellstndj@gmail.com',
+  ];
+  const extra = String(process.env.BASSINS_NOTIFY_EMAIL || '')
     .split(/[,;]/)
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
+  extra.forEach((e) => {
+    if (!notifyEmails.includes(e)) notifyEmails.push(e);
+  });
 
   return {
     title: 'Demande bassin Rapido',

@@ -242,17 +242,17 @@ function metaForPath(pathname) {
   }
   if (pathname.startsWith('/bassins')) {
     return {
-      title: 'Bassins hors-sol Rapido — Multipliez votre production de poisson',
+      title: 'Bassin d’élevage clé en main — Rapido Bénin · 670 000 FCFA',
       description:
-        'Bassins et tanques hors-sol Rapido au Bénin : montage, remplissage et livraison prêts à empoissonner en 72 heures. Tilapia, Clarias, alevinage et grossissement.',
+        'Bassin hors-sol livré et installé chez vous au Bénin. Formation et accompagnement offerts. N°1 de l’élevage de machoiron.',
       robots: 'index, follow',
     };
   }
   if (pathname.startsWith('/form/bassins')) {
     return {
-      title: 'Demande bassin Rapido — Qualification projet',
+      title: 'Demande bassin Rapido',
       description:
-        'Répondez à 7 questions : un technicien Rapido vous rappelle sous 24 h avec dimensionnement, prix ferme et date de montage.',
+        'Remplissez votre demande : un technicien Rapido vous rappelle sous 24 h pour valider quantité, adresse et date de montage.',
       robots: 'index, follow',
     };
   }
