@@ -116,56 +116,6 @@ export function buildBassinsFormDraft() {
               opt('Je me renseigne d’abord'),
             ],
           },
-          {
-            id: uid(),
-            kind: 'field',
-            fieldType: 'choice',
-            label:
-              "Est-ce un projet que vous financez vous-même, ou avec l'appui de votre famille / d'un partenaire ?",
-            required: true,
-            options: [
-              opt('Je finance seul(e)'),
-              opt('Avec ma famille'),
-              opt('Avec un partenaire / associé'),
-              opt('Je cherche encore un financement'),
-            ],
-          },
-          {
-            id: uid(),
-            kind: 'field',
-            fieldType: 'choice',
-            label:
-              'Avez-vous déjà une piste pour écouler vos poissons (marché, quartier, restaurant, revendeurs) ou souhaitez-vous des conseils sur ce point ?',
-            required: true,
-            options: [
-              opt('Oui : j’ai déjà des clients (marché, quartier, restaurant…)'),
-              opt('Oui : des pistes mais pas encore confirmées'),
-              opt('Non : j’aimerais des conseils Rapido'),
-              opt('Je vends via revendeurs / grossistes'),
-            ],
-          },
-          {
-            id: uid(),
-            kind: 'field',
-            fieldType: 'choice',
-            label:
-              "Qu'est-ce qui vous freine le plus aujourd'hui pour vous lancer : le prix, le manque d'expérience, ou autre chose ?",
-            required: true,
-            options: [
-              opt('Le prix / le budget'),
-              opt('Le manque d’expérience en pisciculture'),
-              opt('Trouver un emplacement'),
-              opt('L’écoulement / la vente du poisson'),
-              opt('Autre chose'),
-            ],
-          },
-          {
-            id: uid(),
-            kind: 'field',
-            fieldType: 'textarea',
-            label: 'Si « Autre », précisez en quelques mots (facultatif)',
-            required: false,
-          },
         ],
       },
     ],
