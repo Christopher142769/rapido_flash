@@ -9,7 +9,7 @@ import {
   exportPresenceToPdf,
   exportPresenceToWord,
   fetchImageAsDataUrl,
-  preparePresenceExport,
+  preparePresenceDetailedExport,
 } from '../../utils/exportStaffPresence';
 import '../commercial/commercial.css';
 import './StaffPresenceDashboard.css';
@@ -176,28 +176,45 @@ export default function StaffPresenceDashboard() {
   const exportMeta = useMemo(() => {
     const same = dateFrom && dateTo && dateFrom === dateTo;
     return {
-      title: isExitList
-        ? 'Présence personnel — Sortie'
-        : 'Présence personnel — Arrivée',
+      title: 'Présence personnel — Détail par agent',
       subtitle: same
-        ? `Date : ${dateFrom} · ${records.length} ${listLabel}(s)`
-        : `Du ${dateFrom || '…'} au ${dateTo || '…'} · ${records.length} ${listLabel}(s)`,
-      timeHeader,
-      fileSlug: isExitList ? 'presence-sortie' : 'presence-arrivee',
+        ? `Date : ${dateFrom}`
+        : `Période du ${dateFrom || '…'} au ${dateTo || '…'}`,
+      fileSlug: 'presence-detaillee',
+      companyName: settings?.companyName || 'KING FISH',
     };
-  }, [dateFrom, dateTo, records.length, isExitList, listLabel, timeHeader]);
+  }, [dateFrom, dateTo, settings?.companyName]);
 
-  const handleExport = (kind) => {
-    const data = preparePresenceExport(records, exportMeta);
-    data.timeHeader = exportMeta.timeHeader;
-    data.fileSlug = exportMeta.fileSlug;
-    if (!data.rows.length) {
-      showError(`Aucune ${listLabel} à exporter pour cette période`);
-      return;
+  const handleExport = async (kind) => {
+    try {
+      setBusy(true);
+      // Toujours charger arrivées + sorties pour un détail complet (sans filtre kind)
+      const res = await axios.get(`${API_URL}/staff-presence/records`, {
+        ...authHeaders(),
+        params: { dateFrom, dateTo },
+      });
+      const allRecords = Array.isArray(res.data) ? res.data : [];
+      const data = preparePresenceDetailedExport(allRecords, exportMeta);
+      if (!data.people.length) {
+        showError('Aucune présence à exporter pour cette période');
+        return;
+      }
+      data.subtitle = `${exportMeta.subtitle} · ${data.count} personnel · ${data.dayCount} jour(s)`;
+      if (kind === 'excel') exportPresenceToExcel(data);
+      if (kind === 'pdf') exportPresenceToPdf(data);
+      if (kind === 'word') exportPresenceToWord(data);
+      showSuccess(
+        kind === 'pdf'
+          ? 'PDF détaillé téléchargé'
+          : kind === 'excel'
+            ? 'Excel détaillé téléchargé'
+            : 'Word détaillé téléchargé'
+      );
+    } catch (e) {
+      showError(e.response?.data?.message || e.message || 'Export impossible');
+    } finally {
+      setBusy(false);
     }
-    if (kind === 'excel') exportPresenceToExcel(data);
-    if (kind === 'pdf') exportPresenceToPdf(data);
-    if (kind === 'word') exportPresenceToWord(data);
   };
 
   const regenerate = async (kind) => {
@@ -361,25 +378,25 @@ export default function StaffPresenceDashboard() {
             type="button"
             className="commercial-btn commercial-btn--primary"
             onClick={() => handleExport('excel')}
-            disabled={!records.length}
+            disabled={busy}
           >
-            Excel
+            Excel détaillé
           </button>
           <button
             type="button"
             className="commercial-btn commercial-btn--outline"
             onClick={() => handleExport('pdf')}
-            disabled={!records.length}
+            disabled={busy}
           >
-            PDF
+            PDF détaillé
           </button>
           <button
             type="button"
             className="commercial-btn commercial-btn--outline"
             onClick={() => handleExport('word')}
-            disabled={!records.length}
+            disabled={busy}
           >
-            Word
+            Word détaillé
           </button>
         </div>
 
