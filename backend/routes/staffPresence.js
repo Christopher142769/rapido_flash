@@ -24,12 +24,18 @@ function normalizeNamePart(value) {
     .replace(/\s+/g, ' ');
 }
 
+/** Identité stable : accents ignorés, ordre prénom/nom indifférent. */
 function normalizeFullKey(firstName, lastName) {
   return `${normalizeNamePart(firstName)} ${normalizeNamePart(lastName)}`
     .trim()
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .sort()
+    .join(' ');
 }
 
 function clientIp(req) {

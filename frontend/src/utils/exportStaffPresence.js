@@ -51,7 +51,6 @@ function formatTimeOnly(d) {
     timeZone: 'Africa/Porto-Novo',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit',
   });
 }
 
@@ -63,7 +62,7 @@ function formatDateKey(key) {
     return new Date(y, m - 1, d).toLocaleDateString('fr-FR', {
       weekday: 'short',
       day: '2-digit',
-      month: 'short',
+      month: '2-digit',
       year: 'numeric',
     });
   } catch {
@@ -83,44 +82,173 @@ function formatDuration(arrivalAt, exitAt) {
   return `${h} h ${String(m).padStart(2, '0')}`;
 }
 
-function normalizeKey(firstName, lastName) {
-  return `${String(firstName || '').trim()} ${String(lastName || '').trim()}`
-    .trim()
-    .toLowerCase()
+function stripNameNoise(value) {
+  return String(value || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, ' ');
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function nameTokens(firstName, lastName) {
+  return stripNameNoise(`${firstName || ''} ${lastName || ''}`)
+    .split(' ')
+    .filter(Boolean);
+}
+
+/** Clé stable : ordre prénom/nom indifférent (Jean Dupont = Dupont Jean). */
+function identityKeyFromTokens(tokens) {
+  return [...tokens].sort().join(' ');
+}
+
+function levenshtein(a, b) {
+  const s = String(a || '');
+  const t = String(b || '');
+  if (s === t) return 0;
+  if (!s.length) return t.length;
+  if (!t.length) return s.length;
+  const prev = Array.from({ length: t.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= s.length; i += 1) {
+    let prevDiag = prev[0];
+    prev[0] = i;
+    for (let j = 1; j <= t.length; j += 1) {
+      const temp = prev[j];
+      const cost = s[i - 1] === t[j - 1] ? 0 : 1;
+      prev[j] = Math.min(prev[j] + 1, prev[j - 1] + 1, prevDiag + cost);
+      prevDiag = temp;
+    }
+  }
+  return prev[t.length];
+}
+
+function tokenDistanceAllowed(a, b) {
+  const maxLen = Math.max(a.length, b.length);
+  if (maxLen <= 3) return a === b ? 0 : 1;
+  if (maxLen <= 5) return 1;
+  return 2;
+}
+
+function tokensPairMatch(tokensA, tokensB) {
+  if (tokensA.length !== tokensB.length || tokensA.length < 2) return false;
+  const used = new Set();
+  for (const ta of tokensA) {
+    let bestJ = -1;
+    let bestD = Infinity;
+    for (let j = 0; j < tokensB.length; j += 1) {
+      if (used.has(j)) continue;
+      const d = levenshtein(ta, tokensB[j]);
+      if (d < bestD) {
+        bestD = d;
+        bestJ = j;
+      }
+    }
+    if (bestJ < 0 || bestD > tokenDistanceAllowed(ta, tokensB[bestJ])) return false;
+    used.add(bestJ);
+  }
+  return true;
+}
+
+/** Même personne malgré fautes / variantes (prenom / prenoms, koffi / kofi…). */
+function tokensLikelySamePerson(tokensA, tokensB) {
+  if (!tokensA?.length || !tokensB?.length) return false;
+  const keyA = identityKeyFromTokens(tokensA);
+  const keyB = identityKeyFromTokens(tokensB);
+  if (keyA === keyB) return true;
+  if (tokensPairMatch(tokensA, tokensB)) return true;
+
+  const maxLen = Math.max(keyA.length, keyB.length);
+  if (maxLen >= 8) {
+    const allowed = maxLen <= 12 ? 2 : 3;
+    if (levenshtein(keyA, keyB) <= allowed) return true;
+  }
+  return false;
+}
+
+function titleCaseName(part) {
+  return String(part || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function pickDisplayName(nameVotes) {
+  let best = null;
+  let bestScore = -1;
+  nameVotes.forEach((score, label) => {
+    if (score > bestScore || (score === bestScore && label.length > (best?.length || 0))) {
+      best = label;
+      bestScore = score;
+    }
+  });
+  return best || '';
+}
+
+function applyCheckToDay(day, kind, at) {
+  if (kind === 'exit') {
+    if (!day.exitAt || at > new Date(day.exitAt)) day.exitAt = at.toISOString();
+  } else if (!day.arrivalAt || at < new Date(day.arrivalAt)) {
+    day.arrivalAt = at.toISOString();
+  }
+}
+
+function mergePersonInto(target, source) {
+  source.nameVotes.forEach((n, label) => {
+    target.nameVotes.set(label, (target.nameVotes.get(label) || 0) + n);
+  });
+  if (source.tokens.join(' ').length > target.tokens.join(' ').length) {
+    target.tokens = [...source.tokens];
+  }
+  source.days.forEach((day, dateKey) => {
+    if (!target.days.has(dateKey)) {
+      target.days.set(dateKey, { ...day });
+      return;
+    }
+    const t = target.days.get(dateKey);
+    if (day.arrivalAt) {
+      const at = new Date(day.arrivalAt);
+      if (!t.arrivalAt || at < new Date(t.arrivalAt)) t.arrivalAt = day.arrivalAt;
+    }
+    if (day.exitAt) {
+      const at = new Date(day.exitAt);
+      if (!t.exitAt || at > new Date(t.exitAt)) t.exitAt = day.exitAt;
+    }
+  });
 }
 
 /**
  * Agrège arrivées + sorties par personne et par jour (période sélectionnée).
- * Évite les doublons : 1 arrivée + 1 sortie max par jour / personne.
+ * Fusionne les mêmes personnes malgré inversion prénom/nom ou orthographes proches.
  */
 export function preparePresenceDetailedExport(records, meta = {}) {
-  const byPerson = new Map();
+  const buckets = [];
 
   (records || []).forEach((r) => {
     if (!r) return;
     const firstName = String(r.firstName || '').trim();
     const lastName = String(r.lastName || '').trim();
     if (!firstName && !lastName) return;
-    const key = r.normalizedName || normalizeKey(firstName, lastName);
-    if (!key) return;
+    const tokens = nameTokens(firstName, lastName);
+    if (!tokens.length) return;
 
-    if (!byPerson.has(key)) {
-      byPerson.set(key, {
-        key,
-        firstName,
-        lastName,
-        fullName: `${firstName} ${lastName}`.trim(),
+    const fullName = `${firstName} ${lastName}`.trim();
+    let person = buckets.find((p) => tokensLikelySamePerson(p.tokens, tokens));
+    if (!person) {
+      person = {
+        tokens: [...tokens],
+        nameVotes: new Map(),
         days: new Map(),
-      });
+      };
+      buckets.push(person);
     }
-    const person = byPerson.get(key);
-    // Garder l’orthographe la plus récente / non vide
-    if (firstName) person.firstName = firstName;
-    if (lastName) person.lastName = lastName;
-    person.fullName = `${person.firstName} ${person.lastName}`.trim();
+
+    person.nameVotes.set(fullName, (person.nameVotes.get(fullName) || 0) + 1);
+    if (tokens.join(' ').length > person.tokens.join(' ').length) {
+      person.tokens = [...tokens];
+    }
 
     const dateKey = String(r.dateKey || '').trim();
     if (!dateKey) return;
@@ -136,18 +264,26 @@ export function preparePresenceDetailedExport(records, meta = {}) {
     const kind = String(r.kind || 'arrival').toLowerCase();
     const at = r.checkedAt ? new Date(r.checkedAt) : null;
     if (!at || Number.isNaN(at.getTime())) return;
-
-    if (kind === 'exit') {
-      // Une seule sortie : la plus tardive si doublon résiduel
-      if (!day.exitAt || at > new Date(day.exitAt)) day.exitAt = at.toISOString();
-    } else {
-      // Une seule arrivée : la plus tôt si doublon résiduel
-      if (!day.arrivalAt || at < new Date(day.arrivalAt)) day.arrivalAt = at.toISOString();
-    }
+    applyCheckToDay(day, kind, at);
   });
 
-  const people = Array.from(byPerson.values())
+  for (let i = 0; i < buckets.length; i += 1) {
+    for (let j = i + 1; j < buckets.length; j += 1) {
+      if (!buckets[i] || !buckets[j]) continue;
+      if (!tokensLikelySamePerson(buckets[i].tokens, buckets[j].tokens)) continue;
+      mergePersonInto(buckets[i], buckets[j]);
+      buckets[j] = null;
+    }
+  }
+
+  const people = buckets
+    .filter(Boolean)
     .map((p) => {
+      const display = pickDisplayName(p.nameVotes) || identityKeyFromTokens(p.tokens);
+      const parts = display.split(/\s+/).filter(Boolean);
+      const firstName = titleCaseName(parts[0] || '');
+      const lastName = titleCaseName(parts.slice(1).join(' ') || '');
+      const fullName = `${firstName} ${lastName}`.trim() || titleCaseName(display);
       const days = Array.from(p.days.values())
         .sort((a, b) => String(a.dateKey).localeCompare(String(b.dateKey)))
         .map((d) => ({
@@ -158,23 +294,24 @@ export function preparePresenceDetailedExport(records, meta = {}) {
           checkedArrival: formatCheckedAt(d.arrivalAt),
           checkedExit: formatCheckedAt(d.exitAt),
         }));
-      const daysPresent = days.filter((d) => d.arrivalAt || d.exitAt).length;
-      const daysComplete = days.filter((d) => d.arrivalAt && d.exitAt).length;
       return {
-        ...p,
+        key: identityKeyFromTokens(p.tokens),
+        firstName,
+        lastName,
+        fullName,
         days,
-        daysPresent,
-        daysComplete,
+        daysPresent: days.filter((d) => d.arrivalAt || d.exitAt).length,
+        daysComplete: days.filter((d) => d.arrivalAt && d.exitAt).length,
       };
     })
-    .sort((a, b) =>
-      a.lastName.localeCompare(b.lastName, 'fr', { sensitivity: 'base' }) ||
-      a.firstName.localeCompare(b.firstName, 'fr', { sensitivity: 'base' })
+    .sort(
+      (a, b) =>
+        a.lastName.localeCompare(b.lastName, 'fr', { sensitivity: 'base' }) ||
+        a.firstName.localeCompare(b.firstName, 'fr', { sensitivity: 'base' })
     );
 
   const totalDayRows = people.reduce((n, p) => n + p.days.length, 0);
 
-  // Lignes plates (Excel / Word / rétrocompat)
   const rows = [];
   let n = 0;
   people.forEach((p) => {
@@ -287,8 +424,9 @@ export function exportPresenceToWord(exportData) {
       body { font-family: Calibri, Arial, sans-serif; color: #1c1712; }
       h1 { color: #381808; font-size: 22px; }
       table { border-collapse: collapse; width: 100%; margin-bottom: 8px; }
-      th, td { border: 1px solid #d4c4b0; padding: 7px 9px; text-align: left; font-size: 13px; }
+      th, td { border: 1px solid #d4c4b0; padding: 8px 12px; text-align: left; font-size: 13px; }
       th { background: #efe6dc; color: #381808; }
+      td:nth-child(2), td:nth-child(3), td:nth-child(4) { text-align: center; }
     </style></head><body>
     <h1>${escapeHtml(exportData.title)}</h1>
     <p>${escapeHtml(
@@ -304,7 +442,7 @@ export function exportPresenceToWord(exportData) {
 }
 
 function ensurePageSpace(doc, y, need, margin, drawFooter) {
-  if (y + need <= 280) return y;
+  if (y + need <= 278) return y;
   drawFooter?.(doc);
   doc.addPage();
   doc.setFillColor(...BRAND.cream);
@@ -312,10 +450,21 @@ function ensurePageSpace(doc, y, need, margin, drawFooter) {
   return 18;
 }
 
-/** PDF soigné : une fiche par agent, tous les jours de la période. */
+function drawCellText(doc, text, x, y, w, align = 'left') {
+  const label = String(text || '—');
+  if (align === 'center') {
+    doc.text(label, x + w / 2, y, { align: 'center', maxWidth: w - 4 });
+  } else if (align === 'right') {
+    doc.text(label, x + w - 3, y, { align: 'right', maxWidth: w - 4 });
+  } else {
+    doc.text(label, x + 3, y, { maxWidth: w - 5 });
+  }
+}
+
+/** PDF soigné : une fiche par agent, colonnes aérées, tous les jours de la période. */
 export function exportPresenceToPdf(exportData) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const margin = 14;
+  const margin = 16;
   const pageW = 210;
   const contentW = pageW - margin * 2;
   const people = exportData.people || [];
@@ -325,76 +474,83 @@ export function exportPresenceToPdf(exportData) {
     timeStyle: 'short',
   });
 
+  const colPad = 1.5;
+  const cols = [
+    { key: 'date', label: 'Date', w: 58, align: 'left' },
+    { key: 'arrival', label: 'Arrivée', w: 40, align: 'center' },
+    { key: 'exit', label: 'Sortie', w: 40, align: 'center' },
+    { key: 'duration', label: 'Durée', w: contentW - 58 - 40 - 40, align: 'center' },
+  ];
+
   const drawFooter = (d) => {
+    d.setDrawColor(...BRAND.line);
+    d.setLineWidth(0.3);
+    d.line(margin, 286, pageW - margin, 286);
     d.setFont('helvetica', 'normal');
     d.setFontSize(8);
     d.setTextColor(...BRAND.muted);
     d.text(
       `${exportData.companyName || 'Rapido'} · Export présence · ${exportedLabel}`,
       margin,
-      290
+      292
     );
-    d.text(`Page ${d.internal.getNumberOfPages()}`, pageW - margin, 290, { align: 'right' });
+    d.text(`Page ${d.internal.getNumberOfPages()}`, pageW - margin, 292, { align: 'right' });
   };
 
-  // Fond
-  doc.setFillColor(...BRAND.cream);
-  doc.rect(0, 0, pageW, 297, 'F');
+  const paintPageBg = () => {
+    doc.setFillColor(...BRAND.cream);
+    doc.rect(0, 0, pageW, 297, 'F');
+  };
+
+  paintPageBg();
 
   // En-tête
   doc.setFillColor(...BRAND.brown);
-  doc.rect(0, 0, pageW, 32, 'F');
+  doc.rect(0, 0, pageW, 34, 'F');
   doc.setFillColor(...BRAND.gold);
-  doc.rect(0, 32, pageW, 1.2, 'F');
+  doc.rect(0, 34, pageW, 1.4, 'F');
 
   doc.setTextColor(...BRAND.white);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.text(exportData.title || 'Présence personnel', margin, 14);
+  doc.setFontSize(15);
+  doc.text(exportData.title || 'Présence personnel', margin, 15);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9.5);
+  doc.setFontSize(9);
   doc.setTextColor(255, 236, 210);
-  doc.text(
+  const subtitleLines = doc.splitTextToSize(
     exportData.subtitle ||
       `${people.length} personnel · ${exportData.dayCount || 0} jour(s) pointé(s)`,
-    margin,
-    23
+    contentW
   );
+  doc.text(subtitleLines, margin, 24);
 
-  let y = 42;
+  let y = 44;
 
   // Synthèse
-  doc.setFillColor(...BRAND.creamDark);
-  doc.roundedRect(margin, y, contentW, 16, 2, 2, 'F');
-  doc.setTextColor(...BRAND.brown);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.text(`${people.length}`, margin + 6, y + 7);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(...BRAND.muted);
-  doc.text('Personnel', margin + 6, y + 12);
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(...BRAND.brown);
-  doc.text(`${exportData.dayCount || 0}`, margin + 55, y + 7);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(...BRAND.muted);
-  doc.text('Jours pointés', margin + 55, y + 12);
-
+  const cardW = (contentW - 8) / 3;
   const complete = people.reduce((n, p) => n + (p.daysComplete || 0), 0);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(...BRAND.brown);
-  doc.text(`${complete}`, margin + 110, y + 7);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(...BRAND.muted);
-  doc.text('Journées complètes', margin + 110, y + 12);
-
-  y += 24;
+  const cards = [
+    { value: String(people.length), label: 'Personnel' },
+    { value: String(exportData.dayCount || 0), label: 'Jours pointés' },
+    { value: String(complete), label: 'Journées complètes' },
+  ];
+  cards.forEach((card, i) => {
+    const x = margin + i * (cardW + 4);
+    doc.setFillColor(...BRAND.white);
+    doc.roundedRect(x, y, cardW, 18, 2, 2, 'F');
+    doc.setDrawColor(...BRAND.line);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(x, y, cardW, 18, 2, 2, 'S');
+    doc.setTextColor(...BRAND.brown);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text(card.value, x + cardW / 2, y + 8, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...BRAND.muted);
+    doc.text(card.label, x + cardW / 2, y + 14, { align: 'center' });
+  });
+  y += 26;
 
   if (!people.length) {
     doc.setTextColor(...BRAND.muted);
@@ -406,79 +562,91 @@ export function exportPresenceToPdf(exportData) {
     return;
   }
 
-  const col = {
-    date: 52,
-    arrival: 38,
-    exit: 38,
-    duration: contentW - 52 - 38 - 38,
-  };
+  const ROW_H = 9;
+  const HEAD_H = 8;
 
   people.forEach((person, idx) => {
-    y = ensurePageSpace(doc, y, 28 + person.days.length * 7, margin, drawFooter);
+    const blockNeed = 16 + HEAD_H + Math.min(person.days.length, 3) * ROW_H + 6;
+    y = ensurePageSpace(doc, y, blockNeed, margin, drawFooter);
 
     // Bandeau agent
     doc.setFillColor(...BRAND.brown);
-    doc.roundedRect(margin, y, contentW, 11, 1.5, 1.5, 'F');
+    doc.roundedRect(margin, y, contentW, 12, 2, 2, 'F');
     doc.setTextColor(...BRAND.white);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
-    doc.text(`${idx + 1}. ${person.fullName}`, margin + 4, y + 7.2);
+    doc.text(`${idx + 1}.  ${person.fullName}`, margin + 5, y + 7.8);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(255, 220, 180);
     doc.text(
-      `${person.daysPresent} j · ${person.daysComplete} complète(s)`,
-      pageW - margin - 4,
-      y + 7.2,
+      `${person.daysPresent} jour(s)  ·  ${person.daysComplete} complète(s)`,
+      pageW - margin - 5,
+      y + 7.8,
       { align: 'right' }
     );
     y += 14;
 
-    // En-tête tableau jours
+    // En-tête colonnes
     doc.setFillColor(...BRAND.creamDark);
-    doc.rect(margin, y, contentW, 7, 'F');
-    doc.setTextColor(...BRAND.brown);
+    doc.rect(margin, y, contentW, HEAD_H, 'F');
+    doc.setDrawColor(...BRAND.line);
+    doc.setLineWidth(0.25);
+    doc.rect(margin, y, contentW, HEAD_H, 'S');
+
+    let x = margin;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
-    let x = margin + 2;
-    doc.text('Date', x, y + 4.8);
-    x += col.date;
-    doc.text('Arrivée', x, y + 4.8);
-    x += col.arrival;
-    doc.text('Sortie', x, y + 4.8);
-    x += col.exit;
-    doc.text('Durée', x, y + 4.8);
-    y += 8;
+    doc.setTextColor(...BRAND.brown);
+    cols.forEach((col, ci) => {
+      if (ci > 0) {
+        doc.setDrawColor(...BRAND.line);
+        doc.line(x, y + 1, x, y + HEAD_H - 1);
+      }
+      drawCellText(doc, col.label, x, y + 5.4, col.w - colPad, col.align);
+      x += col.w;
+    });
+    y += HEAD_H;
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
+    doc.setFontSize(9);
 
     person.days.forEach((day, di) => {
-      y = ensurePageSpace(doc, y, 8, margin, drawFooter);
+      y = ensurePageSpace(doc, y, ROW_H + 2, margin, drawFooter);
+
       if (di % 2 === 0) {
-        doc.setFillColor(255, 255, 255);
-        doc.rect(margin, y - 3.5, contentW, 7, 'F');
+        doc.setFillColor(...BRAND.white);
+      } else {
+        doc.setFillColor(252, 248, 243);
       }
+      doc.rect(margin, y, contentW, ROW_H, 'F');
+
       doc.setDrawColor(...BRAND.line);
       doc.setLineWidth(0.2);
-      doc.line(margin, y + 3.2, margin + contentW, y + 3.2);
+      doc.rect(margin, y, contentW, ROW_H, 'S');
 
-      doc.setTextColor(...BRAND.text);
-      x = margin + 2;
-      doc.text(day.dateLabel, x, y + 1.5, { maxWidth: col.date - 3 });
-      x += col.date;
-      doc.setTextColor(...(day.arrivalAt ? BRAND.success : BRAND.muted));
-      doc.text(day.arrivalLabel, x, y + 1.5);
-      x += col.arrival;
-      doc.setTextColor(...(day.exitAt ? BRAND.brownMid : BRAND.muted));
-      doc.text(day.exitLabel, x, y + 1.5);
-      x += col.exit;
-      doc.setTextColor(...BRAND.text);
-      doc.text(day.durationLabel, x, y + 1.5);
-      y += 7;
+      x = margin;
+      const values = [day.dateLabel, day.arrivalLabel, day.exitLabel, day.durationLabel];
+      const colors = [
+        BRAND.text,
+        day.arrivalAt ? BRAND.success : BRAND.muted,
+        day.exitAt ? BRAND.brownMid : BRAND.muted,
+        BRAND.text,
+      ];
+
+      cols.forEach((col, ci) => {
+        if (ci > 0) {
+          doc.setDrawColor(...BRAND.line);
+          doc.line(x, y + 0.5, x, y + ROW_H - 0.5);
+        }
+        doc.setTextColor(...colors[ci]);
+        drawCellText(doc, values[ci], x, y + 5.8, col.w - colPad, col.align);
+        x += col.w;
+      });
+      y += ROW_H;
     });
 
-    y += 8;
+    y += 10;
   });
 
   drawFooter(doc);
