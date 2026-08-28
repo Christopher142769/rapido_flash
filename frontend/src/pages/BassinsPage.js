@@ -570,6 +570,75 @@ function BassinsPage() {
                   m&apos;a expliqué clairement ce qui était inclus, sans rien me cacher. »
                 </p>
               </div>
+              <div className="testimonial-card reveal">
+                <div className="testimonial-card__head">
+                  <img
+                    className="avatar"
+                    src="/bassins/avis-patrice.png"
+                    alt="Patrice N."
+                    width="92"
+                    height="92"
+                    loading="lazy"
+                  />
+                  <div>
+                    <div className="testimonial-card__name">Patrice N.</div>
+                    <div className="testimonial-card__city">Godomey</div>
+                  </div>
+                </div>
+                <div className="testimonial-card__stars">★★★★★</div>
+                <p className="quote">
+                  « Je pensais qu&apos;il fallait un terrain en dehors de la ville. Le bassin est
+                  derrière la maison, à l&apos;endroit où on garait les motos. L&apos;équipe est
+                  venue mesurer avant, ils m&apos;ont dit franchement ce qu&apos;il fallait
+                  dégager. »
+                </p>
+              </div>
+              <div className="testimonial-card reveal">
+                <div className="testimonial-card__head">
+                  <img
+                    className="avatar"
+                    src="/bassins/avis-marc.png"
+                    alt="Marc T."
+                    width="92"
+                    height="92"
+                    loading="lazy"
+                  />
+                  <div>
+                    <div className="testimonial-card__name">Marc T.</div>
+                    <div className="testimonial-card__city">Akpakpa</div>
+                  </div>
+                </div>
+                <div className="testimonial-card__stars">★★★★★</div>
+                <p className="quote">
+                  « Je n&apos;avais jamais élevé un poisson de ma vie. Ils m&apos;ont montré les
+                  gestes le jour de la mise en eau et j&apos;ai gardé la fiche accrochée au mur.
+                  Quand j&apos;ai eu un doute la deuxième semaine, j&apos;ai appelé et on m&apos;a
+                  répondu. »
+                </p>
+              </div>
+              <div className="testimonial-card reveal">
+                <div className="testimonial-card__head">
+                  <img
+                    className="avatar"
+                    src="/bassins/avis-estelle.png"
+                    alt="Estelle V."
+                    width="92"
+                    height="92"
+                    loading="lazy"
+                  />
+                  <div>
+                    <div className="testimonial-card__name">Estelle V.</div>
+                    <div className="testimonial-card__city">Ouidah</div>
+                  </div>
+                </div>
+                <div className="testimonial-card__stars">★★★★★</div>
+                <p className="quote">
+                  « Ce qui m&apos;a décidé, c&apos;est qu&apos;on m&apos;a annoncé avant de payer
+                  ce que l&apos;aliment allait me coûter en plus chaque mois. Personne ne m&apos;avait
+                  parlé comme ça avant. Après l&apos;installation, ils sont revenus, ce n&apos;était
+                  pas juste une vente. »
+                </p>
+              </div>
             </div>
           </div>
         </section>
