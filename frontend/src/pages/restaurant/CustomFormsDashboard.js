@@ -19,7 +19,7 @@ import {
   FaHashtag,
 } from 'react-icons/fa';
 import { defaultFormSettings } from '../../utils/customFormSteps';
-import { buildBassinsFormDraft, BASSINS_FORM_PATH } from '../../data/bassinsFunnel';
+import { buildBassinsFormDraft, BASSINS_FORM_PATH, BASSINS_THANKS_PATH } from '../../data/bassinsFunnel';
 import FormRichTextEditor from '../../components/forms/FormRichTextEditor';
 import FormAnswerFilePreview from '../../components/forms/FormAnswerFilePreview';
 import { useModal } from '../../context/ModalContext';
@@ -268,7 +268,7 @@ export default function CustomFormsDashboard() {
       notifyEmails: draft.notifyEmails || tpl.notifyEmails,
     });
     setTab('forms');
-    showSuccess(`Modèle bassins chargé : lien public ${BASSINS_FORM_PATH} (page remerciement à l’envoi)`);
+    showSuccess(`Modèle bassins chargé : ${BASSINS_FORM_PATH} → remerciements ${BASSINS_THANKS_PATH}`);
   };
 
   const updateSection = (idx, patch) => {

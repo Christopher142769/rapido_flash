@@ -34,6 +34,14 @@ export function trackMetaForRoute(pathname) {
     return;
   }
 
+  if (p === '/bassins-remerciements') {
+    trackMeta('CompleteRegistration', {
+      content_name: 'Demande bassin reçue',
+      content_category: 'Bassins',
+    });
+    return;
+  }
+
   if (p.startsWith('/bassins')) {
     trackMeta('ViewContent', {
       content_name: 'Page Bassins',

@@ -3,6 +3,7 @@ export const BASSINS_FORM_SLUG = 'bassins-devis';
 export const BASSINS_SHOP_SLUG = 'bassin';
 export const BASSINS_FORM_PATH = `/form/${BASSINS_FORM_SLUG}`;
 export const BASSINS_SHOP_PATH = `/shop/${BASSINS_SHOP_SLUG}`;
+export const BASSINS_THANKS_PATH = '/bassins-remerciements';
 
 export const BASSINS_BASE_PRICE = 1340000;
 export const BASSINS_PROMO_PERCENT = 50;
@@ -21,7 +22,7 @@ export function buildBassinsFormDraft() {
     slug: BASSINS_FORM_SLUG,
     description: '',
     notifyEmails: 'cricriguidibi@gmail.com, fritzellstndj@gmail.com',
-    redirectUrl: '',
+    redirectUrl: BASSINS_THANKS_PATH,
     isPublished: true,
     settings: {
       showProgressBar: true,

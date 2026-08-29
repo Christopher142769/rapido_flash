@@ -20,6 +20,7 @@ const ALLOWED_EXACT = [
   '/suppression-compte',
   '/politique-confidentialite',
   '/privacy',
+  '/bassins-remerciements',
 ];
 
 function pathIsAllowed(pathname) {

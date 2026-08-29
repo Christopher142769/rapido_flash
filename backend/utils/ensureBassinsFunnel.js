@@ -36,7 +36,7 @@ function bassinsFormDoc() {
     slug: FORM_SLUG,
     description: '',
     notifyEmails,
-    redirectUrl: '',
+    redirectUrl: '/bassins-remerciements',
     isPublished: true,
     settings: {
       showProgressBar: true,

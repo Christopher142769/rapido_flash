@@ -240,6 +240,14 @@ function metaForPath(pathname) {
       robots: 'index, follow',
     };
   }
+  if (pathname === '/bassins-remerciements' || pathname === '/bassins-remerciements/') {
+    return {
+      title: 'Demande enregistrée · Bassins Rapido',
+      description:
+        'Votre demande bassin a bien été enregistrée. Un technicien Rapido vous rappelle sous 24 h.',
+      robots: 'noindex, follow',
+    };
+  }
   if (pathname.startsWith('/bassins')) {
     return {
       title: 'Bassin d’élevage clé en main — Rapido Bénin · 670 000 FCFA',

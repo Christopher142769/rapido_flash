@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import axios from 'axios';
 import SteppedCustomForm from '../../components/forms/SteppedCustomForm';
-import { BASSINS_FORM_SLUG } from '../../data/bassinsFunnel';
+import { BASSINS_FORM_SLUG, BASSINS_THANKS_PATH } from '../../data/bassinsFunnel';
 import './RapidoFormTheme.css';
 import './BassinsFormTheme.css';
 
@@ -142,7 +142,7 @@ export default function PublicCustomFormPage() {
     bassins && form
       ? {
           ...form,
-          redirectUrl: '',
+          redirectUrl: BASSINS_THANKS_PATH,
           settings: {
             ...(form.settings || {}),
             skipWelcome: true,
