@@ -19,7 +19,13 @@ import {
   FaHashtag,
 } from 'react-icons/fa';
 import { defaultFormSettings } from '../../utils/customFormSteps';
-import { buildBassinsFormDraft, BASSINS_FORM_PATH, BASSINS_THANKS_PATH } from '../../data/bassinsFunnel';
+import { buildBassinsFormDraft, BASSINS_FORM_PATH, BASSINS_THANKS_PATH, BASSINS_FORM_SLUG } from '../../data/bassinsFunnel';
+import {
+  BASSINS_GOOD_CLIENTS_SINCE,
+  prepareBassinsExport,
+  exportBassinsToExcel,
+  exportBassinsToPdf,
+} from '../../utils/exportBassinsSubmissions';
 import FormRichTextEditor from '../../components/forms/FormRichTextEditor';
 import FormAnswerFilePreview from '../../components/forms/FormAnswerFilePreview';
 import { useModal } from '../../context/ModalContext';
@@ -147,6 +153,7 @@ export default function CustomFormsDashboard() {
   const [filterFormId, setFilterFormId] = useState('');
   const [detailSubmission, setDetailSubmission] = useState(null);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [exportingBassins, setExportingBassins] = useState(false);
 
   const token = localStorage.getItem('token');
   const authHeaders = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
@@ -172,6 +179,53 @@ export default function CustomFormsDashboard() {
   useEffect(() => {
     if (tab === 'responses') loadSubmissions();
   }, [filterFormId, tab, loadSubmissions]);
+
+  const exportBassins = async (kind, seriousOnly = true) => {
+    setExportingBassins(true);
+    try {
+      const bassinsForm = forms.find(
+        (f) =>
+          String(f.slug || '').toLowerCase() === BASSINS_FORM_SLUG ||
+          String(f.slug || '').toLowerCase().includes('bassin') ||
+          String(f.title || '').toLowerCase().includes('bassin')
+      );
+      const params = {
+        since: BASSINS_GOOD_CLIENTS_SINCE.toISOString(),
+        limit: 2000,
+      };
+      if (bassinsForm?._id) params.formId = bassinsForm._id;
+      else params.slug = BASSINS_FORM_SLUG;
+
+      const res = await axios.get(`${API_URL}/custom-forms/submissions/list`, {
+        ...authHeaders,
+        params,
+      });
+      const items = res.data?.items || [];
+      const data = prepareBassinsExport(items, {
+        seriousOnly,
+        assumeBassins: Boolean(bassinsForm?._id),
+      });
+      if (!data.rows.length) {
+        showError(
+          seriousOnly
+            ? `Aucun bon client trouvé depuis le ${BASSINS_GOOD_CLIENTS_SINCE.toLocaleString('fr-FR')} (${data.totalInPeriod} réponse(s) analysée(s)).`
+            : 'Aucune réponse bassins sur cette période.'
+        );
+        return;
+      }
+      if (kind === 'excel') exportBassinsToExcel(data);
+      else exportBassinsToPdf(data);
+      showSuccess(
+        `${kind === 'excel' ? 'Excel' : 'PDF'} téléchargé · ${data.rows.length} fiche(s)${
+          seriousOnly ? ` sérieuse(s) / ${data.totalInPeriod}` : ''
+        }`
+      );
+    } catch (err) {
+      showError(err.response?.data?.message || err.message || 'Export impossible');
+    } finally {
+      setExportingBassins(false);
+    }
+  };
 
   const selectForm = (form) => {
     if (!form) {
@@ -437,6 +491,43 @@ export default function CustomFormsDashboard() {
             <button type="button" className="cforms-btn ghost" onClick={() => loadSubmissions()}>
               Actualiser
             </button>
+            <div className="cforms-export-bassins">
+              <span className="cforms-label">Bassins — bons clients (depuis 29/08/2026 20:19)</span>
+              <div className="cforms-export-bassins-actions">
+                <button
+                  type="button"
+                  className="cforms-btn primary"
+                  disabled={exportingBassins}
+                  onClick={() => exportBassins('excel', true)}
+                >
+                  Excel bons clients
+                </button>
+                <button
+                  type="button"
+                  className="cforms-btn primary"
+                  disabled={exportingBassins}
+                  onClick={() => exportBassins('pdf', true)}
+                >
+                  PDF bons clients
+                </button>
+                <button
+                  type="button"
+                  className="cforms-btn ghost"
+                  disabled={exportingBassins}
+                  onClick={() => exportBassins('excel', false)}
+                >
+                  Excel tout (période)
+                </button>
+                <button
+                  type="button"
+                  className="cforms-btn ghost"
+                  disabled={exportingBassins}
+                  onClick={() => exportBassins('pdf', false)}
+                >
+                  PDF tout (période)
+                </button>
+              </div>
+            </div>
           </div>
 
           {detailSubmission ? (

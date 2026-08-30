@@ -714,6 +714,27 @@
   min-width: 180px;
 }
 
+.cforms-export-bassins {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(199, 109, 46, 0.08);
+  border: 1px solid rgba(139, 69, 19, 0.14);
+}
+
+.cforms-export-bassins .cforms-label {
+  margin: 0;
+}
+
+.cforms-export-bassins-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .cforms-response-card {
   display: flex;
   flex-direction: column;

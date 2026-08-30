@@ -218,9 +218,25 @@ router.get('/submissions/list', auth, isRestaurant, async (req, res) => {
   try {
     const filter = {};
     if (req.query.formId) filter.form = req.query.formId;
+    if (req.query.slug) {
+      filter.formSlug = String(req.query.slug).trim().toLowerCase();
+    }
+    if (req.query.since) {
+      const since = new Date(req.query.since);
+      if (!Number.isNaN(since.getTime())) {
+        filter.createdAt = { ...(filter.createdAt || {}), $gte: since };
+      }
+    }
+    if (req.query.until) {
+      const until = new Date(req.query.until);
+      if (!Number.isNaN(until.getTime())) {
+        filter.createdAt = { ...(filter.createdAt || {}), $lte: until };
+      }
+    }
+    const limit = Math.min(2000, Math.max(1, parseInt(req.query.limit || '500', 10) || 500));
     const items = await CustomFormSubmission.find(filter)
       .sort({ createdAt: -1 })
-      .limit(200)
+      .limit(limit)
       .lean();
     res.json({ items, total: items.length });
   } catch (err) {
