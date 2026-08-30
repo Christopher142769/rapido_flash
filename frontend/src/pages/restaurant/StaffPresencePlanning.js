@@ -17,8 +17,6 @@ const DEFAULT_WEEKDAYS = [
   { id: 7, label: 'Dimanche', short: 'Dim' },
 ];
 
-import { formatStaffPerson } from '../../utils/staffPresenceFormat';
-
 export function empDisplayName(e) {
   return formatStaffPerson(e);
 }
