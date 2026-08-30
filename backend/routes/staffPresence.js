@@ -17,7 +17,7 @@ const {
   siteLabel,
 } = require('../utils/staffPresenceSites');
 const { notifyPresenceRecorded } = require('../services/staffPresenceMailer');
-const { readSelfieBuffer, safeZipBaseName } = require('../utils/staffPresenceSelfie');
+const { readSelfieBuffer, safeZipBaseName, resolveLocalSelfiePath } = require('../utils/staffPresenceSelfie');
 const {
   SHIFTS,
   SHIFT_IDS,
@@ -547,6 +547,28 @@ router.get('/records', auth, isRestaurant, async (req, res) => {
     }
 
     res.json(records);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+/** Admin : supprimer un enregistrement (test ou erreur). */
+router.delete('/records/:id', auth, isRestaurant, async (req, res) => {
+  try {
+    const record = await StaffPresenceRecord.findById(req.params.id);
+    if (!record) return res.status(404).json({ message: 'Enregistrement introuvable' });
+
+    const localSelfie = resolveLocalSelfiePath(record.selfieUrl);
+    if (localSelfie && fs.existsSync(localSelfie)) {
+      try {
+        fs.unlinkSync(localSelfie);
+      } catch {
+        /* ignore */
+      }
+    }
+
+    await record.deleteOne();
+    res.json({ ok: true, deletedId: record._id });
   } catch (e) {
     res.status(500).json({ message: e.message });
   }

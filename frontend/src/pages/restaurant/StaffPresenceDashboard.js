@@ -449,6 +449,21 @@ export default function StaffPresenceDashboard() {
     [employees]
   );
 
+  const deleteRecord = async (record) => {
+    const label = `${formatStaffPerson(record)} · ${record.dateKey} · ${SHIFT_LABELS[record.shift] || record.shift}`;
+    if (!window.confirm(`Supprimer cet enregistrement ?\n\n${label}`)) return;
+    setBusy(true);
+    try {
+      await axios.delete(`${API_URL}/staff-presence/records/${record._id}`, authHeaders());
+      await loadRecords();
+      showSuccess('Enregistrement supprimé');
+    } catch (err) {
+      showError(err.response?.data?.message || err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (loading) return <PageLoader message="Présence personnel…" />;
 
   return (
@@ -710,6 +725,7 @@ export default function StaffPresenceDashboard() {
                 <th>{isExitList ? 'Sortie' : 'Arrivée'}</th>
                 <th>Selfie</th>
                 {isExitList || viewMode === 'overtime' ? <th>Heures sup.</th> : null}
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -734,6 +750,16 @@ export default function StaffPresenceDashboard() {
                       {formatOvertime(r.overtimeMinutes)}
                     </td>
                   ) : null}
+                  <td>
+                    <button
+                      type="button"
+                      className="commercial-btn commercial-btn--outline commercial-btn--sm"
+                      disabled={busy}
+                      onClick={() => deleteRecord(r)}
+                    >
+                      Supprimer
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
