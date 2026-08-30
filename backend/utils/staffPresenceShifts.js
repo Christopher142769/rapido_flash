@@ -2,9 +2,9 @@ const TZ = 'Africa/Porto-Novo';
 
 /** Plages horaires cycliques (8 h chacune). */
 const SHIFTS = {
-  morning: { id: 'morning', label: '08h – 16h', scheduledMinutes: 480 },
-  afternoon: { id: 'afternoon', label: '16h – 00h', scheduledMinutes: 480 },
-  night: { id: 'night', label: '00h – 08h', scheduledMinutes: 480 },
+  morning: { id: 'morning', label: 'Matin (08h – 16h)', scheduledMinutes: 480 },
+  afternoon: { id: 'afternoon', label: 'Soir (16h – 00h)', scheduledMinutes: 480 },
+  night: { id: 'night', label: 'Nuit (00h – 08h)', scheduledMinutes: 480 },
 };
 
 const SHIFT_IDS = Object.keys(SHIFTS);

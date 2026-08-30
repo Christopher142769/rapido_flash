@@ -16,6 +16,11 @@ import '../commercial/commercial.css';
 import './StaffPresenceDashboard.css';
 import { getMediaBaseUrl, resolveMediaUrl } from '../../utils/mediaUrl';
 import { toDashboardPath } from '../../config/dashboardPath';
+import StaffPresencePlanning, {
+  DEFAULT_WEEKDAYS,
+  empDisplayName,
+  restDaysSummary,
+} from './StaffPresencePlanning';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const MEDIA_BASE = getMediaBaseUrl();
@@ -26,9 +31,9 @@ const SITES = [
 ];
 
 const SHIFT_LABELS = {
-  morning: '08h – 16h',
-  afternoon: '16h – 00h',
-  night: '00h – 08h',
+  morning: 'Matin (08h – 16h)',
+  afternoon: 'Soir (16h – 00h)',
+  night: 'Nuit (00h – 08h)',
 };
 
 function absoluteMediaUrl(path) {
@@ -125,6 +130,9 @@ export default function StaffPresenceDashboard() {
   const [dateFrom, setDateFrom] = useState(() => todayKey());
   const [dateTo, setDateTo] = useState(() => todayKey());
   const [busy, setBusy] = useState(false);
+  const [schedule, setSchedule] = useState(null);
+  const [editingEmpId, setEditingEmpId] = useState(null);
+  const [empEdit, setEmpEdit] = useState({ restDays: [], contractDaysPerWeek: 5, notes: '' });
   const [empForm, setEmpForm] = useState({ firstName: '', lastName: '', siteId: 'gbegamey' });
   const arrivalCanvasRef = useRef(null);
   const exitCanvasRef = useRef(null);
@@ -145,9 +153,18 @@ export default function StaffPresenceDashboard() {
   const loadEmployees = useCallback(async () => {
     const res = await axios.get(`${API_URL}/staff-presence/employees`, {
       ...authHeaders(),
-      params: { site: activeSite, active: 'true' },
+      params: { site: activeSite },
     });
     setEmployees(Array.isArray(res.data) ? res.data : []);
+  }, [activeSite]);
+
+  const loadSchedule = useCallback(async () => {
+    const res = await axios.get(`${API_URL}/staff-presence/schedule`, {
+      ...authHeaders(),
+      params: { site: activeSite },
+    });
+    setSchedule(res.data?.schedule || null);
+    if (Array.isArray(res.data?.employees)) setEmployees(res.data.employees);
   }, [activeSite]);
 
   const loadRecords = useCallback(async () => {
@@ -163,13 +180,13 @@ export default function StaffPresenceDashboard() {
   const loadAll = useCallback(async () => {
     try {
       setLoading(true);
-      await Promise.all([loadSettings(), loadEmployees(), loadRecords()]);
+      await Promise.all([loadSettings(), loadEmployees(), loadRecords(), loadSchedule()]);
     } catch (e) {
       showError(e.response?.data?.message || e.message || 'Erreur de chargement');
     } finally {
       setLoading(false);
     }
-  }, [loadSettings, loadEmployees, loadRecords, showError]);
+  }, [loadSettings, loadEmployees, loadRecords, loadSchedule, showError]);
 
   useEffect(() => {
     loadAll();
@@ -178,7 +195,8 @@ export default function StaffPresenceDashboard() {
   useEffect(() => {
     loadEmployees().catch(() => {});
     loadRecords().catch(() => {});
-  }, [activeSite, listKind, viewMode, loadEmployees, loadRecords]);
+    loadSchedule().catch(() => {});
+  }, [activeSite, listKind, viewMode, loadEmployees, loadRecords, loadSchedule]);
 
   const arrivalUrl = useMemo(
     () => buildPublicUrl(siteSettings?.arrivalCode) || siteSettings?.arrivalUrl || '',
@@ -314,6 +332,7 @@ export default function StaffPresenceDashboard() {
       );
       setEmpForm({ firstName: '', lastName: '', siteId: activeSite });
       await loadEmployees();
+      await loadSchedule();
       showSuccess('Employé ajouté');
     } catch (err) {
       showError(err.response?.data?.message || err.message);
@@ -328,6 +347,7 @@ export default function StaffPresenceDashboard() {
     try {
       await axios.delete(`${API_URL}/staff-presence/employees/${id}`, authHeaders());
       await loadEmployees();
+      await loadSchedule();
       showSuccess('Employé désactivé');
     } catch (err) {
       showError(err.response?.data?.message || err.message);
@@ -335,6 +355,99 @@ export default function StaffPresenceDashboard() {
       setBusy(false);
     }
   };
+
+  const saveSchedule = async () => {
+    if (!schedule) return;
+    setBusy(true);
+    try {
+      const payload = {
+        siteId: activeSite,
+        rules: schedule.rules,
+        slots: (schedule.slots || []).map((s) => ({
+          weekday: s.weekday,
+          shift: s.shift,
+          closed: !!s.closed,
+          employeeIds: (s.employeeIds || []).map(String).filter(Boolean),
+        })),
+      };
+      const res = await axios.put(`${API_URL}/staff-presence/schedule`, payload, authHeaders());
+      setSchedule(res.data?.schedule || schedule);
+      if (Array.isArray(res.data?.employees)) setEmployees(res.data.employees);
+      showSuccess('Planning enregistré');
+    } catch (err) {
+      showError(err.response?.data?.message || err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const seedGbegamey = async () => {
+    if (
+      !window.confirm(
+        'Réimporter le planning Gbegamey (employés + créneaux + repos) ? Les modifications manuelles seront écrasées.'
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await axios.post(
+        `${API_URL}/staff-presence/schedule/seed-gbegamey?force=true`,
+        {},
+        authHeaders()
+      );
+      setSchedule(res.data?.schedule || null);
+      if (Array.isArray(res.data?.employees)) setEmployees(res.data.employees);
+      showSuccess(res.data?.seeded ? 'Planning Gbegamey importé' : 'Planning déjà en place');
+    } catch (err) {
+      showError(err.response?.data?.message || err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const startEditEmployee = (emp) => {
+    setEditingEmpId(emp._id);
+    setEmpEdit({
+      restDays: Array.isArray(emp.restDays) ? [...emp.restDays] : [],
+      contractDaysPerWeek: emp.contractDaysPerWeek ?? 5,
+      notes: emp.notes || '',
+    });
+  };
+
+  const toggleRestDay = (dayId) => {
+    setEmpEdit((prev) => {
+      const set = new Set(prev.restDays || []);
+      if (set.has(dayId)) set.delete(dayId);
+      else set.add(dayId);
+      return { ...prev, restDays: [...set].sort((a, b) => a - b) };
+    });
+  };
+
+  const saveEmployeeEdit = async () => {
+    if (!editingEmpId) return;
+    setBusy(true);
+    try {
+      await axios.put(
+        `${API_URL}/staff-presence/employees/${editingEmpId}`,
+        empEdit,
+        authHeaders()
+      );
+      setEditingEmpId(null);
+      await loadEmployees();
+      await loadSchedule();
+      showSuccess('Employé mis à jour');
+    } catch (err) {
+      showError(err.response?.data?.message || err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const activeEmployees = useMemo(
+    () => employees.filter((e) => e.active !== false),
+    [employees]
+  );
 
   if (loading) return <PageLoader message="Présence personnel…" />;
 
@@ -393,7 +506,7 @@ export default function StaffPresenceDashboard() {
         <h2 style={{ margin: '0 0 1rem', fontSize: '1.05rem' }}>
           Personnel — {SITES.find((s) => s.id === activeSite)?.label}
         </h2>
-        <form className="staff-presence-emp-form" onSubmit={addEmployee}>
+        <form className="staff-presence-emp-form staff-presence-emp-form--optional-nom" onSubmit={addEmployee}>
           <label>
             Prénom
             <input
@@ -404,12 +517,11 @@ export default function StaffPresenceDashboard() {
             />
           </label>
           <label>
-            Nom
+            Nom <span style={{ fontWeight: 500, opacity: 0.7 }}>(optionnel)</span>
             <input
               value={empForm.lastName}
               onChange={(e) => setEmpForm((f) => ({ ...f, lastName: e.target.value }))}
-              required
-              minLength={2}
+              placeholder="Laisser vide si prénom seul"
             />
           </label>
           <button type="submit" className="commercial-btn commercial-btn--primary" disabled={busy}>
@@ -420,26 +532,96 @@ export default function StaffPresenceDashboard() {
           <table className="commercial-table">
             <thead>
               <tr>
-                <th>Prénom</th>
-                <th>Nom</th>
+                <th>Personnel</th>
+                <th>Repos</th>
+                <th>Contrat</th>
                 <th />
               </tr>
             </thead>
             <tbody>
               {employees.map((e) => (
-                <tr key={e._id}>
-                  <td>{e.firstName}</td>
-                  <td>{e.lastName}</td>
-                  <td>
-                    <button
-                      type="button"
-                      className="commercial-btn commercial-btn--outline commercial-btn--sm"
-                      onClick={() => deactivateEmployee(e._id)}
-                    >
-                      Retirer
-                    </button>
-                  </td>
-                </tr>
+                <React.Fragment key={e._id}>
+                  <tr className={e.active === false ? 'is-inactive' : ''}>
+                    <td>
+                      {empDisplayName(e)}
+                      {e.active === false ? (
+                        <span style={{ marginLeft: 8, fontSize: '0.78rem', opacity: 0.7 }}>(inactif)</span>
+                      ) : null}
+                    </td>
+                    <td>{restDaysSummary(e.restDays, DEFAULT_WEEKDAYS)}</td>
+                    <td>{e.contractDaysPerWeek ?? 5} j/sem.</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="commercial-btn commercial-btn--outline commercial-btn--sm"
+                        onClick={() =>
+                          editingEmpId === e._id ? setEditingEmpId(null) : startEditEmployee(e)
+                        }
+                      >
+                        {editingEmpId === e._id ? 'Annuler' : 'Modifier'}
+                      </button>{' '}
+                      {e.active !== false ? (
+                        <button
+                          type="button"
+                          className="commercial-btn commercial-btn--outline commercial-btn--sm"
+                          onClick={() => deactivateEmployee(e._id)}
+                        >
+                          Retirer
+                        </button>
+                      ) : null}
+                    </td>
+                  </tr>
+                  {editingEmpId === e._id ? (
+                    <tr className="staff-presence-emp-edit-row">
+                      <td colSpan={4}>
+                        <div className="staff-presence-emp-rest">
+                          {DEFAULT_WEEKDAYS.map((wd) => (
+                            <label key={wd.id}>
+                              <input
+                                type="checkbox"
+                                checked={(empEdit.restDays || []).includes(wd.id)}
+                                onChange={() => toggleRestDay(wd.id)}
+                              />
+                              {wd.short}
+                            </label>
+                          ))}
+                        </div>
+                        <div className="commercial-filters" style={{ marginTop: '0.65rem' }}>
+                          <label>
+                            Jours / semaine
+                            <input
+                              type="number"
+                              min={1}
+                              max={7}
+                              value={empEdit.contractDaysPerWeek}
+                              onChange={(ev) =>
+                                setEmpEdit((f) => ({
+                                  ...f,
+                                  contractDaysPerWeek: Number(ev.target.value) || 5,
+                                }))
+                              }
+                            />
+                          </label>
+                          <label style={{ flex: 1 }}>
+                            Notes
+                            <input
+                              value={empEdit.notes}
+                              onChange={(ev) => setEmpEdit((f) => ({ ...f, notes: ev.target.value }))}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            className="commercial-btn commercial-btn--primary"
+                            disabled={busy}
+                            onClick={saveEmployeeEdit}
+                          >
+                            Enregistrer
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : null}
+                </React.Fragment>
               ))}
             </tbody>
           </table>
@@ -447,7 +629,24 @@ export default function StaffPresenceDashboard() {
             <p style={{ padding: '1rem' }}>Aucun employé enregistré pour ce site.</p>
           ) : null}
         </div>
+        <p className="commercial-lead" style={{ marginTop: '0.75rem', fontSize: '0.85rem' }}>
+          <strong>{activeEmployees.length}</strong> actif(s) au scan ·{' '}
+          {employees.length - activeEmployees.length} inactif(s)
+        </p>
       </div>
+
+      {schedule ? (
+        <StaffPresencePlanning
+          siteId={activeSite}
+          siteLabel={SITES.find((s) => s.id === activeSite)?.label || activeSite}
+          schedule={schedule}
+          employees={employees}
+          busy={busy}
+          onChange={setSchedule}
+          onSave={saveSchedule}
+          onSeed={seedGbegamey}
+        />
+      ) : null}
 
       <div className="commercial-card">
         <div className="staff-presence-tabs" role="tablist">

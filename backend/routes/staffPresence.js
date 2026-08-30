@@ -5,6 +5,7 @@ const path = require('path');
 const StaffPresenceSettings = require('../models/StaffPresenceSettings');
 const StaffPresenceRecord = require('../models/StaffPresenceRecord');
 const StaffEmployee = require('../models/StaffEmployee');
+const StaffWeeklySchedule = require('../models/StaffWeeklySchedule');
 const Restaurant = require('../models/Restaurant');
 const uploadStaffPresence = require('../middleware/uploadStaffPresence');
 const { auth, isRestaurant } = require('../middleware/auth');
@@ -28,6 +29,14 @@ const {
   computeOvertimeMinutes,
   formatMinutesLabel,
 } = require('../utils/staffPresenceShifts');
+const {
+  WEEKDAYS,
+  isValidRestDays,
+  normalizeSlots,
+  getScheduleForSite,
+  seedGbegameyPlanning,
+  serializeSchedule,
+} = require('../utils/staffPresencePlanning');
 
 const router = express.Router();
 
@@ -353,21 +362,29 @@ router.get('/employees', auth, isRestaurant, async (req, res) => {
 router.post('/employees', auth, isRestaurant, async (req, res) => {
   try {
     const firstName = normalizeNamePart(req.body?.firstName);
-    const lastName = normalizeNamePart(req.body?.lastName);
     const siteId = String(req.body?.siteId || req.body?.site || DEFAULT_SITE_ID).trim().toLowerCase();
     if (!isValidSiteId(siteId)) return res.status(400).json({ message: 'Site invalide' });
     if (!firstName || firstName.length < 2) {
       return res.status(400).json({ message: 'Prénom requis (2 caractères min.)' });
     }
-    if (!lastName || lastName.length < 2) {
-      return res.status(400).json({ message: 'Nom requis (2 caractères min.)' });
+    const lastNameRaw = normalizeNamePart(req.body?.lastName);
+    const lastName = lastNameRaw && lastNameRaw !== '·' ? lastNameRaw : '·';
+    const restDays = Array.isArray(req.body?.restDays) ? req.body.restDays.map(Number) : [];
+    if (restDays.length && !isValidRestDays(restDays)) {
+      return res.status(400).json({ message: 'Jours de repos invalides' });
     }
+    const contractDaysPerWeek = Math.min(
+      7,
+      Math.max(1, Number(req.body?.contractDaysPerWeek) || 5)
+    );
     const employee = await StaffEmployee.create({
       firstName,
       lastName,
       normalizedName: normalizeFullKey(firstName, lastName),
       siteId,
       active: req.body?.active !== false,
+      restDays,
+      contractDaysPerWeek,
       notes: String(req.body?.notes || '').trim().slice(0, 500),
     });
     res.status(201).json(employee);
@@ -392,6 +409,19 @@ router.put('/employees/:id', auth, isRestaurant, async (req, res) => {
       employee.siteId = siteId;
     }
     if (req.body?.active != null) employee.active = !!req.body.active;
+    if (req.body?.restDays != null) {
+      const restDays = Array.isArray(req.body.restDays) ? req.body.restDays.map(Number) : [];
+      if (restDays.length && !isValidRestDays(restDays)) {
+        return res.status(400).json({ message: 'Jours de repos invalides' });
+      }
+      employee.restDays = restDays;
+    }
+    if (req.body?.contractDaysPerWeek != null) {
+      employee.contractDaysPerWeek = Math.min(
+        7,
+        Math.max(1, Number(req.body.contractDaysPerWeek) || 5)
+      );
+    }
     if (req.body?.notes != null) employee.notes = String(req.body.notes).trim().slice(0, 500);
     employee.normalizedName = normalizeFullKey(employee.firstName, employee.lastName);
     await employee.save();
@@ -408,6 +438,64 @@ router.delete('/employees/:id', auth, isRestaurant, async (req, res) => {
     employee.active = false;
     await employee.save();
     res.json({ ok: true, employee });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+/** Admin : planning hebdomadaire par site. */
+router.get('/schedule', auth, isRestaurant, async (req, res) => {
+  try {
+    const siteId = String(req.query.site || req.query.siteId || DEFAULT_SITE_ID).trim().toLowerCase();
+    if (!isValidSiteId(siteId)) return res.status(400).json({ message: 'Site invalide' });
+    const schedule = await getScheduleForSite(siteId);
+    const employees = await StaffEmployee.find({ siteId }).sort({ firstName: 1, lastName: 1 }).lean();
+    res.json({ schedule, employees, weekdays: WEEKDAYS });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.put('/schedule', auth, isRestaurant, async (req, res) => {
+  try {
+    const siteId = String(req.body?.siteId || req.body?.site || DEFAULT_SITE_ID).trim().toLowerCase();
+    if (!isValidSiteId(siteId)) return res.status(400).json({ message: 'Site invalide' });
+
+    const rules = req.body?.rules || {};
+    const slots = normalizeSlots(req.body?.slots || []);
+
+    let doc = await StaffWeeklySchedule.findOne({ siteId });
+    if (!doc) {
+      doc = new StaffWeeklySchedule({ siteId });
+    }
+
+    doc.rules = {
+      open247: rules.open247 !== false,
+      mondayNightClosed: !!rules.mondayNightClosed,
+      binomeMin: Math.min(6, Math.max(1, Number(rules.binomeMin) || 2)),
+      maxRestDaysPerWeek: Math.min(6, Math.max(0, Number(rules.maxRestDaysPerWeek) ?? 1)),
+      notes: String(rules.notes || '').trim().slice(0, 1000),
+    };
+    doc.slots = slots.map((s) => ({
+      weekday: s.weekday,
+      shift: s.shift,
+      closed: !!s.closed,
+      employeeIds: s.employeeIds,
+    }));
+    await doc.save();
+
+    const employees = await StaffEmployee.find({ siteId }).sort({ firstName: 1 }).lean();
+    res.json({ schedule: serializeSchedule(doc.toObject(), employees), employees });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.post('/schedule/seed-gbegamey', auth, isRestaurant, async (req, res) => {
+  try {
+    const force = String(req.query.force || req.body?.force || '').trim() === 'true';
+    const result = await seedGbegameyPlanning({ force });
+    res.json(result);
   } catch (e) {
     res.status(500).json({ message: e.message });
   }

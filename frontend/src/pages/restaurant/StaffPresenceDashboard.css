@@ -131,3 +131,144 @@
   color: #b45309;
   font-weight: 700;
 }
+
+.staff-presence-planning-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.staff-presence-planning-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.staff-presence-planning-rules {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem 1rem;
+  margin-bottom: 0.85rem;
+  align-items: end;
+}
+
+.staff-presence-planning-rules label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.staff-presence-planning-rules input[type='number'] {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--rf-border-strong, rgba(0, 0, 0, 0.12));
+}
+
+.staff-presence-planning-check {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.staff-presence-planning-notes {
+  display: grid;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.staff-presence-planning-notes textarea {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--rf-border-strong, rgba(0, 0, 0, 0.12));
+  font: inherit;
+  resize: vertical;
+}
+
+.staff-presence-planning-table-wrap {
+  overflow-x: auto;
+  margin-bottom: 1.25rem;
+}
+
+.staff-presence-planning-table th,
+.staff-presence-planning-table td {
+  vertical-align: top;
+  min-width: 140px;
+}
+
+.staff-presence-planning-table td.is-closed {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.staff-presence-planning-closed {
+  margin-bottom: 0.45rem;
+  font-size: 0.78rem !important;
+}
+
+.staff-presence-planning-pair {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.staff-presence-planning-pair select {
+  width: 100%;
+  padding: 7px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--rf-border-strong, rgba(0, 0, 0, 0.12));
+  font-size: 0.82rem;
+  background: #fff;
+}
+
+.staff-presence-planning-ferme {
+  display: inline-block;
+  margin-top: 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #9a9084;
+}
+
+.staff-presence-rest-summary h3 {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+}
+
+.staff-presence-rest-summary tr.is-inactive td {
+  opacity: 0.55;
+}
+
+.staff-presence-emp-rest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 4px;
+}
+
+.staff-presence-emp-rest label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.staff-presence-emp-edit-row td {
+  background: rgba(199, 109, 46, 0.06);
+}
+
+.staff-presence-emp-form--optional-nom {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 720px) {
+  .staff-presence-emp-form--optional-nom {
+    grid-template-columns: 1fr 1fr auto;
+  }
+}
