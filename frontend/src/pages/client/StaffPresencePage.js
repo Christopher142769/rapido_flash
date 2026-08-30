@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import PageLoader from '../../components/PageLoader';
+import { formatStaffPerson } from '../../utils/staffPresenceFormat';
 import './StaffPresencePage.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -239,9 +240,7 @@ export default function StaffPresencePage() {
                 ✓
               </div>
               <strong>{result.alreadyPresent ? successAlready : successNew}</strong>
-              <p>
-                {result.firstName} {result.lastName}
-              </p>
+              <p>{formatStaffPerson(result)}</p>
               {result.shiftLabel ? (
                 <p className="staff-presence-time">Plage : {result.shiftLabel}</p>
               ) : null}
@@ -319,7 +318,7 @@ export default function StaffPresencePage() {
                   <option value="">— Choisir —</option>
                   {employees.map((e) => (
                     <option key={e._id} value={e._id}>
-                      {e.firstName} {e.lastName}
+                      {formatStaffPerson(e)}
                     </option>
                   ))}
                 </select>
@@ -349,7 +348,7 @@ export default function StaffPresencePage() {
             <div className="staff-presence-form">
               <p className="staff-presence-lead">
                 {selectedEmployee
-                  ? `${selectedEmployee.firstName} ${selectedEmployee.lastName} — choisissez votre plage horaire.`
+                  ? `${formatStaffPerson(selectedEmployee)} — choisissez votre plage horaire.`
                   : 'Choisissez votre plage horaire.'}
               </p>
               <div className="staff-presence-shifts">

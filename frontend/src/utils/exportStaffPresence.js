@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import { formatStaffName } from './staffPresenceFormat';
 
 const BRAND = {
   brown: [56, 24, 8],
@@ -256,7 +257,7 @@ export function preparePresenceDetailedExport(records, meta = {}) {
     const tokens = nameTokens(firstName, lastName);
     if (!tokens.length) return;
 
-    const fullName = `${firstName} ${lastName}`.trim();
+    const fullName = formatStaffName(firstName, lastName);
     let person = buckets.find((p) => tokensLikelySamePerson(p.tokens, tokens));
     if (!person) {
       person = {
@@ -389,7 +390,7 @@ export function exportPresenceToExcel(exportData) {
       (r) =>
         `<tr>
           <td>${r.n}</td>
-          <td>${escapeHtml(r.fullName || `${r.firstName} ${r.lastName}`.trim())}</td>
+          <td>${escapeHtml(r.fullName || formatStaffName(r.firstName, r.lastName))}</td>
           <td>${escapeHtml(r.date)}</td>
           <td>${escapeHtml(r.shift || '—')}</td>
           <td>${escapeHtml(r.arrival || '—')}</td>

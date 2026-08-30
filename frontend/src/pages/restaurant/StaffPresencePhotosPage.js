@@ -5,6 +5,7 @@ import PageLoader from '../../components/PageLoader';
 import { useModal } from '../../context/ModalContext';
 import { toDashboardPath } from '../../config/dashboardPath';
 import { getMediaBaseUrl, resolveMediaUrl } from '../../utils/mediaUrl';
+import { formatStaffPerson } from '../../utils/staffPresenceFormat';
 import '../commercial/commercial.css';
 import './StaffPresencePhotosPage.css';
 
@@ -195,7 +196,7 @@ export default function StaffPresencePhotosPage() {
       ) : (
         <div className="staff-presence-photos-grid">
           {photos.map((p) => {
-            const fullName = `${p.firstName || ''} ${p.lastName || ''}`.trim() || 'Employé';
+            const fullName = formatStaffPerson(p);
             const src = photoUrl(p.selfieUrl);
             return (
               <article key={p._id} className="staff-presence-photo-card">

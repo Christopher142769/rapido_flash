@@ -16,9 +16,9 @@ import '../commercial/commercial.css';
 import './StaffPresenceDashboard.css';
 import { getMediaBaseUrl, resolveMediaUrl } from '../../utils/mediaUrl';
 import { toDashboardPath } from '../../config/dashboardPath';
+import { formatStaffPerson } from '../../utils/staffPresenceFormat';
 import StaffPresencePlanning, {
   DEFAULT_WEEKDAYS,
-  empDisplayName,
   restDaysSummary,
 } from './StaffPresencePlanning';
 
@@ -543,7 +543,7 @@ export default function StaffPresenceDashboard() {
                 <React.Fragment key={e._id}>
                   <tr className={e.active === false ? 'is-inactive' : ''}>
                     <td>
-                      {empDisplayName(e)}
+                      {formatStaffPerson(e)}
                       {e.active === false ? (
                         <span style={{ marginLeft: 8, fontSize: '0.78rem', opacity: 0.7 }}>(inactif)</span>
                       ) : null}
@@ -717,9 +717,7 @@ export default function StaffPresenceDashboard() {
                 <tr key={r._id}>
                   <td>{i + 1}</td>
                   <td>{r.dateKey}</td>
-                  <td>
-                    {r.firstName} {r.lastName}
-                  </td>
+                  <td>{formatStaffPerson(r)}</td>
                   <td>{SHIFT_LABELS[r.shift] || r.shift || '—'}</td>
                   <td>{formatCheckedAt(r.checkedAt)}</td>
                   <td>

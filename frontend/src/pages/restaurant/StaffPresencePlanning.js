@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { formatStaffPerson } from '../../utils/staffPresenceFormat';
 
 const PLANNING_SHIFTS = [
   { id: 'night', label: 'Nuit (00h – 08h)' },
@@ -16,10 +17,10 @@ const DEFAULT_WEEKDAYS = [
   { id: 7, label: 'Dimanche', short: 'Dim' },
 ];
 
+import { formatStaffPerson } from '../../utils/staffPresenceFormat';
+
 export function empDisplayName(e) {
-  if (!e) return '—';
-  if (!e.lastName || e.lastName === '·') return e.firstName;
-  return `${e.firstName} ${e.lastName}`;
+  return formatStaffPerson(e);
 }
 
 export function restDaysSummary(days, weekdays = DEFAULT_WEEKDAYS) {
