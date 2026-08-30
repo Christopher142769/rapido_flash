@@ -136,6 +136,24 @@ export default function StaffPresencePage() {
   };
 
   const selectedEmployee = employees.find((e) => String(e._id) === String(employeeId));
+  const allowedShifts = useMemo(() => {
+    const raw = selectedEmployee?.assignedShifts;
+    return Array.isArray(raw) ? raw.map(String) : null;
+  }, [selectedEmployee]);
+
+  const pickAllowedShift = (current, assigned, suggested) => {
+    const list = Array.isArray(assigned) ? assigned : null;
+    if (!list) return current || suggested;
+    if (list.includes(current)) return current;
+    if (list.includes(suggested)) return suggested;
+    return list[0] || '';
+  };
+
+  const goToShiftStep = () => {
+    const emp = employees.find((e) => String(e._id) === String(employeeId));
+    setShift(pickAllowedShift(shift, emp?.assignedShifts, suggestedShift));
+    setStep('shift');
+  };
 
   const formatCheckedAt = (d) => {
     try {
@@ -152,6 +170,10 @@ export default function StaffPresencePage() {
 
   const handleSubmit = async () => {
     if (submitting || !selfieBlob || !employeeId || !shift) return;
+    if (allowedShifts && !allowedShifts.includes(shift)) {
+      setError('Cette plage horaire ne vous est pas attribuée aujourd’hui.');
+      return;
+    }
     setSubmitting(true);
     setError('');
     try {
@@ -336,7 +358,7 @@ export default function StaffPresencePage() {
                   type="button"
                   className="staff-presence-cta"
                   disabled={!employeeId}
-                  onClick={() => setStep('shift')}
+                  onClick={goToShiftStep}
                 >
                   Continuer
                 </button>
@@ -348,24 +370,40 @@ export default function StaffPresencePage() {
             <div className="staff-presence-form">
               <p className="staff-presence-lead">
                 {selectedEmployee
-                  ? `${formatStaffPerson(selectedEmployee)} — choisissez votre plage horaire.`
+                  ? `${formatStaffPerson(selectedEmployee)} — votre plage du jour.`
                   : 'Choisissez votre plage horaire.'}
               </p>
               <div className="staff-presence-shifts">
-                {(shifts.length ? shifts : [{ id: 'morning', label: '08h – 16h' }]).map((s) => (
-                  <label key={s.id} className={`staff-presence-shift${shift === s.id ? ' is-selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name="shift"
-                      value={s.id}
-                      checked={shift === s.id}
-                      onChange={() => setShift(s.id)}
-                    />
-                    <span>{s.label}</span>
-                    {s.id === suggestedShift ? <small>Suggéré</small> : null}
-                  </label>
-                ))}
+                {(shifts.length ? shifts : [{ id: 'morning', label: '08h – 16h' }]).map((s) => {
+                  const locked = Array.isArray(allowedShifts);
+                  const allowed = !locked || allowedShifts.includes(s.id);
+                  return (
+                    <label
+                      key={s.id}
+                      className={`staff-presence-shift${shift === s.id ? ' is-selected' : ''}${
+                        allowed ? '' : ' is-disabled'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="shift"
+                        value={s.id}
+                        checked={shift === s.id}
+                        disabled={!allowed}
+                        onChange={() => setShift(s.id)}
+                      />
+                      <span>{s.label}</span>
+                      {allowed && s.id === suggestedShift ? <small>Suggéré</small> : null}
+                      {!allowed ? <small>Non attribué</small> : null}
+                    </label>
+                  );
+                })}
               </div>
+              {allowedShifts && allowedShifts.length === 0 ? (
+                <p className="staff-presence-error">
+                  Aucune plage ne vous est attribuée aujourd’hui (repos ou hors planning).
+                </p>
+              ) : null}
               <div className="staff-presence-actions">
                 <button type="button" className="staff-presence-cta staff-presence-cta--ghost" onClick={() => setStep('employee')}>
                   Retour
@@ -373,7 +411,7 @@ export default function StaffPresencePage() {
                 <button
                   type="button"
                   className="staff-presence-cta"
-                  disabled={submitting || !shift}
+                  disabled={submitting || !shift || (allowedShifts && !allowedShifts.includes(shift))}
                   onClick={handleSubmit}
                 >
                   {submitting ? 'Enregistrement…' : cta}

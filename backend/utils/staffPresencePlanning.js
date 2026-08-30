@@ -1,6 +1,6 @@
 const StaffEmployee = require('../models/StaffEmployee');
 const StaffWeeklySchedule = require('../models/StaffWeeklySchedule');
-const { SHIFT_IDS } = require('./staffPresenceShifts');
+const { SHIFT_IDS, isoWeekdayBenin } = require('./staffPresenceShifts');
 
 /** Lundi = 1 … Dimanche = 7 (ISO). */
 const WEEKDAYS = [
@@ -246,6 +246,34 @@ async function seedGbegameyPlanning({ force = false } = {}) {
   return { seeded: true, schedule: serializeSchedule(schedule, employees), employees };
 }
 
+function scheduleHasAssignments(schedule) {
+  return (schedule?.slots || []).some(
+    (s) => !s.closed && Array.isArray(s.employeeIds) && s.employeeIds.length > 0
+  );
+}
+
+function assignedShiftsForEmployee(schedule, employeeId, weekday = isoWeekdayBenin()) {
+  const id = String(employeeId || '');
+  if (!id || !schedule || !isValidWeekday(weekday)) return [];
+  const mondayNightClosed = !!schedule.rules?.mondayNightClosed;
+  return (schedule.slots || [])
+    .filter((slot) => {
+      if (Number(slot.weekday) !== Number(weekday)) return false;
+      if (slot.closed) return false;
+      if (mondayNightClosed && weekday === 1 && slot.shift === 'night') return false;
+      return (slot.employeeIds || []).some((eid) => String(eid) === id);
+    })
+    .map((slot) => slot.shift)
+    .filter((shift) => SHIFT_IDS.includes(shift));
+}
+
+function isShiftAllowedForEmployee(schedule, employeeId, shift, weekday) {
+  if (!scheduleHasAssignments(schedule)) return true;
+  return assignedShiftsForEmployee(schedule, employeeId, weekday).includes(
+    String(shift || '').trim().toLowerCase()
+  );
+}
+
 async function getScheduleForSite(siteId) {
   let schedule = await StaffWeeklySchedule.findOne({ siteId }).lean();
   if (!schedule && siteId === 'gbegamey') {
@@ -280,4 +308,7 @@ module.exports = {
   serializeSchedule,
   seedGbegameyPlanning,
   getScheduleForSite,
+  scheduleHasAssignments,
+  assignedShiftsForEmployee,
+  isShiftAllowedForEmployee,
 };

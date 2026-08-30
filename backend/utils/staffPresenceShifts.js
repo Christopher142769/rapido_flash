@@ -13,6 +13,16 @@ function dateKeyBenin(now = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(now);
 }
 
+/** ISO : 1 = lundi … 7 = dimanche (fuseau Bénin). */
+function isoWeekdayBenin(now = new Date()) {
+  const wd = new Intl.DateTimeFormat('en-US', {
+    timeZone: TZ,
+    weekday: 'short',
+  }).format(now);
+  const map = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 };
+  return map[wd] || 1;
+}
+
 function beninParts(now = new Date()) {
   const fmt = new Intl.DateTimeFormat('en-GB', {
     timeZone: TZ,
@@ -69,6 +79,7 @@ module.exports = {
   SHIFT_IDS,
   TZ,
   dateKeyBenin,
+  isoWeekdayBenin,
   beninParts,
   suggestShift,
   isValidShift,

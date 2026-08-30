@@ -368,6 +368,18 @@
   box-shadow: var(--shadow-gold, 0 0 0 3px rgba(232, 181, 74, 0.28));
 }
 
+.staff-presence-shift.is-disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  background: #f0ece6;
+  color: #8a8074;
+  pointer-events: none;
+}
+
+.staff-presence-shift.is-disabled small {
+  color: #9a9084;
+}
+
 .staff-presence-shift small {
   margin-left: auto;
   font-size: 0.72rem;

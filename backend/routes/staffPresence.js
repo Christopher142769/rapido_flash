@@ -22,6 +22,7 @@ const {
   SHIFTS,
   SHIFT_IDS,
   dateKeyBenin,
+  isoWeekdayBenin,
   suggestShift,
   isValidShift,
   shiftLabel,
@@ -36,6 +37,9 @@ const {
   getScheduleForSite,
   seedGbegameyPlanning,
   serializeSchedule,
+  assignedShiftsForEmployee,
+  scheduleHasAssignments,
+  isShiftAllowedForEmployee,
 } = require('../utils/staffPresencePlanning');
 
 const router = express.Router();
@@ -559,10 +563,21 @@ router.get('/public/:code', async (req, res) => {
     if (!kind) return res.status(404).json({ message: 'QR code invalide' });
 
     const siteId = settings.key || DEFAULT_SITE_ID;
+    const weekday = isoWeekdayBenin();
+    const schedule = await getScheduleForSite(siteId);
+    const restrictShifts = scheduleHasAssignments(schedule);
+
     const employees = await StaffEmployee.find({ siteId, active: true })
       .sort({ lastName: 1, firstName: 1 })
       .select('_id firstName lastName siteId')
       .lean();
+
+    const employeesOut = employees.map((e) => ({
+      ...e,
+      assignedShifts: restrictShifts
+        ? assignedShiftsForEmployee(schedule, e._id, weekday)
+        : SHIFT_IDS.slice(),
+    }));
 
     res.json({
       ok: true,
@@ -572,9 +587,11 @@ router.get('/public/:code', async (req, res) => {
       siteId,
       siteLabel: siteLabel(siteId),
       todayKey: dateKeyBenin(),
+      weekday,
+      restrictShifts,
       suggestedShift: suggestShift(),
       shifts: shiftsPayload(),
-      employees,
+      employees: employeesOut,
     });
   } catch (e) {
     res.status(500).json({ message: e.message });
@@ -604,6 +621,13 @@ router.post('/public/:code/check', uploadStaffPresence.single('selfie'), async (
     const employee = await StaffEmployee.findOne({ _id: employeeId, siteId, active: true }).lean();
     if (!employee) {
       return res.status(400).json({ message: 'Employé introuvable pour ce site' });
+    }
+
+    const schedule = await getScheduleForSite(siteId);
+    if (!isShiftAllowedForEmployee(schedule, employee._id, shift, isoWeekdayBenin())) {
+      return res.status(400).json({
+        message: 'Cette plage horaire ne vous est pas attribuée aujourd’hui.',
+      });
     }
 
     const now = new Date();
