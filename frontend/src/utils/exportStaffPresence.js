@@ -187,12 +187,34 @@ function pickDisplayName(nameVotes) {
   return best || '';
 }
 
-function applyCheckToDay(day, kind, at) {
+function shiftLabelFromId(shift) {
+  const map = { morning: '08h – 16h', afternoon: '16h – 00h', night: '00h – 08h' };
+  return map[shift] || shift || '—';
+}
+
+function formatOvertimeExport(mins) {
+  const m = Math.max(0, Math.round(Number(mins) || 0));
+  if (!m) return '—';
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  if (h <= 0) return `${r} min`;
+  return `${h} h ${String(r).padStart(2, '0')}`;
+}
+
+function applyCheckToDay(day, kind, at, record) {
   if (kind === 'exit') {
-    if (!day.exitAt || at > new Date(day.exitAt)) day.exitAt = at.toISOString();
+    if (!day.exitAt || at > new Date(day.exitAt)) {
+      day.exitAt = at.toISOString();
+      day.overtimeMinutes = record?.overtimeMinutes ?? day.overtimeMinutes;
+      day.workedMinutes = record?.workedMinutes ?? day.workedMinutes;
+    }
   } else if (!day.arrivalAt || at < new Date(day.arrivalAt)) {
     day.arrivalAt = at.toISOString();
   }
+  if (record?.shift && !day.shift) day.shift = record.shift;
+  if (record?.siteId && !day.siteId) day.siteId = record.siteId;
+  if (record?.selfieUrl && kind === 'arrival') day.arrivalSelfie = record.selfieUrl;
+  if (record?.selfieUrl && kind === 'exit') day.exitSelfie = record.selfieUrl;
 }
 
 function mergePersonInto(target, source) {
@@ -251,20 +273,26 @@ export function preparePresenceDetailedExport(records, meta = {}) {
     }
 
     const dateKey = String(r.dateKey || '').trim();
-    if (!dateKey) return;
-    if (!person.days.has(dateKey)) {
-      person.days.set(dateKey, {
+    const rowKey = String(r.shiftWindowKey || dateKey || '').trim();
+    if (!rowKey) return;
+    if (!person.days.has(rowKey)) {
+      person.days.set(rowKey, {
         dateKey,
+        rowKey,
+        shift: r.shift || '',
+        siteId: r.siteId || '',
         dateLabel: formatDateKey(dateKey),
         arrivalAt: null,
         exitAt: null,
+        overtimeMinutes: null,
+        workedMinutes: null,
       });
     }
-    const day = person.days.get(dateKey);
+    const day = person.days.get(rowKey);
     const kind = String(r.kind || 'arrival').toLowerCase();
     const at = r.checkedAt ? new Date(r.checkedAt) : null;
     if (!at || Number.isNaN(at.getTime())) return;
-    applyCheckToDay(day, kind, at);
+    applyCheckToDay(day, kind, at, r);
   });
 
   for (let i = 0; i < buckets.length; i += 1) {
@@ -285,12 +313,14 @@ export function preparePresenceDetailedExport(records, meta = {}) {
       const lastName = titleCaseName(parts.slice(1).join(' ') || '');
       const fullName = `${firstName} ${lastName}`.trim() || titleCaseName(display);
       const days = Array.from(p.days.values())
-        .sort((a, b) => String(a.dateKey).localeCompare(String(b.dateKey)))
+        .sort((a, b) => String(a.rowKey || a.dateKey).localeCompare(String(b.rowKey || b.dateKey)))
         .map((d) => ({
           ...d,
+          shiftLabel: shiftLabelFromId(d.shift),
           arrivalLabel: formatTimeOnly(d.arrivalAt),
           exitLabel: formatTimeOnly(d.exitAt),
           durationLabel: formatDuration(d.arrivalAt, d.exitAt),
+          overtimeLabel: formatOvertimeExport(d.overtimeMinutes),
           checkedArrival: formatCheckedAt(d.arrivalAt),
           checkedExit: formatCheckedAt(d.exitAt),
         }));
@@ -321,12 +351,14 @@ export function preparePresenceDetailedExport(records, meta = {}) {
         n,
         date: d.dateLabel,
         dateKey: d.dateKey,
+        shift: d.shiftLabel,
         firstName: p.firstName,
         lastName: p.lastName,
         fullName: p.fullName,
         arrival: d.arrivalLabel,
         exit: d.exitLabel,
         duration: d.durationLabel,
+        overtime: d.overtimeLabel,
         checkedAt: d.arrivalLabel !== '—' ? d.checkedArrival : d.checkedExit,
       });
     });
@@ -351,7 +383,7 @@ export function preparePresenceExport(records, meta = {}) {
 }
 
 export function exportPresenceToExcel(exportData) {
-  const headers = ['N°', 'Personnel', 'Date', 'Heure d’arrivée', 'Heure de sortie', 'Durée'];
+  const headers = ['N°', 'Personnel', 'Date', 'Plage', 'Arrivée', 'Sortie', 'Durée', 'Heures sup.'];
   const body = (exportData.rows || [])
     .map(
       (r) =>
@@ -359,9 +391,11 @@ export function exportPresenceToExcel(exportData) {
           <td>${r.n}</td>
           <td>${escapeHtml(r.fullName || `${r.firstName} ${r.lastName}`.trim())}</td>
           <td>${escapeHtml(r.date)}</td>
+          <td>${escapeHtml(r.shift || '—')}</td>
           <td>${escapeHtml(r.arrival || '—')}</td>
           <td>${escapeHtml(r.exit || '—')}</td>
           <td>${escapeHtml(r.duration || '—')}</td>
+          <td>${escapeHtml(r.overtime || '—')}</td>
         </tr>`
     )
     .join('');
@@ -391,9 +425,11 @@ export function exportPresenceToWord(exportData) {
           (d) =>
             `<tr>
               <td>${escapeHtml(d.dateLabel)}</td>
+              <td>${escapeHtml(d.shiftLabel)}</td>
               <td>${escapeHtml(d.arrivalLabel)}</td>
               <td>${escapeHtml(d.exitLabel)}</td>
               <td>${escapeHtml(d.durationLabel)}</td>
+              <td>${escapeHtml(d.overtimeLabel)}</td>
             </tr>`
         )
         .join('');
@@ -408,9 +444,11 @@ export function exportPresenceToWord(exportData) {
           <thead>
             <tr>
               <th>Date</th>
+              <th>Plage</th>
               <th>Arrivée</th>
               <th>Sortie</th>
               <th>Durée</th>
+              <th>Heures sup.</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -476,10 +514,12 @@ export function exportPresenceToPdf(exportData) {
 
   const colPad = 1.5;
   const cols = [
-    { key: 'date', label: 'Date', w: 58, align: 'left' },
-    { key: 'arrival', label: 'Arrivée', w: 40, align: 'center' },
-    { key: 'exit', label: 'Sortie', w: 40, align: 'center' },
-    { key: 'duration', label: 'Durée', w: contentW - 58 - 40 - 40, align: 'center' },
+    { key: 'date', label: 'Date', w: 44, align: 'left' },
+    { key: 'shift', label: 'Plage', w: 34, align: 'center' },
+    { key: 'arrival', label: 'Arrivée', w: 34, align: 'center' },
+    { key: 'exit', label: 'Sortie', w: 34, align: 'center' },
+    { key: 'duration', label: 'Durée', w: 24, align: 'center' },
+    { key: 'overtime', label: 'H. sup.', w: contentW - 44 - 34 - 34 - 34 - 24, align: 'center' },
   ];
 
   const drawFooter = (d) => {
@@ -626,12 +666,21 @@ export function exportPresenceToPdf(exportData) {
       doc.rect(margin, y, contentW, ROW_H, 'S');
 
       x = margin;
-      const values = [day.dateLabel, day.arrivalLabel, day.exitLabel, day.durationLabel];
+      const values = [
+        day.dateLabel,
+        day.shiftLabel,
+        day.arrivalLabel,
+        day.exitLabel,
+        day.durationLabel,
+        day.overtimeLabel,
+      ];
       const colors = [
+        BRAND.text,
         BRAND.text,
         day.arrivalAt ? BRAND.success : BRAND.muted,
         day.exitAt ? BRAND.brownMid : BRAND.muted,
         BRAND.text,
+        day.overtimeMinutes > 0 ? [180, 83, 9] : BRAND.muted,
       ];
 
       cols.forEach((col, ci) => {

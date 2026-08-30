@@ -239,6 +239,13 @@ export function buildDashboardNavItems({
       section: GESTION_NAV_SECTION,
       Icon: FaUserCheck,
     },
+    {
+      id: 'presence-photos',
+      label: 'Photos présence',
+      path: toDashboardPath('/presence-photos'),
+      section: GESTION_NAV_SECTION,
+      Icon: FaImages,
+    },
   ];
 
   if (isAdmin) {

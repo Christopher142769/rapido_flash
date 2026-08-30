@@ -1,3 +1,16 @@
+.staff-presence-dash-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.staff-presence-dash-head h1 {
+  margin: 0;
+}
+
 .staff-presence-qr-pair {
   display: grid;
   gap: 1.15rem;
@@ -86,4 +99,35 @@
   background: linear-gradient(145deg, #c76d2e, #8b4513);
   border-color: transparent;
   color: #fff;
+}
+
+.staff-presence-emp-form {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 720px) {
+  .staff-presence-emp-form {
+    grid-template-columns: 1fr 1fr auto;
+    align-items: end;
+  }
+}
+
+.staff-presence-emp-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.staff-presence-emp-form input {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--rf-border-strong, rgba(0, 0, 0, 0.12));
+}
+
+.staff-presence-ot {
+  color: #b45309;
+  font-weight: 700;
 }

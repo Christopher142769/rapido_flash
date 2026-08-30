@@ -134,6 +134,7 @@ app.use('/uploads/categories-produit', express.static(path.join(__dirname, 'uplo
 app.use('/uploads/produits', express.static(path.join(__dirname, 'uploads/produits')));
 app.use('/uploads/medias', express.static(path.join(__dirname, 'uploads/medias')));
 app.use('/uploads/custom-forms', express.static(path.join(__dirname, 'uploads/custom-forms')));
+app.use('/uploads/staff-presence', express.static(path.join(__dirname, 'uploads/staff-presence')));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));

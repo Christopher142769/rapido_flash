@@ -29,6 +29,7 @@ function titleForPath(pathname, user, t) {
     [toDashboardPath('/commandes'), t('dashNav', 'commandes')],
     [toDashboardPath('/invites'), 'Invités'],
     [toDashboardPath('/presence-personnel'), 'Présence personnel'],
+    [toDashboardPath('/presence-photos'), 'Photos présence'],
     [toDashboardPath('/messages'), t('dashNav', 'messages')],
     [toDashboardPath('/offres-promo'), t('dashNav', 'offresPromo')],
     [toDashboardPath('/utilisateurs-promo'), t('dashNav', 'utilisateurs')],

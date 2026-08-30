@@ -1,0 +1,141 @@
+.staff-presence-photos-page {
+  padding-bottom: 2rem;
+}
+
+.staff-presence-photos-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.staff-presence-photos-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.staff-presence-photos-filters {
+  margin-bottom: 1.25rem;
+}
+
+.staff-presence-photos-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.85rem 1rem;
+}
+
+.staff-presence-photos-filter-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  color: #564c40;
+}
+
+.staff-presence-photos-filter-grid input,
+.staff-presence-photos-filter-grid select {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #ddd4c8;
+  border-radius: 10px;
+  font: inherit;
+  background: #fff;
+}
+
+.staff-presence-photos-count {
+  margin: 0.85rem 0 0;
+  font-size: 0.88rem;
+  color: #7a7064;
+}
+
+.staff-presence-photos-empty {
+  text-align: center;
+  color: #7a7064;
+  padding: 2rem;
+}
+
+.staff-presence-photos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.staff-presence-photo-card {
+  background: #fff;
+  border: 1px solid #ebe4da;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(56, 24, 8, 0.06);
+}
+
+.staff-presence-photo-frame {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  background: #f5f0ea;
+}
+
+.staff-presence-photo-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.staff-presence-photo-missing {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: #9a9084;
+  font-size: 0.85rem;
+}
+
+.staff-presence-photo-badge {
+  position: absolute;
+  top: 0.55rem;
+  left: 0.55rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.staff-presence-photo-badge.is-arrival {
+  background: rgba(22, 101, 52, 0.92);
+  color: #fff;
+}
+
+.staff-presence-photo-badge.is-exit {
+  background: rgba(180, 83, 9, 0.92);
+  color: #fff;
+}
+
+.staff-presence-photo-meta {
+  padding: 0.75rem 0.85rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.82rem;
+  color: #564c40;
+}
+
+.staff-presence-photo-meta strong {
+  color: #381808;
+  font-size: 0.92rem;
+}
+
+.staff-presence-photo-sub {
+  color: #8a8074;
+  font-size: 0.78rem;
+}
+
+@media (min-width: 900px) {
+  .staff-presence-photos-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}

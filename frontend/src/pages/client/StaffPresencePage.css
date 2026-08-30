@@ -290,3 +290,136 @@
 .staff-presence-page [class*='loader'] {
   margin: 0 auto;
 }
+
+.staff-presence-steps {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 0 0 18px;
+}
+
+.staff-presence-step {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(139, 69, 19, 0.08);
+  color: var(--sp-muted);
+}
+
+.staff-presence-step.is-active {
+  background: rgba(199, 109, 46, 0.16);
+  color: var(--sp-brown);
+}
+
+.staff-presence-step.is-current {
+  background: linear-gradient(135deg, var(--sp-amber), var(--sp-brown));
+  color: #fff;
+}
+
+.staff-presence-selfie {
+  text-align: center;
+}
+
+.staff-presence-camera-wrap {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
+
+.staff-presence-video {
+  width: 100%;
+  max-width: 280px;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 18px;
+  background: #111;
+  transform: scaleX(-1);
+}
+
+.staff-presence-preview {
+  width: 100%;
+  max-width: 220px;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 18px;
+  margin: 0 auto 14px;
+  display: block;
+  box-shadow: 0 12px 28px rgba(139, 69, 19, 0.18);
+}
+
+.staff-presence-preview--sm {
+  max-width: 88px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+
+.staff-presence-form select {
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--rf-border-strong, rgba(120, 90, 60, 0.22));
+  font-size: 1.02rem;
+  font-family: var(--sp-font);
+  font-weight: 500;
+  color: var(--sp-ink);
+  background: #fff;
+}
+
+.staff-presence-shifts {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.staff-presence-shift {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--rf-border-strong, rgba(120, 90, 60, 0.22));
+  background: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--sp-ink);
+}
+
+.staff-presence-shift input {
+  accent-color: var(--sp-brown);
+}
+
+.staff-presence-shift.is-selected {
+  border-color: var(--sp-amber);
+  box-shadow: var(--shadow-gold, 0 0 0 3px rgba(232, 181, 74, 0.28));
+}
+
+.staff-presence-shift small {
+  margin-left: auto;
+  font-size: 0.72rem;
+  color: var(--sp-muted);
+  font-weight: 600;
+}
+
+.staff-presence-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.staff-presence-cta--ghost {
+  background: #fff !important;
+  color: var(--sp-brown) !important;
+  border: 1px solid rgba(139, 69, 19, 0.22);
+  box-shadow: none !important;
+}
+
+.staff-presence-overtime {
+  margin-top: 8px !important;
+  font-weight: 700 !important;
+  color: #b45309 !important;
+}

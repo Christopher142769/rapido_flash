@@ -156,9 +156,53 @@ const sendInvitationEmail = async ({ to, subject, text, html, attachments = [] }
   return { sent: true, dev: true };
 };
 
+const sendStaffPresenceNotification = async ({ to, subject, text, html, attachments = [] }) => {
+  const recipients = Array.isArray(to) ? to.filter(Boolean) : [to].filter(Boolean);
+  if (!recipients.length) return { sent: false, error: 'no_recipients' };
+
+  const hasSmtp = process.env.SMTP_HOST && process.env.SMTP_USER;
+
+  if (hasSmtp) {
+    try {
+      const nodemailer = require('nodemailer');
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || '587', 10),
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+      const from = process.env.MAIL_FROM || process.env.SMTP_USER;
+      await transporter.sendMail({
+        from,
+        to: recipients.join(','),
+        subject,
+        text,
+        html,
+        attachments,
+      });
+      return { sent: true };
+    } catch (err) {
+      console.error('Erreur envoi email présence:', err.message);
+      return { sent: false, error: err.message };
+    }
+  }
+
+  console.log('📧 [DEV] Alerte présence →', recipients.join(', '));
+  console.log(subject);
+  console.log(text);
+  if (attachments?.length) {
+    console.log('Pièces jointes:', attachments.map((a) => a.filename || 'fichier').join(', '));
+  }
+  return { sent: true, dev: true };
+};
+
 module.exports = {
   sendLoginCode,
   sendDashboardLoginCode,
   sendCustomFormNotification,
   sendInvitationEmail,
+  sendStaffPresenceNotification,
 };

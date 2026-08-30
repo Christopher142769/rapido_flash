@@ -57,6 +57,7 @@ import ShopRepasDashboard from './pages/restaurant/ShopRepasDashboard';
 import PushNotificationsDashboard from './pages/restaurant/PushNotificationsDashboard';
 import InvitesDashboard from './pages/restaurant/InvitesDashboard';
 import StaffPresenceDashboard from './pages/restaurant/StaffPresenceDashboard';
+import StaffPresencePhotosPage from './pages/restaurant/StaffPresencePhotosPage';
 import ShopProductLanding from './pages/shop/ShopProductLanding';
 import ShopOrderConfirmation from './pages/shop/ShopOrderConfirmation';
 import MealShopPage from './pages/repas/MealShopPage';
@@ -294,6 +295,7 @@ function AppRoutes() {
           <Route path="shop-repas" element={<ShopRepasDashboard />} />
           <Route path="invites" element={<InvitesDashboard />} />
           <Route path="presence-personnel" element={<StaffPresenceDashboard />} />
+          <Route path="presence-photos" element={<StaffPresencePhotosPage />} />
           <Route path="categories" element={<Categories />} />
           <Route path="commandes" element={<RestaurantCommandes />} />
           <Route path="bannieres" element={<Bannieres />} />
