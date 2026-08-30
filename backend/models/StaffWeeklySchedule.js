@@ -20,6 +20,8 @@ const staffWeeklyScheduleSchema = new mongoose.Schema(
       mondayNightClosed: { type: Boolean, default: true },
       binomeMin: { type: Number, default: 2, min: 1, max: 6 },
       maxRestDaysPerWeek: { type: Number, default: 1, min: 0, max: 6 },
+      /** Si false : pas de restriction de plage au scan (employés conservés). */
+      planningEnabled: { type: Boolean, default: true },
       notes: { type: String, default: '', trim: true, maxlength: 1000 },
     },
     slots: { type: [scheduleSlotSchema], default: [] },

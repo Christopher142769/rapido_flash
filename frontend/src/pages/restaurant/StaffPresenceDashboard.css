@@ -132,6 +132,47 @@
   font-weight: 700;
 }
 
+.staff-presence-planning-toggle {
+  grid-column: 1 / -1;
+  align-items: flex-start !important;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(199, 109, 46, 0.1);
+  border: 1px solid rgba(139, 69, 19, 0.16);
+}
+
+.staff-presence-planning-toggle span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.staff-presence-planning-toggle small {
+  font-weight: 500;
+  font-size: 0.78rem;
+  color: #7a6558;
+}
+
+.staff-presence-planning-body.is-planning-off {
+  opacity: 0.45;
+  pointer-events: none;
+  user-select: none;
+  filter: grayscale(0.15);
+}
+
+.staff-presence-planning-body.is-planning-off::after {
+  content: 'Planning désactivé — données conservées, scan sans restriction de plage.';
+  display: block;
+  margin: 0 0 1rem;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f5f0ea;
+  color: #7a6558;
+  font-size: 0.82rem;
+  font-weight: 600;
+  pointer-events: none;
+}
+
 .staff-presence-planning-head {
   display: flex;
   flex-wrap: wrap;

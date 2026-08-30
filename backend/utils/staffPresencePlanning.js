@@ -80,6 +80,7 @@ const Gbegamey_RULES = {
   mondayNightClosed: true,
   binomeMin: 2,
   maxRestDaysPerWeek: 1,
+  planningEnabled: true,
   notes:
     'Ouvert 24h/24, 7j/7 — Fermé le lundi de 00h00 à 08h00 — Binôme (2 pers.) obligatoire — Max 1 jour de repos/semaine (sauf Gloria, contrat 4×/semaine).',
 };
@@ -170,6 +171,7 @@ function serializeSchedule(doc, employees = []) {
       mondayNightClosed: !!doc?.rules?.mondayNightClosed,
       binomeMin: doc?.rules?.binomeMin ?? 2,
       maxRestDaysPerWeek: doc?.rules?.maxRestDaysPerWeek ?? 1,
+      planningEnabled: doc?.rules?.planningEnabled !== false,
       notes: doc?.rules?.notes || '',
     },
     slots,
@@ -267,8 +269,16 @@ function assignedShiftsForEmployee(schedule, employeeId, weekday = isoWeekdayBen
     .filter((shift) => SHIFT_IDS.includes(shift));
 }
 
+function isPlanningEnabled(schedule) {
+  return schedule?.rules?.planningEnabled !== false;
+}
+
+function isPlanningActive(schedule) {
+  return isPlanningEnabled(schedule) && scheduleHasAssignments(schedule);
+}
+
 function isShiftAllowedForEmployee(schedule, employeeId, shift, weekday) {
-  if (!scheduleHasAssignments(schedule)) return true;
+  if (!isPlanningActive(schedule)) return true;
   return assignedShiftsForEmployee(schedule, employeeId, weekday).includes(
     String(shift || '').trim().toLowerCase()
   );
@@ -288,6 +298,7 @@ async function getScheduleForSite(siteId) {
         mondayNightClosed: false,
         binomeMin: 2,
         maxRestDaysPerWeek: 1,
+        planningEnabled: false,
         notes: '',
       },
       slots: buildEmptySlots(),
@@ -309,6 +320,8 @@ module.exports = {
   seedGbegameyPlanning,
   getScheduleForSite,
   scheduleHasAssignments,
+  isPlanningEnabled,
+  isPlanningActive,
   assignedShiftsForEmployee,
   isShiftAllowedForEmployee,
 };

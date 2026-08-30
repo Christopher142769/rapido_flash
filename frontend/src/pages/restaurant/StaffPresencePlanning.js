@@ -50,6 +50,7 @@ export default function StaffPresencePlanning({
   const weekdays = schedule?.weekdays || DEFAULT_WEEKDAYS;
   const rules = schedule?.rules || {};
   const slots = schedule?.slots || [];
+  const planningOn = rules.planningEnabled !== false;
   const activeEmployees = useMemo(
     () => (employees || []).filter((e) => e.active !== false),
     [employees]
@@ -88,7 +89,9 @@ export default function StaffPresencePlanning({
             Planning hebdomadaire — {siteLabel}
           </h2>
           <p className="commercial-lead" style={{ margin: 0, fontSize: '0.88rem' }}>
-            Binôme obligatoire · plages Nuit / Matin / Soir · modifiable à tout moment
+            {planningOn
+              ? 'Planning actif — seules les plages attribuées sont sélectionnables au scan.'
+              : 'Planning désactivé — scan libre (toutes les plages) · employés conservés.'}
           </p>
         </div>
         <div className="staff-presence-planning-actions">
@@ -114,6 +117,17 @@ export default function StaffPresencePlanning({
       </div>
 
       <div className="staff-presence-planning-rules">
+        <label className="staff-presence-planning-check staff-presence-planning-toggle">
+          <input
+            type="checkbox"
+            checked={planningOn}
+            onChange={(e) => patchRules({ planningEnabled: e.target.checked })}
+          />
+          <span>
+            <strong>Activer le planning hebdomadaire</strong>
+            <small>Désactivé = tout le personnel peut scanner toutes les plages</small>
+          </span>
+        </label>
         <label className="staff-presence-planning-check">
           <input
             type="checkbox"
@@ -159,9 +173,14 @@ export default function StaffPresencePlanning({
           value={rules.notes || ''}
           onChange={(e) => patchRules({ notes: e.target.value })}
           placeholder="Consignes du point de restauration…"
+          disabled={!planningOn}
         />
       </label>
 
+      <div
+        className={`staff-presence-planning-body${planningOn ? '' : ' is-planning-off'}`}
+        aria-hidden={!planningOn}
+      >
       <div className="commercial-table-wrap staff-presence-planning-table-wrap">
         <table className="commercial-table staff-presence-planning-table">
           <thead>
@@ -226,6 +245,7 @@ export default function StaffPresencePlanning({
             ))}
           </tbody>
         </table>
+      </div>
       </div>
 
       <div className="staff-presence-rest-summary">

@@ -39,6 +39,7 @@ const {
   serializeSchedule,
   assignedShiftsForEmployee,
   scheduleHasAssignments,
+  isPlanningActive,
   isShiftAllowedForEmployee,
 } = require('../utils/staffPresencePlanning');
 
@@ -478,6 +479,7 @@ router.put('/schedule', auth, isRestaurant, async (req, res) => {
       mondayNightClosed: !!rules.mondayNightClosed,
       binomeMin: Math.min(6, Math.max(1, Number(rules.binomeMin) || 2)),
       maxRestDaysPerWeek: Math.min(6, Math.max(0, Number(rules.maxRestDaysPerWeek) ?? 1)),
+      planningEnabled: rules.planningEnabled !== false,
       notes: String(rules.notes || '').trim().slice(0, 1000),
     };
     doc.slots = slots.map((s) => ({
@@ -587,7 +589,7 @@ router.get('/public/:code', async (req, res) => {
     const siteId = settings.key || DEFAULT_SITE_ID;
     const weekday = isoWeekdayBenin();
     const schedule = await getScheduleForSite(siteId);
-    const restrictShifts = scheduleHasAssignments(schedule);
+    const restrictShifts = isPlanningActive(schedule);
 
     const employees = await StaffEmployee.find({ siteId, active: true })
       .sort({ lastName: 1, firstName: 1 })
@@ -611,6 +613,7 @@ router.get('/public/:code', async (req, res) => {
       todayKey: dateKeyBenin(),
       weekday,
       restrictShifts,
+      planningEnabled: schedule?.rules?.planningEnabled !== false,
       suggestedShift: suggestShift(),
       shifts: shiftsPayload(),
       employees: employeesOut,
