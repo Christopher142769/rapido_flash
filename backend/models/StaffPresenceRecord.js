@@ -7,7 +7,8 @@ const KINDS = ['arrival', 'exit'];
 const staffPresenceRecordSchema = new mongoose.Schema(
   {
     firstName: { type: String, required: true, trim: true },
-    lastName: { type: String, required: true, trim: true },
+    /** Peut être vide (employés au prénom seul). */
+    lastName: { type: String, default: '', trim: true },
     normalizedName: { type: String, required: true, trim: true, lowercase: true },
     employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'StaffEmployee', index: true },
     siteId: { type: String, enum: SITE_IDS, default: 'gbegamey', index: true },

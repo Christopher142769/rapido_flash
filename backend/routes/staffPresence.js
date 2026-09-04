@@ -704,7 +704,8 @@ router.post('/public/:code/check', uploadStaffPresence.single('selfie'), async (
 
     const record = await StaffPresenceRecord.create({
       firstName: employee.firstName,
-      lastName: employee.lastName === '·' ? '' : employee.lastName,
+      lastName:
+        !employee.lastName || employee.lastName === '·' ? '' : String(employee.lastName).trim(),
       normalizedName: employee.normalizedName,
       employeeId: employee._id,
       siteId,
