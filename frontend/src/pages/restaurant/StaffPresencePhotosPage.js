@@ -52,8 +52,14 @@ function photoUrl(selfieUrl) {
   return resolveMediaUrl(selfieUrl, MEDIA_BASE);
 }
 
-export default function StaffPresencePhotosPage() {
+export default function StaffPresencePhotosPage({
+  variant = 'dashboard',
+  backPath,
+  hidePageTitle = false,
+}) {
   const { showError } = useModal();
+  const isRh = variant === 'rh';
+  const registrePath = backPath || toDashboardPath('/presence-personnel');
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [photos, setPhotos] = useState([]);
@@ -127,17 +133,26 @@ export default function StaffPresencePhotosPage() {
   };
 
   return (
-    <div className="commercial-page staff-presence-photos-page">
+    <div
+      className={`commercial-page staff-presence-photos-page${
+        isRh ? ' staff-presence-photos-page--rh' : ''
+      }`}
+    >
       <header className="staff-presence-photos-header">
-        <div>
-          <p className="commercial-kicker">Présence personnel</p>
-          <h1 className="commercial-title">Galerie photos</h1>
-          <p className="commercial-lead">
-            Toutes les selfies prises à l&apos;arrivée et à la sortie, avec l&apos;heure exacte du pointage.
-          </p>
-        </div>
+        {!hidePageTitle ? (
+          <div>
+            <p className="commercial-kicker">Présence personnel</p>
+            <h1 className="commercial-title">Galerie photos</h1>
+            <p className="commercial-lead">
+              Toutes les selfies prises à l&apos;arrivée et à la sortie, avec l&apos;heure exacte du
+              pointage.
+            </p>
+          </div>
+        ) : (
+          <div />
+        )}
         <div className="staff-presence-photos-actions">
-          <Link to={toDashboardPath('/presence-personnel')} className="commercial-btn commercial-btn--ghost">
+          <Link to={registrePath} className="commercial-btn commercial-btn--ghost">
             ← Registre présence
           </Link>
           <button

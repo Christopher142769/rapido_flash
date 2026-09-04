@@ -15,5 +15,8 @@ export default function DashboardIndexRedirect() {
   if (user?.role === 'cuisinier') {
     return <Navigate to="/cuisine/app" replace />;
   }
+  if (user?.role === 'drh') {
+    return <Navigate to="/rh" replace />;
+  }
   return <Dashboard />;
 }

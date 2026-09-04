@@ -8,7 +8,7 @@ const StaffEmployee = require('../models/StaffEmployee');
 const StaffWeeklySchedule = require('../models/StaffWeeklySchedule');
 const Restaurant = require('../models/Restaurant');
 const uploadStaffPresence = require('../middleware/uploadStaffPresence');
-const { auth, isRestaurant } = require('../middleware/auth');
+const { auth, isStaffPresence } = require('../middleware/auth');
 const {
   SITES,
   SITE_IDS,
@@ -311,7 +311,7 @@ function buildPhotosFilter(req) {
 }
 
 /** Admin : tous les sites ou un site (?site=zogbo). */
-router.get('/settings', auth, isRestaurant, async (req, res) => {
+router.get('/settings', auth, isStaffPresence, async (req, res) => {
   try {
     await ensureRecordIndexes();
     const siteQuery = String(req.query.site || '').trim().toLowerCase();
@@ -333,7 +333,7 @@ router.get('/settings', auth, isRestaurant, async (req, res) => {
   }
 });
 
-router.post('/settings/regenerate', auth, isRestaurant, async (req, res) => {
+router.post('/settings/regenerate', auth, isStaffPresence, async (req, res) => {
   try {
     const kind = String(req.body?.kind || 'both').trim().toLowerCase();
     const siteId = String(req.body?.site || req.body?.siteId || DEFAULT_SITE_ID).trim().toLowerCase();
@@ -348,7 +348,7 @@ router.post('/settings/regenerate', auth, isRestaurant, async (req, res) => {
 });
 
 /** Admin : employés par site. */
-router.get('/employees', auth, isRestaurant, async (req, res) => {
+router.get('/employees', auth, isStaffPresence, async (req, res) => {
   try {
     const filter = {};
     const siteId = String(req.query.site || req.query.siteId || '').trim().toLowerCase();
@@ -364,7 +364,7 @@ router.get('/employees', auth, isRestaurant, async (req, res) => {
   }
 });
 
-router.post('/employees', auth, isRestaurant, async (req, res) => {
+router.post('/employees', auth, isStaffPresence, async (req, res) => {
   try {
     const firstName = normalizeNamePart(req.body?.firstName);
     const siteId = String(req.body?.siteId || req.body?.site || DEFAULT_SITE_ID).trim().toLowerCase();
@@ -398,7 +398,7 @@ router.post('/employees', auth, isRestaurant, async (req, res) => {
   }
 });
 
-router.put('/employees/:id', auth, isRestaurant, async (req, res) => {
+router.put('/employees/:id', auth, isStaffPresence, async (req, res) => {
   try {
     const employee = await StaffEmployee.findById(req.params.id);
     if (!employee) return res.status(404).json({ message: 'Employé introuvable' });
@@ -436,7 +436,7 @@ router.put('/employees/:id', auth, isRestaurant, async (req, res) => {
   }
 });
 
-router.delete('/employees/:id', auth, isRestaurant, async (req, res) => {
+router.delete('/employees/:id', auth, isStaffPresence, async (req, res) => {
   try {
     const employee = await StaffEmployee.findById(req.params.id);
     if (!employee) return res.status(404).json({ message: 'Employé introuvable' });
@@ -449,7 +449,7 @@ router.delete('/employees/:id', auth, isRestaurant, async (req, res) => {
 });
 
 /** Admin : planning hebdomadaire par site. */
-router.get('/schedule', auth, isRestaurant, async (req, res) => {
+router.get('/schedule', auth, isStaffPresence, async (req, res) => {
   try {
     const siteId = String(req.query.site || req.query.siteId || DEFAULT_SITE_ID).trim().toLowerCase();
     if (!isValidSiteId(siteId)) return res.status(400).json({ message: 'Site invalide' });
@@ -461,7 +461,7 @@ router.get('/schedule', auth, isRestaurant, async (req, res) => {
   }
 });
 
-router.put('/schedule', auth, isRestaurant, async (req, res) => {
+router.put('/schedule', auth, isStaffPresence, async (req, res) => {
   try {
     const siteId = String(req.body?.siteId || req.body?.site || DEFAULT_SITE_ID).trim().toLowerCase();
     if (!isValidSiteId(siteId)) return res.status(400).json({ message: 'Site invalide' });
@@ -497,7 +497,7 @@ router.put('/schedule', auth, isRestaurant, async (req, res) => {
   }
 });
 
-router.post('/schedule/seed-gbegamey', auth, isRestaurant, async (req, res) => {
+router.post('/schedule/seed-gbegamey', auth, isStaffPresence, async (req, res) => {
   try {
     const force = String(req.query.force || req.body?.force || '').trim() === 'true';
     const result = await seedGbegameyPlanning({ force });
@@ -508,7 +508,7 @@ router.post('/schedule/seed-gbegamey', auth, isRestaurant, async (req, res) => {
 });
 
 /** Admin : présences + synthèse heures sup. */
-router.get('/records', auth, isRestaurant, async (req, res) => {
+router.get('/records', auth, isStaffPresence, async (req, res) => {
   try {
     await ensureRecordIndexes();
     const filter = {};
@@ -555,7 +555,7 @@ router.get('/records', auth, isRestaurant, async (req, res) => {
 });
 
 /** Admin : supprimer un enregistrement (test ou erreur). */
-router.delete('/records/:id', auth, isRestaurant, async (req, res) => {
+router.delete('/records/:id', auth, isStaffPresence, async (req, res) => {
   try {
     const record = await StaffPresenceRecord.findById(req.params.id);
     if (!record) return res.status(404).json({ message: 'Enregistrement introuvable' });
@@ -755,7 +755,7 @@ router.post('/public/:code/check', uploadStaffPresence.single('selfie'), async (
   }
 });
 
-router.get('/meta/sites', auth, isRestaurant, (_req, res) => {
+router.get('/meta/sites', auth, isStaffPresence, (_req, res) => {
   res.json({
     sites: SITE_IDS.map((id) => ({ id, label: SITES[id].label })),
     shifts: shiftsPayload(),
@@ -763,7 +763,7 @@ router.get('/meta/sites', auth, isRestaurant, (_req, res) => {
 });
 
 /** Admin : galerie photos (selfies arrivée / sortie). */
-router.get('/photos', auth, isRestaurant, async (req, res) => {
+router.get('/photos', auth, isStaffPresence, async (req, res) => {
   try {
     await ensureRecordIndexes();
     const filter = buildPhotosFilter(req);
@@ -780,7 +780,7 @@ router.get('/photos', auth, isRestaurant, async (req, res) => {
 });
 
 /** Admin : export ZIP de toutes les photos filtrées + index JSON. */
-router.get('/photos/export-zip', auth, isRestaurant, async (req, res) => {
+router.get('/photos/export-zip', auth, isStaffPresence, async (req, res) => {
   let archiver;
   try {
     archiver = require('archiver');

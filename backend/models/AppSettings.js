@@ -8,6 +8,7 @@ const twoFactorByRoleSchema = new mongoose.Schema(
     cuisinier: { type: Boolean, default: true },
     livreur: { type: Boolean, default: true },
     responsable: { type: Boolean, default: true },
+    drh: { type: Boolean, default: true },
   },
   { _id: false }
 );

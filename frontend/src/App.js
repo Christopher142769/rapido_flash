@@ -58,6 +58,10 @@ import PushNotificationsDashboard from './pages/restaurant/PushNotificationsDash
 import InvitesDashboard from './pages/restaurant/InvitesDashboard';
 import StaffPresenceDashboard from './pages/restaurant/StaffPresenceDashboard';
 import StaffPresencePhotosPage from './pages/restaurant/StaffPresencePhotosPage';
+import RhGate from './pages/rh/RhGate';
+import RhAppLayout from './pages/rh/RhAppLayout';
+import RhPresencePage from './pages/rh/RhPresencePage';
+import RhPhotosPage from './pages/rh/RhPhotosPage';
 import ShopProductLanding from './pages/shop/ShopProductLanding';
 import ShopOrderConfirmation from './pages/shop/ShopOrderConfirmation';
 import MealShopPage from './pages/repas/MealShopPage';
@@ -169,6 +173,7 @@ function AppRoutes() {
     location.pathname.startsWith('/cuisine') ||
     location.pathname.startsWith('/responsables') ||
     location.pathname.startsWith('/commerciaux') ||
+    location.pathname.startsWith('/rh') ||
     location.pathname.startsWith('/présence') ||
     location.pathname.startsWith('/presence');
 
@@ -237,6 +242,21 @@ function AppRoutes() {
             <Route path="bilan" element={<CommercialBilanPage />} />
             <Route path="relances" element={<CommercialRelancesPage />} />
             <Route path="points" element={<CommercialPointsPage />} />
+          </Route>
+        </Route>
+
+        {/* Espace DRH — présence personnel uniquement */}
+        <Route
+          path="/rh"
+          element={
+            <PrivateRoute>
+              <RhGate />
+            </PrivateRoute>
+          }
+        >
+          <Route element={<RhAppLayout />}>
+            <Route index element={<RhPresencePage />} />
+            <Route path="photos" element={<RhPhotosPage />} />
           </Route>
         </Route>
 

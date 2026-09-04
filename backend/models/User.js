@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['client', 'restaurant', 'gestionnaire', 'commercial', 'cuisinier', 'livreur', 'responsable'],
+    enum: ['client', 'restaurant', 'gestionnaire', 'commercial', 'cuisinier', 'livreur', 'responsable', 'drh'],
     default: 'client'
   },
   /** Ville assignée aux responsables délégués (Cotonou | Calavi). */

@@ -45,6 +45,7 @@ const MaintenanceDashboardPage = () => {
     cuisinier: true,
     livreur: true,
     responsable: true,
+    drh: true,
   });
   const [twoFactorSaving, setTwoFactorSaving] = useState(false);
   const [twoFactorSaveSuccess, setTwoFactorSaveSuccess] = useState(false);
@@ -183,6 +184,7 @@ const MaintenanceDashboardPage = () => {
     { key: 'responsable', label: 'Responsables villes' },
     { key: 'cuisinier', label: 'Cuisiniers' },
     { key: 'livreur', label: 'Livreurs Champion' },
+    { key: 'drh', label: 'DRH / Présence' },
   ];
 
   return (

@@ -118,8 +118,14 @@ function QrBlock({ title, hint, publicUrl, canvasRef, busy, onDownloadPdf, onCop
   );
 }
 
-export default function StaffPresenceDashboard() {
+export default function StaffPresenceDashboard({
+  variant = 'dashboard',
+  photosPath,
+  hidePageTitle = false,
+}) {
   const { showSuccess, showError } = useModal();
+  const isRh = variant === 'rh';
+  const galleryPath = photosPath || toDashboardPath('/presence-photos');
   const [loading, setLoading] = useState(true);
   const [settingsBundle, setSettingsBundle] = useState(null);
   const [employees, setEmployees] = useState([]);
@@ -467,13 +473,21 @@ export default function StaffPresenceDashboard() {
   if (loading) return <PageLoader message="Présence personnel…" />;
 
   return (
-    <div className="commercial-page staff-presence-dash">
-      <div className="staff-presence-dash-head">
-        <h1>Présence personnel</h1>
-        <Link to={toDashboardPath('/presence-photos')} className="commercial-btn commercial-btn--ghost">
-          Galerie photos →
-        </Link>
-      </div>
+    <div className={`commercial-page staff-presence-dash${isRh ? ' staff-presence-dash--rh' : ''}`}>
+      {!hidePageTitle ? (
+        <div className="staff-presence-dash-head">
+          <h1>Présence personnel</h1>
+          <Link to={galleryPath} className="commercial-btn commercial-btn--ghost">
+            Galerie photos →
+          </Link>
+        </div>
+      ) : (
+        <div className="staff-presence-dash-head staff-presence-dash-head--actions-only">
+          <Link to={galleryPath} className="commercial-btn commercial-btn--ghost">
+            Galerie photos →
+          </Link>
+        </div>
+      )}
       <p className="commercial-lead">
         Deux sites <strong>Gbegamey</strong> et <strong>Zogbo</strong> — QR arrivée / sortie par site.
         Scan : selfie, choix du personnel et plage horaire (08–16 · 16–00 · 00–08).

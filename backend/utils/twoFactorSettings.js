@@ -7,6 +7,7 @@ const STAFF_2FA_ROLES = [
   'cuisinier',
   'livreur',
   'responsable',
+  'drh',
 ];
 
 function defaultTwoFactorByRole() {

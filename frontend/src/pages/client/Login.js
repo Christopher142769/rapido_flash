@@ -44,6 +44,8 @@ const Login = () => {
         navigate(safeNext.startsWith('/responsables') ? safeNext : '/responsables');
       } else if (user.role === 'livreur') {
         navigate(safeNext.startsWith('/champion') ? safeNext : '/champion/app');
+      } else if (user.role === 'drh') {
+        navigate(safeNext.startsWith('/rh') ? safeNext : '/rh');
       } else {
         navigate(afterAuthPath);
       }

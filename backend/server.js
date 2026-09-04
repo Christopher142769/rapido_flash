@@ -246,6 +246,7 @@ const ensureAppSettings = require('./utils/ensureAppSettings');
 const ensurePlatformLineCodes = require('./utils/ensurePlatformLineCodes');
 const ensureShopOrderDates = require('./utils/ensureShopOrderDates');
 const ensureBassinsFunnel = require('./utils/ensureBassinsFunnel');
+const ensureDrhUser = require('./utils/ensureDrhUser');
 
 // MongoDB : par défaut instance locale (voir backend/.env ou .env racine pour Atlas)
 const DEFAULT_LOCAL_MONGODB = 'mongodb://127.0.0.1:27017/rapido_flash';
@@ -284,6 +285,7 @@ async function connectMongoWithRetry() {
       setTimeout(async () => {
         try {
           await initDefaultAdmin();
+          await ensureDrhUser();
           await ensurePlatformSupportStack();
         } catch (error) {
           console.error('❌ Erreur lors de l\'initialisation:', error);

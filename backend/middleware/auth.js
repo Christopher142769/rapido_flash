@@ -33,6 +33,14 @@ const isRestaurant = (req, res, next) => {
   next();
 };
 
+/** Présence personnel : admin, gestionnaire, ou DRH. */
+const isStaffPresence = (req, res, next) => {
+  if (!['restaurant', 'gestionnaire', 'drh'].includes(req.user.role)) {
+    return res.status(403).json({ message: 'Accès refusé - Présence personnel requis' });
+  }
+  next();
+};
+
 const isCommercialStaff = (req, res, next) => {
   if (!['restaurant', 'gestionnaire', 'commercial', 'responsable'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Accès refusé - Espace commercial requis' });
@@ -71,6 +79,7 @@ const isCuisinier = (req, res, next) => {
 module.exports = {
   auth,
   isRestaurant,
+  isStaffPresence,
   isCommercialStaff,
   isRestaurantAdmin,
   isLivreur,

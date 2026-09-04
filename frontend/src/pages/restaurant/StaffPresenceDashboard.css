@@ -7,6 +7,11 @@
   margin-bottom: 0.35rem;
 }
 
+.staff-presence-dash-head--actions-only {
+  justify-content: flex-end;
+  margin-bottom: 0.85rem;
+}
+
 .staff-presence-dash-head h1 {
   margin: 0;
 }
