@@ -62,6 +62,10 @@ import RhGate from './pages/rh/RhGate';
 import RhAppLayout from './pages/rh/RhAppLayout';
 import RhPresencePage from './pages/rh/RhPresencePage';
 import RhPhotosPage from './pages/rh/RhPhotosPage';
+import RhQrPage from './pages/rh/RhQrPage';
+import RhPersonnelPage from './pages/rh/RhPersonnelPage';
+import RhPlanningPage from './pages/rh/RhPlanningPage';
+import RhRegistrePage from './pages/rh/RhRegistrePage';
 import ShopProductLanding from './pages/shop/ShopProductLanding';
 import ShopOrderConfirmation from './pages/shop/ShopOrderConfirmation';
 import MealShopPage from './pages/repas/MealShopPage';
@@ -256,6 +260,10 @@ function AppRoutes() {
         >
           <Route element={<RhAppLayout />}>
             <Route index element={<RhPresencePage />} />
+            <Route path="qr" element={<RhQrPage />} />
+            <Route path="personnel" element={<RhPersonnelPage />} />
+            <Route path="planning" element={<RhPlanningPage />} />
+            <Route path="registre" element={<RhRegistrePage />} />
             <Route path="photos" element={<RhPhotosPage />} />
           </Route>
         </Route>

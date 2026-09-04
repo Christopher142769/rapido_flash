@@ -122,10 +122,17 @@ export default function StaffPresenceDashboard({
   variant = 'dashboard',
   photosPath,
   hidePageTitle = false,
+  section = 'all',
 }) {
   const { showSuccess, showError } = useModal();
   const isRh = variant === 'rh';
   const galleryPath = photosPath || toDashboardPath('/presence-photos');
+  const showAll = !section || section === 'all';
+  const showOverview = showAll || section === 'overview';
+  const showQr = showAll || section === 'qr';
+  const showEmployees = showAll || section === 'employees';
+  const showPlanning = showAll || section === 'planning';
+  const showRecords = showAll || section === 'records';
   const [loading, setLoading] = useState(true);
   const [settingsBundle, setSettingsBundle] = useState(null);
   const [employees, setEmployees] = useState([]);
@@ -481,33 +488,42 @@ export default function StaffPresenceDashboard({
             Galerie photos →
           </Link>
         </div>
-      ) : (
-        <div className="staff-presence-dash-head staff-presence-dash-head--actions-only">
-          <Link to={galleryPath} className="commercial-btn commercial-btn--ghost">
-            Galerie photos →
-          </Link>
-        </div>
+      ) : null}
+
+      {(showOverview || showQr || showEmployees || showPlanning || showRecords) && (
+        <>
+          {!hidePageTitle ? (
+            <p className="commercial-lead">
+              {section === 'qr'
+                ? 'Imprimez ou partagez les QR d’arrivée et de sortie pour le site sélectionné.'
+                : section === 'employees'
+                  ? 'Ajoutez, modifiez ou retirez le personnel de chaque site.'
+                  : section === 'planning'
+                    ? 'Planning hebdomadaire, plages et règles par site.'
+                    : section === 'records'
+                      ? 'Arrivées, sorties, heures supplémentaires et exports.'
+                      : 'Deux sites Gbegamey et Zogbo — QR, personnel, planning et registres.'}
+            </p>
+          ) : null}
+
+          <div className="staff-presence-tabs" role="tablist">
+            {SITES.map((site) => (
+              <button
+                key={site.id}
+                type="button"
+                role="tab"
+                aria-selected={activeSite === site.id}
+                className={`staff-presence-tab${activeSite === site.id ? ' is-active' : ''}`}
+                onClick={() => setActiveSite(site.id)}
+              >
+                {site.label}
+              </button>
+            ))}
+          </div>
+        </>
       )}
-      <p className="commercial-lead">
-        Deux sites <strong>Gbegamey</strong> et <strong>Zogbo</strong> — QR arrivée / sortie par site.
-        Scan : selfie, choix du personnel et plage horaire (08–16 · 16–00 · 00–08).
-      </p>
 
-      <div className="staff-presence-tabs" role="tablist">
-        {SITES.map((site) => (
-          <button
-            key={site.id}
-            type="button"
-            role="tab"
-            aria-selected={activeSite === site.id}
-            className={`staff-presence-tab${activeSite === site.id ? ' is-active' : ''}`}
-            onClick={() => setActiveSite(site.id)}
-          >
-            {site.label}
-          </button>
-        ))}
-      </div>
-
+      {showQr ? (
       <div className="staff-presence-qr-pair">
         <QrBlock
           title={`QR Arrivée — ${SITES.find((s) => s.id === activeSite)?.label}`}
@@ -530,7 +546,9 @@ export default function StaffPresenceDashboard({
           onRegenerate={() => regenerate('exit')}
         />
       </div>
+      ) : null}
 
+      {showEmployees ? (
       <div className="commercial-card">
         <h2 style={{ margin: '0 0 1rem', fontSize: '1.05rem' }}>
           Personnel — {SITES.find((s) => s.id === activeSite)?.label}
@@ -663,8 +681,9 @@ export default function StaffPresenceDashboard({
           {employees.length - activeEmployees.length} inactif(s)
         </p>
       </div>
+      ) : null}
 
-      {schedule ? (
+      {showPlanning && schedule ? (
         <StaffPresencePlanning
           siteId={activeSite}
           siteLabel={SITES.find((s) => s.id === activeSite)?.label || activeSite}
@@ -677,6 +696,7 @@ export default function StaffPresenceDashboard({
         />
       ) : null}
 
+      {showRecords ? (
       <div className="commercial-card">
         <div className="staff-presence-tabs" role="tablist">
           <button
@@ -783,6 +803,7 @@ export default function StaffPresenceDashboard({
           ) : null}
         </div>
       </div>
+      ) : null}
     </div>
   );
 }
