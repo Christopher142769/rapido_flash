@@ -9,7 +9,7 @@ import {
 } from 'react-icons/fa';
 
 const LINKS = [
-  { to: '/rh/qr', title: 'Codes QR', desc: 'Arrivée et sortie par site', Icon: FaQrcode },
+  { to: '/rh/qr', title: 'Codes QR', desc: 'QR actifs du jour + permanents', Icon: FaQrcode },
   { to: '/rh/personnel', title: 'Personnel', desc: 'Registre des employés', Icon: FaUsers },
   { to: '/rh/planning', title: 'Planning', desc: 'Plages et jours de repos', Icon: FaCalendarAlt },
   { to: '/rh/registre', title: 'Registre', desc: 'Pointages et exports', Icon: FaClipboardList },
@@ -21,7 +21,10 @@ export default function RhPresencePage() {
     <div className="rh-presence-wrap">
       <header className="rh-page-head">
         <h1>Vue d’ensemble</h1>
-        <p>Espace ressources humaines King Fish — présence, planning et contrôles des sites.</p>
+        <p>
+          Espace ressources humaines King Fish — QR journaliers (/présence-actif), planning et
+          contrôles multi-sites.
+        </p>
       </header>
 
       <div className="rh-overview-grid">

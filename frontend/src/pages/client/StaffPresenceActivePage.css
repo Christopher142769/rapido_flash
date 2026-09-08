@@ -1,0 +1,179 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap');
+
+.sp-actif {
+  --sp-ink: #1c1410;
+  --sp-muted: #6f5a4c;
+  --sp-amber: #c76d2e;
+  --sp-brown: #5c2e0b;
+  min-height: 100vh;
+  min-height: 100dvh;
+  font-family: 'Montserrat', system-ui, sans-serif;
+  color: var(--sp-ink);
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+  box-sizing: border-box;
+}
+
+.sp-actif-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(199, 109, 46, 0.18), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(92, 46, 11, 0.1), transparent 50%),
+    linear-gradient(165deg, #f8f3ec 0%, #efe6db 55%, #e8ddd0 100%);
+}
+
+.sp-actif--sortie .sp-actif-bg {
+  background:
+    radial-gradient(ellipse 80% 50% at 90% -10%, rgba(92, 46, 11, 0.16), transparent 55%),
+    linear-gradient(165deg, #f3ebe3 0%, #e9dfd4 55%, #e2d6c8 100%);
+}
+
+.sp-actif--error {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-weight: 600;
+}
+
+.sp-actif-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.sp-actif-brand {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sp-muted);
+}
+
+.sp-actif-top h1 {
+  margin: 0;
+  font-size: clamp(1.6rem, 4vw, 2.35rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--sp-brown);
+}
+
+.sp-actif-clock {
+  text-align: right;
+  line-height: 1.25;
+}
+
+.sp-actif-clock strong {
+  display: block;
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.sp-actif-clock span {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--sp-muted);
+  text-transform: capitalize;
+}
+
+.sp-actif-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1.5rem 0 2rem;
+  animation: sp-actif-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes sp-actif-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.sp-actif-kind {
+  margin: 0;
+  font-size: clamp(1.5rem, 5vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--sp-ink);
+}
+
+.sp-actif--sortie .sp-actif-kind {
+  color: var(--sp-brown);
+}
+
+.sp-actif--arrivee .sp-actif-kind {
+  color: var(--sp-amber);
+}
+
+.sp-actif-hint {
+  margin: 0.4rem 0 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--sp-muted);
+  max-width: 36ch;
+}
+
+.sp-actif-qr-wrap {
+  padding: 1.25rem;
+  background: #fff;
+  border-radius: 24px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 20px 48px rgba(28, 20, 16, 0.1);
+  border: 1px solid rgba(92, 46, 11, 0.08);
+}
+
+.sp-actif-qr-wrap svg {
+  display: block;
+  width: min(280px, 72vw);
+  height: auto;
+}
+
+.sp-actif-day {
+  margin: 1.25rem 0 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--sp-muted);
+}
+
+.sp-actif-day strong {
+  color: var(--sp-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.sp-actif-loading,
+.sp-actif-error {
+  padding: 1.5rem 1.75rem;
+  border-radius: 16px;
+  font-weight: 600;
+  max-width: 28rem;
+}
+
+.sp-actif-loading {
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--sp-muted);
+}
+
+.sp-actif-error {
+  background: #fff0f0;
+  color: #b42318;
+  border: 1px solid rgba(180, 35, 24, 0.15);
+}

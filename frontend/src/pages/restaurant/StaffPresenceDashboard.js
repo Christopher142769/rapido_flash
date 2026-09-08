@@ -25,11 +25,6 @@ import StaffPresencePlanning, {
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const MEDIA_BASE = getMediaBaseUrl();
 
-const SITES = [
-  { id: 'gbegamey', label: 'Gbegamey' },
-  { id: 'zogbo', label: 'Zogbo' },
-];
-
 const SHIFT_LABELS = {
   morning: 'Matin (08h – 16h)',
   afternoon: 'Soir (16h – 00h)',
@@ -73,6 +68,12 @@ function buildPublicUrl(code) {
     return `${window.location.origin}/presence/${encodeURIComponent(code)}`;
   }
   return '';
+}
+
+function buildActifPageUrl(siteId, kind) {
+  if (!siteId || typeof window === 'undefined') return '';
+  const kindPath = kind === 'exit' ? 'sortie' : 'arrivee';
+  return `${window.location.origin}/presence-actif/${encodeURIComponent(siteId)}/${kindPath}`;
 }
 
 function QrBlock({ title, hint, publicUrl, canvasRef, busy, onDownloadPdf, onCopy, onRegenerate }) {
@@ -147,8 +148,26 @@ export default function StaffPresenceDashboard({
   const [editingEmpId, setEditingEmpId] = useState(null);
   const [empEdit, setEmpEdit] = useState({ restDays: [], contractDaysPerWeek: 5, notes: '' });
   const [empForm, setEmpForm] = useState({ firstName: '', lastName: '', siteId: 'gbegamey' });
+  const [newSiteLabel, setNewSiteLabel] = useState('');
   const arrivalCanvasRef = useRef(null);
   const exitCanvasRef = useRef(null);
+
+  const sitesList = useMemo(() => {
+    const fromSettings = (settingsBundle?.sites || []).map((s) => ({
+      id: s.siteId,
+      label: s.siteLabel || s.siteId,
+    }));
+    if (fromSettings.length) return fromSettings;
+    return [
+      { id: 'gbegamey', label: 'Gbegamey' },
+      { id: 'zogbo', label: 'Zogbo' },
+    ];
+  }, [settingsBundle]);
+
+  const siteLabelOf = useCallback(
+    (id) => sitesList.find((s) => s.id === id)?.label || id,
+    [sitesList]
+  );
 
   const siteSettings = useMemo(() => {
     const sites = settingsBundle?.sites;
@@ -157,6 +176,12 @@ export default function StaffPresenceDashboard({
   }, [settingsBundle, activeSite]);
 
   const companyName = settingsBundle?.companyName || siteSettings?.companyName || 'KING FISH';
+
+  useEffect(() => {
+    if (!sitesList.some((s) => s.id === activeSite) && sitesList[0]) {
+      setActiveSite(sitesList[0].id);
+    }
+  }, [sitesList, activeSite]);
 
   const loadSettings = useCallback(async () => {
     const res = await axios.get(`${API_URL}/staff-presence/settings`, authHeaders());
@@ -206,6 +231,14 @@ export default function StaffPresenceDashboard({
   }, [loadAll]);
 
   useEffect(() => {
+    if (!showQr) return undefined;
+    const id = setInterval(() => {
+      loadSettings().catch(() => {});
+    }, 60_000);
+    return () => clearInterval(id);
+  }, [showQr, loadSettings]);
+
+  useEffect(() => {
     loadEmployees().catch(() => {});
     loadRecords().catch(() => {});
     loadSchedule().catch(() => {});
@@ -224,7 +257,7 @@ export default function StaffPresenceDashboard({
   const listLabel = isExitList ? 'sortie' : 'arrivée';
 
   const exportMeta = useMemo(() => {
-    const site = SITES.find((s) => s.id === activeSite)?.label || activeSite;
+    const site = siteLabelOf(activeSite);
     const same = dateFrom && dateTo && dateFrom === dateTo;
     return {
       title: `Présence personnel — ${site}`,
@@ -234,7 +267,47 @@ export default function StaffPresenceDashboard({
       fileSlug: `presence-${activeSite}`,
       companyName,
     };
-  }, [dateFrom, dateTo, activeSite, companyName]);
+  }, [dateFrom, dateTo, activeSite, companyName, siteLabelOf]);
+
+  const arrivalActifUrl = useMemo(
+    () => siteSettings?.arrivalActifPageUrl || buildActifPageUrl(activeSite, 'arrival'),
+    [siteSettings, activeSite]
+  );
+  const exitActifUrl = useMemo(
+    () => siteSettings?.exitActifPageUrl || buildActifPageUrl(activeSite, 'exit'),
+    [siteSettings, activeSite]
+  );
+  const arrivalDailyUrl = useMemo(
+    () => buildPublicUrl(siteSettings?.arrivalDailyCode) || siteSettings?.arrivalDailyUrl || '',
+    [siteSettings]
+  );
+  const exitDailyUrl = useMemo(
+    () => buildPublicUrl(siteSettings?.exitDailyCode) || siteSettings?.exitDailyUrl || '',
+    [siteSettings]
+  );
+
+  const addSite = async (e) => {
+    e.preventDefault();
+    const label = newSiteLabel.trim();
+    if (!label) return;
+    setBusy(true);
+    try {
+      const res = await axios.post(
+        `${API_URL}/staff-presence/sites`,
+        { label },
+        authHeaders()
+      );
+      const site = res.data?.site;
+      setNewSiteLabel('');
+      await loadSettings();
+      if (site?.id) setActiveSite(site.id);
+      showSuccess(`Site « ${site?.label || label} » créé`);
+    } catch (err) {
+      showError(err.response?.data?.message || err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const handleExport = async (kind) => {
     try {
@@ -265,7 +338,7 @@ export default function StaffPresenceDashboard({
     const label = kind === 'exit' ? 'sortie' : 'arrivée';
     if (
       !window.confirm(
-        `Régénérer le QR ${label} pour ${SITES.find((s) => s.id === activeSite)?.label} ? L’ancien code ne fonctionnera plus.`
+        `Régénérer le QR ${label} pour ${siteLabelOf(activeSite)} ? L’ancien code ne fonctionnera plus.`
       )
     ) {
       return;
@@ -317,7 +390,7 @@ export default function StaffPresenceDashboard({
         showError('QR pas encore prêt');
         return;
       }
-      const siteLabel = SITES.find((s) => s.id === activeSite)?.label || activeSite;
+      const siteLabel = siteLabelOf(activeSite);
       const logoDataUrl = await resolveLogoDataUrl();
       await exportPresenceQrToPdf({
         url: publicUrl,
@@ -394,24 +467,25 @@ export default function StaffPresenceDashboard({
     }
   };
 
-  const seedGbegamey = async () => {
+  const seedPlanning = async () => {
+    const label = activeSite === 'zogbo' ? 'Zogbo' : 'Gbegamey';
     if (
       !window.confirm(
-        'Réimporter le planning Gbegamey (employés + créneaux + repos) ? Les modifications manuelles seront écrasées.'
+        `Réimporter le planning ${label} (employés + créneaux + repos) ? Les modifications manuelles seront écrasées.`
       )
     ) {
       return;
     }
     setBusy(true);
     try {
-      const res = await axios.post(
-        `${API_URL}/staff-presence/schedule/seed-gbegamey?force=true`,
-        {},
-        authHeaders()
-      );
+      const path =
+        activeSite === 'zogbo'
+          ? `${API_URL}/staff-presence/schedule/seed-zogbo?force=true`
+          : `${API_URL}/staff-presence/schedule/seed-gbegamey?force=true`;
+      const res = await axios.post(path, {}, authHeaders());
       setSchedule(res.data?.schedule || null);
       if (Array.isArray(res.data?.employees)) setEmployees(res.data.employees);
-      showSuccess(res.data?.seeded ? 'Planning Gbegamey importé' : 'Planning déjà en place');
+      showSuccess(res.data?.seeded ? `Planning ${label} importé` : 'Planning déjà en place');
     } catch (err) {
       showError(err.response?.data?.message || err.message);
     } finally {
@@ -502,12 +576,12 @@ export default function StaffPresenceDashboard({
                     ? 'Planning hebdomadaire, plages et règles par site.'
                     : section === 'records'
                       ? 'Arrivées, sorties, heures supplémentaires et exports.'
-                      : 'Deux sites Gbegamey et Zogbo — QR, personnel, planning et registres.'}
+                      : 'QR actifs du jour, personnel, planning et registres par site.'}
             </p>
           ) : null}
 
           <div className="staff-presence-tabs" role="tablist">
-            {SITES.map((site) => (
+            {sitesList.map((site) => (
               <button
                 key={site.id}
                 type="button"
@@ -520,38 +594,107 @@ export default function StaffPresenceDashboard({
               </button>
             ))}
           </div>
+
+          {showQr ? (
+            <form className="staff-presence-add-site" onSubmit={addSite}>
+              <label>
+                Nouveau site
+                <input
+                  value={newSiteLabel}
+                  onChange={(ev) => setNewSiteLabel(ev.target.value)}
+                  placeholder="Ex. Akpakpa"
+                  maxLength={80}
+                />
+              </label>
+              <button type="submit" className="commercial-btn commercial-btn--outline" disabled={busy || !newSiteLabel.trim()}>
+                Ajouter un site
+              </button>
+            </form>
+          ) : null}
         </>
       )}
 
       {showQr ? (
-      <div className="staff-presence-qr-pair">
-        <QrBlock
-          title={`QR Arrivée — ${SITES.find((s) => s.id === activeSite)?.label}`}
-          hint="Selfie + personnel + plage → arrivée"
-          publicUrl={arrivalUrl}
-          canvasRef={arrivalCanvasRef}
-          busy={busy}
-          onDownloadPdf={() => downloadQrPdf('arrival')}
-          onCopy={() => copyUrl(arrivalUrl)}
-          onRegenerate={() => regenerate('arrival')}
-        />
-        <QrBlock
-          title={`QR Sortie — ${SITES.find((s) => s.id === activeSite)?.label}`}
-          hint="Selfie + personnel + plage → sortie (+ heures sup.)"
-          publicUrl={exitUrl}
-          canvasRef={exitCanvasRef}
-          busy={busy}
-          onDownloadPdf={() => downloadQrPdf('exit')}
-          onCopy={() => copyUrl(exitUrl)}
-          onRegenerate={() => regenerate('exit')}
-        />
-      </div>
+        <>
+          <div className="commercial-card staff-presence-actif-card">
+            <h2 style={{ margin: '0 0 0.35rem', fontSize: '1.05rem' }}>
+              QR actifs du jour — {siteLabelOf(activeSite)}
+            </h2>
+            <p className="commercial-lead" style={{ marginTop: 0, fontSize: '0.88rem' }}>
+              Liens stables à afficher sur tablette / TV. Le QR change chaque jour (arrivée et sortie
+              ensemble). Valide le {siteSettings?.dailyTokenDateKey || '…'}.
+            </p>
+            <div className="staff-presence-actif-grid">
+              <div className="staff-presence-actif-item">
+                <strong>Arrivée</strong>
+                <div className="staff-presence-qr-box staff-presence-qr-box--sm">
+                  {arrivalDailyUrl ? (
+                    <QRCodeSVG value={arrivalDailyUrl} size={120} level="M" includeMargin />
+                  ) : (
+                    <span>…</span>
+                  )}
+                </div>
+                <input readOnly value={arrivalActifUrl} />
+                <div className="commercial-filters" style={{ marginBottom: 0 }}>
+                  <button type="button" className="commercial-btn commercial-btn--outline" onClick={() => copyUrl(arrivalActifUrl)}>
+                    Copier le lien
+                  </button>
+                  <a className="commercial-btn commercial-btn--primary" href={arrivalActifUrl} target="_blank" rel="noreferrer">
+                    Ouvrir plein écran
+                  </a>
+                </div>
+              </div>
+              <div className="staff-presence-actif-item">
+                <strong>Sortie</strong>
+                <div className="staff-presence-qr-box staff-presence-qr-box--sm">
+                  {exitDailyUrl ? (
+                    <QRCodeSVG value={exitDailyUrl} size={120} level="M" includeMargin />
+                  ) : (
+                    <span>…</span>
+                  )}
+                </div>
+                <input readOnly value={exitActifUrl} />
+                <div className="commercial-filters" style={{ marginBottom: 0 }}>
+                  <button type="button" className="commercial-btn commercial-btn--outline" onClick={() => copyUrl(exitActifUrl)}>
+                    Copier le lien
+                  </button>
+                  <a className="commercial-btn commercial-btn--primary" href={exitActifUrl} target="_blank" rel="noreferrer">
+                    Ouvrir plein écran
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="staff-presence-qr-pair">
+            <QrBlock
+              title={`QR permanent Arrivée — ${siteLabelOf(activeSite)}`}
+              hint="Affiche imprimée (ne change pas tant que vous ne régénérez pas)"
+              publicUrl={arrivalUrl}
+              canvasRef={arrivalCanvasRef}
+              busy={busy}
+              onDownloadPdf={() => downloadQrPdf('arrival')}
+              onCopy={() => copyUrl(arrivalUrl)}
+              onRegenerate={() => regenerate('arrival')}
+            />
+            <QrBlock
+              title={`QR permanent Sortie — ${siteLabelOf(activeSite)}`}
+              hint="Affiche imprimée (ne change pas tant que vous ne régénérez pas)"
+              publicUrl={exitUrl}
+              canvasRef={exitCanvasRef}
+              busy={busy}
+              onDownloadPdf={() => downloadQrPdf('exit')}
+              onCopy={() => copyUrl(exitUrl)}
+              onRegenerate={() => regenerate('exit')}
+            />
+          </div>
+        </>
       ) : null}
 
       {showEmployees ? (
       <div className="commercial-card">
         <h2 style={{ margin: '0 0 1rem', fontSize: '1.05rem' }}>
-          Personnel — {SITES.find((s) => s.id === activeSite)?.label}
+          Personnel — {siteLabelOf(activeSite)}
         </h2>
         <form className="staff-presence-emp-form staff-presence-emp-form--optional-nom" onSubmit={addEmployee}>
           <label>
@@ -686,13 +829,13 @@ export default function StaffPresenceDashboard({
       {showPlanning && schedule ? (
         <StaffPresencePlanning
           siteId={activeSite}
-          siteLabel={SITES.find((s) => s.id === activeSite)?.label || activeSite}
+          siteLabel={siteLabelOf(activeSite)}
           schedule={schedule}
           employees={employees}
           busy={busy}
           onChange={setSchedule}
           onSave={saveSchedule}
-          onSeed={seedGbegamey}
+          onSeed={seedPlanning}
         />
       ) : null}
 
@@ -745,7 +888,7 @@ export default function StaffPresenceDashboard({
         <p className="commercial-lead" style={{ marginTop: 0 }}>
           <strong>{records.length}</strong>{' '}
           {viewMode === 'overtime' ? 'sortie(s) avec heures sup.' : `${listLabel}(s)`} ·{' '}
-          {SITES.find((s) => s.id === activeSite)?.label}
+          {siteLabelOf(activeSite)}
         </p>
 
         <div className="commercial-table-wrap">

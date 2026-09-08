@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const { SITE_IDS } = require('../utils/staffPresenceSites');
 const { SHIFT_IDS } = require('../utils/staffPresenceShifts');
 
 const KINDS = ['arrival', 'exit'];
@@ -11,7 +10,7 @@ const staffPresenceRecordSchema = new mongoose.Schema(
     lastName: { type: String, default: '', trim: true },
     normalizedName: { type: String, required: true, trim: true, lowercase: true },
     employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'StaffEmployee', index: true },
-    siteId: { type: String, enum: SITE_IDS, default: 'gbegamey', index: true },
+    siteId: { type: String, default: 'gbegamey', index: true },
     shift: { type: String, enum: SHIFT_IDS, required: true, index: true },
     shiftWindowKey: { type: String, required: true, trim: true, index: true },
     kind: {

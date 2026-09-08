@@ -57,6 +57,7 @@ import ShopRepasDashboard from './pages/restaurant/ShopRepasDashboard';
 import PushNotificationsDashboard from './pages/restaurant/PushNotificationsDashboard';
 import InvitesDashboard from './pages/restaurant/InvitesDashboard';
 import StaffPresenceDashboard from './pages/restaurant/StaffPresenceDashboard';
+import StaffPresenceActivePage from './pages/client/StaffPresenceActivePage';
 import StaffPresencePhotosPage from './pages/restaurant/StaffPresencePhotosPage';
 import RhGate from './pages/rh/RhGate';
 import RhAppLayout from './pages/rh/RhAppLayout';
@@ -295,6 +296,8 @@ function AppRoutes() {
         <Route path="/invités/:code" element={<InvitesCheckPage />} />
         <Route path="/présence/:code" element={<StaffPresencePage />} />
         <Route path="/presence/:code" element={<StaffPresencePage />} />
+        <Route path="/présence-actif/:siteId/:kind" element={<StaffPresenceActivePage />} />
+        <Route path="/presence-actif/:siteId/:kind" element={<StaffPresenceActivePage />} />
         <Route
           path="/repas/:slug"
           element={<MealProductLegacyRedirect />}

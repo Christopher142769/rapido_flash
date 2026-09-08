@@ -116,6 +116,7 @@ export function shouldTrackPath(pathname) {
   if (p.startsWith('/responsables')) return false;
   if (p.startsWith('/login') || p.startsWith('/register')) return false;
   if (p.startsWith('/présence') || p.startsWith('/presence')) return false;
+  if (p.startsWith('/présence-actif') || p.startsWith('/presence-actif')) return false;
   return true;
 }
 

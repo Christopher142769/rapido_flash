@@ -19,70 +19,144 @@ const SHIFT_COLUMNS = [
   { id: 'afternoon', label: 'Soir (16h – 00h)' },
 ];
 
-/** Données planning Gbegamey — prénoms uniquement. */
-const Gbegamey_EMPLOYEES = [
-  {
-    firstName: 'Gloria',
-    restDays: [2, 4, 7],
-    contractDaysPerWeek: 4,
-    notes: 'Contrat 4 j/semaine — repos Mar, Jeu, Dim',
-  },
-  { firstName: 'Bijou', restDays: [1], notes: 'Repos Lundi' },
-  { firstName: 'Ines', restDays: [3], notes: 'Repos Mercredi' },
-  { firstName: 'Rita', restDays: [5], notes: 'Repos Vendredi' },
-  { firstName: 'Priscillia', restDays: [6], notes: 'Repos Samedi' },
-  { firstName: 'Obey', restDays: [1], notes: 'Repos Lundi' },
-  { firstName: 'Oronce', restDays: [1], notes: 'Repos Lundi' },
-  { firstName: 'Aime', restDays: [], active: false, notes: 'Retiré du planning' },
+/**
+ * Planning King Fish Gbegamey — source : Planning_King_Fish_Gbegamey.pdf
+ * 2 services (matin / soir), nuit fermée. Renfort à 3 le ven. et sam. soir.
+ */
+const GBEGAMEY_EMPLOYEES = [
+  { firstName: 'Gloria', restDays: [7], contractDaysPerWeek: 6, notes: 'Repos Dimanche' },
+  { firstName: 'Ines', restDays: [3], contractDaysPerWeek: 6, notes: 'Repos Mercredi' },
+  { firstName: 'Priscillia', restDays: [4], contractDaysPerWeek: 6, notes: 'Repos Jeudi' },
+  { firstName: 'Bijou', restDays: [2], contractDaysPerWeek: 6, notes: 'Repos Mardi' },
+  { firstName: 'Rita', restDays: [1], contractDaysPerWeek: 6, notes: 'Repos Lundi' },
+  /** Anciens employés hors nouveau planning — désactivés au réimport. */
+  { firstName: 'Obey', restDays: [], active: false, notes: 'Hors planning actuel' },
+  { firstName: 'Oronce', restDays: [], active: false, notes: 'Hors planning actuel' },
+  { firstName: 'Aime', restDays: [], active: false, notes: 'Hors planning actuel' },
 ];
 
-/** weekday → shift → { closed?, names[] } */
-const Gbegamey_SCHEDULE = {
+const GBEGAMEY_SCHEDULE = {
   1: {
     night: { closed: true },
-    morning: { names: ['Ines', 'Priscillia'] },
-    afternoon: { names: ['Gloria', 'Rita'] },
+    morning: { names: ['Gloria', 'Bijou'] },
+    afternoon: { names: ['Ines', 'Priscillia'] },
   },
   2: {
-    night: { names: ['Obey', 'Oronce'] },
-    morning: { names: ['Bijou', 'Ines'] },
-    afternoon: { names: ['Rita', 'Priscillia'] },
+    night: { closed: true },
+    morning: { names: ['Gloria', 'Rita'] },
+    afternoon: { names: ['Ines', 'Priscillia'] },
   },
   3: {
-    night: { names: ['Obey', 'Oronce'] },
-    morning: { names: ['Bijou', 'Rita'] },
-    afternoon: { names: ['Gloria', 'Priscillia'] },
+    night: { closed: true },
+    morning: { names: ['Gloria', 'Bijou'] },
+    afternoon: { names: ['Priscillia', 'Rita'] },
   },
   4: {
-    night: { names: ['Obey', 'Oronce'] },
-    morning: { names: ['Rita', 'Priscillia'] },
-    afternoon: { names: ['Bijou', 'Ines'] },
+    night: { closed: true },
+    morning: { names: ['Gloria', 'Rita'] },
+    afternoon: { names: ['Ines', 'Bijou'] },
   },
   5: {
-    night: { names: ['Obey', 'Oronce'] },
-    morning: { names: ['Ines', 'Priscillia'] },
-    afternoon: { names: ['Gloria', 'Bijou'] },
+    night: { closed: true },
+    morning: { names: ['Priscillia', 'Bijou'] },
+    afternoon: { names: ['Gloria', 'Ines', 'Rita'] },
   },
   6: {
-    night: { names: ['Obey', 'Oronce'] },
-    morning: { names: ['Bijou', 'Rita'] },
-    afternoon: { names: ['Gloria', 'Ines'] },
+    night: { closed: true },
+    morning: { names: ['Priscillia', 'Rita'] },
+    afternoon: { names: ['Gloria', 'Ines', 'Bijou'] },
   },
   7: {
-    night: { names: ['Obey', 'Oronce'] },
-    morning: { names: ['Ines', 'Priscillia'] },
-    afternoon: { names: ['Bijou', 'Rita'] },
+    night: { closed: true },
+    morning: { names: ['Priscillia', 'Bijou'] },
+    afternoon: { names: ['Ines', 'Rita'] },
   },
 };
 
-const Gbegamey_RULES = {
-  open247: true,
+const GBEGAMEY_RULES = {
+  open247: false,
   mondayNightClosed: true,
   binomeMin: 2,
   maxRestDaysPerWeek: 1,
   planningEnabled: true,
   notes:
-    'Ouvert 24h/24, 7j/7 — Fermé le lundi de 00h00 à 08h00 — Binôme (2 pers.) obligatoire — Max 1 jour de repos/semaine (sauf Gloria, contrat 4×/semaine).',
+    'Ouvert 7j/7 — 2 services : matin (8h–16h) et soir (16h–minuit) — Binôme obligatoire, renfort à 3 le vendredi et samedi soir.',
+};
+
+/**
+ * Planning Rapido Zogbo — source : Planning_Rapido_Zogbo.pdf
+ * Fermé le lundi. Mardi–dimanche : Diane+Gédéon (journée), Sherifat+Mathias (soirée).
+ */
+const ZOGBO_EMPLOYEES = [
+  {
+    firstName: 'Diane',
+    restDays: [1],
+    contractDaysPerWeek: 6,
+    notes: 'Journée 8h–16h — repos Lundi (site fermé)',
+  },
+  {
+    firstName: 'Gédéon',
+    restDays: [1],
+    contractDaysPerWeek: 6,
+    notes: 'Journée 8h–16h — repos Lundi (site fermé)',
+  },
+  {
+    firstName: 'Sherifat',
+    restDays: [1],
+    contractDaysPerWeek: 6,
+    notes: 'Soirée 16h–00h — repos Lundi (site fermé)',
+  },
+  {
+    firstName: 'Mathias',
+    restDays: [1],
+    contractDaysPerWeek: 6,
+    notes: 'Soirée 16h–00h — repos Lundi (site fermé)',
+  },
+];
+
+const ZOGBO_CLOSED_DAY = {
+  night: { closed: true },
+  morning: { closed: true },
+  afternoon: { closed: true },
+};
+
+const ZOGBO_OPEN_DAY = {
+  night: { closed: true },
+  morning: { names: ['Diane', 'Gédéon'] },
+  afternoon: { names: ['Sherifat', 'Mathias'] },
+};
+
+const ZOGBO_SCHEDULE = {
+  1: ZOGBO_CLOSED_DAY,
+  2: ZOGBO_OPEN_DAY,
+  3: ZOGBO_OPEN_DAY,
+  4: ZOGBO_OPEN_DAY,
+  5: ZOGBO_OPEN_DAY,
+  6: ZOGBO_OPEN_DAY,
+  7: ZOGBO_OPEN_DAY,
+};
+
+const ZOGBO_RULES = {
+  open247: false,
+  mondayNightClosed: true,
+  binomeMin: 2,
+  maxRestDaysPerWeek: 1,
+  planningEnabled: true,
+  notes:
+    'Site ouvert du mardi au dimanche. Lundi : FERMÉ. Chaque service assuré par un binôme.',
+};
+
+const SITE_SEEDS = {
+  gbegamey: {
+    employees: GBEGAMEY_EMPLOYEES,
+    schedule: GBEGAMEY_SCHEDULE,
+    rules: GBEGAMEY_RULES,
+  },
+  zogbo: {
+    employees: ZOGBO_EMPLOYEES,
+    schedule: ZOGBO_SCHEDULE,
+    rules: ZOGBO_RULES,
+  },
 };
 
 function normalizeFirstKey(name) {
@@ -181,17 +255,21 @@ function serializeSchedule(doc, employees = []) {
   };
 }
 
-async function seedGbegameyPlanning({ force = false } = {}) {
-  const siteId = 'gbegamey';
+async function seedSitePlanning(siteId, { force = false } = {}) {
+  const seed = SITE_SEEDS[siteId];
+  if (!seed) {
+    throw new Error(`Aucun seed planning pour le site « ${siteId} »`);
+  }
+
   let schedule = await StaffWeeklySchedule.findOne({ siteId });
   if (schedule && !force) {
     const employees = await StaffEmployee.find({ siteId }).sort({ firstName: 1 }).lean();
-    return { seeded: false, schedule: serializeSchedule(schedule, employees), employees };
+    return { seeded: false, siteId, schedule: serializeSchedule(schedule, employees), employees };
   }
 
   const nameToId = new Map();
 
-  for (const spec of Gbegamey_EMPLOYEES) {
+  for (const spec of seed.employees) {
     const firstName = String(spec.firstName).trim();
     const normalizedName = normalizeFirstKey(firstName);
     let employee = await StaffEmployee.findOne({ siteId, normalizedName }).exec();
@@ -203,25 +281,25 @@ async function seedGbegameyPlanning({ force = false } = {}) {
         siteId,
         active: spec.active !== false,
         restDays: spec.restDays || [],
-        contractDaysPerWeek: spec.contractDaysPerWeek ?? 5,
+        contractDaysPerWeek: spec.contractDaysPerWeek ?? 6,
         notes: spec.notes || '',
       });
     } else {
       employee.firstName = firstName;
       employee.lastName = employee.lastName || '·';
       employee.restDays = spec.restDays || [];
-      employee.contractDaysPerWeek = spec.contractDaysPerWeek ?? employee.contractDaysPerWeek ?? 5;
+      employee.contractDaysPerWeek = spec.contractDaysPerWeek ?? employee.contractDaysPerWeek ?? 6;
       employee.notes = spec.notes || employee.notes;
       if (spec.active === false) employee.active = false;
-      else if (spec.active !== false) employee.active = true;
+      else employee.active = true;
     }
     await employee.save();
-    nameToId.set(normalizeFirstKey(firstName), employee._id);
+    nameToId.set(normalizedName, employee._id);
   }
 
   const slots = [];
   for (const wd of WEEKDAYS) {
-    const dayPlan = Gbegamey_SCHEDULE[wd.id] || {};
+    const dayPlan = seed.schedule[wd.id] || {};
     for (const shift of SHIFT_IDS) {
       const cell = dayPlan[shift] || {};
       const employeeIds = (cell.names || [])
@@ -237,15 +315,31 @@ async function seedGbegameyPlanning({ force = false } = {}) {
   }
 
   if (!schedule) {
-    schedule = new StaffWeeklySchedule({ siteId, rules: Gbegamey_RULES, slots });
+    schedule = new StaffWeeklySchedule({ siteId, rules: seed.rules, slots });
   } else {
-    schedule.rules = Gbegamey_RULES;
+    schedule.rules = seed.rules;
     schedule.slots = slots;
   }
   await schedule.save();
 
   const employees = await StaffEmployee.find({ siteId }).sort({ firstName: 1 }).lean();
-  return { seeded: true, schedule: serializeSchedule(schedule, employees), employees };
+  return { seeded: true, siteId, schedule: serializeSchedule(schedule, employees), employees };
+}
+
+async function seedGbegameyPlanning({ force = false } = {}) {
+  return seedSitePlanning('gbegamey', { force });
+}
+
+async function seedZogboPlanning({ force = false } = {}) {
+  return seedSitePlanning('zogbo', { force });
+}
+
+async function seedAllStaffPlanning({ force = false } = {}) {
+  const results = {};
+  for (const siteId of Object.keys(SITE_SEEDS)) {
+    results[siteId] = await seedSitePlanning(siteId, { force });
+  }
+  return results;
 }
 
 function scheduleHasAssignments(schedule) {
@@ -286,8 +380,8 @@ function isShiftAllowedForEmployee(schedule, employeeId, shift, weekday) {
 
 async function getScheduleForSite(siteId) {
   let schedule = await StaffWeeklySchedule.findOne({ siteId }).lean();
-  if (!schedule && siteId === 'gbegamey') {
-    const result = await seedGbegameyPlanning();
+  if (!schedule && SITE_SEEDS[siteId]) {
+    const result = await seedSitePlanning(siteId);
     return result.schedule;
   }
   if (!schedule) {
@@ -311,13 +405,19 @@ async function getScheduleForSite(siteId) {
 module.exports = {
   WEEKDAYS,
   SHIFT_COLUMNS,
-  Gbegamey_RULES,
+  GBEGAMEY_RULES: GBEGAMEY_RULES,
+  Gbegamey_RULES: GBEGAMEY_RULES,
+  ZOGBO_RULES,
+  SITE_SEEDS,
   isValidWeekday,
   isValidRestDays,
   normalizeSlots,
   buildEmptySlots,
   serializeSchedule,
+  seedSitePlanning,
   seedGbegameyPlanning,
+  seedZogboPlanning,
+  seedAllStaffPlanning,
   getScheduleForSite,
   scheduleHasAssignments,
   isPlanningEnabled,

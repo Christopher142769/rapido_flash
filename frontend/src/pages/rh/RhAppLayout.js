@@ -34,7 +34,7 @@ export default function RhAppLayout() {
     if (!themeMeta) {
       themeMeta = document.createElement('meta');
       themeMeta.name = 'theme-color';
-      themeMeta.content = '#3d2314';
+      themeMeta.content = '#f3efe8';
       themeMeta.setAttribute('data-rh', '1');
       document.head.appendChild(themeMeta);
     }

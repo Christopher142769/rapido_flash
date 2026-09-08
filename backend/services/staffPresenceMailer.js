@@ -4,7 +4,6 @@ const { shiftLabel, formatMinutesLabel, TZ } = require('../utils/staffPresenceSh
 const { readSelfieBuffer, publicSelfieUrl } = require('../utils/staffPresenceSelfie');
 
 const DEFAULT_NOTIFY = [
-  'cricriguidibi@gmail.com',
   'florencechanca@gmail.com',
   'christopherguidibi@gmail.com',
 ];

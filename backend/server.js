@@ -280,6 +280,12 @@ async function connectMongoWithRetry() {
       } catch (e) {
         console.error('⚠️ ensureBassinsFunnel:', e.message);
       }
+      try {
+        const { refreshSitesCache } = require('./utils/staffPresenceSites');
+        await refreshSitesCache({ force: true });
+      } catch (e) {
+        console.error('⚠️ staffPresence sites:', e.message);
+      }
 
       // Initialiser l'admin par défaut après la connexion MongoDB (plus de plats par défaut)
       setTimeout(async () => {

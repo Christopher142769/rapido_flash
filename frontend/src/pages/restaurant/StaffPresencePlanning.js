@@ -73,7 +73,7 @@ export default function StaffPresencePlanning({
   const setSlotEmployee = (weekday, shift, slotIndexNum, employeeId) => {
     const slot = getSlot(slots, weekday, shift);
     const ids = [...(slot.employeeIds || []).map(String)];
-    while (ids.length < 2) ids.push('');
+    while (ids.length < 3) ids.push('');
     ids[slotIndexNum] = employeeId || '';
     patchSlot(weekday, shift, {
       closed: false,
@@ -95,14 +95,14 @@ export default function StaffPresencePlanning({
           </p>
         </div>
         <div className="staff-presence-planning-actions">
-          {siteId === 'gbegamey' ? (
+          {(siteId === 'gbegamey' || siteId === 'zogbo') && onSeed ? (
             <button
               type="button"
               className="commercial-btn commercial-btn--outline"
               disabled={busy}
               onClick={onSeed}
             >
-              Réimporter Gbegamey
+              {siteId === 'zogbo' ? 'Réimporter Zogbo' : 'Réimporter Gbegamey'}
             </button>
           ) : null}
           <button
@@ -220,7 +220,7 @@ export default function StaffPresencePlanning({
                       </label>
                       {!closed ? (
                         <div className="staff-presence-planning-pair">
-                          {[0, 1].map((i) => (
+                          {[0, 1, 2].map((i) => (
                             <select
                               key={i}
                               value={ids[i] || ''}

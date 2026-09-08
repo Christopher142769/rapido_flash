@@ -1,12 +1,11 @@
 const mongoose = require('mongoose');
-const { SITE_IDS } = require('../utils/staffPresenceSites');
 
 const staffEmployeeSchema = new mongoose.Schema(
   {
     firstName: { type: String, required: true, trim: true },
     lastName: { type: String, required: true, trim: true, default: '·' },
     normalizedName: { type: String, required: true, trim: true, lowercase: true },
-    siteId: { type: String, enum: SITE_IDS, required: true, index: true },
+    siteId: { type: String, required: true, index: true },
     active: { type: Boolean, default: true, index: true },
     /** Jours de repos récurrents (ISO : 1 = lundi … 7 = dimanche). */
     restDays: { type: [Number], default: [] },

@@ -22,6 +22,79 @@
   margin-bottom: 1.15rem;
 }
 
+.staff-presence-actif-card {
+  margin-bottom: 1.15rem;
+}
+
+.staff-presence-actif-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 800px) {
+  .staff-presence-actif-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.staff-presence-actif-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.85rem;
+  border-radius: 14px;
+  background: rgba(255, 248, 240, 0.85);
+  border: 1px solid rgba(92, 58, 30, 0.1);
+}
+
+.staff-presence-actif-item strong {
+  font-size: 0.95rem;
+}
+
+.staff-presence-actif-item input {
+  width: 100%;
+  font-size: 0.78rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid rgba(92, 58, 30, 0.14);
+  background: #fff;
+}
+
+.staff-presence-qr-box--sm {
+  width: fit-content;
+  margin: 0 auto;
+  padding: 0.5rem;
+  background: #fff;
+  border-radius: 12px;
+}
+
+.staff-presence-add-site {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.65rem;
+  margin: 0.85rem 0 0.35rem;
+}
+
+.staff-presence-add-site label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #6f5a4c;
+  flex: 1;
+  min-width: 180px;
+}
+
+.staff-presence-add-site input {
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid rgba(92, 58, 30, 0.16);
+  font: inherit;
+  font-weight: 600;
+}
+
 @media (min-width: 980px) {
   .staff-presence-qr-pair {
     grid-template-columns: 1fr 1fr;

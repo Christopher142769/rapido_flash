@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const { SITE_IDS } = require('../utils/staffPresenceSites');
 const { SHIFT_IDS } = require('../utils/staffPresenceShifts');
 
 const scheduleSlotSchema = new mongoose.Schema(
@@ -14,7 +13,7 @@ const scheduleSlotSchema = new mongoose.Schema(
 
 const staffWeeklyScheduleSchema = new mongoose.Schema(
   {
-    siteId: { type: String, enum: SITE_IDS, required: true, unique: true, index: true },
+    siteId: { type: String, required: true, unique: true, index: true },
     rules: {
       open247: { type: Boolean, default: true },
       mondayNightClosed: { type: Boolean, default: true },

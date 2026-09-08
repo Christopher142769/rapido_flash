@@ -1,5 +1,4 @@
 const express = require('express');
-const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const StaffPresenceSettings = require('../models/StaffPresenceSettings');
@@ -10,12 +9,22 @@ const Restaurant = require('../models/Restaurant');
 const uploadStaffPresence = require('../middleware/uploadStaffPresence');
 const { auth, isStaffPresence } = require('../middleware/auth');
 const {
-  SITES,
-  SITE_IDS,
   DEFAULT_SITE_ID,
   isValidSiteId,
   siteLabel,
+  listSites,
+  refreshSitesCache,
+  createSite,
+  updateSite,
+  normalizeSiteId,
 } = require('../utils/staffPresenceSites');
+const {
+  newPresenceCode,
+  nextMidnightBeninIso,
+  ensureDailyTokens,
+  resolveKindFromDaily,
+  resolveKindFromPermanent,
+} = require('../utils/staffPresenceDailyTokens');
 const { notifyPresenceRecorded } = require('../services/staffPresenceMailer');
 const { readSelfieBuffer, safeZipBaseName, resolveLocalSelfiePath } = require('../utils/staffPresenceSelfie');
 const {
@@ -36,6 +45,8 @@ const {
   normalizeSlots,
   getScheduleForSite,
   seedGbegameyPlanning,
+  seedZogboPlanning,
+  seedSitePlanning,
   serializeSchedule,
   assignedShiftsForEmployee,
   scheduleHasAssignments,
@@ -86,8 +97,14 @@ function publicPresenceUrl(code) {
   return `${publicPresenceBaseUrl()}/presence/${encodeURIComponent(code)}`;
 }
 
-function newPresenceCode() {
-  return crypto.randomBytes(16).toString('hex');
+function publicActifPageUrl(siteId, kind) {
+  const kindPath = kind === 'exit' ? 'sortie' : 'arrivee';
+  return `${publicPresenceBaseUrl()}/presence-actif/${encodeURIComponent(siteId)}/${kindPath}`;
+}
+
+function publicActifPageUrlFr(siteId, kind) {
+  const kindPath = kind === 'exit' ? 'sortie' : 'arrivée';
+  return `${publicPresenceBaseUrl()}/présence-actif/${encodeURIComponent(siteId)}/${kindPath}`;
 }
 
 function selfieUrlFromFile(file) {
@@ -134,7 +151,8 @@ async function ensureRecordIndexes() {
 }
 
 async function getOrCreateSiteSettings(siteId) {
-  const key = isValidSiteId(siteId) ? siteId : DEFAULT_SITE_ID;
+  await refreshSitesCache();
+  const key = isValidSiteId(siteId) ? normalizeSiteId(siteId) : DEFAULT_SITE_ID;
   let doc = await StaffPresenceSettings.findOne({ key });
   if (!doc) {
     doc = await StaffPresenceSettings.create({
@@ -142,7 +160,6 @@ async function getOrCreateSiteSettings(siteId) {
       arrivalCode: newPresenceCode(),
       exitCode: newPresenceCode(),
     });
-    return doc;
   }
   let dirty = false;
   if (!doc.arrivalCode) {
@@ -154,29 +171,42 @@ async function getOrCreateSiteSettings(siteId) {
     dirty = true;
   }
   if (dirty) await doc.save();
+  await ensureDailyTokens(doc);
   return doc;
 }
 
 async function ensureAllSiteSettings() {
+  const sites = await listSites({ activeOnly: true });
   const docs = {};
-  for (const siteId of SITE_IDS) {
-    docs[siteId] = await getOrCreateSiteSettings(siteId);
+  for (const site of sites) {
+    docs[site.id] = await getOrCreateSiteSettings(site.id);
   }
   return docs;
 }
 
 function resolveKindFromCode(doc, code) {
-  if (!doc || !code) return null;
-  if (doc.exitCode && doc.exitCode === code) return 'exit';
-  if (doc.arrivalCode && doc.arrivalCode === code) return 'arrival';
-  if (doc.code && doc.code === code) return 'arrival';
-  return null;
+  return resolveKindFromPermanent(doc, code) || resolveKindFromDaily(doc, code);
 }
 
 async function findSettingsByCode(code) {
-  return StaffPresenceSettings.findOne({
-    $or: [{ arrivalCode: code }, { exitCode: code }, { code }],
+  const raw = String(code || '').trim();
+  if (!raw) return null;
+  let doc = await StaffPresenceSettings.findOne({
+    $or: [
+      { arrivalCode: raw },
+      { exitCode: raw },
+      { code: raw },
+      { arrivalDailyCode: raw },
+      { exitDailyCode: raw },
+    ],
   });
+  if (!doc) return null;
+  // Si token journalier trouvé mais date périmée → invalide
+  const dailyKind = resolveKindFromDaily(doc, raw);
+  if (doc.arrivalDailyCode === raw || doc.exitDailyCode === raw) {
+    if (!dailyKind) return null;
+  }
+  return doc;
 }
 
 function mimeFromExt(filePath) {
@@ -224,6 +254,8 @@ async function getKingFishBranding() {
 async function serializeSettings(doc) {
   const branding = await getKingFishBranding();
   const siteId = doc.key || DEFAULT_SITE_ID;
+  await ensureDailyTokens(doc);
+  const dateKey = doc.dailyTokenDateKey || dateKeyBenin();
   return {
     siteId,
     siteLabel: siteLabel(siteId),
@@ -233,6 +265,16 @@ async function serializeSettings(doc) {
     exitUrl: publicPresenceUrl(doc.exitCode),
     code: doc.arrivalCode,
     url: publicPresenceUrl(doc.arrivalCode),
+    dailyTokenDateKey: dateKey,
+    arrivalDailyCode: doc.arrivalDailyCode,
+    exitDailyCode: doc.exitDailyCode,
+    arrivalDailyUrl: publicPresenceUrl(doc.arrivalDailyCode),
+    exitDailyUrl: publicPresenceUrl(doc.exitDailyCode),
+    arrivalActifPageUrl: publicActifPageUrl(siteId, 'arrival'),
+    exitActifPageUrl: publicActifPageUrl(siteId, 'exit'),
+    arrivalActifPageUrlFr: publicActifPageUrlFr(siteId, 'arrival'),
+    exitActifPageUrlFr: publicActifPageUrlFr(siteId, 'exit'),
+    dailyExpiresAt: nextMidnightBeninIso(),
     companyName: branding.companyName,
     companyLogo: branding.companyLogo,
     companyLogoDataUrl: branding.companyLogoDataUrl,
@@ -314,6 +356,7 @@ function buildPhotosFilter(req) {
 router.get('/settings', auth, isStaffPresence, async (req, res) => {
   try {
     await ensureRecordIndexes();
+    await refreshSitesCache({ force: true });
     const siteQuery = String(req.query.site || '').trim().toLowerCase();
     if (siteQuery && isValidSiteId(siteQuery)) {
       const doc = await getOrCreateSiteSettings(siteQuery);
@@ -321,7 +364,8 @@ router.get('/settings', auth, isStaffPresence, async (req, res) => {
     }
     const all = await ensureAllSiteSettings();
     const branding = await getKingFishBranding();
-    const sites = await Promise.all(SITE_IDS.map((id) => serializeSettings(all[id])));
+    const activeSites = await listSites({ activeOnly: true });
+    const sites = await Promise.all(activeSites.map((s) => serializeSettings(all[s.id])));
     res.json({
       sites,
       companyName: branding.companyName,
@@ -501,6 +545,30 @@ router.post('/schedule/seed-gbegamey', auth, isStaffPresence, async (req, res) =
   try {
     const force = String(req.query.force || req.body?.force || '').trim() === 'true';
     const result = await seedGbegameyPlanning({ force });
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.post('/schedule/seed-zogbo', auth, isStaffPresence, async (req, res) => {
+  try {
+    const force = String(req.query.force || req.body?.force || '').trim() === 'true';
+    const result = await seedZogboPlanning({ force });
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.post('/schedule/seed', auth, isStaffPresence, async (req, res) => {
+  try {
+    const force = String(req.query.force || req.body?.force || '').trim() === 'true';
+    const siteId = String(req.body?.siteId || req.query.site || req.query.siteId || '')
+      .trim()
+      .toLowerCase();
+    if (!siteId) return res.status(400).json({ message: 'siteId requis' });
+    const result = await seedSitePlanning(siteId, { force });
     res.json(result);
   } catch (e) {
     res.status(500).json({ message: e.message });
@@ -755,11 +823,99 @@ router.post('/public/:code/check', uploadStaffPresence.single('selfie'), async (
   }
 });
 
-router.get('/meta/sites', auth, isStaffPresence, (_req, res) => {
-  res.json({
-    sites: SITE_IDS.map((id) => ({ id, label: SITES[id].label })),
-    shifts: shiftsPayload(),
-  });
+router.get('/meta/sites', auth, isStaffPresence, async (_req, res) => {
+  try {
+    const sites = await listSites({ activeOnly: true });
+    res.json({
+      sites: sites.map((s) => ({ id: s.id, label: s.label })),
+      shifts: shiftsPayload(),
+    });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+/** Admin : liste / création de sites. */
+router.get('/sites', auth, isStaffPresence, async (req, res) => {
+  try {
+    const activeOnly = String(req.query.all || '') !== 'true';
+    const sites = await listSites({ activeOnly });
+    res.json({ sites });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.post('/sites', auth, isStaffPresence, async (req, res) => {
+  try {
+    const site = await createSite({
+      id: req.body?.id,
+      label: req.body?.label || req.body?.name,
+      notes: req.body?.notes,
+      sortOrder: req.body?.sortOrder,
+    });
+    await getOrCreateSiteSettings(site.id);
+    res.status(201).json({ site });
+  } catch (e) {
+    res.status(e.status || 500).json({ message: e.message });
+  }
+});
+
+router.patch('/sites/:siteId', auth, isStaffPresence, async (req, res) => {
+  try {
+    const site = await updateSite(req.params.siteId, {
+      label: req.body?.label,
+      notes: req.body?.notes,
+      active: req.body?.active,
+      sortOrder: req.body?.sortOrder,
+    });
+    res.json({ site });
+  } catch (e) {
+    res.status(e.status || 500).json({ message: e.message });
+  }
+});
+
+/**
+ * Public : QR / lien actif du jour pour un site + kind (arrivée|sortie).
+ * Les pages /présence-actif/:site/:kind pollent cet endpoint.
+ */
+router.get('/public-active/:siteId/:kind', async (req, res) => {
+  try {
+    await refreshSitesCache();
+    const siteId = normalizeSiteId(req.params.siteId);
+    if (!isValidSiteId(siteId)) {
+      return res.status(404).json({ message: 'Site introuvable' });
+    }
+    const kindRaw = String(req.params.kind || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    let kind = null;
+    if (kindRaw === 'arrival' || kindRaw === 'arrivee' || kindRaw === 'entree') kind = 'arrival';
+    if (kindRaw === 'exit' || kindRaw === 'sortie') kind = 'exit';
+    if (!kind) return res.status(400).json({ message: 'Type invalide (arrivée ou sortie)' });
+
+    const doc = await getOrCreateSiteSettings(siteId);
+    const code = kind === 'exit' ? doc.exitDailyCode : doc.arrivalDailyCode;
+    if (!code) return res.status(500).json({ message: 'Token journalier indisponible' });
+
+    res.json({
+      ok: true,
+      siteId,
+      siteLabel: siteLabel(siteId),
+      kind,
+      kindLabel: kindLabel(kind),
+      dateKey: doc.dailyTokenDateKey || dateKeyBenin(),
+      code,
+      publicUrl: publicPresenceUrl(code),
+      pageUrl: publicActifPageUrl(siteId, kind),
+      expiresAt: nextMidnightBeninIso(),
+      serverNow: new Date().toISOString(),
+    });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
 });
 
 /** Admin : galerie photos (selfies arrivée / sortie). */

@@ -6,7 +6,9 @@ export default function RhQrPage() {
     <div className="rh-presence-wrap">
       <header className="rh-page-head">
         <h1>Codes QR</h1>
-        <p>Générez, copiez ou imprimez les QR d’arrivée et de sortie pour chaque site.</p>
+        <p>
+          QR actifs du jour (changent chaque minuit) et QR permanents — ajoutez des sites si besoin.
+        </p>
       </header>
       <StaffPresenceDashboard variant="rh" section="qr" photosPath="/rh/photos" hidePageTitle />
     </div>
