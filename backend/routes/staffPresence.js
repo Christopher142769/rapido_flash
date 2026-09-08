@@ -97,14 +97,12 @@ function publicPresenceUrl(code) {
   return `${publicPresenceBaseUrl()}/presence/${encodeURIComponent(code)}`;
 }
 
-function publicActifPageUrl(siteId, kind) {
-  const kindPath = kind === 'exit' ? 'sortie' : 'arrivee';
-  return `${publicPresenceBaseUrl()}/presence-actif/${encodeURIComponent(siteId)}/${kindPath}`;
+function publicActifPageUrl(siteId) {
+  return `${publicPresenceBaseUrl()}/presence-actif/${encodeURIComponent(siteId)}`;
 }
 
-function publicActifPageUrlFr(siteId, kind) {
-  const kindPath = kind === 'exit' ? 'sortie' : 'arrivée';
-  return `${publicPresenceBaseUrl()}/présence-actif/${encodeURIComponent(siteId)}/${kindPath}`;
+function publicActifPageUrlFr(siteId) {
+  return `${publicPresenceBaseUrl()}/présence-actif/${encodeURIComponent(siteId)}`;
 }
 
 function selfieUrlFromFile(file) {
@@ -270,10 +268,12 @@ async function serializeSettings(doc) {
     exitDailyCode: doc.exitDailyCode,
     arrivalDailyUrl: publicPresenceUrl(doc.arrivalDailyCode),
     exitDailyUrl: publicPresenceUrl(doc.exitDailyCode),
-    arrivalActifPageUrl: publicActifPageUrl(siteId, 'arrival'),
-    exitActifPageUrl: publicActifPageUrl(siteId, 'exit'),
-    arrivalActifPageUrlFr: publicActifPageUrlFr(siteId, 'arrival'),
-    exitActifPageUrlFr: publicActifPageUrlFr(siteId, 'exit'),
+    actifPageUrl: publicActifPageUrl(siteId),
+    actifPageUrlFr: publicActifPageUrlFr(siteId),
+    arrivalActifPageUrl: publicActifPageUrl(siteId),
+    exitActifPageUrl: publicActifPageUrl(siteId),
+    arrivalActifPageUrlFr: publicActifPageUrlFr(siteId),
+    exitActifPageUrlFr: publicActifPageUrlFr(siteId),
     dailyExpiresAt: nextMidnightBeninIso(),
     companyName: branding.companyName,
     companyLogo: branding.companyLogo,
@@ -876,8 +876,53 @@ router.patch('/sites/:siteId', auth, isStaffPresence, async (req, res) => {
 });
 
 /**
- * Public : QR / lien actif du jour pour un site + kind (arrivée|sortie).
- * Les pages /présence-actif/:site/:kind pollent cet endpoint.
+ * Public : les 2 QR actifs du jour (arrivée + sortie) pour un site.
+ * Page /présence-actif/:siteId.
+ */
+router.get('/public-active/:siteId', async (req, res) => {
+  try {
+    await refreshSitesCache();
+    const siteId = normalizeSiteId(req.params.siteId);
+    if (!isValidSiteId(siteId)) {
+      return res.status(404).json({ message: 'Site introuvable' });
+    }
+
+    const doc = await getOrCreateSiteSettings(siteId);
+    if (!doc.arrivalDailyCode || !doc.exitDailyCode) {
+      return res.status(500).json({ message: 'Tokens journaliers indisponibles' });
+    }
+
+    const pageUrl = publicActifPageUrl(siteId);
+    res.json({
+      ok: true,
+      siteId,
+      siteLabel: siteLabel(siteId),
+      dateKey: doc.dailyTokenDateKey || dateKeyBenin(),
+      expiresAt: nextMidnightBeninIso(),
+      serverNow: new Date().toISOString(),
+      pageUrl,
+      pageUrlFr: publicActifPageUrlFr(siteId),
+      arrival: {
+        kind: 'arrival',
+        kindLabel: kindLabel('arrival'),
+        code: doc.arrivalDailyCode,
+        publicUrl: publicPresenceUrl(doc.arrivalDailyCode),
+      },
+      exit: {
+        kind: 'exit',
+        kindLabel: kindLabel('exit'),
+        code: doc.exitDailyCode,
+        publicUrl: publicPresenceUrl(doc.exitDailyCode),
+      },
+    });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+/**
+ * @deprecated Prefer GET /public-active/:siteId (les 2 QR sur une page).
+ * Conservé pour compatibilité.
  */
 router.get('/public-active/:siteId/:kind', async (req, res) => {
   try {
@@ -909,7 +954,7 @@ router.get('/public-active/:siteId/:kind', async (req, res) => {
       dateKey: doc.dailyTokenDateKey || dateKeyBenin(),
       code,
       publicUrl: publicPresenceUrl(code),
-      pageUrl: publicActifPageUrl(siteId, kind),
+      pageUrl: publicActifPageUrl(siteId),
       expiresAt: nextMidnightBeninIso(),
       serverNow: new Date().toISOString(),
     });

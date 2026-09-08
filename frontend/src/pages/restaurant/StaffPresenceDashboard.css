@@ -51,6 +51,26 @@
   font-size: 0.95rem;
 }
 
+.staff-presence-actif-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #6f5a4c;
+}
+
+.staff-presence-actif-link input {
+  width: 100%;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(92, 58, 30, 0.14);
+  background: #fff;
+}
+
 .staff-presence-actif-item input {
   width: 100%;
   font-size: 0.78rem;

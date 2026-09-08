@@ -70,10 +70,9 @@ function buildPublicUrl(code) {
   return '';
 }
 
-function buildActifPageUrl(siteId, kind) {
+function buildActifPageUrl(siteId) {
   if (!siteId || typeof window === 'undefined') return '';
-  const kindPath = kind === 'exit' ? 'sortie' : 'arrivee';
-  return `${window.location.origin}/presence-actif/${encodeURIComponent(siteId)}/${kindPath}`;
+  return `${window.location.origin}/presence-actif/${encodeURIComponent(siteId)}`;
 }
 
 function QrBlock({ title, hint, publicUrl, canvasRef, busy, onDownloadPdf, onCopy, onRegenerate }) {
@@ -269,12 +268,8 @@ export default function StaffPresenceDashboard({
     };
   }, [dateFrom, dateTo, activeSite, companyName, siteLabelOf]);
 
-  const arrivalActifUrl = useMemo(
-    () => siteSettings?.arrivalActifPageUrl || buildActifPageUrl(activeSite, 'arrival'),
-    [siteSettings, activeSite]
-  );
-  const exitActifUrl = useMemo(
-    () => siteSettings?.exitActifPageUrl || buildActifPageUrl(activeSite, 'exit'),
+  const actifPageUrl = useMemo(
+    () => siteSettings?.actifPageUrl || siteSettings?.arrivalActifPageUrl || buildActifPageUrl(activeSite),
     [siteSettings, activeSite]
   );
   const arrivalDailyUrl = useMemo(
@@ -621,9 +616,21 @@ export default function StaffPresenceDashboard({
               QR actifs du jour — {siteLabelOf(activeSite)}
             </h2>
             <p className="commercial-lead" style={{ marginTop: 0, fontSize: '0.88rem' }}>
-              Liens stables à afficher sur tablette / TV. Le QR change chaque jour (arrivée et sortie
-              ensemble). Valide le {siteSettings?.dailyTokenDateKey || '…'}.
+              Un seul lien stable par site (arrivée + sortie ensemble). Les QR changent chaque jour.
+              Valide le {siteSettings?.dailyTokenDateKey || '…'}.
             </p>
+            <label className="staff-presence-actif-link">
+              Lien page active
+              <input readOnly value={actifPageUrl} />
+            </label>
+            <div className="commercial-filters" style={{ marginBottom: '1rem' }}>
+              <button type="button" className="commercial-btn commercial-btn--outline" onClick={() => copyUrl(actifPageUrl)}>
+                Copier le lien
+              </button>
+              <a className="commercial-btn commercial-btn--primary" href={actifPageUrl} target="_blank" rel="noreferrer">
+                Ouvrir plein écran
+              </a>
+            </div>
             <div className="staff-presence-actif-grid">
               <div className="staff-presence-actif-item">
                 <strong>Arrivée</strong>
@@ -634,15 +641,6 @@ export default function StaffPresenceDashboard({
                     <span>…</span>
                   )}
                 </div>
-                <input readOnly value={arrivalActifUrl} />
-                <div className="commercial-filters" style={{ marginBottom: 0 }}>
-                  <button type="button" className="commercial-btn commercial-btn--outline" onClick={() => copyUrl(arrivalActifUrl)}>
-                    Copier le lien
-                  </button>
-                  <a className="commercial-btn commercial-btn--primary" href={arrivalActifUrl} target="_blank" rel="noreferrer">
-                    Ouvrir plein écran
-                  </a>
-                </div>
               </div>
               <div className="staff-presence-actif-item">
                 <strong>Sortie</strong>
@@ -652,15 +650,6 @@ export default function StaffPresenceDashboard({
                   ) : (
                     <span>…</span>
                   )}
-                </div>
-                <input readOnly value={exitActifUrl} />
-                <div className="commercial-filters" style={{ marginBottom: 0 }}>
-                  <button type="button" className="commercial-btn commercial-btn--outline" onClick={() => copyUrl(exitActifUrl)}>
-                    Copier le lien
-                  </button>
-                  <a className="commercial-btn commercial-btn--primary" href={exitActifUrl} target="_blank" rel="noreferrer">
-                    Ouvrir plein écran
-                  </a>
                 </div>
               </div>
             </div>

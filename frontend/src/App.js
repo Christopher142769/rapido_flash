@@ -296,6 +296,8 @@ function AppRoutes() {
         <Route path="/invités/:code" element={<InvitesCheckPage />} />
         <Route path="/présence/:code" element={<StaffPresencePage />} />
         <Route path="/presence/:code" element={<StaffPresencePage />} />
+        <Route path="/présence-actif/:siteId" element={<StaffPresenceActivePage />} />
+        <Route path="/presence-actif/:siteId" element={<StaffPresenceActivePage />} />
         <Route path="/présence-actif/:siteId/:kind" element={<StaffPresenceActivePage />} />
         <Route path="/presence-actif/:siteId/:kind" element={<StaffPresenceActivePage />} />
         <Route
