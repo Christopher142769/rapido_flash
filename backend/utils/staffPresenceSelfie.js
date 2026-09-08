@@ -63,13 +63,9 @@ function publicSelfieUrl(selfieUrl) {
   const raw = String(selfieUrl || '').trim();
   if (!raw) return '';
   if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
-  const base =
-    process.env.PUBLIC_APP_URL ||
-    process.env.FRONTEND_URL_1 ||
-    process.env.FRONTEND_URL ||
-    process.env.FRONTEND_URL_2 ||
-    'https://rapido.online';
-  return `${String(base).replace(/\/$/, '')}${raw.startsWith('/') ? raw : `/${raw}`}`;
+  const { publicAppBaseUrl } = require('./publicAppUrl');
+  const base = publicAppBaseUrl();
+  return `${base}${raw.startsWith('/') ? raw : `/${raw}`}`;
 }
 
 function safeZipBaseName(record) {

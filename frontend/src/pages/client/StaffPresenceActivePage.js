@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
@@ -17,11 +17,15 @@ function isLegacyKindSegment(raw) {
   return k === 'exit' || k === 'sortie' || k === 'arrival' || k === 'arrivee' || k === 'entree';
 }
 
+function scanUrlFromCode(code) {
+  if (!code || typeof window === 'undefined') return '';
+  return `${window.location.origin}/presence/${encodeURIComponent(code)}`;
+}
+
 export default function StaffPresenceActivePage() {
   const { siteId, kind: kindParam } = useParams();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
-  const [clock, setClock] = useState(() => new Date());
 
   const load = useCallback(async () => {
     if (!siteId || isLegacyKindSegment(siteId)) {
@@ -54,27 +58,18 @@ export default function StaffPresenceActivePage() {
     return () => clearTimeout(t);
   }, [data?.expiresAt, data?.arrival?.code, data?.exit?.code, load]);
 
-  useEffect(() => {
-    const t = setInterval(() => setClock(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
+  const arrivalScanUrl = useMemo(
+    () => scanUrlFromCode(data?.arrival?.code) || data?.arrival?.publicUrl || '',
+    [data]
+  );
+  const exitScanUrl = useMemo(
+    () => scanUrlFromCode(data?.exit?.code) || data?.exit?.publicUrl || '',
+    [data]
+  );
 
   if (kindParam && isLegacyKindSegment(kindParam) && siteId) {
     return <Navigate to={`/présence-actif/${encodeURIComponent(siteId)}`} replace />;
   }
-
-  const timeLabel = clock.toLocaleTimeString('fr-FR', {
-    timeZone: 'Africa/Porto-Novo',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-  const dateLabel = clock.toLocaleDateString('fr-FR', {
-    timeZone: 'Africa/Porto-Novo',
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  });
 
   return (
     <div className="sp-actif sp-actif--pair">
@@ -84,43 +79,29 @@ export default function StaffPresenceActivePage() {
           <p className="sp-actif-brand">King Fish · Présence</p>
           <h1>{data?.siteLabel || siteId}</h1>
         </div>
-        <div className="sp-actif-clock">
-          <strong>{timeLabel}</strong>
-          <span>{dateLabel}</span>
-        </div>
       </header>
 
       <main className="sp-actif-main sp-actif-main--pair">
-        <p className="sp-actif-hint">
-          Scannez le QR correspondant — les deux codes changent chaque jour
-        </p>
-
         {error ? (
           <div className="sp-actif-error">{error}</div>
-        ) : data?.arrival?.publicUrl && data?.exit?.publicUrl ? (
+        ) : arrivalScanUrl && exitScanUrl ? (
           <div className="sp-actif-pair">
             <section className="sp-actif-panel sp-actif-panel--arrivee">
               <h2>Arrivée</h2>
               <div className="sp-actif-qr-wrap">
-                <QRCodeSVG value={data.arrival.publicUrl} size={220} level="M" includeMargin />
+                <QRCodeSVG value={arrivalScanUrl} size={220} level="M" includeMargin />
               </div>
             </section>
             <section className="sp-actif-panel sp-actif-panel--sortie">
               <h2>Sortie</h2>
               <div className="sp-actif-qr-wrap">
-                <QRCodeSVG value={data.exit.publicUrl} size={220} level="M" includeMargin />
+                <QRCodeSVG value={exitScanUrl} size={220} level="M" includeMargin />
               </div>
             </section>
           </div>
         ) : (
           <div className="sp-actif-loading">Chargement des QR…</div>
         )}
-
-        {data?.dateKey ? (
-          <p className="sp-actif-day">
-            Valide le <strong>{data.dateKey}</strong>
-          </p>
-        ) : null}
       </main>
     </div>
   );

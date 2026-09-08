@@ -25,6 +25,7 @@ const {
   resolveKindFromDaily,
   resolveKindFromPermanent,
 } = require('../utils/staffPresenceDailyTokens');
+const { publicAppBaseUrl } = require('../utils/publicAppUrl');
 const { notifyPresenceRecorded } = require('../services/staffPresenceMailer');
 const { readSelfieBuffer, safeZipBaseName, resolveLocalSelfiePath } = require('../utils/staffPresenceSelfie');
 const {
@@ -84,13 +85,7 @@ function clientIp(req) {
 }
 
 function publicPresenceBaseUrl() {
-  const raw =
-    process.env.PUBLIC_APP_URL ||
-    process.env.FRONTEND_URL_1 ||
-    process.env.FRONTEND_URL ||
-    process.env.FRONTEND_URL_2 ||
-    'https://rapido.online';
-  return String(raw).replace(/\/$/, '');
+  return publicAppBaseUrl();
 }
 
 function publicPresenceUrl(code) {

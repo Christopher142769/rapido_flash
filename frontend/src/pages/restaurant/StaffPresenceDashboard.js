@@ -268,10 +268,12 @@ export default function StaffPresenceDashboard({
     };
   }, [dateFrom, dateTo, activeSite, companyName, siteLabelOf]);
 
-  const actifPageUrl = useMemo(
-    () => siteSettings?.actifPageUrl || siteSettings?.arrivalActifPageUrl || buildActifPageUrl(activeSite),
-    [siteSettings, activeSite]
-  );
+  const actifPageUrl = useMemo(() => {
+    if (typeof window !== 'undefined' && activeSite) {
+      return buildActifPageUrl(activeSite);
+    }
+    return siteSettings?.actifPageUrl || siteSettings?.arrivalActifPageUrl || '';
+  }, [siteSettings, activeSite]);
   const arrivalDailyUrl = useMemo(
     () => buildPublicUrl(siteSettings?.arrivalDailyCode) || siteSettings?.arrivalDailyUrl || '',
     [siteSettings]
