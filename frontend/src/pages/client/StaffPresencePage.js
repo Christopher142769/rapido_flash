@@ -269,11 +269,6 @@ export default function StaffPresencePage() {
               <p className="staff-presence-time">
                 {isExit ? 'Parti à' : 'Arrivé à'} {formatCheckedAt(result.checkedAt)}
               </p>
-              {result.overtimeMinutes > 0 ? (
-                <p className="staff-presence-overtime">
-                  Heures sup. : {result.overtimeLabel || `${result.overtimeMinutes} min`}
-                </p>
-              ) : null}
             </div>
           ) : null}
 

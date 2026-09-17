@@ -744,8 +744,6 @@ router.post('/public/:code/check', uploadStaffPresence.single('selfie'), async (
         lastName: existing.lastName,
         checkedAt: existing.checkedAt,
         dateKey: existing.dateKey,
-        overtimeMinutes: existing.overtimeMinutes,
-        overtimeLabel: existing.overtimeMinutes ? formatMinutesLabel(existing.overtimeMinutes) : null,
         message: alreadyMessage(kind),
       });
     }
@@ -798,9 +796,6 @@ router.post('/public/:code/check', uploadStaffPresence.single('selfie'), async (
       lastName: record.lastName,
       checkedAt: record.checkedAt,
       dateKey: record.dateKey,
-      workedMinutes: record.workedMinutes,
-      overtimeMinutes: record.overtimeMinutes,
-      overtimeLabel: record.overtimeMinutes ? formatMinutesLabel(record.overtimeMinutes) : null,
       message: successMessage(kind),
     });
 
