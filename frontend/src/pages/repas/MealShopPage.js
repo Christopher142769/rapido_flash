@@ -40,7 +40,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const BASE_URL = getMediaBaseUrl();
 
 const DEFAULT_TRUST_ICONS = [FaShippingFast, FaMoneyBillWave, FaLeaf, FaHeadset];
-const GRID_INITIAL = 8;
+const GRID_INITIAL = 12;
 const RAPIDO_LOGO = '/images/logo.png';
 
 const pad2 = (n) => String(Math.max(0, n)).padStart(2, '0');

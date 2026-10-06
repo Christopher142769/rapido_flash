@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { FaTrash } from 'react-icons/fa';
 import MealShopChrome from '../../components/shop/MealShopChrome';
 import ShopOrderForm from '../../components/shop/ShopOrderForm';
 import ShopPrivacyFooter from '../../components/shop/ShopPrivacyFooter';
@@ -149,15 +150,15 @@ export default function MealCartPage() {
   };
 
   return (
-    <div className="meal-cart">
-      <MealShopChrome cartCount={cartCount} showBack backTo="/repas" backLabel="Boutique" />
+    <div className={`meal-cart${items.length ? ' meal-cart--filled' : ''}`}>
+      <MealShopChrome cartCount={cartCount} showBack backTo="/repas" backLabel="Menu" />
 
       <div className="meal-cart-head">
-        <h1>Votre panier</h1>
+        <h1>Panier</h1>
         <p>
           {cartCount
-            ? `${cartCount} article${cartCount > 1 ? 's' : ''} — vérifiez votre récapitulatif`
-            : 'Ajoutez des plats depuis la boutique'}
+            ? `${cartCount} article${cartCount > 1 ? 's' : ''} · King Fish × Rapido`
+            : 'Ajoutez des plats depuis le menu'}
         </p>
       </div>
 
@@ -165,7 +166,7 @@ export default function MealCartPage() {
         <div className="meal-cart-empty">
           <p>Votre panier est vide.</p>
           <Link to="/repas" className="meal-cart-cta">
-            Voir les plats
+            Voir le menu
           </Link>
         </div>
       ) : (
@@ -175,33 +176,43 @@ export default function MealCartPage() {
               <li key={it.lineKey} className="meal-cart-line">
                 <Link to={mealProductPath(it.slug)} className="meal-cart-line-img">
                   {it.image ? (
-                    <img src={getImageUrl(it.image, BASE_URL)} alt="" />
+                    <img src={getImageUrl(it.image, null, BASE_URL)} alt="" />
                   ) : (
                     <div className="meal-cart-line-ph" />
                   )}
                 </Link>
                 <div className="meal-cart-line-body">
-                  <Link to={mealProductPath(it.slug)} className="meal-cart-line-name">
-                    {it.productName}
-                  </Link>
-                  <span>
-                    {formatPriceXof(it.unitPrice)} / plat
+                  <div className="meal-cart-line-top">
+                    <Link to={mealProductPath(it.slug)} className="meal-cart-line-name">
+                      {it.productName}
+                    </Link>
+                    <button
+                      type="button"
+                      className="meal-cart-trash"
+                      aria-label="Retirer"
+                      onClick={() => sync(removeMealCartLine(it.lineKey))}
+                    >
+                      <FaTrash aria-hidden />
+                    </button>
+                  </div>
+                  <span className="meal-cart-unit">
+                    {formatPriceXof(it.unitPrice)}
                     {it.isPromoLive && it.discountPercent ? ` (−${it.discountPercent}%)` : ''}
                   </span>
                   {(it.options || []).map((o, i) => (
                     <span key={`opt-${i}`} className="meal-cart-acc">
-                      • {o.groupName}: {o.choiceLabel}
-                      {Number(o.price) > 0 ? ` — ${formatPriceXof(o.price)}` : ''}
+                      {o.groupName}: {o.choiceLabel}
+                      {Number(o.price) > 0 ? ` · ${formatPriceXof(o.price)}` : ''}
                     </span>
                   ))}
                   {(it.accompagnements || []).map((a, i) => (
                     <span key={i} className="meal-cart-acc">
                       + {a.name} ×{a.quantity}
-                      {a.price != null ? ` — ${formatPriceXof(a.price * a.quantity)}` : ''}
+                      {a.price != null ? ` · ${formatPriceXof(a.price * a.quantity)}` : ''}
                     </span>
                   ))}
                   {it.specifications ? (
-                    <span className="meal-cart-spec">📝 {it.specifications}</span>
+                    <span className="meal-cart-spec">{it.specifications}</span>
                   ) : null}
                   <div className="meal-cart-line-footer">
                     <div className="meal-cart-line-ctrl">
@@ -227,13 +238,6 @@ export default function MealCartPage() {
                         }
                       >
                         +
-                      </button>
-                      <button
-                        type="button"
-                        className="meal-cart-remove"
-                        onClick={() => sync(removeMealCartLine(it.lineKey))}
-                      >
-                        Retirer
                       </button>
                     </div>
                     <strong className="meal-cart-line-total">{formatPriceXof(lineMealSubtotal(it))}</strong>
@@ -263,21 +267,30 @@ export default function MealCartPage() {
           ) : null}
           {submitError && !checkoutOpen ? <p className="meal-cart-err">{submitError}</p> : null}
 
-          <div className="meal-cart-actions">
+          <Link to="/repas" className="meal-cart-continue">
+            ← Continuer mes achats
+          </Link>
+        </div>
+      )}
+
+      {items.length ? (
+        <div className="meal-cart-sticky">
+          <div className="meal-cart-sticky-in">
+            <div className="meal-cart-sticky-meta">
+              <small>Total</small>
+              <strong>{formatPriceXof(totals.totalPrice)}</strong>
+            </div>
             <button
               type="button"
-              className="meal-cart-cta"
+              className="meal-cart-cta meal-cart-cta--sticky"
               disabled={shopClosed}
               onClick={openCheckout}
             >
-              Commander — {formatPriceXof(totals.totalPrice)}
+              Commander
             </button>
-            <Link to="/repas" className="meal-cart-continue">
-              ← Continuer mes achats
-            </Link>
           </div>
         </div>
-      )}
+      ) : null}
 
       {checkoutOpen ? (
         <div

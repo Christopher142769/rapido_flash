@@ -16,7 +16,8 @@
     "create-admin": "node backend/scripts/createAdmin.js",
     "create-admin-direct": "node backend/scripts/createAdminDirect.js",
     "create-default-plats": "node backend/scripts/createDefaultPlats.js",
-    "associate-all": "node backend/scripts/associateAllToRestaurant.js"
+    "associate-all": "node backend/scripts/associateAllToRestaurant.js",
+    "seed-king-fish": "node backend/scripts/seedKingFishMeals.js"
   },
   "keywords": [
     "delivery",

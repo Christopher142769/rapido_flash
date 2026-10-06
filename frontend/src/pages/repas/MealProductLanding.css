@@ -176,3 +176,42 @@
   color: var(--rf-text-dark);
   font-variant-numeric: tabular-nums;
 }
+
+/* Mobile app PDP */
+@media (max-width: 860px) {
+  .meal-pdp.shop-pdp {
+    background: #f6f1ea;
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  }
+  .meal-pdp .shop-pdp-gallery,
+  .meal-pdp .shop-product-gallery {
+    border-radius: 0 0 22px 22px;
+    overflow: hidden;
+  }
+  .meal-pdp .shop-pdp-title {
+    font-size: 1.35rem;
+    letter-spacing: -0.02em;
+  }
+  .meal-pdp .shop-pdp-price {
+    color: var(--rf-amber, #c76d2e);
+    font-weight: 900;
+  }
+  .meal-pdp-acc,
+  .meal-pdp-options,
+  .meal-pdp-spec {
+    background: #fff;
+    border-radius: 18px;
+    padding: 14px 14px 10px;
+    border: 0;
+    margin: 12px 0;
+    box-shadow: 0 6px 16px rgba(60, 35, 15, 0.05);
+  }
+  .meal-pdp-acc-row {
+    padding: 12px 4px;
+  }
+  .meal-pdp .shop-pdp-sticky-cta,
+  .meal-pdp .shop-buybox-sticky {
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -8px 28px rgba(60, 35, 15, 0.12);
+  }
+}

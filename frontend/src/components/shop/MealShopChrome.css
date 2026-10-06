@@ -54,10 +54,13 @@
 }
 
 .meal-shop-toolbar-logo {
-  height: 34px;
-  width: auto;
+  height: 36px;
+  width: 36px;
+  max-width: none;
   object-fit: contain;
+  aspect-ratio: 1 / 1;
   display: block;
+  flex-shrink: 0;
 }
 
 .meal-shop-cart-link {

@@ -59,6 +59,9 @@ export function resolveMediaUrl(path, baseUrl = getMediaBaseUrl()) {
     return `${base}/uploads/medias/${src}`;
   }
 
+  // Assets SPA (frontend/public/images/…) — ne pas préfixer avec l’API
+  if (src.startsWith('/images/')) return src;
+
   if (src.startsWith('/')) return `${base}${src}`;
   return `${base}/${src}`;
 }

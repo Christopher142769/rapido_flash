@@ -1,0 +1,298 @@
+/**
+ * Seed catalogue King Fish / Shop Repas (plats + accompagnements + images locales).
+ * Usage : node backend/scripts/seedKingFishMeals.js
+ */
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+
+const mongoose = require('mongoose');
+const MealProduct = require('../models/MealProduct');
+const MealShopSettings = require('../models/MealShopSettings');
+
+const IMG = '/images/repas/products';
+
+const SIDES = [
+  { name: 'Riz', price: 500 },
+  { name: 'Légume sauté', price: 500 },
+  { name: 'Akassa', price: 500 },
+  { name: 'Attiéké', price: 500 },
+  { name: 'Aloko', price: 500 },
+  { name: 'Banane bouillie', price: 500 },
+  { name: 'Spaghetti', price: 500 },
+  { name: 'Wassa wassa', price: 500 },
+  { name: 'Frites', price: 1000 },
+].map((a) => ({ ...a, required: false, available: true, maxQuantity: 5 }));
+
+const FISH_SIDES = SIDES;
+
+const PRODUCTS = [
+  {
+    slug: 'shawarma',
+    name: 'Shawarma',
+    category: 'Street food',
+    basePrice: 2000,
+    shortDescription: 'Wrap généreux, viande tendre, sauce crémeuse et légumes croquants.',
+    mainImage: `${IMG}/shawarma-1.jpg`,
+    images: [`${IMG}/shawarma-1.jpg`, `${IMG}/shawarma-2.jpg`],
+    accompagnements: [],
+    sortOrder: 10,
+  },
+  {
+    slug: 'poisson-pane',
+    name: 'Poisson pané',
+    category: 'Poissons',
+    basePrice: 1500,
+    shortDescription: 'Filets croustillants dorés, servis avec une touche de fraîcheur.',
+    mainImage: `${IMG}/poisson-pane-1.jpg`,
+    images: [`${IMG}/poisson-pane-1.jpg`, `${IMG}/poisson-pane-2.jpg`],
+    accompagnements: FISH_SIDES,
+    sortOrder: 20,
+  },
+  {
+    slug: 'filet-poisson-pouiller',
+    name: 'Filet de poisson pouillé',
+    category: 'Poissons',
+    basePrice: 1500,
+    shortDescription: 'Filet poêlé, croustillant dehors et fondant dedans.',
+    mainImage: `${IMG}/poisson-pane-2.jpg`,
+    images: [`${IMG}/poisson-pane-2.jpg`, `${IMG}/poisson-pane-1.jpg`],
+    accompagnements: FISH_SIDES,
+    sortOrder: 30,
+  },
+  {
+    slug: 'brochette-de-poisson',
+    name: 'Brochette de poisson',
+    category: 'Poissons',
+    basePrice: 1500,
+    shortDescription: 'Brochettes marinées au feu, idéales avec frites ou attiéké.',
+    mainImage: `${IMG}/brochette-1.jpg`,
+    images: [`${IMG}/brochette-1.jpg`, `${IMG}/brochette-2.jpg`, `${IMG}/brochette-3.jpg`],
+    accompagnements: FISH_SIDES,
+    sortOrder: 40,
+  },
+  {
+    slug: 'monyo-machoiron-fume',
+    name: 'Monyo machoiron fumé',
+    category: 'Poissons',
+    basePrice: 1500,
+    shortDescription: 'Machoiron fumé, saveur intense et fumée authentique.',
+    mainImage: `${IMG}/machoiron-braise-2.jpg`,
+    images: [`${IMG}/machoiron-braise-2.jpg`, `${IMG}/machoiron-braise-1.jpg`],
+    accompagnements: FISH_SIDES,
+    sortOrder: 50,
+  },
+  {
+    slug: 'monyo-tilapia-frite',
+    name: 'Monyo tilapia frite',
+    category: 'Poissons',
+    basePrice: 1500,
+    shortDescription: 'Tilapia frit croustillant, portion généreuse.',
+    mainImage: `${IMG}/tilapia-braise-2.jpg`,
+    images: [`${IMG}/tilapia-braise-2.jpg`, `${IMG}/poisson-pane-1.jpg`],
+    accompagnements: FISH_SIDES,
+    sortOrder: 60,
+  },
+  {
+    slug: 'tilapia-braise',
+    name: 'Tilapia braisé',
+    category: 'Poissons',
+    basePrice: 3000,
+    shortDescription: 'Tilapia entier braisé, accompagnements au choix.',
+    mainImage: `${IMG}/tilapia-braise-1.jpg`,
+    images: [`${IMG}/tilapia-braise-1.jpg`, `${IMG}/tilapia-braise-2.jpg`],
+    accompagnements: FISH_SIDES,
+    optionGroups: [
+      {
+        name: 'Taille',
+        selectionType: 'single',
+        required: true,
+        choices: [
+          { label: 'Standard — 3 000 F', price: 0 },
+          { label: 'Grande — 5 000 F', price: 2000 },
+        ],
+      },
+    ],
+    sortOrder: 70,
+  },
+  {
+    slug: 'machoiron-braise',
+    name: 'Machoiron braisé',
+    category: 'Poissons',
+    basePrice: 2000,
+    shortDescription: 'Machoiron braisé entier, char grillé et légumes.',
+    mainImage: `${IMG}/machoiron-braise-1.jpg`,
+    images: [`${IMG}/machoiron-braise-1.jpg`, `${IMG}/machoiron-braise-2.jpg`],
+    accompagnements: FISH_SIDES,
+    optionGroups: [
+      {
+        name: 'Taille',
+        selectionType: 'single',
+        required: true,
+        choices: [
+          { label: 'Petite — 2 000 F', price: 0 },
+          { label: 'Moyenne — 3 000 F', price: 1000 },
+          { label: 'Grande — 5 000 F', price: 3000 },
+        ],
+      },
+    ],
+    sortOrder: 80,
+  },
+  {
+    slug: 'omelette',
+    name: 'Omelette',
+    category: 'Petit déjeuner',
+    basePrice: 500,
+    shortDescription: 'Omelette maison, simple et rapide.',
+    mainImage: null,
+    images: [],
+    accompagnements: [
+      { name: 'Riz', price: 500, required: false, available: true, maxQuantity: 3 },
+      { name: 'Frites', price: 1000, required: false, available: true, maxQuantity: 3 },
+    ],
+    sortOrder: 90,
+  },
+  {
+    slug: 'rillettes-de-poissons',
+    name: 'Rillettes de poissons',
+    category: 'Gourmet',
+    basePrice: 2500,
+    shortDescription: 'Pot King Fish — rillettes gourmet, saveur authentique.',
+    mainImage: `${IMG}/rillettes.png`,
+    images: [`${IMG}/rillettes.png`],
+    accompagnements: [],
+    sortOrder: 100,
+  },
+  {
+    slug: 'salade-king-fish',
+    name: 'Salade King Fish',
+    category: 'Salades',
+    basePrice: 1500,
+    shortDescription: 'Salade fraîche au poisson, œufs, concombre et sauce maison.',
+    mainImage: `${IMG}/salade-1.jpg`,
+    images: [
+      `${IMG}/salade-1.jpg`,
+      `${IMG}/salade-2.jpg`,
+      `${IMG}/salade-3.jpg`,
+      `${IMG}/salade-4.jpg`,
+    ],
+    accompagnements: [],
+    sortOrder: 110,
+  },
+  {
+    slug: 'chips-de-poisson-spicy',
+    name: 'Chips de poisson Spicy',
+    category: 'Snacks',
+    basePrice: 1000,
+    shortDescription: 'Chips de poisson King Fish — édition Spicy 100 g.',
+    mainImage: `${IMG}/chips-spicy.png`,
+    images: [`${IMG}/chips-spicy.png`],
+    accompagnements: [],
+    sortOrder: 120,
+  },
+  {
+    slug: 'chips-de-poisson-nature',
+    name: 'Chips de poisson Nature',
+    category: 'Snacks',
+    basePrice: 1000,
+    shortDescription: 'Chips de poisson King Fish — édition Nature 100 g.',
+    mainImage: `${IMG}/chips-nature.png`,
+    images: [`${IMG}/chips-nature.png`],
+    accompagnements: [],
+    sortOrder: 130,
+  },
+];
+
+async function upsertProduct(def) {
+  const payload = {
+    name: def.name,
+    slug: def.slug,
+    shortDescription: def.shortDescription,
+    category: def.category,
+    basePrice: def.basePrice,
+    mainImage: def.mainImage,
+    images: def.images || [],
+    accompagnements: def.accompagnements || [],
+    optionGroups: def.optionGroups || [],
+    published: true,
+    available: true,
+    showDeliveryNotice: true,
+    allowSpecifications: true,
+    sortOrder: def.sortOrder,
+    currency: 'XOF',
+  };
+
+  const existing = await MealProduct.findOne({ slug: def.slug });
+  if (existing) {
+    Object.assign(existing, payload);
+    await existing.save();
+    return { slug: def.slug, action: 'updated' };
+  }
+  await MealProduct.create(payload);
+  return { slug: def.slug, action: 'created' };
+}
+
+async function main() {
+  const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/rapido_flash';
+  await mongoose.connect(mongoUri);
+  console.log('📊 MongoDB connecté');
+
+  for (const p of PRODUCTS) {
+    const r = await upsertProduct(p);
+    console.log(`  ${r.action}: ${r.slug}`);
+  }
+
+  const categories = [
+    'Street food',
+    'Poissons',
+    'Salades',
+    'Gourmet',
+    'Snacks',
+    'Petit déjeuner',
+  ];
+
+  let settings = await MealShopSettings.findOne({ key: 'default' });
+  if (!settings) {
+    settings = new MealShopSettings({ key: 'default' });
+  }
+  settings.categories = categories;
+  settings.deliveryFee = settings.deliveryFee || 500;
+  if (!settings.heroSlides?.length) {
+    settings.heroSlides = [
+      {
+        imageUrl: `${IMG}/tilapia-braise-1.jpg`,
+        imageUrls: [`${IMG}/tilapia-braise-1.jpg`, `${IMG}/shawarma-1.jpg`],
+        title: 'King Fish × Rapido',
+        subtitle: 'Poissons braisés, shawarma et salades — livrés chauds à Cotonou & Calavi.',
+        ctaLabel: 'Commander',
+        ctaHref: '#meal-products',
+      },
+    ];
+  } else {
+    settings.heroSlides[0].imageUrl = `${IMG}/tilapia-braise-1.jpg`;
+    settings.heroSlides[0].title = settings.heroSlides[0].title || 'King Fish × Rapido';
+    settings.heroSlides[0].subtitle =
+      settings.heroSlides[0].subtitle ||
+      'Poissons braisés, shawarma et salades — livrés chauds.';
+  }
+  if (!settings.trustItems?.length) {
+    settings.trustItems = [
+      { title: 'Livraison rapide', subtitle: 'Cotonou & Calavi' },
+      { title: 'Paiement à la livraison', subtitle: 'Payez à la réception' },
+      { title: 'Fait maison', subtitle: 'Préparé à la commande' },
+      { title: 'WhatsApp', subtitle: 'Suivi de commande' },
+    ];
+  }
+  await settings.save();
+  console.log('✅ Settings boutique mis à jour');
+
+  const count = await MealProduct.countDocuments({ published: true });
+  console.log(`🍽  ${count} plats publiés`);
+  await mongoose.disconnect();
+  process.exit(0);
+}
+
+main().catch((err) => {
+  console.error('❌', err);
+  process.exit(1);
+});
