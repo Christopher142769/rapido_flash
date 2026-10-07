@@ -130,7 +130,7 @@ export function adaptProducts(products, mediaBase) {
  * Les bannières dashboard ne servent qu’à choisir les plats (productSlug) —
  * jamais à remplacer les images par d’anciennes photos /images/repas/products/.
  */
-export function buildHeroSlides(adaptedItems, settings, _mediaBase) {
+export function buildHeroSlides(adaptedItems, settings) {
   const fromProducts = () =>
     adaptedItems.filter((p) => p.cutImg && p.available).slice(0, 12);
 
