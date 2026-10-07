@@ -126,48 +126,49 @@ export function adaptProducts(products, mediaBase) {
 }
 
 /**
- * Construit les slides hero depuis les réglages dashboard (bannières actives),
- * sinon tous les plats avec image cut.
+ * Construit les slides hero : plats refonte (cut/JPG), comme en local.
+ * Les bannières dashboard ne servent qu’à choisir les plats (productSlug) —
+ * jamais à remplacer les images par d’anciennes photos /images/repas/products/.
  */
-export function buildHeroSlides(adaptedItems, settings, mediaBase) {
+export function buildHeroSlides(adaptedItems, settings, _mediaBase) {
+  const fromProducts = () =>
+    adaptedItems.filter((p) => p.cutImg && p.available).slice(0, 12);
+
   const configured = Array.isArray(settings?.heroSlides) ? settings.heroSlides : [];
   const activeConfigured = configured.filter((s) => s && s.active !== false);
+  if (!activeConfigured.length) return fromProducts();
 
-  if (activeConfigured.length) {
-    return activeConfigured
-      .map((slide, i) => {
-        const slug = String(slide.productSlug || '').trim();
-        const base = slug
-          ? adaptedItems.find((p) => p.id === slug)
-          : adaptedItems.find((p) => p.name === slide.title) || null;
-        const overrideRaw = slide.imageUrl || slide.imageUrls?.[0] || '';
-        const override = overrideRaw ? getImageUrl(overrideRaw, null, mediaBase) : null;
+  const fromConfig = activeConfigured
+    .map((slide, i) => {
+      const slug = String(slide.productSlug || '').trim();
+      const base = slug
+        ? adaptedItems.find((p) => p.id === slug)
+        : adaptedItems.find((p) => p.name === slide.title) || null;
+      if (!base?.cutImg) return null;
 
-        if (!base && !override) return null;
+      const unit = base.unit ?? 0;
+      return {
+        id: base.id || `banner-${i}`,
+        product: base.product || null,
+        name: slide.title || base.name || 'Bannière',
+        desc: slide.subtitle || base.desc || '',
+        cat: base.cat || 'all',
+        catLabel: base.catLabel || '',
+        cardImg: base.cardImg,
+        cutImg: base.cutImg,
+        prices: base.prices || [unit],
+        sizes: base.sizes || null,
+        unit,
+        compareAt: base.compareAt ?? (unit ? Math.round(unit * 2) : null),
+        promo: true,
+        discountPercent: base.discountPercent ?? 50,
+        available: true,
+        ctaLabel: slide.ctaLabel || 'Commander',
+        bannerOnly: false,
+      };
+    })
+    .filter(Boolean);
 
-        const unit = base?.unit ?? 0;
-        return {
-          id: base?.id || `banner-${i}`,
-          product: base?.product || null,
-          name: slide.title || base?.name || 'Bannière',
-          desc: slide.subtitle || base?.desc || '',
-          cat: base?.cat || 'all',
-          catLabel: base?.catLabel || '',
-          cardImg: override || base?.cardImg,
-          cutImg: override || base?.cutImg,
-          prices: base?.prices || [unit],
-          sizes: base?.sizes || null,
-          unit,
-          compareAt: base?.compareAt ?? (base?.unit ? Math.round(base.unit * 2) : null),
-          promo: true,
-          discountPercent: base?.discountPercent ?? 50,
-          available: true,
-          ctaLabel: slide.ctaLabel || 'Commander',
-          bannerOnly: !base?.product,
-        };
-      })
-      .filter(Boolean);
-  }
-
-  return adaptedItems.filter((p) => p.cutImg && p.available).slice(0, 12);
+  // Bannière prod sans productSlug / sans asset refonte → même hero que le local
+  return fromConfig.length ? fromConfig : fromProducts();
 }
