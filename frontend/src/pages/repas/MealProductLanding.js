@@ -153,6 +153,11 @@ export default function MealProductLanding() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [fetchProduct]);
 
+  const productDisplayName = useMemo(
+    () => (product ? displayProductName(product.slug, product.name) : ''),
+    [product]
+  );
+
   useEffect(() => {
     if (!productDisplayName) return;
     document.title = `${productDisplayName} | Rapido Repas`;
@@ -208,10 +213,6 @@ export default function MealProductLanding() {
   }, [catalogueUrgency.isLive, productCountdownLive, productCountdownEndsAt]);
 
   const gallery = useMemo(() => (product ? getProductGallery(product) : []), [product]);
-  const productDisplayName = useMemo(
-    () => (product ? displayProductName(product.slug, product.name) : ''),
-    [product]
-  );
   const canOrder = !!getShopWhatsAppDigits() && product?.available !== false;
   const unitPrice = promoState?.isPromoLive ? promoState.promoPrice : product?.basePrice;
   const unitBasePrice = product?.basePrice ?? 0;
@@ -345,14 +346,14 @@ export default function MealProductLanding() {
       trackCtaClick('Commander maintenant', {
         channel: 'repas',
         productId: product._id,
-        productName: product.name,
+        productName: productDisplayName,
         productSlug: product.slug,
         ctaId: 'meal-order-submit',
       });
       trackRapido('begin_checkout', {
         channel: 'repas',
         productId: product._id,
-        productName: product.name,
+        productName: productDisplayName,
         productSlug: product.slug,
         value: Number(saved.totalPrice || saved.total || 0) || 0,
       });
@@ -436,7 +437,7 @@ export default function MealProductLanding() {
           <ShopProductGallery
             urls={gallery}
             baseUrl={BASE_URL}
-            productName={product.name}
+            productName={productDisplayName}
             promoPercent={promoState?.isPromoLive ? promoState.discountPercent : 0}
           />
         </div>
@@ -668,7 +669,7 @@ export default function MealProductLanding() {
       <ShopQuantityModal
         open={qtyModalOpen}
         onClose={() => setQtyModalOpen(false)}
-        productName={product.name}
+        productName={productDisplayName}
         quantityUnit="unit"
         quantityLabel="Quantité"
         unitPrice={unitPrice}
@@ -696,7 +697,7 @@ export default function MealProductLanding() {
           setAccModalOpen(false);
           setPendingOrderQty(null);
         }}
-        productName={product.name}
+        productName={productDisplayName}
         options={product.accompagnements || []}
         initialQty={accQty}
         ctaLabel="Valider et commander"
