@@ -54,10 +54,12 @@ const emptyOptionGroup = () => ({
 const emptySlide = () => ({
   imageUrl: '',
   imageUrls: [],
+  productSlug: '',
+  active: true,
   title: '',
   subtitle: '',
   ctaLabel: 'Commander',
-  ctaHref: '#meal-products',
+  ctaHref: '#menu',
 });
 
 const emptyUrgency = () => ({
@@ -113,10 +115,12 @@ function normalizeSlide(slide) {
   return {
     imageUrl: primary,
     imageUrls,
+    productSlug: String(slide?.productSlug || '').trim(),
+    active: slide?.active !== false,
     title: slide?.title || '',
     subtitle: slide?.subtitle || '',
     ctaLabel: slide?.ctaLabel || 'Commander',
-    ctaHref: slide?.ctaHref || '#meal-products',
+    ctaHref: slide?.ctaHref || '#menu',
     _id: slide?._id,
   };
 }
@@ -797,148 +801,166 @@ export default function ShopRepasDashboard() {
           <section className="shop-dash-form-block">
             <ShopFormSectionHead
               step="2"
-              title="Carrousel hero"
-              subtitle="Images et textes du bandeau d’accueil. Plusieurs images par slide possibles."
+              title="Bannières hero"
+              subtitle="Choisissez quels plats apparaissent en bannière sur /repas. Masquez sans supprimer, ou ajoutez une bannière."
             />
-            {(settings.heroSlides || []).map((slide, idx) => (
-              <div key={slide._id || idx} className="shop-repas-slide-card">
-                {(slide.imageUrls || []).length ? (
-                  <div className="shop-repas-thumbs">
-                    {(slide.imageUrls || []).map((url) => (
-                      <div key={url} className="shop-repas-thumb-wrap">
-                        <button
-                          type="button"
-                          className={`shop-repas-thumb${slide.imageUrl === url ? ' is-main' : ''}`}
-                          title="Définir comme image principale du slide"
-                          onClick={() => {
-                            const rest = (slide.imageUrls || []).filter((u) => u !== url);
-                            patchSlide(idx, { imageUrl: url, imageUrls: [url, ...rest] });
-                          }}
-                        >
-                          <img src={getImageUrl(url, null, BASE_URL)} alt="" />
-                        </button>
-                        <button
-                          type="button"
-                          className="shop-repas-thumb-remove"
-                          title="Supprimer cette photo"
-                          aria-label="Supprimer cette photo"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            const nextUrls = (slide.imageUrls || []).filter((u) => u !== url);
-                            const nextMain =
-                              slide.imageUrl === url ? nextUrls[0] || '' : slide.imageUrl || nextUrls[0] || '';
-                            patchSlide(idx, {
-                              imageUrl: nextMain,
-                              imageUrls: nextMain
-                                ? [nextMain, ...nextUrls.filter((u) => u !== nextMain)]
-                                : nextUrls,
-                            });
-                          }}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
+            {(settings.heroSlides || []).map((slide, idx) => {
+              const linked = products.find((p) => p.slug === slide.productSlug);
+              const preview =
+                slide.imageUrl ||
+                linked?.mainImage ||
+                linked?.images?.[0] ||
+                '';
+              return (
+                <div
+                  key={slide._id || idx}
+                  className={`shop-repas-slide-card${slide.active === false ? ' is-hidden-banner' : ''}`}
+                  style={slide.active === false ? { opacity: 0.55 } : undefined}
+                >
+                  <div className="shop-dash-grid" style={{ alignItems: 'center', marginBottom: 10 }}>
+                    <label className="shop-dash-check" style={{ margin: 0 }}>
+                      <input
+                        type="checkbox"
+                        checked={slide.active !== false}
+                        onChange={(e) => patchSlide(idx, { active: e.target.checked })}
+                      />
+                      {slide.active !== false ? 'Visible sur /repas' : 'Masquée'}
+                    </label>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                      <button
+                        type="button"
+                        className="shop-dash-btn secondary"
+                        onClick={() => patchSlide(idx, { active: !(slide.active !== false) })}
+                      >
+                        {slide.active !== false ? 'Masquer' : 'Afficher'}
+                      </button>
+                      <button
+                        type="button"
+                        className="shop-dash-btn secondary"
+                        onClick={() =>
+                          setSettings((s) => ({
+                            ...s,
+                            heroSlides: (s.heroSlides || []).filter((_, i) => i !== idx),
+                          }))
+                        }
+                      >
+                        Supprimer
+                      </button>
+                    </div>
                   </div>
-                ) : slide.imageUrl ? (
-                  <div className="shop-repas-thumb-wrap shop-repas-thumb-wrap--wide">
-                    <img src={getImageUrl(slide.imageUrl, null, BASE_URL)} alt="" className="shop-repas-slide-img" />
-                    <button
-                      type="button"
-                      className="shop-repas-thumb-remove"
-                      title="Supprimer cette photo"
-                      aria-label="Supprimer cette photo"
-                      onClick={() => patchSlide(idx, { imageUrl: '', imageUrls: [] })}
-                    >
-                      ×
-                    </button>
+                  {preview ? (
+                    <div className="shop-repas-thumb-wrap shop-repas-thumb-wrap--wide" style={{ marginBottom: 10 }}>
+                      <img
+                        src={getImageUrl(preview, null, BASE_URL)}
+                        alt=""
+                        className="shop-repas-slide-img"
+                      />
+                    </div>
+                  ) : null}
+                  <div className="shop-dash-grid">
+                    <div>
+                      <label>Plat (visuel bannière)</label>
+                      <select
+                        className="shop-dash-input"
+                        value={slide.productSlug || ''}
+                        onChange={(e) => {
+                          const slug = e.target.value;
+                          const p = products.find((x) => x.slug === slug);
+                          patchSlide(idx, {
+                            productSlug: slug,
+                            title: slide.title || p?.name || '',
+                            subtitle: slide.subtitle || p?.shortDescription || '',
+                            imageUrl: '',
+                            imageUrls: [],
+                          });
+                        }}
+                      >
+                        <option value="">— Choisir un plat —</option>
+                        {products.map((p) => (
+                          <option key={p._id || p.slug} value={p.slug}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label>Titre (optionnel)</label>
+                      <input
+                        className="shop-dash-input"
+                        value={slide.title || ''}
+                        placeholder={linked?.name || 'Titre'}
+                        onChange={(e) => patchSlide(idx, { title: e.target.value })}
+                      />
+                    </div>
                   </div>
-                ) : null}
-                <div className="shop-dash-grid">
-                  <div>
-                    <label>Titre</label>
-                    <input
-                      className="shop-dash-input"
-                      value={slide.title || ''}
-                      onChange={(e) => patchSlide(idx, { title: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label>Sous-titre</label>
+                  <div style={{ marginTop: 8 }}>
+                    <label>Sous-titre (optionnel)</label>
                     <input
                       className="shop-dash-input"
                       value={slide.subtitle || ''}
+                      placeholder={linked?.shortDescription || ''}
                       onChange={(e) => patchSlide(idx, { subtitle: e.target.value })}
                     />
                   </div>
+                  <div className="shop-repas-slide-actions" style={{ marginTop: 10 }}>
+                    <label className="shop-dash-btn secondary shop-repas-file-btn">
+                      Image custom (optionnel)
+                      <input
+                        type="file"
+                        accept="image/*"
+                        hidden
+                        onChange={async (e) => {
+                          const files = e.target.files;
+                          if (!files?.length) return;
+                          await appendImagesToSlide(idx, files);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                    {slide.imageUrl ? (
+                      <button
+                        type="button"
+                        className="shop-dash-btn secondary"
+                        onClick={() => patchSlide(idx, { imageUrl: '', imageUrls: [] })}
+                      >
+                        Remettre l’image du plat
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
-                <div className="shop-repas-slide-actions">
-                  <label className="shop-dash-btn secondary shop-repas-file-btn">
-                    Ajouter des images
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      hidden
-                      onChange={async (e) => {
-                        const files = e.target.files;
-                        if (!files?.length) return;
-                        await appendImagesToSlide(idx, files);
-                        e.target.value = '';
-                      }}
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    className="shop-dash-btn secondary"
-                    onClick={() =>
-                      setSettings((s) => ({
-                        ...s,
-                        heroSlides: (s.heroSlides || []).filter((_, i) => i !== idx),
-                      }))
-                    }
-                  >
-                    Retirer
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
             <div className="shop-repas-slide-actions">
               <button
                 type="button"
                 className="shop-dash-btn secondary"
-                onClick={() =>
+                onClick={() => {
+                  const used = new Set((settings.heroSlides || []).map((s) => s.productSlug).filter(Boolean));
+                  const next = products.find((p) => p.published !== false && !used.has(p.slug));
                   setSettings((s) => ({
                     ...s,
-                    heroSlides: [...(s.heroSlides || []), emptySlide()],
-                  }))
-                }
+                    heroSlides: [
+                      ...(s.heroSlides || []),
+                      normalizeSlide({
+                        ...emptySlide(),
+                        productSlug: next?.slug || '',
+                        title: next?.name || '',
+                        subtitle: next?.shortDescription || '',
+                        active: true,
+                      }),
+                    ],
+                  }));
+                }}
               >
-                + Slide
+                + Ajouter une bannière
               </button>
-              <label className="shop-dash-btn secondary shop-repas-file-btn">
-                Ajouter plusieurs slides
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  hidden
-                  onChange={async (e) => {
-                    const files = e.target.files;
-                    if (!files?.length) return;
-                    await addSlidesFromImages(files);
-                    e.target.value = '';
-                  }}
-                />
-              </label>
               <button
                 type="button"
                 className="shop-dash-btn shop-dash-btn--primary"
                 disabled={saving}
                 onClick={() => saveSettings({ heroSlides: settings.heroSlides })}
               >
-                Enregistrer le carrousel
+                Enregistrer les bannières
               </button>
             </div>
           </section>

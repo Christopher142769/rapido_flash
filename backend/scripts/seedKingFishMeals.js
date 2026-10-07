@@ -1,5 +1,5 @@
 /**
- * Seed catalogue King Fish / Shop Repas (plats + accompagnements + images locales).
+ * Seed catalogue King Fish / Shop Repas (plats + accompagnements + images).
  * Usage : node backend/scripts/seedKingFishMeals.js
  */
 const path = require('path');
@@ -10,7 +10,7 @@ const mongoose = require('mongoose');
 const MealProduct = require('../models/MealProduct');
 const MealShopSettings = require('../models/MealShopSettings');
 
-const IMG = '/images/repas/products';
+const IMG = '/images/repas/refonte';
 
 const SIDES = [
   { name: 'Riz', price: 500 },
@@ -33,8 +33,8 @@ const PRODUCTS = [
     category: 'Street food',
     basePrice: 2000,
     shortDescription: 'Wrap généreux, viande tendre, sauce crémeuse et légumes croquants.',
-    mainImage: `${IMG}/shawarma-1.jpg`,
-    images: [`${IMG}/shawarma-1.jpg`, `${IMG}/shawarma-2.jpg`],
+    mainImage: `${IMG}/shawarma-2.jpg`,
+    images: [`${IMG}/shawarma-2.jpg`, `${IMG}/shawarma.jpg`],
     accompagnements: [],
     sortOrder: 10,
   },
@@ -44,19 +44,19 @@ const PRODUCTS = [
     category: 'Poissons',
     basePrice: 1500,
     shortDescription: 'Filets croustillants dorés, servis avec une touche de fraîcheur.',
-    mainImage: `${IMG}/poisson-pane-1.jpg`,
-    images: [`${IMG}/poisson-pane-1.jpg`, `${IMG}/poisson-pane-2.jpg`],
+    mainImage: `${IMG}/poisson-pane.jpg`,
+    images: [`${IMG}/poisson-pane.jpg`],
     accompagnements: FISH_SIDES,
     sortOrder: 20,
   },
   {
     slug: 'filet-poisson-pouiller',
-    name: 'Filet de poisson pouillé',
+    name: 'Filet de poisson poêlé',
     category: 'Poissons',
     basePrice: 1500,
     shortDescription: 'Filet poêlé, croustillant dehors et fondant dedans.',
-    mainImage: `${IMG}/poisson-pane-2.jpg`,
-    images: [`${IMG}/poisson-pane-2.jpg`, `${IMG}/poisson-pane-1.jpg`],
+    mainImage: `${IMG}/filet-poele.jpg`,
+    images: [`${IMG}/filet-poele.jpg`],
     accompagnements: FISH_SIDES,
     sortOrder: 30,
   },
@@ -66,30 +66,30 @@ const PRODUCTS = [
     category: 'Poissons',
     basePrice: 1500,
     shortDescription: 'Brochettes marinées au feu, idéales avec frites ou attiéké.',
-    mainImage: `${IMG}/brochette-1.jpg`,
-    images: [`${IMG}/brochette-1.jpg`, `${IMG}/brochette-2.jpg`, `${IMG}/brochette-3.jpg`],
+    mainImage: `${IMG}/brochette.jpg`,
+    images: [`${IMG}/brochette.jpg`, `${IMG}/brochette-2.jpg`],
     accompagnements: FISH_SIDES,
     sortOrder: 40,
   },
   {
     slug: 'monyo-machoiron-fume',
-    name: 'Monyo machoiron fumé',
+    name: 'Monyo de machoiron fumé',
     category: 'Poissons',
     basePrice: 1500,
-    shortDescription: 'Machoiron fumé, saveur intense et fumée authentique.',
-    mainImage: `${IMG}/machoiron-braise-2.jpg`,
-    images: [`${IMG}/machoiron-braise-2.jpg`, `${IMG}/machoiron-braise-1.jpg`],
+    shortDescription: 'Machoiron fumé, monyo tomate-oignon, riz et sauce maison.',
+    mainImage: `${IMG}/machoiron-fume.jpg`,
+    images: [`${IMG}/machoiron-fume.jpg`, `${IMG}/machoiron-fume-food.jpg`],
     accompagnements: FISH_SIDES,
     sortOrder: 50,
   },
   {
     slug: 'monyo-tilapia-frite',
-    name: 'Monyo tilapia frite',
+    name: 'Monyo de tilapia frit',
     category: 'Poissons',
     basePrice: 1500,
-    shortDescription: 'Tilapia frit croustillant, portion généreuse.',
-    mainImage: `${IMG}/tilapia-braise-2.jpg`,
-    images: [`${IMG}/tilapia-braise-2.jpg`, `${IMG}/poisson-pane-1.jpg`],
+    shortDescription: 'Tilapia frit croustillant, portion généreuse, servi avec son monyo.',
+    mainImage: `${IMG}/tilapia-frite.jpg`,
+    images: [`${IMG}/tilapia-frite.jpg`],
     accompagnements: FISH_SIDES,
     sortOrder: 60,
   },
@@ -98,9 +98,9 @@ const PRODUCTS = [
     name: 'Tilapia braisé',
     category: 'Poissons',
     basePrice: 3000,
-    shortDescription: 'Tilapia entier braisé, accompagnements au choix.',
-    mainImage: `${IMG}/tilapia-braise-1.jpg`,
-    images: [`${IMG}/tilapia-braise-1.jpg`, `${IMG}/tilapia-braise-2.jpg`],
+    shortDescription: 'Tilapia entier braisé, carottes et haricots verts sautés.',
+    mainImage: `${IMG}/tilapia-braise.jpg`,
+    images: [`${IMG}/tilapia-braise.jpg`],
     accompagnements: FISH_SIDES,
     optionGroups: [
       {
@@ -108,8 +108,8 @@ const PRODUCTS = [
         selectionType: 'single',
         required: true,
         choices: [
-          { label: 'Standard — 3 000 F', price: 0 },
-          { label: 'Grande — 5 000 F', price: 2000 },
+          { label: 'Moyen', price: 0 },
+          { label: 'Grand', price: 2000 },
         ],
       },
     ],
@@ -120,9 +120,9 @@ const PRODUCTS = [
     name: 'Machoiron braisé',
     category: 'Poissons',
     basePrice: 2000,
-    shortDescription: 'Machoiron braisé entier, char grillé et légumes.',
-    mainImage: `${IMG}/machoiron-braise-1.jpg`,
-    images: [`${IMG}/machoiron-braise-1.jpg`, `${IMG}/machoiron-braise-2.jpg`],
+    shortDescription: 'Machoiron braisé entier, riz blanc, monyo et sauce verte.',
+    mainImage: `${IMG}/machoiron-braise.jpg`,
+    images: [`${IMG}/machoiron-braise.jpg`, `${IMG}/machoiron-braise-food.jpg`],
     accompagnements: FISH_SIDES,
     optionGroups: [
       {
@@ -130,9 +130,9 @@ const PRODUCTS = [
         selectionType: 'single',
         required: true,
         choices: [
-          { label: 'Petite — 2 000 F', price: 0 },
-          { label: 'Moyenne — 3 000 F', price: 1000 },
-          { label: 'Grande — 5 000 F', price: 3000 },
+          { label: 'Petit', price: 0 },
+          { label: 'Moyen', price: 1000 },
+          { label: 'Grand', price: 3000 },
         ],
       },
     ],
@@ -144,8 +144,8 @@ const PRODUCTS = [
     category: 'Petit déjeuner',
     basePrice: 500,
     shortDescription: 'Omelette maison, simple et rapide.',
-    mainImage: null,
-    images: [],
+    mainImage: `${IMG}/omelette.svg`,
+    images: [`${IMG}/omelette.svg`],
     accompagnements: [
       { name: 'Riz', price: 500, required: false, available: true, maxQuantity: 3 },
       { name: 'Frites', price: 1000, required: false, available: true, maxQuantity: 3 },
@@ -154,12 +154,12 @@ const PRODUCTS = [
   },
   {
     slug: 'rillettes-de-poissons',
-    name: 'Rillettes de poissons',
+    name: 'Rillettes de poisson',
     category: 'Gourmet',
     basePrice: 2500,
-    shortDescription: 'Pot King Fish — rillettes gourmet, saveur authentique.',
-    mainImage: `${IMG}/rillettes.png`,
-    images: [`${IMG}/rillettes.png`],
+    shortDescription: 'Pot King Fish — rillettes gourmet à tartiner.',
+    mainImage: `${IMG}/rillettes.jpg`,
+    images: [`${IMG}/rillettes.jpg`],
     accompagnements: [],
     sortOrder: 100,
   },
@@ -169,13 +169,8 @@ const PRODUCTS = [
     category: 'Salades',
     basePrice: 1500,
     shortDescription: 'Salade fraîche au poisson, œufs, concombre et sauce maison.',
-    mainImage: `${IMG}/salade-1.jpg`,
-    images: [
-      `${IMG}/salade-1.jpg`,
-      `${IMG}/salade-2.jpg`,
-      `${IMG}/salade-3.jpg`,
-      `${IMG}/salade-4.jpg`,
-    ],
+    mainImage: `${IMG}/salade-2.jpg`,
+    images: [`${IMG}/salade-2.jpg`, `${IMG}/salade.jpg`],
     accompagnements: [],
     sortOrder: 110,
   },
@@ -185,8 +180,8 @@ const PRODUCTS = [
     category: 'Snacks',
     basePrice: 1000,
     shortDescription: 'Chips de poisson King Fish — édition Spicy 100 g.',
-    mainImage: `${IMG}/chips-spicy.png`,
-    images: [`${IMG}/chips-spicy.png`],
+    mainImage: `${IMG}/chips-spicy.jpg`,
+    images: [`${IMG}/chips-spicy.jpg`],
     accompagnements: [],
     sortOrder: 120,
   },
@@ -196,8 +191,8 @@ const PRODUCTS = [
     category: 'Snacks',
     basePrice: 1000,
     shortDescription: 'Chips de poisson King Fish — édition Nature 100 g.',
-    mainImage: `${IMG}/chips-nature.png`,
-    images: [`${IMG}/chips-nature.png`],
+    mainImage: `${IMG}/chips-nature.jpg`,
+    images: [`${IMG}/chips-nature.jpg`],
     accompagnements: [],
     sortOrder: 130,
   },
@@ -239,7 +234,7 @@ async function main() {
 
   for (const p of PRODUCTS) {
     const r = await upsertProduct(p);
-    console.log(`  ${r.action}: ${r.slug}`);
+    console.log(`  ${r.action}: ${r.slug} — ${p.name} (${p.basePrice} F)`);
   }
 
   const categories = [
@@ -257,23 +252,44 @@ async function main() {
   }
   settings.categories = categories;
   settings.deliveryFee = settings.deliveryFee || 500;
-  if (!settings.heroSlides?.length) {
-    settings.heroSlides = [
-      {
-        imageUrl: `${IMG}/tilapia-braise-1.jpg`,
-        imageUrls: [`${IMG}/tilapia-braise-1.jpg`, `${IMG}/shawarma-1.jpg`],
-        title: 'King Fish × Rapido',
-        subtitle: 'Poissons braisés, shawarma et salades — livrés chauds à Cotonou & Calavi.',
+  const defaultBanners = [
+    'tilapia-braise',
+    'shawarma',
+    'brochette-de-poisson',
+    'poisson-pane',
+    'monyo-machoiron-fume',
+    'salade-king-fish',
+    'filet-poisson-pouiller',
+    'monyo-tilapia-frite',
+    'machoiron-braise',
+    'rillettes-de-poissons',
+  ];
+  const slidesRaw = settings.heroSlides || [];
+  const needsBannerUpgrade =
+    !slidesRaw.length || slidesRaw.every((s) => !String(s.productSlug || '').trim());
+  if (needsBannerUpgrade) {
+    settings.heroSlides = defaultBanners.map((slug) => {
+      const p = PRODUCTS.find((x) => x.slug === slug);
+      return {
+        productSlug: slug,
+        active: true,
+        imageUrl: '',
+        imageUrls: [],
+        title: p?.name || '',
+        subtitle: p?.shortDescription || '',
         ctaLabel: 'Commander',
-        ctaHref: '#meal-products',
-      },
-    ];
+        ctaHref: '#menu',
+      };
+    });
   } else {
-    settings.heroSlides[0].imageUrl = `${IMG}/tilapia-braise-1.jpg`;
-    settings.heroSlides[0].title = settings.heroSlides[0].title || 'King Fish × Rapido';
-    settings.heroSlides[0].subtitle =
-      settings.heroSlides[0].subtitle ||
-      'Poissons braisés, shawarma et salades — livrés chauds.';
+    settings.heroSlides = slidesRaw.map((s) => {
+      const plain = s.toObject ? s.toObject() : { ...s };
+      return {
+        ...plain,
+        active: plain.active !== false,
+        productSlug: String(plain.productSlug || '').trim(),
+      };
+    });
   }
   if (!settings.trustItems?.length) {
     settings.trustItems = [

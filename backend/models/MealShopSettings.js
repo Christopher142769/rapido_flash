@@ -5,6 +5,10 @@ const heroSlideSchema = new mongoose.Schema(
     imageUrl: { type: String, trim: true, default: '' },
     /** Galerie multi-images pour une slide (imageUrl = première). */
     imageUrls: { type: [String], default: [] },
+    /** Plat lié (visuel refonte / prix) — optionnel si image custom. */
+    productSlug: { type: String, trim: true, default: '' },
+    /** Masquer sans supprimer la bannière. */
+    active: { type: Boolean, default: true },
     title: { type: String, trim: true, default: '' },
     subtitle: { type: String, trim: true, default: '' },
     ctaLabel: { type: String, trim: true, default: '' },

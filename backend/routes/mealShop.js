@@ -96,6 +96,8 @@ router.put('/', auth, isRestaurant, async (req, res) => {
         return {
           imageUrl: primary,
           imageUrls,
+          productSlug: String(s.productSlug || '').trim().toLowerCase(),
+          active: s.active !== false && s.active !== 'false',
           title: String(s.title || '').trim(),
           subtitle: String(s.subtitle || '').trim(),
           ctaLabel: String(s.ctaLabel || '').trim(),
