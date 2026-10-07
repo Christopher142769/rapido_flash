@@ -38,8 +38,13 @@ export default function MealShopPage() {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+    const poll = setInterval(() => {
+      if (cancelled) return;
+      loadPublic().catch(() => {});
+    }, 45000);
     return () => {
       cancelled = true;
+      clearInterval(poll);
     };
   }, [loadPublic]);
 

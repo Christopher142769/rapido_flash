@@ -18,7 +18,7 @@ export const REFONTE_SLUG_ASSETS = {
   'machoiron-braise': { img: 'machoiron-braise', cut: 'machoiron-braise' },
   rillettes: { img: 'rillettes', cut: 'rillettes' },
   'rillettes-de-poissons': { img: 'rillettes', cut: 'rillettes' },
-  omelette: { img: 'omelette.svg', cut: null },
+  omelette: { img: 'omelette', cut: null },
   'chips-spicy': { img: 'chips-spicy', cut: 'chips-spicy' },
   'chips-nature': { img: 'chips-nature', cut: 'chips-nature' },
   'chips-de-poisson-spicy': { img: 'chips-spicy', cut: 'chips-spicy' },

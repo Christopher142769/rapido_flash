@@ -4,17 +4,17 @@ import RepasRefonteIcons, { Ico } from './RepasRefonteIcons';
 import {
   REFONTE_CATS,
   REFONTE_IMG,
-  CAT_ICONS,
   HERO_SCRIPTS,
   fmtXof,
   cutSrc,
 } from './repasRefonteConstants';
 import { adaptProducts, buildHeroSlides } from './repasRefonteAdapter';
 import { mealProductPath } from '../../utils/mealPaths';
-import { loadMealCart, mealCartCount } from '../../utils/mealCart';
+import { loadMealCart, mealCartCount, clearMealCart } from '../../utils/mealCart';
 import { getMealCatalogueUrgency } from '../../utils/mealShopUrgency';
 import { resolveTrackingWhatsAppDigits } from '../../utils/shopOrder';
 import { trackProductClick } from '../../utils/analyticsBeacon';
+import ShopCountdown from '../../components/shop/ShopCountdown';
 import { useRepasRefonteMotion, bounceCartBadges, animateGridCards } from './useRepasRefonteMotion';
 import './RepasRefonte.css';
 
@@ -97,9 +97,11 @@ export default function RepasRefontePage({
   const [city, setCity] = useState('Cotonou');
   const [cartCount, setCartCount] = useState(() => mealCartCount());
   const [countdown, setCountdown] = useState({ d: 0, h: 0, m: 0, s: 0 });
+  const [urgencyClock, setUrgencyClock] = useState(() => Date.now());
   const [toast, setToast] = useState('');
   const [heroPaused, setHeroPaused] = useState(false);
   const rootRef = useRef(null);
+  const topRef = useRef(null);
   const pausedRef = useRef(false);
   const heroIdxRef = useRef(0);
 
@@ -137,17 +139,61 @@ export default function RepasRefontePage({
 
   const waDigits = resolveTrackingWhatsAppDigits(settings?.trackingWhatsAppNumber);
   const phoneDisplay = settings?.trackingWhatsAppDisplay || DEFAULT_PHONE;
-  const urgency = useMemo(() => getMealCatalogueUrgency(settings, new Date()), [settings]);
-  const announceMid = urgency.isLive
-    ? urgency.label || 'Offre limitée sur le menu King Fish'
-    : 'Promos King Fish · cette semaine';
+  const urgency = useMemo(
+    () => getMealCatalogueUrgency(settings, new Date(urgencyClock)),
+    [settings, urgencyClock]
+  );
+  const urgencyEndsAt = useMemo(() => {
+    if (urgency.endsAtIso) return urgency.endsAtIso;
+    return promoEndsAt(settings).toISOString();
+  }, [urgency.endsAtIso, settings]);
+  /** Quota dashboard : urgency.expectedOrders, sinon dailyOrderLimit.maxOrders */
+  const urgencyMaxOrders = useMemo(() => {
+    const fromUrgency = Math.max(0, Math.round(Number(settings?.urgency?.expectedOrders) || 0));
+    if (fromUrgency > 0) return fromUrgency;
+    if (settings?.dailyOrderLimit?.enabled) {
+      return Math.max(0, Math.round(Number(settings?.dailyOrderLimit?.maxOrders) || 0));
+    }
+    return 0;
+  }, [settings]);
+  const ordersToday = Math.max(0, Math.round(Number(settings?.ordersToday) || 0));
+  const urgencyRemaining = Math.max(0, urgencyMaxOrders - ordersToday);
+  const urgencyTakenPct =
+    urgencyMaxOrders > 0 ? Math.min(100, Math.round((ordersToday / urgencyMaxOrders) * 100)) : 0;
+  const announceMid =
+    urgency.label ||
+    (urgency.isLive ? 'Offre limitée sur le menu King Fish' : 'Promo −50 % · King Fish');
 
   const refreshCart = useCallback(() => setCartCount(mealCartCount()), []);
+
+  const handleClearCart = useCallback(() => {
+    if (!loadMealCart().length) return;
+    clearMealCart();
+    refreshCart();
+    setToast('Panier vidé');
+  }, [refreshCart]);
 
   useEffect(() => {
     document.documentElement.classList.add('js');
     document.body.classList.add('repas-refonte-active');
     return () => document.body.classList.remove('repas-refonte-active');
+  }, []);
+
+  useEffect(() => {
+    const el = topRef.current;
+    const root = rootRef.current;
+    if (!el || !root) return undefined;
+    const apply = () => {
+      root.style.setProperty('--rf-top-h', `${el.offsetHeight}px`);
+    };
+    apply();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(apply) : null;
+    ro?.observe(el);
+    window.addEventListener('resize', apply);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener('resize', apply);
+    };
   }, []);
 
   useEffect(() => {
@@ -167,7 +213,7 @@ export default function RepasRefontePage({
   }, [toast]);
 
   useEffect(() => {
-    const end = promoEndsAt(settings);
+    const end = new Date(urgencyEndsAt);
     const tick = () => {
       let s = Math.max(0, Math.floor((end - new Date()) / 1000));
       const d = Math.floor(s / 86400);
@@ -181,7 +227,12 @@ export default function RepasRefontePage({
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [settings]);
+  }, [urgencyEndsAt]);
+
+  useEffect(() => {
+    const id = setInterval(() => setUrgencyClock(Date.now()), 30000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     if (slideList.length < 2 || heroPaused) return undefined;
@@ -250,6 +301,14 @@ export default function RepasRefontePage({
   const go = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   const priceAt = (p, si = 0) => p.prices[si] ?? p.unit;
+  /** Prix barré (initial) : proportionnel au prix promo affiché (×2 si −50 %). */
+  const compareAtFor = (p, si = 0) => {
+    const cur = priceAt(p, si);
+    if (!cur) return null;
+    if (p.compareAt && p.unit) return Math.round(cur * (p.compareAt / p.unit));
+    return Math.round(cur * 2);
+  };
+  const discountLabel = (p) => `−${p?.discountPercent || 50} %`;
 
   const handleAdd = (p, si = 0, e) => {
     e?.preventDefault?.();
@@ -320,9 +379,10 @@ export default function RepasRefontePage({
           <h2 className="hb-title">{twoToneTitle(p.name)}</h2>
           <p className="hb-sub">{p.desc}</p>
           <div className="hb-price">
-            <span className="lbl">{p.sizes ? 'Dès' : 'Prix'}</span>
+            <span className="lbl">{p.sizes ? 'Dès' : 'Prix promo'}</span>
             <strong>{fmtXof(priceAt(p, si))} F</strong>
-            {p.compareAt ? <s>{fmtXof(p.compareAt)} F</s> : null}
+            <s>{fmtXof(compareAtFor(p, si))} F</s>
+            <em className="hb-save">{discountLabel(p)}</em>
           </div>
           <div className="hb-cta">
             <button type="button" className="hb-btn" onClick={(e) => handleAdd(p, si, e)}>
@@ -359,13 +419,14 @@ export default function RepasRefontePage({
               />
             ))}
           </div>
-          {p.promo ? (
-            <div className="hb-par" style={{ '--d': 16 }}>
-              <div className="hb-bubble">
-                <span>Promo</span>
-              </div>
+          <div className="hb-par" style={{ '--d': 16 }}>
+            <div className="hb-bubble">
+              <svg viewBox="0 0 200 140" aria-hidden="true">
+                <path d="M18 72c8-34 46-58 82-58s74 24 82 58c8 34-18 62-82 62S10 106 18 72z" />
+              </svg>
+              <span>{discountLabel(p)}</span>
             </div>
-          ) : null}
+          </div>
         </div>
       </article>
     );
@@ -381,7 +442,7 @@ export default function RepasRefontePage({
         data-id={p.id}
       >
         <div className="card-media">
-          {p.promo ? <span className="badge promo">-50 %</span> : <span className="badge">Fait maison</span>}
+          <span className="badge promo">{discountLabel(p)}</span>
           <button
             type="button"
             className={`fav${favs.has(p.id) ? ' on' : ''}`}
@@ -417,7 +478,7 @@ export default function RepasRefontePage({
           <div className="card-foot">
             <div className="card-price">
               <strong>{fmtXof(priceAt(p, si))} F</strong>
-              {p.compareAt ? <s>{fmtXof(p.compareAt)} F</s> : null}
+              <s>{fmtXof(compareAtFor(p, si))} F</s>
             </div>
             <button type="button" className="add" aria-label={`Ajouter ${p.name}`} onClick={(e) => handleAdd(p, si, e)}>
               <Ico id="i-plus" />
@@ -436,15 +497,42 @@ export default function RepasRefontePage({
         href="https://fonts.googleapis.com/css2?family=Anton&family=Yellowtail&family=Montserrat:wght@500;600;700;800;900&display=swap"
       />
 
-      <div className="announce">
-        <div className="wrap">
-          <span>
-            <Ico id="i-flame" /> Livraison rapide, plats chauds
-          </span>
-          <span className="mid">
-            <b>Promo</b> {announceMid}
-          </span>
-          <span className="right">Cotonou &amp; Calavi · Paiement à la livraison</span>
+      <div className="rf-top" ref={topRef}>
+      <div className="rf-urgency" role="region" aria-label="Offre promotionnelle">
+        <div className="rf-urgency-inner">
+          <div className="rf-urgency-copy">
+            <span className="rf-urgency-pill">
+              <Ico id="i-flame" /> Promo −50 %
+            </span>
+            <p className="rf-urgency-label">{announceMid}</p>
+            <p className="rf-urgency-sub">Cotonou &amp; Calavi · Paiement à la livraison</p>
+          </div>
+          <div className="rf-urgency-timer">
+            <span className="rf-urgency-timer-lbl">Fin de l&apos;offre</span>
+            <ShopCountdown
+              endsAt={urgencyEndsAt}
+              variant="urgent"
+              autoRestart={urgency.runUntilStopped !== false}
+              onComplete={() => setUrgencyClock(Date.now())}
+            />
+          </div>
+          {urgencyMaxOrders > 0 ? (
+            <div className="rf-urgency-quota">
+              <p className="rf-urgency-quota-text">
+                {urgencyRemaining > 0 ? (
+                  <>
+                    Il reste <strong>{urgencyRemaining}</strong> commande
+                    {urgencyRemaining > 1 ? 's' : ''} sur {urgencyMaxOrders} aujourd&apos;hui
+                  </>
+                ) : (
+                  <>Quota atteint — {ordersToday}/{urgencyMaxOrders} aujourd&apos;hui</>
+                )}
+              </p>
+              <div className="rf-urgency-track" aria-hidden>
+                <span className="rf-urgency-fill" style={{ width: `${Math.max(urgencyTakenPct, ordersToday > 0 ? 4 : 0)}%` }} />
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -505,8 +593,8 @@ export default function RepasRefontePage({
             <button
               type="button"
               className="round-btn m-only"
-              aria-label="Promos en cours"
-              onClick={() => go('mDeal')}
+              aria-label="Voir le menu"
+              onClick={() => go('menu')}
             >
               <Ico id="i-bell" />
               <em aria-hidden="true" />
@@ -532,6 +620,7 @@ export default function RepasRefontePage({
           </div>
         </div>
       </header>
+      </div>
 
       <div className="m-app" id="mApp">
         <div className="m-deliver">
@@ -568,7 +657,7 @@ export default function RepasRefontePage({
               <h2>{twoToneTitle(mCurrent.name)}</h2>
               <p className="m-price">
                 <b>{fmtXof(mCurrent.unit)} F</b>
-                {mCurrent.compareAt ? <s>{fmtXof(mCurrent.compareAt)} F</s> : null}
+                <s>{fmtXof(compareAtFor(mCurrent))} F</s>
               </p>
               <button type="button" className="m-hero-cta" onClick={(e) => handleAdd(mCurrent, 0, e)}>
                 <i>
@@ -580,6 +669,12 @@ export default function RepasRefontePage({
             <div className="m-hero-img">
               <img src={mCurrent.cutImg} alt={mCurrent.name} />
             </div>
+            <div className="m-bubble">
+              <svg viewBox="0 0 200 140" aria-hidden="true">
+                <path d="M18 72c8-34 46-58 82-58s74 24 82 58c8 34-18 62-82 62S10 106 18 72z" />
+              </svg>
+              <span>{discountLabel(mCurrent)}</span>
+            </div>
             <div className="m-dots">
               {slideList.map((_, k) => (
                 <i key={k} className={k === mIdx ? 'on' : ''} />
@@ -588,21 +683,29 @@ export default function RepasRefontePage({
           </section>
         ) : null}
         <div className="m-cats" role="tablist" aria-label="Catégories">
-          {REFONTE_CATS.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              role="tab"
-              className={`m-cat${activeCat === c.id ? ' on' : ''}`}
-              onClick={() => {
-                setActiveCat(c.id);
-                go('menu');
-              }}
-            >
-              <span dangerouslySetInnerHTML={{ __html: CAT_ICONS[c.id] }} />
-              <strong>{c.id === 'all' ? 'À la une' : c.name}</strong>
-            </button>
-          ))}
+          {REFONTE_CATS.map((c) => {
+            const n = c.id === 'all' ? items.length : items.filter((p) => p.cat === c.id).length;
+            return (
+              <button
+                key={c.id}
+                type="button"
+                role="tab"
+                className={`m-cat${activeCat === c.id ? ' on' : ''}`}
+                onClick={() => {
+                  setActiveCat(c.id);
+                  go('menu');
+                }}
+              >
+                <span className="m-cat-img">
+                  <img src={cutSrc(c.icon)} alt="" loading="lazy" />
+                </span>
+                <strong>{c.name}</strong>
+                <small>
+                  {n} produit{n > 1 ? 's' : ''}
+                </small>
+              </button>
+            );
+          })}
         </div>
         <section aria-label="Populaires">
           <div className="m-sec-head">
@@ -621,7 +724,7 @@ export default function RepasRefontePage({
                 <div className="m-pick-foot">
                   <div>
                     <strong>{fmtXof(p.unit)} F</strong>
-                    {p.compareAt ? <s>{fmtXof(p.compareAt)} F</s> : null}
+                    <s>{fmtXof(compareAtFor(p))} F</s>
                   </div>
                   <button type="button" className="m-plus" aria-label={`Ajouter ${p.name}`} onClick={(e) => handleAdd(p, 0, e)}>
                     <Ico id="i-plus" />
@@ -631,25 +734,6 @@ export default function RepasRefontePage({
             ))}
           </div>
         </section>
-        {dealProduct ? (
-          <div className="m-deal" id="mDeal">
-            <span className="m-deal-ico">
-              <img src={dealProduct.cutImg || cutSrc('tilapia-braise')} alt="" />
-            </span>
-            <div className="m-deal-copy">
-              <strong>Offre de la semaine</strong>
-              <span>
-                {dealProduct.name} à {fmtXof(dealProduct.unit)} F. Fin dans{' '}
-                <b>
-                  {countdown.d} j {pad2(countdown.h)} h {pad2(countdown.m)} min
-                </b>
-              </span>
-            </div>
-            <button type="button" onClick={(e) => handleAdd(dealProduct, 0, e)}>
-              J&apos;en profite
-            </button>
-          </div>
-        ) : null}
       </div>
 
       <section
@@ -735,6 +819,7 @@ export default function RepasRefontePage({
               <button
                 key={c.id}
                 type="button"
+                data-cat={c.id}
                 className={`cat${activeCat === c.id ? ' on' : ''}`}
                 onClick={() => {
                   setActiveCat(c.id);
@@ -809,7 +894,7 @@ export default function RepasRefontePage({
               <h3>{p.name}</h3>
               <div className="tp">
                 <strong>{fmtXof(p.unit)} F</strong>
-                {p.compareAt ? <s>{fmtXof(p.compareAt)} F</s> : null}
+                <s>{fmtXof(compareAtFor(p))} F</s>
               </div>
               <button type="button" className="btn-white" onClick={(e) => handleAdd(p, 0, e)}>
                 Commander <Ico id="i-arrow" />
@@ -890,9 +975,9 @@ export default function RepasRefontePage({
             <div className="deal-visual reveal">
               <img src={dealProduct.cutImg} alt={dealProduct.name} data-par="-0.06" />
               <span className="deal-tag">
-                <small>À partir de</small>
+                <small>Prix promo</small>
                 <strong>{fmtXof(dealProduct.unit)} F</strong>
-                {dealProduct.compareAt ? <small>au lieu de {fmtXof(dealProduct.compareAt)}</small> : null}
+                <small>au lieu de {fmtXof(compareAtFor(dealProduct))} F</small>
               </span>
             </div>
           </div>
@@ -985,13 +1070,19 @@ export default function RepasRefontePage({
           </span>
           <em>{cartCount}</em>
         </button>
-        <button type="button" onClick={() => go('deal')}>
+        <button type="button" onClick={() => go('menu')}>
           <span className="tab-ico">
             <Ico id="i-tag" />
           </span>
           Promos
         </button>
-        <button type="button" onClick={() => go('contact')}>
+        <button
+          type="button"
+          onClick={() => {
+            if (waDigits) window.open(`https://wa.me/${waDigits}`, '_blank', 'noopener,noreferrer');
+            else go('menu');
+          }}
+        >
           <span className="tab-ico">
             <Ico id="i-wa" />
           </span>
@@ -1037,6 +1128,11 @@ export default function RepasRefontePage({
               <span>Total</span>
               <span>{fmtXof(cartSubtotal)} F</span>
             </div>
+            {cartLines.length ? (
+              <button type="button" className="btn-clear-cart" onClick={handleClearCart}>
+                Vider le panier
+              </button>
+            ) : null}
             <Link to="/repas/panier" className="btn-yellow" style={{ justifyContent: 'center' }} onClick={() => setDrawerOpen(false)}>
               Finaliser la commande
             </Link>

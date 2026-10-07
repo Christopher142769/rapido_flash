@@ -144,8 +144,8 @@ const PRODUCTS = [
     category: 'Petit déjeuner',
     basePrice: 500,
     shortDescription: 'Omelette maison, simple et rapide.',
-    mainImage: `${IMG}/omelette.svg`,
-    images: [`${IMG}/omelette.svg`],
+    mainImage: `${IMG}/omelette.jpg`,
+    images: [`${IMG}/omelette.jpg`],
     accompagnements: [
       { name: 'Riz', price: 500, required: false, available: true, maxQuantity: 3 },
       { name: 'Frites', price: 1000, required: false, available: true, maxQuantity: 3 },

@@ -1,5 +1,6 @@
 node_modules/
 frontend/node_modules/
+.venv-rembg/
 .env
 backend/.env
 # Firebase — ne jamais committer les JSON compte de service (racine ou secrets/firebase)
