@@ -33,6 +33,7 @@ import {
   submitMealOrderToApi,
 } from '../../utils/mealOrder';
 import { mealConfirmationPath } from '../../utils/mealPaths';
+import { displayProductName } from './repasRefonteConstants';
 import {
   trackCtaClick,
   trackProductView,
@@ -153,9 +154,9 @@ export default function MealProductLanding() {
   }, [fetchProduct]);
 
   useEffect(() => {
-    if (!product?.name) return;
-    document.title = `${product.name} | Rapido Repas`;
-  }, [product]);
+    if (!productDisplayName) return;
+    document.title = `${productDisplayName} | Rapido Repas`;
+  }, [productDisplayName]);
 
   const promoState = useMemo(
     () => (product ? getMealProductPromoState(product, new Date(promoClock)) : null),
@@ -207,6 +208,10 @@ export default function MealProductLanding() {
   }, [catalogueUrgency.isLive, productCountdownLive, productCountdownEndsAt]);
 
   const gallery = useMemo(() => (product ? getProductGallery(product) : []), [product]);
+  const productDisplayName = useMemo(
+    () => (product ? displayProductName(product.slug, product.name) : ''),
+    [product]
+  );
   const canOrder = !!getShopWhatsAppDigits() && product?.available !== false;
   const unitPrice = promoState?.isPromoLive ? promoState.promoPrice : product?.basePrice;
   const unitBasePrice = product?.basePrice ?? 0;
@@ -439,7 +444,7 @@ export default function MealProductLanding() {
         <div id="shop-section-order" className="shop-pdp-buy-col">
           <form id={CHECKOUT_FORM_ID} className="shop-pdp-checkout" onSubmit={requestOrder} noValidate>
             <p className="shop-pdp-buybox-brand">Rapido Repas</p>
-            <h1 className="shop-pdp-buybox-title">{product.name}</h1>
+            <h1 className="shop-pdp-buybox-title">{productDisplayName}</h1>
             {product.shortDescription ? <p className="shop-pdp-buybox-sub">{product.shortDescription}</p> : null}
 
             {product.showDeliveryNotice !== false ? (

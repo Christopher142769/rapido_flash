@@ -1,6 +1,36 @@
 /** Assets & catégories — Rapido-Repas-refonte (6)/site/index.html */
 export const REFONTE_IMG = '/images/repas/refonte/';
 
+/** Noms catalogue officiels (hero + cartes) — source de vérité affichage. */
+export const REFONTE_PRODUCT_NAMES = {
+  shawarma: 'Shawarma',
+  'poisson-pane': 'Poisson pané',
+  'filet-poisson-pouiller': 'Filet de poisson poêlé',
+  'filet-poele': 'Filet de poisson poêlé',
+  'brochette-de-poisson': 'Brochette de poisson',
+  brochette: 'Brochette de poisson',
+  'monyo-machoiron-fume': 'Monyo de machoiron fumé',
+  'machoiron-fume': 'Monyo de machoiron fumé',
+  'monyo-tilapia-frite': 'Monyo de tilapia frit',
+  'tilapia-frite': 'Monyo de tilapia frit',
+  'tilapia-braise': 'Tilapia braisé',
+  'machoiron-braise': 'Machoiron braisé',
+  omelette: 'Omelette',
+  'rillettes-de-poissons': 'Rillettes de poisson',
+  rillettes: 'Rillettes de poisson',
+  'salade-king-fish': 'Salade King Fish',
+  salade: 'Salade King Fish',
+  'chips-de-poisson-spicy': 'Chips de poisson Spicy',
+  'chips-spicy': 'Chips de poisson Spicy',
+  'chips-de-poisson-nature': 'Chips de poisson Nature',
+  'chips-nature': 'Chips de poisson Nature',
+};
+
+export function displayProductName(slug, fallback = '') {
+  const key = String(slug || '').trim().toLowerCase();
+  return REFONTE_PRODUCT_NAMES[key] || String(fallback || '').trim() || key;
+}
+
 export const REFONTE_SLUG_ASSETS = {
   'tilapia-braise': { img: 'tilapia-braise', cut: 'tilapia-braise' },
   shawarma: { img: 'shawarma-2', cut: 'shawarma-2' },

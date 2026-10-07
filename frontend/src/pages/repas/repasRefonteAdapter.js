@@ -4,6 +4,7 @@ import {
   REFONTE_IMG,
   cutSrc,
   cardImgSrc,
+  displayProductName,
 } from './repasRefonteConstants';
 
 export function refonteCategoryId(product) {
@@ -108,7 +109,7 @@ export function adaptProduct(product, mediaBase) {
   return {
     id: slug,
     product,
-    name: product.name,
+    name: displayProductName(slug, product.name),
     cat: refonteCategoryId(product),
     catLabel: product.category || '',
     desc: product.shortDescription || product.description || '',
@@ -150,8 +151,8 @@ export function buildHeroSlides(adaptedItems, settings) {
       return {
         id: base.id || `banner-${i}`,
         product: base.product || null,
-        name: slide.title || base.name || 'Bannière',
-        desc: slide.subtitle || base.desc || '',
+        name: base.name,
+        desc: base.desc || slide.subtitle || '',
         cat: base.cat || 'all',
         catLabel: base.catLabel || '',
         cardImg: base.cardImg,
