@@ -4,6 +4,7 @@ import RepasRefonteIcons, { Ico } from './RepasRefonteIcons';
 import {
   REFONTE_CATS,
   REFONTE_IMG,
+  HERO_LARGE,
   HERO_SCRIPTS,
   fmtXof,
   cutSrc,
@@ -408,7 +409,7 @@ export default function RepasRefontePage({
             <div className="hb-glow" />
           </div>
           <div className="hb-par" style={{ '--d': 22 }}>
-            <img className="hb-dish" src={p.cutImg} alt={p.name} />
+            <img className={`hb-dish${HERO_LARGE.has(p.id) ? ' is-lg' : ''}`} src={p.cutImg} alt={p.name} />
           </div>
           <div className="hb-par" style={{ '--d': 40 }}>
             {spots.map(([x, y, w, far], k) => (
@@ -666,7 +667,7 @@ export default function RepasRefontePage({
                 Commander
               </button>
             </div>
-            <div className="m-hero-img">
+            <div className={`m-hero-img${HERO_LARGE.has(mCurrent.id) ? ' is-lg' : ''}`}>
               <img src={mCurrent.cutImg} alt={mCurrent.name} />
             </div>
             <div className="m-bubble">

@@ -39,6 +39,7 @@ export const REFONTE_PRODUCT_DESCS = {
   'salade-king-fish':
     'Salade fraîche, poisson fumé, tomate, carotte, œufs, concombre et sauce maison.',
   salade: 'Salade fraîche, poisson fumé, tomate, carotte, œufs, concombre et sauce maison.',
+  shawarma: 'Wrap généreux au poisson, sauce crémeuse et légumes croquants.',
 };
 
 export function displayProductDesc(slug, fallback = '') {
@@ -77,26 +78,37 @@ export function masculineSizeLabel(label) {
 export const REFONTE_SLUG_ASSETS = {
   'tilapia-braise': { img: 'tilapia-braise', cut: 'tilapia-braise' },
   shawarma: { img: 'shawarma-2', cut: 'shawarma-2' },
-  'brochette-de-poisson': { img: 'brochette-photo.jpg', cut: null },
-  brochette: { img: 'brochette-photo.jpg', cut: null },
+  'brochette-de-poisson': { img: 'brochette-photo.webp', cut: null },
+  brochette: { img: 'brochette-photo.webp', cut: null },
   'poisson-pane': { img: 'poisson-pane', cut: 'poisson-pane' },
-  'monyo-machoiron-fume': { img: 'machoiron-fume-photo.jpg', cut: null },
-  'machoiron-fume': { img: 'machoiron-fume-photo.jpg', cut: null },
+  'monyo-machoiron-fume': { img: 'machoiron-fume-photo.webp', cut: null },
+  'machoiron-fume': { img: 'machoiron-fume-photo.webp', cut: null },
   'salade-king-fish': { img: 'salade-2', cut: 'salade' },
   salade: { img: 'salade-2', cut: 'salade' },
   'filet-poisson-pouiller': { img: 'filet-poele', cut: 'filet-poele' },
   'filet-poele': { img: 'filet-poele', cut: 'filet-poele' },
-  'monyo-tilapia-frite': { img: 'tilapia-frite-photo.jpg', cut: null },
-  'tilapia-frite': { img: 'tilapia-frite-photo.jpg', cut: null },
+  'monyo-tilapia-frite': { img: 'tilapia-frite-photo.webp', cut: null },
+  'tilapia-frite': { img: 'tilapia-frite-photo.webp', cut: null },
   'machoiron-braise': { img: 'machoiron-braise', cut: 'machoiron-braise' },
   rillettes: { img: 'rillettes', cut: 'rillettes' },
   'rillettes-de-poissons': { img: 'rillettes', cut: 'rillettes' },
-  omelette: { img: 'omelette', cut: null },
+  omelette: { img: 'omelette-cut.webp', cut: null },
   'chips-spicy': { img: 'chips-spicy', cut: 'chips-spicy' },
   'chips-nature': { img: 'chips-nature', cut: 'chips-nature' },
   'chips-de-poisson-spicy': { img: 'chips-spicy', cut: 'chips-spicy' },
   'chips-de-poisson-nature': { img: 'chips-nature', cut: 'chips-nature' },
 };
+
+/** Visuels détourés un peu plus grands dans la bannière. */
+export const HERO_LARGE = new Set([
+  'brochette-de-poisson',
+  'brochette',
+  'monyo-machoiron-fume',
+  'machoiron-fume',
+  'monyo-tilapia-frite',
+  'tilapia-frite',
+  'omelette',
+]);
 
 export const HERO_SCRIPTS = {
   'tilapia-braise': 'Braisé au feu de bois',
