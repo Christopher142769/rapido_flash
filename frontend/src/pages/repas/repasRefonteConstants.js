@@ -77,17 +77,17 @@ export function masculineSizeLabel(label) {
 export const REFONTE_SLUG_ASSETS = {
   'tilapia-braise': { img: 'tilapia-braise', cut: 'tilapia-braise' },
   shawarma: { img: 'shawarma-2', cut: 'shawarma-2' },
-  'brochette-de-poisson': { img: 'brochette', cut: 'brochette' },
-  brochette: { img: 'brochette', cut: 'brochette' },
+  'brochette-de-poisson': { img: 'brochette-photo.jpg', cut: null },
+  brochette: { img: 'brochette-photo.jpg', cut: null },
   'poisson-pane': { img: 'poisson-pane', cut: 'poisson-pane' },
-  'monyo-machoiron-fume': { img: 'machoiron-fume', cut: 'machoiron-fume' },
-  'machoiron-fume': { img: 'machoiron-fume', cut: 'machoiron-fume' },
+  'monyo-machoiron-fume': { img: 'machoiron-fume-photo.jpg', cut: null },
+  'machoiron-fume': { img: 'machoiron-fume-photo.jpg', cut: null },
   'salade-king-fish': { img: 'salade-2', cut: 'salade' },
   salade: { img: 'salade-2', cut: 'salade' },
   'filet-poisson-pouiller': { img: 'filet-poele', cut: 'filet-poele' },
   'filet-poele': { img: 'filet-poele', cut: 'filet-poele' },
-  'monyo-tilapia-frite': { img: 'tilapia-frite', cut: 'tilapia-frite' },
-  'tilapia-frite': { img: 'tilapia-frite', cut: 'tilapia-frite' },
+  'monyo-tilapia-frite': { img: 'tilapia-frite-photo.jpg', cut: null },
+  'tilapia-frite': { img: 'tilapia-frite-photo.jpg', cut: null },
   'machoiron-braise': { img: 'machoiron-braise', cut: 'machoiron-braise' },
   rillettes: { img: 'rillettes', cut: 'rillettes' },
   'rillettes-de-poissons': { img: 'rillettes', cut: 'rillettes' },
@@ -154,17 +154,13 @@ export function cutSrc(id) {
 
 export function cardImgSrc(base) {
   if (!base) return '';
-  if (String(base).endsWith('.svg')) return `${REFONTE_IMG}${base}`;
+  if (/\.(svg|png|jpe?g|webp)$/i.test(String(base))) return `${REFONTE_IMG}${base}`;
   return `${REFONTE_IMG}${base}.jpg`;
 }
 
 /** Photos supplémentaires, même série que les cartes /repas. */
 const REFONTE_GALLERY_EXTRAS = {
   shawarma: ['shawarma'],
-  'brochette-de-poisson': ['brochette-2'],
-  brochette: ['brochette-2'],
-  'monyo-machoiron-fume': ['machoiron-fume-food'],
-  'machoiron-fume': ['machoiron-fume-food'],
   'machoiron-braise': ['machoiron-braise-food'],
   'salade-king-fish': ['salade'],
   salade: ['salade'],
