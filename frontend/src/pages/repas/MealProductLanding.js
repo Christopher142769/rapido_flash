@@ -33,7 +33,7 @@ import {
   submitMealOrderToApi,
 } from '../../utils/mealOrder';
 import { mealConfirmationPath } from '../../utils/mealPaths';
-import { displayProductName } from './repasRefonteConstants';
+import { displayProductDesc, displayProductName } from './repasRefonteConstants';
 import {
   trackCtaClick,
   trackProductView,
@@ -446,7 +446,11 @@ export default function MealProductLanding() {
           <form id={CHECKOUT_FORM_ID} className="shop-pdp-checkout" onSubmit={requestOrder} noValidate>
             <p className="shop-pdp-buybox-brand">Rapido Repas</p>
             <h1 className="shop-pdp-buybox-title">{productDisplayName}</h1>
-            {product.shortDescription ? <p className="shop-pdp-buybox-sub">{product.shortDescription}</p> : null}
+            {displayProductDesc(product.slug, product.shortDescription) ? (
+              <p className="shop-pdp-buybox-sub">
+                {displayProductDesc(product.slug, product.shortDescription)}
+              </p>
+            ) : null}
 
             {product.showDeliveryNotice !== false ? (
               <ShopDeliveryNotice

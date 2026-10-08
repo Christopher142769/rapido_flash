@@ -31,6 +31,21 @@ export function displayProductName(slug, fallback = '') {
   return REFONTE_PRODUCT_NAMES[key] || String(fallback || '').trim() || key;
 }
 
+/** Descriptions affichées (prioritaires sur la base). */
+export const REFONTE_PRODUCT_DESCS = {
+  'brochette-de-poisson': 'Brochette de poisson marinée au feu, idéale avec frites ou attiéké.',
+  brochette: 'Brochette de poisson marinée au feu, idéale avec frites ou attiéké.',
+  'machoiron-braise': 'Machoiron braisé entier et légumes.',
+  'salade-king-fish':
+    'Salade fraîche, poisson fumé, tomate, carotte, œufs, concombre et sauce maison.',
+  salade: 'Salade fraîche, poisson fumé, tomate, carotte, œufs, concombre et sauce maison.',
+};
+
+export function displayProductDesc(slug, fallback = '') {
+  const key = String(slug || '').trim().toLowerCase();
+  return REFONTE_PRODUCT_DESCS[key] || String(fallback || '').trim();
+}
+
 export const REFONTE_SLUG_ASSETS = {
   'tilapia-braise': { img: 'tilapia-braise', cut: 'tilapia-braise' },
   shawarma: { img: 'shawarma-2', cut: 'shawarma-2' },

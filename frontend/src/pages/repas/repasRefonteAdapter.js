@@ -5,6 +5,7 @@ import {
   cutSrc,
   cardImgSrc,
   displayProductName,
+  displayProductDesc,
 } from './repasRefonteConstants';
 
 export function refonteCategoryId(product) {
@@ -112,7 +113,7 @@ export function adaptProduct(product, mediaBase) {
     name: displayProductName(slug, product.name),
     cat: refonteCategoryId(product),
     catLabel: product.category || '',
-    desc: product.shortDescription || product.description || '',
+    desc: displayProductDesc(slug, product.shortDescription || product.description || ''),
     cardImg: imgs.cardImg,
     cutImg: imgs.heroImg,
     ...pb,
