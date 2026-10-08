@@ -33,7 +33,8 @@ import {
   submitMealOrderToApi,
 } from '../../utils/mealOrder';
 import { mealConfirmationPath } from '../../utils/mealPaths';
-import { displayProductDesc, displayProductName } from './repasRefonteConstants';
+import { displayProductDesc, displayProductName, refonteGalleryUrls } from './repasRefonteConstants';
+import { patchMealProduct } from './repasRefonteAdapter';
 import {
   trackCtaClick,
   trackProductView,
@@ -98,7 +99,7 @@ export default function MealProductLanding() {
         params: { _t: Date.now() },
       })
       .then((res) => {
-        setProduct(res.data);
+        setProduct(patchMealProduct(res.data));
         setError('');
         const init = {};
         (res.data.accompagnements || []).forEach((a) => {
