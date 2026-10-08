@@ -213,7 +213,11 @@ export default function MealProductLanding() {
     return () => clearTimeout(id);
   }, [catalogueUrgency.isLive, productCountdownLive, productCountdownEndsAt]);
 
-  const gallery = useMemo(() => (product ? getProductGallery(product) : []), [product]);
+  const gallery = useMemo(() => {
+    if (!product) return [];
+    const sameAsMenu = refonteGalleryUrls(product.slug);
+    return sameAsMenu.length ? sameAsMenu : getProductGallery(product);
+  }, [product]);
   const canOrder = !!getShopWhatsAppDigits() && product?.available !== false;
   const unitPrice = promoState?.isPromoLive ? promoState.promoPrice : product?.basePrice;
   const unitBasePrice = product?.basePrice ?? 0;

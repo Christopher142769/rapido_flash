@@ -157,3 +157,25 @@ export function cardImgSrc(base) {
   if (String(base).endsWith('.svg')) return `${REFONTE_IMG}${base}`;
   return `${REFONTE_IMG}${base}.jpg`;
 }
+
+/** Photos supplémentaires, même série que les cartes /repas. */
+const REFONTE_GALLERY_EXTRAS = {
+  shawarma: ['shawarma'],
+  'brochette-de-poisson': ['brochette-2'],
+  brochette: ['brochette-2'],
+  'monyo-machoiron-fume': ['machoiron-fume-food'],
+  'machoiron-fume': ['machoiron-fume-food'],
+  'machoiron-braise': ['machoiron-braise-food'],
+  'salade-king-fish': ['salade'],
+  salade: ['salade'],
+};
+
+/** Galerie fiche produit = mêmes photos que les cartes /repas. */
+export function refonteGalleryUrls(slug) {
+  const key = String(slug || '').trim().toLowerCase();
+  const mapped = REFONTE_SLUG_ASSETS[key];
+  if (!mapped?.img) return [];
+  const extras = REFONTE_GALLERY_EXTRAS[key] || [];
+  const urls = [cardImgSrc(mapped.img), ...extras.map((id) => cardImgSrc(id))];
+  return [...new Set(urls.filter(Boolean))];
+}
