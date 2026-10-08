@@ -3,7 +3,7 @@ export const REFONTE_IMG = '/images/repas/refonte/';
 
 /** Noms catalogue officiels (hero + cartes) — source de vérité affichage. */
 export const REFONTE_PRODUCT_NAMES = {
-  shawarma: 'Shawarma',
+  shawarma: 'Chawarma',
   'poisson-pane': 'Poisson pané',
   'filet-poisson-pouiller': 'Filet de poisson poêlé',
   'filet-poele': 'Filet de poisson poêlé',
@@ -44,6 +44,34 @@ export const REFONTE_PRODUCT_DESCS = {
 export function displayProductDesc(slug, fallback = '') {
   const key = String(slug || '').trim().toLowerCase();
   return REFONTE_PRODUCT_DESCS[key] || String(fallback || '').trim();
+}
+
+/** Accompagnement : « Légumes sautés » (pluriel). */
+export function displaySideName(name) {
+  const raw = String(name || '').trim();
+  if (/l[ée]gumes?\s+saut[ée]s?/i.test(raw)) return 'Légumes sautés';
+  return raw;
+}
+
+/** Tailles de poisson au masculin : Petit, Moyen, Grand. */
+export function masculineSizeLabel(label) {
+  const raw = String(label || '').trim();
+  const head = raw.split(/\s*[—–-]\s*/)[0].trim();
+  const key = head
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  const map = {
+    petit: 'Petit',
+    petite: 'Petit',
+    moyen: 'Moyen',
+    moyenne: 'Moyen',
+    monyen: 'Moyen',
+    grand: 'Grand',
+    grande: 'Grand',
+  };
+  if (!map[key]) return raw;
+  return raw.replace(head, map[key]);
 }
 
 export const REFONTE_SLUG_ASSETS = {

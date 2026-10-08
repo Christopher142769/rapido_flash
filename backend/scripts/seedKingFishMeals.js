@@ -14,7 +14,7 @@ const IMG = '/images/repas/refonte';
 
 const SIDES = [
   { name: 'Riz', price: 500 },
-  { name: 'Légume sauté', price: 500 },
+  { name: 'Légumes sautés', price: 500 },
   { name: 'Akassa', price: 500 },
   { name: 'Attiéké', price: 500 },
   { name: 'Aloko', price: 500 },
@@ -29,7 +29,7 @@ const FISH_SIDES = SIDES;
 const PRODUCTS = [
   {
     slug: 'shawarma',
-    name: 'Shawarma',
+    name: 'Chawarma',
     category: 'Street food',
     basePrice: 2000,
     shortDescription: 'Wrap généreux, viande tendre, sauce crémeuse et légumes croquants.',
@@ -147,6 +147,7 @@ const PRODUCTS = [
     mainImage: `${IMG}/omelette.jpg`,
     images: [`${IMG}/omelette.jpg`],
     accompagnements: [
+      { name: 'Légumes sautés', price: 500, required: false, available: true, maxQuantity: 3 },
       { name: 'Riz', price: 500, required: false, available: true, maxQuantity: 3 },
       { name: 'Frites', price: 1000, required: false, available: true, maxQuantity: 3 },
     ],

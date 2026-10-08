@@ -6,6 +6,8 @@ import {
   cardImgSrc,
   displayProductName,
   displayProductDesc,
+  displaySideName,
+  masculineSizeLabel,
 } from './repasRefonteConstants';
 
 export function refonteCategoryId(product) {
@@ -94,7 +96,7 @@ export function priceBundle(product) {
       return Math.round(unit + add);
     });
     const sizes = sizeGroup.choices.map((ch) => {
-      const raw = String(ch.label || ch.name || 'Option');
+      const raw = masculineSizeLabel(String(ch.label || ch.name || 'Option'));
       return raw.split(/\s*[—–-]\s*/)[0].trim() || raw;
     });
     return { prices, sizes, unit: prices[0], compareAt, promo, discountPercent };
@@ -102,14 +104,35 @@ export function priceBundle(product) {
   return { prices: [unit], sizes: null, unit, compareAt, promo, discountPercent };
 }
 
+export function patchMealProduct(product) {
+  const slug = product.slug;
+  return {
+    ...product,
+    name: displayProductName(slug, product.name),
+    shortDescription: displayProductDesc(slug, product.shortDescription || product.description || ''),
+    accompagnements: (product.accompagnements || []).map((a) => ({
+      ...a,
+      name: displaySideName(a.name),
+    })),
+    optionGroups: (product.optionGroups || []).map((g) => ({
+      ...g,
+      choices: (g.choices || []).map((c) => ({
+        ...c,
+        label: masculineSizeLabel(c.label),
+      })),
+    })),
+  };
+}
+
 export function adaptProduct(product, mediaBase) {
   const slug = product.slug;
-  const imgs = resolveProductImages(product, mediaBase, slug);
-  const pb = priceBundle(product);
+  const patched = patchMealProduct(product);
+  const imgs = resolveProductImages(patched, mediaBase, slug);
+  const pb = priceBundle(patched);
 
   return {
     id: slug,
-    product,
+    product: patched,
     name: displayProductName(slug, product.name),
     cat: refonteCategoryId(product),
     catLabel: product.category || '',
