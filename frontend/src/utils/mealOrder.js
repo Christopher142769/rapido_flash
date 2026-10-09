@@ -38,6 +38,7 @@ export async function submitMealOrderToApi(cartItems, customer, options = {}) {
           id: a.id,
           name: a.name,
           quantity: a.quantity,
+          role: a.role === 'extra' ? 'extra' : 'side',
         })),
         options: (it.options || []).map((o) => ({
           groupId: o.groupId,
@@ -78,10 +79,9 @@ export function buildMealWhatsAppMessage(order) {
       lines.push('', `*${o.groupName} :* ${o.choiceLabel}${suffix}`);
     });
     (it.accompagnements || []).forEach((a) => {
-      lines.push(
-        '',
-        `*Accompagnement :* ${a.name} ×${a.quantity} (${formatPriceXof(a.price * a.quantity)})`
-      );
+      const label = a.role === 'extra' ? 'Supplément' : 'Accompagnement';
+      const amount = Number(a.price) > 0 ? formatPriceXof(a.price * a.quantity) : 'offert';
+      lines.push('', `*${label} :* ${a.name} ×${a.quantity} (${amount})`);
     });
     if (it.specifications) {
       lines.push('', `*Spécifications :* ${it.specifications}`);

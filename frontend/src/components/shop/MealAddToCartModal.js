@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { formatPriceXof } from '../../utils/shopPromo';
 import MealOptionGroups from './MealOptionGroups';
+import MealSidePicker from './MealSidePicker';
+import { buildSideLines, productSideOptions } from '../../pages/repas/mealSides';
 import {
   buildOptionSelection,
   toggleOptionChoice,
@@ -10,15 +12,6 @@ import {
 } from '../../utils/mealOptions';
 import './MealAddToCartModal.css';
 
-function buildAccDraft(options, initialQty = {}) {
-  const draft = {};
-  (options || []).forEach((a) => {
-    const key = String(a._id || a.name);
-    draft[key] = Math.max(0, Number(initialQty[key]) || 0);
-  });
-  return draft;
-}
-
 export default function MealAddToCartModal({
   open,
   onClose,
@@ -26,16 +19,16 @@ export default function MealAddToCartModal({
   onConfirm,
   ctaLabel = 'Ajouter au panier',
 }) {
-  const options = product?.accompagnements || [];
-  const availableOptions = options.filter((a) => a.available !== false);
-  const hasAcc = availableOptions.length > 0;
+  const sideOptions = productSideOptions(product);
+  const hasAcc = sideOptions.length > 0;
   const optionGroups = product?.optionGroups || [];
   const hasOptions = optionGroups.length > 0;
   const allowSpec = product?.allowSpecifications !== false;
   const unitPrice = product?.isPromoLive ? product.promoPrice : product?.basePrice;
 
   const [quantity, setQuantity] = useState(1);
-  const [accDraft, setAccDraft] = useState(() => buildAccDraft(options));
+  const [sideKey, setSideKey] = useState('');
+  const [extraQty, setExtraQty] = useState({});
   const [optSelection, setOptSelection] = useState(() => buildOptionSelection(optionGroups));
   const [specifications, setSpecifications] = useState('');
   const [error, setError] = useState('');
@@ -43,7 +36,8 @@ export default function MealAddToCartModal({
   useEffect(() => {
     if (!open || !product) return;
     setQuantity(1);
-    setAccDraft(buildAccDraft(product.accompagnements || []));
+    setSideKey('');
+    setExtraQty({});
     setOptSelection(buildOptionSelection(product.optionGroups || []));
     setSpecifications('');
     setError('');
@@ -63,22 +57,10 @@ export default function MealAddToCartModal({
     };
   }, [open, onClose]);
 
-  const selectedAcc = useMemo(() => {
-    return (options || [])
-      .map((a) => {
-        if (a.available === false) return null;
-        const key = String(a._id || a.name);
-        const q = Number(accDraft[key]) || 0;
-        if (q < 1) return null;
-        return {
-          id: a._id,
-          name: a.name,
-          price: Number(a.price) || 0,
-          quantity: q,
-        };
-      })
-      .filter(Boolean);
-  }, [options, accDraft]);
+  const selectedAcc = useMemo(
+    () => buildSideLines(product, sideKey, extraQty),
+    [product, sideKey, extraQty]
+  );
 
   const selectedOptions = useMemo(
     () => selectedOptionsList(optionGroups, optSelection),
@@ -91,12 +73,6 @@ export default function MealAddToCartModal({
 
   if (!open || !product) return null;
 
-  const setAccQty = (key, next, maxQuantity) => {
-    const max = Math.max(1, Number(maxQuantity) || 10);
-    setAccDraft((d) => ({ ...d, [key]: Math.min(max, Math.max(0, next)) }));
-    setError('');
-  };
-
   const handleToggleOption = (group, choice) => {
     setOptSelection((s) => toggleOptionChoice(s, group, choice));
     setError('');
@@ -107,20 +83,9 @@ export default function MealAddToCartModal({
       setError('Choisissez au moins 1 plat.');
       return;
     }
-    if (hasAcc && selectedAcc.length < 1) {
-      setError('Choisissez au moins un accompagnement pour ce plat.');
+    if (hasAcc && !selectedAcc.some((a) => a.role === 'side')) {
+      setError('Choisissez un seul accompagnement.');
       return;
-    }
-    for (const req of availableOptions.filter((a) => a.required)) {
-      const found = selectedAcc.find(
-        (a) =>
-          (a.id && String(a.id) === String(req._id)) ||
-          String(a.name).toLowerCase() === String(req.name).toLowerCase()
-      );
-      if (!found) {
-        setError(`Accompagnement requis : ${req.name}`);
-        return;
-      }
     }
     const optError = validateOptionSelection(optionGroups, optSelection);
     if (optError) {
@@ -170,61 +135,18 @@ export default function MealAddToCartModal({
           </div>
         </div>
 
-        {options.length ? (
-          <div className="meal-atc-acc">
-            <h3>Accompagnements</h3>
-            <p>
-              {hasAcc
-                ? 'Obligatoire — choisissez au moins un accompagnement.'
-                : 'Tous les accompagnements sont momentanément indisponibles.'}
-            </p>
-            {options.map((a) => {
-              const key = String(a._id || a.name);
-              const q = accDraft[key] || 0;
-              const unavailable = a.available === false;
-              return (
-                <div
-                  key={key}
-                  className={`meal-atc-acc-row${q > 0 ? ' is-selected' : ''}${
-                    unavailable ? ' is-unavailable' : ''
-                  }`}
-                >
-                  <div>
-                    <strong>{a.name}</strong>
-                    <span>
-                      {unavailable ? 'Indisponible' : formatPriceXof(a.price)}
-                    </span>
-                  </div>
-                  <div className="meal-atc-qty-ctrl">
-                    <button
-                      type="button"
-                      aria-label={`Retirer ${a.name}`}
-                      disabled={unavailable}
-                      onClick={() => {
-                        if (unavailable) return;
-                        setAccQty(key, q - 1, a.maxQuantity);
-                      }}
-                    >
-                      −
-                    </button>
-                    <strong>{q}</strong>
-                    <button
-                      type="button"
-                      aria-label={`Ajouter ${a.name}`}
-                      disabled={unavailable}
-                      onClick={() => {
-                        if (unavailable) return;
-                        setAccQty(key, q + 1, a.maxQuantity);
-                      }}
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : null}
+        <MealSidePicker
+          sides={sideOptions}
+          sideKey={sideKey}
+          onSideKey={(key) => {
+            setSideKey(key);
+            setError('');
+          }}
+          extraQty={extraQty}
+          onExtraQty={(key, next) => setExtraQty((current) => ({ ...current, [key]: next }))}
+          highlightSide={false}
+          sideError={hasAcc && error && !selectedAcc.some((a) => a.role === 'side') ? error : ''}
+        />
 
         {hasOptions ? (
           <div className="meal-atc-options">

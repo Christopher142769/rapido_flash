@@ -55,12 +55,13 @@ export function addMealToCart(product, quantity, accompagnements = [], options =
       name: a.name,
       price: Number(a.price) || 0,
       quantity: Math.max(1, Math.round(Number(a.quantity) || 1)),
+      role: a.role === 'extra' ? 'extra' : 'side',
     }));
   const normalizedOpts = normalizeOptions(options);
   const spec = String(specifications || '').trim().slice(0, 500);
 
   const accKey = normalizedAcc
-    .map((a) => `${a.id || a.name}:${a.quantity}`)
+    .map((a) => `${a.role}:${a.id || a.name}:${a.quantity}`)
     .sort()
     .join('|');
   const optKey = normalizedOpts
@@ -74,10 +75,10 @@ export function addMealToCart(product, quantity, accompagnements = [], options =
   if (existing) {
     existing.quantity += qty;
     const byId = new Map(
-      (existing.accompagnements || []).map((a) => [String(a.id || a.name), { ...a }])
+      (existing.accompagnements || []).map((a) => [`${a.role}:${a.id || a.name}`, { ...a }])
     );
     for (const a of normalizedAcc) {
-      const key = String(a.id || a.name);
+      const key = `${a.role}:${a.id || a.name}`;
       const prev = byId.get(key);
       if (prev) {
         prev.quantity += a.quantity;

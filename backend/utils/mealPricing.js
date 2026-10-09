@@ -8,6 +8,40 @@ function isItemAvailable(item) {
   return item?.available !== false;
 }
 
+const CANONICAL_SIDES = [
+  'Riz',
+  'Légumes sautés',
+  'Akassa',
+  'Attiéké',
+  'Aloko',
+  'Banane bouillie',
+  'Spaghetti',
+  'Wassa wassa',
+  'Frites',
+];
+
+function normSideName(name) {
+  return String(name || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function isFriesName(name) {
+  return /frites?/.test(normSideName(name));
+}
+
+function mealSidePrice(name, role) {
+  if (role === 'extra') return isFriesName(name) ? 1000 : 500;
+  return isFriesName(name) ? 500 : 0;
+}
+
+function findCanonicalSide(name) {
+  const key = normSideName(name);
+  return CANONICAL_SIDES.find((side) => normSideName(side) === key) || null;
+}
+
 function normalizeAccompagnements(list) {
   if (!Array.isArray(list)) return [];
   return list
@@ -122,54 +156,65 @@ function buildMealOrderLine(product, line) {
   }
 
   const { promoState, unitPrice } = getMealUnitPrice(product);
-  const catalog = product.accompagnements || [];
-  const availableCatalog = catalog.filter(isItemAvailable);
-  const selected = Array.isArray(line?.accompagnements) ? line.accompagnements : [];
+  const catalog = (product.accompagnements || []).filter(isItemAvailable);
+  const selected = (Array.isArray(line?.accompagnements) ? line.accompagnements : [])
+    .map((s) => ({
+      ...s,
+      quantity: Math.round(Number(s.quantity) || 0),
+      role: s.role === 'extra' ? 'extra' : s.role === 'side' ? 'side' : '',
+    }))
+    .filter((s) => s.quantity >= 1);
 
-  const requiredOnes = availableCatalog.filter((a) => a.required);
-  for (const req of requiredOnes) {
-    const pick = selected.find(
-      (s) =>
-        (s.id && String(s.id) === String(req._id)) ||
-        String(s.name || '').trim().toLowerCase() === String(req.name).trim().toLowerCase()
-    );
-    const qty = Math.round(Number(pick?.quantity) || 0);
-    if (qty < 1) {
-      return { error: `Accompagnement requis : ${req.name}` };
-    }
+  const explicit = selected.some((s) => s.role);
+  const classified = explicit
+    ? selected.map((s) => ({ ...s, role: s.role || 'side' }))
+    : selected.map((s, index) => ({ ...s, role: index === 0 ? 'side' : 'extra' }));
+
+  const sides = classified.filter((s) => s.role === 'side');
+  const extras = classified.filter((s) => s.role === 'extra');
+
+  if (catalog.length > 0 && sides.length !== 1) {
+    return { error: 'Choisissez un seul accompagnement' };
+  }
+  if (catalog.length === 0 && sides.length > 0) {
+    return { error: 'Ce plat n’a pas d’accompagnement' };
   }
 
   const accompagnements = [];
   let accTotal = 0;
 
-  for (const s of selected) {
-    const qty = Math.round(Number(s.quantity) || 0);
-    if (qty < 1) continue;
+  if (sides.length === 1) {
+    const s = sides[0];
     const match = catalog.find(
       (a) =>
         (s.id && String(s.id) === String(a._id)) ||
-        String(s.name || '').trim().toLowerCase() === String(a.name).trim().toLowerCase()
+        normSideName(a.name) === normSideName(s.name)
     );
-    if (!match) {
-      return { error: `Accompagnement inconnu : ${s.name || s.id}` };
-    }
-    if (!isItemAvailable(match)) {
-      return { error: `Accompagnement indisponible : ${match.name}` };
-    }
-    const maxQ = Math.min(99, Math.max(1, Number(match.maxQuantity) || 10));
-    const safeQty = Math.min(maxQ, qty);
-    const price = Math.max(0, Math.round(Number(match.price) || 0));
+    if (!match) return { error: `Accompagnement inconnu : ${s.name || s.id}` };
+    const price = mealSidePrice(match.name, 'side');
     accompagnements.push({
       accompagnementId: String(match._id || ''),
       name: match.name,
       price,
-      quantity: safeQty,
+      quantity: 1,
+      role: 'side',
     });
-    accTotal += price * safeQty;
+    accTotal += price;
   }
 
-  if (availableCatalog.length > 0 && accompagnements.length === 0) {
-    return { error: 'Choisissez au moins un accompagnement pour ce plat' };
+  for (const s of extras) {
+    const canonical = findCanonicalSide(s.name);
+    if (!canonical) return { error: `Supplément inconnu : ${s.name || s.id}` };
+    const safeQty = Math.min(5, s.quantity);
+    const price = mealSidePrice(canonical, 'extra');
+    accompagnements.push({
+      accompagnementId: '',
+      name: canonical,
+      price,
+      quantity: safeQty,
+      role: 'extra',
+    });
+    accTotal += price * safeQty;
   }
 
   const optionResult = resolveMealOptions(product, line);

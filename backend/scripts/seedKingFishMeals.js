@@ -13,16 +13,16 @@ const MealShopSettings = require('../models/MealShopSettings');
 const IMG = '/images/repas/refonte';
 
 const SIDES = [
-  { name: 'Riz', price: 500 },
-  { name: 'Légumes sautés', price: 500 },
-  { name: 'Akassa', price: 500 },
-  { name: 'Attiéké', price: 500 },
-  { name: 'Aloko', price: 500 },
-  { name: 'Banane bouillie', price: 500 },
-  { name: 'Spaghetti', price: 500 },
-  { name: 'Wassa wassa', price: 500 },
-  { name: 'Frites', price: 1000 },
-].map((a) => ({ ...a, required: false, available: true, maxQuantity: 5 }));
+  { name: 'Riz', price: 0 },
+  { name: 'Légumes sautés', price: 0 },
+  { name: 'Akassa', price: 0 },
+  { name: 'Attiéké', price: 0 },
+  { name: 'Aloko', price: 0 },
+  { name: 'Banane bouillie', price: 0 },
+  { name: 'Spaghetti', price: 0 },
+  { name: 'Wassa wassa', price: 0 },
+  { name: 'Frites', price: 500 },
+].map((a) => ({ ...a, required: false, available: true, maxQuantity: 1 }));
 
 const FISH_SIDES = SIDES;
 
@@ -147,9 +147,9 @@ const PRODUCTS = [
     mainImage: `${IMG}/omelette-cut.webp`,
     images: [`${IMG}/omelette-cut.webp`],
     accompagnements: [
-      { name: 'Légumes sautés', price: 500, required: false, available: true, maxQuantity: 3 },
-      { name: 'Riz', price: 500, required: false, available: true, maxQuantity: 3 },
-      { name: 'Frites', price: 1000, required: false, available: true, maxQuantity: 3 },
+      { name: 'Légumes sautés', price: 0, required: false, available: true, maxQuantity: 1 },
+      { name: 'Riz', price: 0, required: false, available: true, maxQuantity: 1 },
+      { name: 'Frites', price: 500, required: false, available: true, maxQuantity: 1 },
     ],
     sortOrder: 90,
   },

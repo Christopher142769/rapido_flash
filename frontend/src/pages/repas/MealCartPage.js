@@ -207,8 +207,8 @@ export default function MealCartPage() {
                   ))}
                   {(it.accompagnements || []).map((a, i) => (
                     <span key={i} className="meal-cart-acc">
-                      + {a.name} ×{a.quantity}
-                      {a.price != null ? ` · ${formatPriceXof(a.price * a.quantity)}` : ''}
+                      {a.role === 'extra' ? 'Supplément' : 'Accompagnement'} · {a.name} ×{a.quantity}
+                      {Number(a.price) > 0 ? ` · ${formatPriceXof(a.price * a.quantity)}` : ' · Offert'}
                     </span>
                   ))}
                   {it.specifications ? (

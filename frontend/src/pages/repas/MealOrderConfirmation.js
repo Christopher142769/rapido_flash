@@ -112,9 +112,14 @@ export default function MealOrderConfirmation() {
                   {(it.accompagnements || []).map((a, ai) => (
                     <div key={`${it._id || idx}-acc-${ai}`} className="shop-confirm-item-acc">
                       <dt>
-                        + {a.name} ×{a.quantity}
+                        {a.role === 'extra' ? 'Supplément' : 'Accompagnement'} · {a.name}
+                        {Number(a.quantity) > 1 ? ` ×${a.quantity}` : ''}
                       </dt>
-                      <dd>{formatPriceXof((Number(a.price) || 0) * (Number(a.quantity) || 0))}</dd>
+                      <dd>
+                        {Number(a.price) > 0
+                          ? formatPriceXof((Number(a.price) || 0) * (Number(a.quantity) || 0))
+                          : 'Offert'}
+                      </dd>
                     </div>
                   ))}
                   {it.specifications ? (

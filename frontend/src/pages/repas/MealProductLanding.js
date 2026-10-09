@@ -11,7 +11,7 @@ import ShopDeliveryNotice, {
 import { getTodayDateKey } from '../../utils/shopDeliveryDate';
 import ShopQuantityPicker from '../../components/shop/ShopQuantityPicker';
 import ShopQuantityModal from '../../components/shop/ShopQuantityModal';
-import MealAccompagnementModal from '../../components/shop/MealAccompagnementModal';
+import MealSidePicker from '../../components/shop/MealSidePicker';
 import MealOptionGroups from '../../components/shop/MealOptionGroups';
 import ShopTrustCards from '../../components/shop/ShopTrustCards';
 import ShopPrivacyFooter from '../../components/shop/ShopPrivacyFooter';
@@ -40,6 +40,7 @@ import {
   refonteGalleryUrls,
 } from './repasRefonteConstants';
 import { adaptProducts, patchMealProduct } from './repasRefonteAdapter';
+import { buildSideLines, productSideOptions } from './mealSides';
 import {
   trackCtaClick,
   trackProductView,
@@ -74,11 +75,11 @@ export default function MealProductLanding() {
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [qtyModalOpen, setQtyModalOpen] = useState(false);
-  const [accModalOpen, setAccModalOpen] = useState(false);
-  const [pendingOrderQty, setPendingOrderQty] = useState(null);
   const [highlightQty, setHighlightQty] = useState(false);
   const [highlightAcc, setHighlightAcc] = useState(false);
-  const [accQty, setAccQty] = useState({});
+  const [sideKey, setSideKey] = useState('');
+  const [extraQty, setExtraQty] = useState({});
+  const [sideError, setSideError] = useState('');
   const [optSelection, setOptSelection] = useState({});
   const [specifications, setSpecifications] = useState('');
   const [optError, setOptError] = useState('');
@@ -107,11 +108,9 @@ export default function MealProductLanding() {
       .then((res) => {
         setProduct(patchMealProduct(res.data));
         setError('');
-        const init = {};
-        (res.data.accompagnements || []).forEach((a) => {
-          init[a._id || a.name] = a.required ? 1 : 0;
-        });
-        setAccQty(init);
+        setSideKey('');
+        setExtraQty({});
+        setSideError('');
         setOptSelection(buildOptionSelection(res.data.optionGroups || []));
         setSpecifications('');
         return res.data;
@@ -242,16 +241,11 @@ export default function MealProductLanding() {
   const shopDeliveryFee = Math.max(0, Number(shopSettings?.deliveryFee) || 0);
   const deliveryFee = promoState?.freeDelivery ? 0 : shopDeliveryFee;
 
-  const selectedAcc = useMemo(() => {
-    return (product?.accompagnements || [])
-      .map((a) => {
-        const key = a._id || a.name;
-        const q = Number(accQty[key] || 0);
-        if (q < 1) return null;
-        return { id: a._id, name: a.name, price: Number(a.price) || 0, quantity: q };
-      })
-      .filter(Boolean);
-  }, [product, accQty]);
+  const sideOptions = useMemo(() => productSideOptions(product), [product]);
+  const selectedAcc = useMemo(
+    () => buildSideLines(product, sideKey, extraQty),
+    [product, sideKey, extraQty]
+  );
 
   const accTotal = selectedAcc.reduce((s, a) => s + a.price * a.quantity, 0);
 
@@ -285,14 +279,12 @@ export default function MealProductLanding() {
     });
   };
 
-  const hasAccompagnements = (product?.accompagnements || []).length > 0;
-  const hasSelectedAcc = selectedAcc.length > 0;
+  const hasAccompagnements = sideOptions.length > 0;
+  const hasSelectedAcc = selectedAcc.some((a) => a.role === 'side');
 
-  const openAccModal = (orderQuantity) => {
-    setPendingOrderQty(orderQuantity);
-    setQtyModalOpen(false);
+  const focusSide = () => {
     setHighlightAcc(true);
-    setAccModalOpen(true);
+    setSideError('Choisissez un accompagnement pour continuer.');
     document.getElementById('meal-acc-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
@@ -301,40 +293,14 @@ export default function MealProductLanding() {
     if (Object.keys(nextErrors).length) {
       setFormErrors(nextErrors);
       setQtyModalOpen(false);
-      setAccModalOpen(false);
       document.getElementById('shop-order-fields')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
 
-    const availableAcc = (product?.accompagnements || []).filter((a) => a.available !== false);
-    const accList =
-      accOverride ||
-      (product?.accompagnements || [])
-        .map((a) => {
-          if (a.available === false) return null;
-          const key = a._id || a.name;
-          const q = Number(accQty[key] || 0);
-          if (q < 1) return null;
-          return { id: a._id, name: a.name, price: Number(a.price) || 0, quantity: q };
-        })
-        .filter(Boolean);
-
-    if (availableAcc.length > 0 && accList.length === 0) {
-      openAccModal(orderQuantity);
+    const accList = accOverride || buildSideLines(product, sideKey, extraQty);
+    if (hasAccompagnements && !accList.some((a) => a.role === 'side')) {
+      focusSide();
       return;
-    }
-
-    const required = availableAcc.filter((a) => a.required);
-    for (const r of required) {
-      const found = accList.find(
-        (a) =>
-          (a.id && String(a.id) === String(r._id)) ||
-          String(a.name).toLowerCase() === String(r.name).toLowerCase()
-      );
-      if (!found || found.quantity < 1) {
-        openAccModal(orderQuantity);
-        return;
-      }
     }
 
     const optError = validateOptionSelection(product?.optionGroups || [], optSelection);
@@ -380,8 +346,6 @@ export default function MealProductLanding() {
         value: Number(saved.totalPrice || saved.total || 0) || 0,
       });
       setQtyModalOpen(false);
-      setAccModalOpen(false);
-      setPendingOrderQty(null);
       navigate(mealConfirmationPath(slug));
     } catch (err) {
       alert(err.message || 'Impossible d’enregistrer la commande. Réessayez.');
@@ -401,7 +365,7 @@ export default function MealProductLanding() {
       return;
     }
     if (hasAccompagnements && !hasSelectedAcc) {
-      openAccModal(quantity);
+      focusSide();
       return;
     }
     void completeOrder(quantity);
@@ -496,18 +460,6 @@ export default function MealProductLanding() {
                       {formatPriceXof(unitPrice)} × {quantity}
                     </span>
                   ) : null}
-                  {selectedAcc.length ? (
-                    <ul className="meal-pdp-buybox-acc-list">
-                      {selectedAcc.map((a) => (
-                        <li key={a.id || a.name}>
-                          <span>
-                            {a.name} ×{a.quantity}
-                          </span>
-                          <strong>{formatPriceXof(a.price * a.quantity)}</strong>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
                   {promoState?.freeDelivery ? (
                     <span className="shop-pdp-buybox-delivery-info shop-pdp-buybox-delivery-info--free">
                       Livraison gratuite
@@ -533,6 +485,21 @@ export default function MealProductLanding() {
                 </>
               )}
             </div>
+
+            {selectedAcc.length ? (
+              <ul className="meal-pdp-buybox-acc-list">
+                {selectedAcc.map((a) => (
+                  <li key={`${a.role}-${a.name}`}>
+                    <span>
+                      {a.role === 'extra' ? 'Supplément · ' : ''}
+                      {a.name}
+                      {a.quantity > 1 ? ` ×${a.quantity}` : ''}
+                    </span>
+                    <strong>{a.price > 0 ? formatPriceXof(a.price * a.quantity) : 'Offert'}</strong>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
 
             <div className="shop-pdp-buybox-tags">
               {product.category ? <span className="shop-pdp-tag">{product.category}</span> : null}
@@ -578,68 +545,19 @@ export default function MealProductLanding() {
               highlight={highlightQty && !hasQuantity}
             />
 
-            {(product.accompagnements || []).length ? (
-              <div
-                id="meal-acc-section"
-                className={`meal-pdp-acc${highlightAcc && !hasSelectedAcc ? ' meal-pdp-acc--highlight' : ''}`}
-              >
-                <h3 className="meal-pdp-acc-title">Accompagnements</h3>
-                <p className="meal-pdp-acc-lead">
-                  Obligatoire — choisissez au moins un accompagnement pour votre plat.
-                </p>
-                {product.accompagnements.map((a) => {
-                  const key = a._id || a.name;
-                  const q = accQty[key] || 0;
-                  const unavailable = a.available === false;
-                  return (
-                    <div
-                      key={key}
-                      className={`meal-pdp-acc-row${q > 0 ? ' is-selected' : ''}${
-                        unavailable ? ' is-unavailable' : ''
-                      }`}
-                    >
-                      <div className="meal-pdp-acc-info">
-                        <strong>
-                          {a.name}
-                          {!unavailable ? <span className="meal-pdp-acc-req"> *</span> : null}
-                        </strong>
-                        <span>{unavailable ? 'Indisponible' : formatPriceXof(a.price)}</span>
-                      </div>
-                      <div className="meal-pdp-acc-ctrl">
-                        <button
-                          type="button"
-                          aria-label={`Retirer ${a.name}`}
-                          disabled={unavailable}
-                          onClick={() => {
-                            if (unavailable) return;
-                            setAccQty((s) => ({ ...s, [key]: Math.max(0, (s[key] || 0) - 1) }));
-                            setHighlightAcc(false);
-                          }}
-                        >
-                          −
-                        </button>
-                        <span>{q}</span>
-                        <button
-                          type="button"
-                          aria-label={`Ajouter ${a.name}`}
-                          disabled={unavailable}
-                          onClick={() => {
-                            if (unavailable) return;
-                            setAccQty((s) => ({
-                              ...s,
-                              [key]: Math.min(a.maxQuantity || 10, (s[key] || 0) + 1),
-                            }));
-                            setHighlightAcc(false);
-                          }}
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : null}
+            <MealSidePicker
+              sides={sideOptions}
+              sideKey={sideKey}
+              onSideKey={(key) => {
+                setSideKey(key);
+                setHighlightAcc(false);
+                setSideError('');
+              }}
+              extraQty={extraQty}
+              onExtraQty={(key, next) => setExtraQty((current) => ({ ...current, [key]: next }))}
+              highlightSide={highlightAcc && !hasSelectedAcc}
+              sideError={sideError}
+            />
 
             {optionGroups.length ? (
               <div id="meal-options-section" className="meal-pdp-options">
@@ -724,44 +642,12 @@ export default function MealProductLanding() {
           setQuantity(pickedQty);
           setHighlightQty(false);
           if (hasAccompagnements && !hasSelectedAcc) {
-            openAccModal(pickedQty);
+            focusSide();
             return;
           }
           void completeOrder(pickedQty);
         }}
         submitting={submitting}
-      />
-
-      <MealAccompagnementModal
-        open={accModalOpen}
-        onClose={() => {
-          setAccModalOpen(false);
-          setPendingOrderQty(null);
-        }}
-        productName={productDisplayName}
-        options={product.accompagnements || []}
-        initialQty={accQty}
-        ctaLabel="Valider et commander"
-        onConfirm={(draft) => {
-          setAccQty(draft);
-          setHighlightAcc(false);
-          setAccModalOpen(false);
-          const qty = pendingOrderQty ?? quantity;
-          const accList = (product.accompagnements || [])
-            .map((a) => {
-              const key = a._id || a.name;
-              const q = Number(draft[key] || 0);
-              if (q < 1) return null;
-              return { id: a._id, name: a.name, price: Number(a.price) || 0, quantity: q };
-            })
-            .filter(Boolean);
-          setPendingOrderQty(null);
-          if (qty < 1) {
-            setQtyModalOpen(true);
-            return;
-          }
-          void completeOrder(qty, accList);
-        }}
       />
 
       <div className="shop-pdp-sticky">

@@ -18,6 +18,7 @@ const mealAccompagnementLineSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     price: { type: Number, required: true, min: 0 },
     quantity: { type: Number, required: true, min: 1 },
+    role: { type: String, enum: ['side', 'extra'], default: 'side' },
   },
   { _id: false }
 );
