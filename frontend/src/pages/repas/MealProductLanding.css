@@ -215,3 +215,64 @@
     box-shadow: 0 -8px 28px rgba(60, 35, 15, 0.12);
   }
 }
+
+.meal-pdp-also {
+  margin: 6px 0 14px;
+}
+
+.meal-pdp-also-title {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rf-amber, #c76d2e);
+}
+
+.meal-pdp-also-row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 2px 2px 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.meal-pdp-also-row::-webkit-scrollbar {
+  display: none;
+}
+
+.meal-pdp-also-card {
+  flex: 0 0 132px;
+  scroll-snap-align: start;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 14px;
+  background: #faf6f1;
+  overflow: hidden;
+}
+
+.meal-pdp-also-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: #f3ece4;
+}
+
+.meal-pdp-also-card strong {
+  display: block;
+  padding: 8px 8px 0;
+  font-size: 0.76rem;
+  line-height: 1.25;
+  min-height: 2.5em;
+}
+
+.meal-pdp-also-card span {
+  display: block;
+  padding: 2px 8px 10px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--rf-amber, #c76d2e);
+}

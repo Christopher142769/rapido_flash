@@ -40,9 +40,15 @@ export const REFONTE_PRODUCT_DESCS = {
     'Salade fraîche, poisson fumé, tomate, carotte, œufs, concombre et sauce maison.',
   salade: 'Salade fraîche, poisson fumé, tomate, carotte, œufs, concombre et sauce maison.',
   shawarma: 'Wrap généreux au poisson, sauce crémeuse et légumes croquants.',
-  rillettes: 'Pot King Fish — rillettes de poissons, saveur authentique.',
-  'rillettes-de-poissons': 'Pot King Fish — rillettes de poissons, saveur authentique.',
+  'monyo-machoiron-fume': "Machoiron fumé à l'ancienne aux saveurs intenses.",
+  'machoiron-fume': "Machoiron fumé à l'ancienne aux saveurs intenses.",
+  rillettes: 'Pot de rillettes de poisson KING FISH, saveur authentique.',
+  'rillettes-de-poissons': 'Pot de rillettes de poisson KING FISH, saveur authentique.',
 };
+
+/** WhatsApp et téléphone de la boutique Repas. */
+export const MEAL_SHOP_PHONE_DIGITS = '2290143949494';
+export const MEAL_SHOP_PHONE_DISPLAY = '+229 01 43 94 94 94';
 
 export function displayProductDesc(slug, fallback = '') {
   const key = String(slug || '').trim().toLowerCase();

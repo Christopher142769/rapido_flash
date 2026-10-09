@@ -21,7 +21,6 @@ import {
   emptyCustomerForm,
   validateCustomerForm,
   getShopWhatsAppDigits,
-  resolveTrackingWhatsAppDigits,
 } from '../../utils/shopOrder';
 import { formatPriceXof } from '../../utils/shopPromo';
 import {
@@ -32,9 +31,15 @@ import {
   saveMealOrder,
   submitMealOrderToApi,
 } from '../../utils/mealOrder';
-import { mealConfirmationPath } from '../../utils/mealPaths';
-import { displayProductDesc, displayProductName, refonteGalleryUrls } from './repasRefonteConstants';
-import { patchMealProduct } from './repasRefonteAdapter';
+import { mealConfirmationPath, mealProductPath } from '../../utils/mealPaths';
+import {
+  displayProductDesc,
+  displayProductName,
+  fmtXof,
+  MEAL_SHOP_PHONE_DIGITS,
+  refonteGalleryUrls,
+} from './repasRefonteConstants';
+import { adaptProducts, patchMealProduct } from './repasRefonteAdapter';
 import {
   trackCtaClick,
   trackProductView,
@@ -80,6 +85,7 @@ export default function MealProductLanding() {
   const [promoClock, setPromoClock] = useState(() => Date.now());
   const [urgencyClock, setUrgencyClock] = useState(() => Date.now());
   const [cartCount, setCartCount] = useState(() => mealCartCount());
+  const [catalogue, setCatalogue] = useState([]);
 
   const refreshCart = useCallback(() => setCartCount(mealCartCount(loadMealCart())), []);
 
@@ -134,9 +140,15 @@ export default function MealProductLanding() {
         .get(`${API_URL}/meal-shop/public`)
         .then((r) => r.data)
         .catch(() => null),
+      axios
+        .get(`${API_URL}/meal-products/public`)
+        .then((r) => (Array.isArray(r.data) ? r.data : []))
+        .catch(() => []),
     ])
-      .then(([, settings]) => {
-        if (!cancelled && settings) setShopSettings(settings);
+      .then(([, settings, products]) => {
+        if (cancelled) return;
+        if (settings) setShopSettings(settings);
+        setCatalogue(products || []);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -158,6 +170,11 @@ export default function MealProductLanding() {
     () => (product ? displayProductName(product.slug, product.name) : ''),
     [product]
   );
+
+  const otherDishes = useMemo(() => {
+    const current = String(product?.slug || '').trim().toLowerCase();
+    return adaptProducts(catalogue, BASE_URL).filter((dish) => dish.id !== current && dish.available);
+  }, [catalogue, product?.slug]);
 
   useEffect(() => {
     if (!productDisplayName) return;
@@ -529,6 +546,21 @@ export default function MealProductLanding() {
               ) : null}
             </div>
 
+            {otherDishes.length ? (
+              <section className="meal-pdp-also" aria-label="Autres plats du menu">
+                <h2 className="meal-pdp-also-title">Le menu</h2>
+                <div className="meal-pdp-also-row">
+                  {otherDishes.map((dish) => (
+                    <Link key={dish.id} to={mealProductPath(dish.id)} className="meal-pdp-also-card">
+                      <img src={dish.cardImg} alt="" />
+                      <strong>{dish.name}</strong>
+                      <span>{fmtXof(dish.unit)} F</span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
             {!hasQuantity ? (
               <p className="shop-pdp-buybox-qty-hint">Sélectionnez une quantité avant de commander.</p>
             ) : null}
@@ -670,7 +702,7 @@ export default function MealProductLanding() {
       ) : null}
 
       <div id="shop-section-trust">
-        <ShopTrustCards whatsappNumber={resolveTrackingWhatsAppDigits(shopSettings?.trackingWhatsAppNumber)} />
+        <ShopTrustCards whatsappNumber={MEAL_SHOP_PHONE_DIGITS} />
       </div>
 
       <ShopPrivacyFooter className="shop-privacy-footer--sticky-pad" />

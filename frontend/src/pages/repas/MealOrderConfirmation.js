@@ -4,8 +4,8 @@ import { loadMealOrder, openMealOrderWhatsAppTrack } from '../../utils/mealOrder
 import {
   formatCustomerFullName,
   formatCustomerAddress,
-  formatWhatsAppDisplay,
 } from '../../utils/shopOrder';
+import { MEAL_SHOP_PHONE_DISPLAY } from './repasRefonteConstants';
 import { formatPriceXof } from '../../utils/shopPromo';
 import { mealCatalogPath, mealConfirmationPath, mealProductPath } from '../../utils/mealPaths';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
@@ -22,7 +22,7 @@ export default function MealOrderConfirmation() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const order = useMemo(() => loadMealOrder(), []);
-  const shopWaDisplay = formatWhatsAppDisplay(order?.whatsappNumber);
+  const shopWaDisplay = MEAL_SHOP_PHONE_DISPLAY;
 
   useEffect(() => {
     if (!order) {

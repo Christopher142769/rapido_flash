@@ -1,11 +1,10 @@
 import {
-  getShopWhatsAppDigits,
   emptyCustomerForm,
   validateCustomerForm,
   formatCustomerFullName,
   formatCustomerAddress,
-  resolveTrackingWhatsAppDigits,
 } from './shopOrder';
+import { MEAL_SHOP_PHONE_DIGITS } from '../pages/repas/repasRefonteConstants';
 import { formatPriceXof } from './shopPromo';
 
 export { emptyCustomerForm, validateCustomerForm };
@@ -119,7 +118,7 @@ export function buildMealWhatsAppMessage(order) {
 }
 
 export function buildMealWhatsAppOrderUrl(order) {
-  const raw = resolveTrackingWhatsAppDigits(order?.whatsappNumber);
+  const raw = MEAL_SHOP_PHONE_DIGITS;
   if (!raw) return null;
   return `https://wa.me/${raw}?text=${encodeURIComponent(buildMealWhatsAppMessage(order))}`;
 }

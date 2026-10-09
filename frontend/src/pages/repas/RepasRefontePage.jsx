@@ -8,12 +8,13 @@ import {
   HERO_SCRIPTS,
   fmtXof,
   cutSrc,
+  MEAL_SHOP_PHONE_DIGITS,
+  MEAL_SHOP_PHONE_DISPLAY,
 } from './repasRefonteConstants';
 import { adaptProducts, buildHeroSlides } from './repasRefonteAdapter';
 import { mealProductPath } from '../../utils/mealPaths';
 import { loadMealCart, mealCartCount, clearMealCart } from '../../utils/mealCart';
 import { getMealCatalogueUrgency } from '../../utils/mealShopUrgency';
-import { resolveTrackingWhatsAppDigits } from '../../utils/shopOrder';
 import { trackProductClick } from '../../utils/analyticsBeacon';
 import ShopCountdown from '../../components/shop/ShopCountdown';
 import { useRepasRefonteMotion, bounceCartBadges, animateGridCards } from './useRepasRefonteMotion';
@@ -38,7 +39,6 @@ const ING_SPOTS = [
 const ING_KINDS = ['tomato', 'chili', 'leaf', 'lemon', 'onion'];
 
 const LOGO = `${REFONTE_IMG}logo-rapido.png`;
-const DEFAULT_PHONE = '+229 01 40 39 39 94';
 
 function twoToneTitle(name) {
   const words = String(name || '').split(/\s+/).filter(Boolean);
@@ -138,8 +138,8 @@ export default function RepasRefontePage({
     autoplayMs: 6500,
   });
 
-  const waDigits = resolveTrackingWhatsAppDigits(settings?.trackingWhatsAppNumber);
-  const phoneDisplay = settings?.trackingWhatsAppDisplay || DEFAULT_PHONE;
+  const waDigits = MEAL_SHOP_PHONE_DIGITS;
+  const phoneDisplay = MEAL_SHOP_PHONE_DISPLAY;
   const urgency = useMemo(
     () => getMealCatalogueUrgency(settings, new Date(urgencyClock)),
     [settings, urgencyClock]
