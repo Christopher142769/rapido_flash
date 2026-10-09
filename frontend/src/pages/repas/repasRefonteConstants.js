@@ -40,6 +40,8 @@ export const REFONTE_PRODUCT_DESCS = {
     'Salade fraîche, poisson fumé, tomate, carotte, œufs, concombre et sauce maison.',
   salade: 'Salade fraîche, poisson fumé, tomate, carotte, œufs, concombre et sauce maison.',
   shawarma: 'Wrap généreux au poisson, sauce crémeuse et légumes croquants.',
+  rillettes: 'Pot King Fish — rillettes de poissons, saveur authentique.',
+  'rillettes-de-poissons': 'Pot King Fish — rillettes de poissons, saveur authentique.',
 };
 
 export function displayProductDesc(slug, fallback = '') {

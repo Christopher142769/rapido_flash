@@ -158,7 +158,7 @@ const PRODUCTS = [
     name: 'Rillettes de poisson',
     category: 'Gourmet',
     basePrice: 2500,
-    shortDescription: 'Pot King Fish — rillettes gourmet à tartiner.',
+    shortDescription: 'Pot King Fish — rillettes de poissons, saveur authentique.',
     mainImage: `${IMG}/rillettes.jpg`,
     images: [`${IMG}/rillettes.jpg`],
     accompagnements: [],
