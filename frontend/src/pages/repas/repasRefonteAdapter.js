@@ -8,6 +8,7 @@ import {
   displayProductDesc,
   displaySideName,
   masculineSizeLabel,
+  sizeCatalogFor,
 } from './repasRefonteConstants';
 
 export function refonteCategoryId(product) {
@@ -106,15 +107,17 @@ export function priceBundle(product) {
 
 export function patchMealProduct(product) {
   const slug = product.slug;
+  const sized = sizeCatalogFor(slug);
   return {
     ...product,
+    ...(sized ? { basePrice: sized.basePrice, optionGroups: sized.optionGroups } : {}),
     name: displayProductName(slug, product.name),
     shortDescription: displayProductDesc(slug, product.shortDescription || product.description || ''),
     accompagnements: (product.accompagnements || []).map((a) => ({
       ...a,
       name: displaySideName(a.name),
     })),
-    optionGroups: (product.optionGroups || []).map((g) => ({
+    optionGroups: ((sized ? sized.optionGroups : product.optionGroups) || []).map((g) => ({
       ...g,
       choices: (g.choices || []).map((c) => ({
         ...c,

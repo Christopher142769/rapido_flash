@@ -13,6 +13,8 @@ export const REFONTE_PRODUCT_NAMES = {
   'machoiron-fume': 'Monyo de machoiron fumé',
   'monyo-tilapia-frite': 'Monyo de tilapia frit',
   'tilapia-frite': 'Monyo de tilapia frit',
+  'monyo-machoiron-frit': 'Monyo de machoiron frit',
+  'machoiron-frit': 'Monyo de machoiron frit',
   'tilapia-braise': 'Tilapia braisé',
   'machoiron-braise': 'Machoiron braisé',
   omelette: 'Omelette',
@@ -42,6 +44,10 @@ export const REFONTE_PRODUCT_DESCS = {
   shawarma: 'Wrap généreux au poisson, sauce crémeuse et légumes croquants.',
   'monyo-machoiron-fume': "Machoiron fumé à l'ancienne aux saveurs intenses.",
   'machoiron-fume': "Machoiron fumé à l'ancienne aux saveurs intenses.",
+  'monyo-tilapia-frite': 'Tilapia frit croustillant, portion généreuse, servi avec son monyo.',
+  'tilapia-frite': 'Tilapia frit croustillant, portion généreuse, servi avec son monyo.',
+  'monyo-machoiron-frit': 'Machoiron frit, monyo tomate-oignon et sauce maison.',
+  'machoiron-frit': 'Machoiron frit, monyo tomate-oignon et sauce maison.',
   rillettes: 'Pot de rillettes de poisson KING FISH, saveur authentique.',
   'rillettes-de-poissons': 'Pot de rillettes de poisson KING FISH, saveur authentique.',
 };
@@ -60,6 +66,77 @@ export function displaySideName(name) {
   const raw = String(name || '').trim();
   if (/l[ée]gumes?\s+saut[ée]s?/i.test(raw)) return 'Légumes sautés';
   return raw;
+}
+
+/**
+ * Prix affichés (déjà le prix promo) et écart de taille.
+ * Moyen / Petit = basePrice, les autres choix sont un supplément.
+ */
+export const REFONTE_SIZE_PRICES = {
+  'tilapia-braise': {
+    basePrice: 3500,
+    choices: [
+      ['Moyen', 0],
+      ['Grand', 1500],
+    ],
+  },
+  'monyo-tilapia-frite': {
+    basePrice: 1500,
+    choices: [
+      ['Petit', 0],
+      ['Moyen', 500],
+      ['Grand', 1000],
+    ],
+  },
+  'tilapia-frite': {
+    basePrice: 1500,
+    choices: [
+      ['Petit', 0],
+      ['Moyen', 500],
+      ['Grand', 1000],
+    ],
+  },
+  'machoiron-braise': {
+    basePrice: 2500,
+    choices: [
+      ['Moyen', 0],
+      ['Grand', 500],
+    ],
+  },
+  'monyo-machoiron-frit': {
+    basePrice: 1500,
+    choices: [
+      ['Moyen', 0],
+      ['Grand', 500],
+    ],
+  },
+  'machoiron-frit': {
+    basePrice: 1500,
+    choices: [
+      ['Moyen', 0],
+      ['Grand', 500],
+    ],
+  },
+};
+
+export function sizeCatalogFor(slug) {
+  const spec = REFONTE_SIZE_PRICES[String(slug || '').trim().toLowerCase()];
+  if (!spec) return null;
+  return {
+    basePrice: spec.basePrice,
+    optionGroups: [
+      {
+        name: 'Taille',
+        selectionType: 'single',
+        required: true,
+        choices: spec.choices.map(([label, price]) => ({
+          label,
+          price,
+          available: true,
+        })),
+      },
+    ],
+  };
 }
 
 /** Tailles de poisson au masculin : Petit, Moyen, Grand. */
@@ -97,6 +174,8 @@ export const REFONTE_SLUG_ASSETS = {
   'filet-poele': { img: 'filet-poele', cut: 'filet-poele' },
   'monyo-tilapia-frite': { img: 'tilapia-frite-photo.webp', cut: null },
   'tilapia-frite': { img: 'tilapia-frite-photo.webp', cut: null },
+  'monyo-machoiron-frit': { img: 'machoiron-frit-photo.webp', cut: null },
+  'machoiron-frit': { img: 'machoiron-frit-photo.webp', cut: null },
   'machoiron-braise': { img: 'machoiron-braise', cut: 'machoiron-braise' },
   rillettes: { img: 'rillettes', cut: 'rillettes' },
   'rillettes-de-poissons': { img: 'rillettes', cut: 'rillettes' },
@@ -115,6 +194,8 @@ export const HERO_LARGE = new Set([
   'machoiron-fume',
   'monyo-tilapia-frite',
   'tilapia-frite',
+  'monyo-machoiron-frit',
+  'machoiron-frit',
   'omelette',
 ]);
 
@@ -132,6 +213,8 @@ export const HERO_SCRIPTS = {
   'filet-poele': 'Poêlé à la commande',
   'monyo-tilapia-frite': 'Croustillant à souhait',
   'tilapia-frite': 'Croustillant à souhait',
+  'monyo-machoiron-frit': 'Frit à la commande',
+  'machoiron-frit': 'Frit à la commande',
   'machoiron-braise': 'Braisé entier',
   omelette: 'Simple & rapide',
   rillettes: 'Gourmet King Fish',

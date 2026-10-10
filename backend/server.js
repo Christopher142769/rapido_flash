@@ -281,6 +281,12 @@ async function connectMongoWithRetry() {
         console.error('⚠️ ensureBassinsFunnel:', e.message);
       }
       try {
+        const { ensureKingFishCatalogue } = require('./utils/ensureKingFishCatalogue');
+        await ensureKingFishCatalogue();
+      } catch (e) {
+        console.error('⚠️ ensureKingFishCatalogue:', e.message);
+      }
+      try {
         const { refreshSitesCache } = require('./utils/staffPresenceSites');
         await refreshSitesCache({ force: true });
       } catch (e) {
