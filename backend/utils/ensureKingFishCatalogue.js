@@ -1,6 +1,7 @@
 /**
- * Aligne le catalogue King Fish (noms, tailles, prix) dans MongoDB.
- * Les prix sont ceux affichés : la taille de base est basePrice, le reste est un supplément.
+ * Aligne les noms du catalogue King Fish.
+ * Les prix et les tailles viennent du dashboard : on ne les réécrit pas
+ * sur un plat déjà en base (un redémarrage effacerait les modifications).
  */
 const MealProduct = require('../models/MealProduct');
 const MealShopSettings = require('../models/MealShopSettings');
@@ -20,26 +21,20 @@ function taille(choices) {
   };
 }
 
-const PRICE_PATCHES = [
+const NAME_AND_COPY = [
   {
     slug: 'tilapia-braise',
     name: 'Tilapia braisé',
-    basePrice: 3500,
-    optionGroups: [taille([['Moyen', 0], ['Grand', 1500]])],
   },
   {
     slug: 'monyo-tilapia-frite',
     name: 'Monyo de tilapia frit',
     shortDescription: 'Tilapia frit croustillant, portion généreuse, servi avec son monyo.',
-    basePrice: 1500,
-    optionGroups: [taille([['Petit', 0], ['Moyen', 500], ['Grand', 1000]])],
   },
   {
     slug: 'machoiron-braise',
     name: 'Machoiron braisé',
     shortDescription: 'Machoiron braisé entier et légumes.',
-    basePrice: 2500,
-    optionGroups: [taille([['Moyen', 0], ['Grand', 500]])],
   },
 ];
 
@@ -65,13 +60,11 @@ const NAME_FIXES = {
 };
 
 async function ensureKingFishCatalogue() {
-  for (const patch of PRICE_PATCHES) {
+  for (const patch of NAME_AND_COPY) {
     const doc = await MealProduct.findOne({ slug: patch.slug });
     if (!doc) continue;
     doc.name = patch.name;
-    doc.basePrice = patch.basePrice;
     if (patch.shortDescription) doc.shortDescription = patch.shortDescription;
-    doc.optionGroups = patch.optionGroups;
     doc.published = true;
     await doc.save();
   }
@@ -114,19 +107,15 @@ async function ensureKingFishCatalogue() {
       sortOrder: 65,
       currency: 'XOF',
     });
-  } else {
-    fried.name = 'Monyo de machoiron frit';
-    fried.basePrice = 1500;
-    fried.shortDescription = 'Machoiron frit, monyo tomate-oignon et sauce maison.';
-    fried.mainImage = IMG;
-    fried.images = [IMG];
+  } else if (!fried.optionGroups?.length) {
     fried.optionGroups = [taille([['Moyen', 0], ['Grand', 500]])];
+    if (!fried.basePrice) fried.basePrice = 1500;
+    fried.name = fried.name || 'Monyo de machoiron frit';
     fried.published = true;
     fried.available = true;
-    fried.category = fried.category || 'Poissons';
     if (!fried.accompagnements?.length && sides.length) fried.accompagnements = sides;
   }
-  await fried.save();
+  if (fried.isNew || fried.isModified()) await fried.save();
 
   const settings = await MealShopSettings.findOne({ key: 'default' });
   if (settings) {
@@ -150,7 +139,7 @@ async function ensureKingFishCatalogue() {
     }
   }
 
-  console.log('🍽️ Catalogue King Fish aligné (tailles et prix)');
+  console.log('🍽️ Catalogue King Fish aligné (noms)');
 }
 
 module.exports = { ensureKingFishCatalogue };
