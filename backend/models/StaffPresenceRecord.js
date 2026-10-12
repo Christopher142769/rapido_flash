@@ -23,6 +23,10 @@ const staffPresenceRecordSchema = new mongoose.Schema(
     dateKey: { type: String, required: true, trim: true },
     checkedAt: { type: Date, required: true },
     selfieUrl: { type: String, default: '', trim: true },
+    /** Clé publique si la photo est servie par l'API (Cloudinary indisponible). */
+    selfieKey: { type: String, default: '', index: true },
+    selfieMime: { type: String, default: '' },
+    selfieData: { type: Buffer, select: false },
     workedMinutes: { type: Number, default: null },
     overtimeMinutes: { type: Number, default: null },
     code: { type: String, default: '', trim: true },

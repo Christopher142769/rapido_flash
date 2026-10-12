@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const http = require('http');
+const crypto = require('crypto');
+const { cloudinary } = require('./cloudinaryClient');
 
 function uploadsRoot() {
   return path.resolve(__dirname, '..', 'uploads');
@@ -40,9 +42,77 @@ function fetchUrlBuffer(url) {
   });
 }
 
+function mediaKeyFromUrl(selfieUrl) {
+  const raw = String(selfieUrl || '').trim();
+  const match = raw.match(/\/staff-presence\/media\/([a-f0-9]{16,})$/i);
+  return match ? match[1] : '';
+}
+
+function cloudinaryConfigured() {
+  return !!(
+    process.env.CLOUDINARY_CLOUD_NAME &&
+    process.env.CLOUDINARY_API_KEY &&
+    process.env.CLOUDINARY_API_SECRET
+  );
+}
+
+function uploadBufferToCloudinary(buffer) {
+  return new Promise((resolve, reject) => {
+    const publicId = `sp-${Date.now()}-${crypto.randomBytes(8).toString('hex')}`;
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'rapido/staff-presence',
+        public_id: publicId,
+        resource_type: 'image',
+      },
+      (err, result) => {
+        if (err) reject(err);
+        else resolve(result);
+      }
+    );
+    stream.end(buffer);
+  });
+}
+
+/**
+ * Envoie le selfie vers Cloudinary. Si le cloud est désactivé, garde l'image en base.
+ * @returns {{ url: string, key?: string, data?: Buffer, mime?: string }}
+ */
+async function persistStaffSelfie(file) {
+  const buffer = file?.buffer;
+  if (!buffer?.length) throw new Error('Selfie requis');
+  const mime = String(file.mimetype || 'image/jpeg');
+
+  if (cloudinaryConfigured()) {
+    try {
+      const result = await uploadBufferToCloudinary(buffer);
+      if (result?.secure_url) return { url: result.secure_url };
+    } catch (err) {
+      console.warn(
+        '[staff-presence] Cloudinary indisponible, selfie enregistré en base:',
+        err?.message || err
+      );
+    }
+  }
+
+  const key = crypto.randomBytes(16).toString('hex');
+  return {
+    url: `/api/staff-presence/media/${key}`,
+    key,
+    data: buffer,
+    mime,
+  };
+}
+
 async function readSelfieBuffer(selfieUrl) {
   const raw = String(selfieUrl || '').trim();
   if (!raw) return null;
+  const key = mediaKeyFromUrl(raw);
+  if (key) {
+    const StaffPresenceRecord = require('../models/StaffPresenceRecord');
+    const rec = await StaffPresenceRecord.findOne({ selfieKey: key }).select('+selfieData');
+    if (rec?.selfieData?.length) return Buffer.from(rec.selfieData);
+  }
   if (raw.startsWith('http://') || raw.startsWith('https://')) {
     try {
       return await fetchUrlBuffer(raw);
@@ -87,4 +157,6 @@ module.exports = {
   resolveLocalSelfiePath,
   publicSelfieUrl,
   safeZipBaseName,
+  persistStaffSelfie,
+  mediaKeyFromUrl,
 };

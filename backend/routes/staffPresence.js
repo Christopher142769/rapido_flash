@@ -27,7 +27,7 @@ const {
 } = require('../utils/staffPresenceDailyTokens');
 const { publicAppBaseUrl } = require('../utils/publicAppUrl');
 const { notifyPresenceRecorded } = require('../services/staffPresenceMailer');
-const { readSelfieBuffer, safeZipBaseName, resolveLocalSelfiePath } = require('../utils/staffPresenceSelfie');
+const { readSelfieBuffer, safeZipBaseName, resolveLocalSelfiePath, persistStaffSelfie } = require('../utils/staffPresenceSelfie');
 const {
   SHIFTS,
   SHIFT_IDS,
@@ -100,13 +100,19 @@ function publicActifPageUrlFr(siteId) {
   return `${publicPresenceBaseUrl()}/présence-actif/${encodeURIComponent(siteId)}`;
 }
 
-function selfieUrlFromFile(file) {
-  if (!file) return '';
-  const stored = String(file.path || '').trim();
-  if (stored.startsWith('http://') || stored.startsWith('https://')) return stored;
-  const name = path.basename(stored || file.filename || '');
-  return name ? `/uploads/staff-presence/${name}` : '';
-}
+router.get('/media/:key', async (req, res) => {
+  try {
+    const key = String(req.params.key || '').replace(/[^a-f0-9]/gi, '');
+    if (key.length < 16) return res.status(404).end();
+    const rec = await StaffPresenceRecord.findOne({ selfieKey: key }).select('+selfieData selfieMime');
+    if (!rec?.selfieData?.length) return res.status(404).end();
+    res.set('Content-Type', rec.selfieMime || 'image/jpeg');
+    res.set('Cache-Control', 'private, max-age=86400');
+    res.send(rec.selfieData);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
 
 async function ensureRecordIndexes() {
   if (indexesEnsured) return;
@@ -721,8 +727,6 @@ router.post('/public/:code/check', uploadStaffPresence.single('selfie'), async (
     const now = new Date();
     const dateKey = dateKeyBenin(now);
     const windowKey = shiftWindowKey(dateKey, shift);
-    const selfieUrl = selfieUrlFromFile(req.file);
-
     const existing = await StaffPresenceRecord.findOne({
       siteId,
       shiftWindowKey: windowKey,
@@ -747,6 +751,8 @@ router.post('/public/:code/check', uploadStaffPresence.single('selfie'), async (
         message: alreadyMessage(kind),
       });
     }
+
+    const storedSelfie = await persistStaffSelfie(req.file);
 
     let workedMinutes = null;
     let overtimeMinutes = null;
@@ -775,7 +781,10 @@ router.post('/public/:code/check', uploadStaffPresence.single('selfie'), async (
       kind,
       dateKey,
       checkedAt: now,
-      selfieUrl,
+      selfieUrl: storedSelfie.url,
+      selfieKey: storedSelfie.key || '',
+      selfieMime: storedSelfie.mime || '',
+      ...(storedSelfie.data ? { selfieData: storedSelfie.data } : {}),
       workedMinutes,
       overtimeMinutes,
       code,
