@@ -150,6 +150,59 @@ export function adaptProducts(products, mediaBase) {
     .map((p) => adaptProduct(p, mediaBase));
 }
 
+/** Poisson frais vendu au kilo sur la boutique /shop/:slug. */
+const FRESH_SHOP = [
+  {
+    slug: 'machoiron',
+    name: 'Machoiron frais',
+    desc: 'Machoiron frais, livré chez vous au kilo.',
+    img: 'machoiron-frais-photo.webp',
+  },
+  {
+    slug: 'tilapia',
+    name: 'Tilapia frais',
+    desc: 'Tilapia frais, livré chez vous au kilo.',
+    img: 'tilapia-frais-photo.webp',
+  },
+];
+
+export function freshShopSlides(products) {
+  const bySlug = new Map(
+    (products || []).map((p) => [String(p?.slug || '').trim().toLowerCase(), p])
+  );
+  return FRESH_SHOP.map((spec) => {
+    const product = bySlug.get(spec.slug);
+    if (!product || product.published === false || product.available === false) return null;
+    const base = Math.max(0, Math.round(Number(product.basePrice) || 0));
+    const live = !!product.isPromoLive;
+    const promo = Math.max(0, Math.round(Number(product.promoPrice) || 0));
+    const unit = live && promo > 0 && promo < base ? promo : base;
+    if (!unit) return null;
+    const compareAt = live && base > unit ? base : null;
+    const discountPercent = compareAt ? Math.max(1, Math.round((1 - unit / base) * 100)) : 0;
+    const img = `${REFONTE_IMG}${spec.img}`;
+    return {
+      id: `frais-${spec.slug}`,
+      shopPath: `/shop/${spec.slug}`,
+      name: spec.name,
+      desc: spec.desc,
+      script: 'Poisson frais',
+      cat: 'frais',
+      catLabel: 'Poisson frais',
+      cardImg: img,
+      cutImg: img,
+      prices: [unit],
+      sizes: null,
+      unit,
+      compareAt,
+      promo: !!compareAt,
+      discountPercent,
+      available: true,
+      product: null,
+    };
+  }).filter(Boolean);
+}
+
 /**
  * Construit les slides hero : plats refonte (cut/JPG), comme en local.
  * Les bannières dashboard ne servent qu’à choisir les plats (productSlug) —

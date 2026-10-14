@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 import RepasRefonteIcons, { Ico } from './RepasRefonteIcons';
 import {
   REFONTE_CATS,
@@ -11,7 +12,7 @@ import {
   MEAL_SHOP_PHONE_DIGITS,
   MEAL_SHOP_PHONE_DISPLAY,
 } from './repasRefonteConstants';
-import { adaptProducts, buildHeroSlides } from './repasRefonteAdapter';
+import { adaptProducts, buildHeroSlides, freshShopSlides } from './repasRefonteAdapter';
 import { mealProductPath } from '../../utils/mealPaths';
 import { loadMealCart, mealCartCount, clearMealCart } from '../../utils/mealCart';
 import { getMealCatalogueUrgency } from '../../utils/mealShopUrgency';
@@ -39,6 +40,8 @@ const ING_SPOTS = [
 const ING_KINDS = ['tomato', 'chili', 'leaf', 'lemon', 'onion'];
 
 const LOGO = `${REFONTE_IMG}logo-rapido.png`;
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const FRESH_SLUGS = ['machoiron', 'tilapia'];
 
 function twoToneTitle(name) {
   const words = String(name || '').split(/\s+/).filter(Boolean);
@@ -52,6 +55,11 @@ function twoToneTitle(name) {
 
 function pad2(n) {
   return String(n).padStart(2, '0');
+}
+
+function catThumb(c) {
+  if (c.id === 'frais') return `${REFONTE_IMG}machoiron-frais-photo.webp`;
+  return cutSrc(c.icon);
 }
 
 function promoEndsAt(settings) {
@@ -75,6 +83,9 @@ export default function RepasRefontePage({
     () => adaptProducts(apiProducts, mediaBase).filter((p) => p.available),
     [apiProducts, mediaBase]
   );
+  const [freshRaw, setFreshRaw] = useState([]);
+  const freshSlides = useMemo(() => freshShopSlides(freshRaw), [freshRaw]);
+  const catalogue = useMemo(() => [...items, ...freshSlides], [items, freshSlides]);
 
   const [activeCat, setActiveCat] = useState('all');
   const [query, setQuery] = useState('');
@@ -106,10 +117,31 @@ export default function RepasRefontePage({
   const pausedRef = useRef(false);
   const heroIdxRef = useRef(0);
 
-  const slideList = useMemo(
-    () => buildHeroSlides(items, settings, mediaBase),
-    [items, settings, mediaBase]
+  const mealSlides = useMemo(
+    () => buildHeroSlides(items, { ...settings, heroSlides: [] }),
+    [items, settings]
   );
+  const slideList = useMemo(
+    () => [...mealSlides, ...freshSlides],
+    [freshSlides, mealSlides]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all(
+      FRESH_SLUGS.map((slug) =>
+        axios
+          .get(`${API_URL}/shop-products/public/${slug}`, { params: { _t: Date.now() } })
+          .then((res) => res.data)
+          .catch(() => null)
+      )
+    ).then((rows) => {
+      if (!cancelled) setFreshRaw(rows.filter(Boolean));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   pausedRef.current = heroPaused;
   heroIdxRef.current = heroIdx;
@@ -270,12 +302,12 @@ export default function RepasRefontePage({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return items.filter((p) => {
+    return catalogue.filter((p) => {
       if (activeCat !== 'all' && p.cat !== activeCat) return false;
       if (!q) return true;
       return `${p.name} ${p.desc} ${p.catLabel}`.toLowerCase().includes(q);
     });
-  }, [items, activeCat, query]);
+  }, [catalogue, activeCat, query]);
 
   useEffect(() => {
     const id = requestAnimationFrame(() => animateGridCards(rootRef.current));
@@ -296,20 +328,25 @@ export default function RepasRefontePage({
   const mPicks = useMemo(() => {
     const ids = ['shawarma', 'brochette-de-poisson', 'tilapia-braise', 'poisson-pane', 'monyo-machoiron-fume', 'salade-king-fish'];
     const picked = ids.map((id) => items.find((p) => p.id === id)).filter(Boolean);
-    return picked.length ? picked : items.slice(0, 6);
+    const meals = picked.length ? picked : items.slice(0, 6);
+    return meals;
   }, [items]);
 
   const go = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   const priceAt = (p, si = 0) => p.prices[si] ?? p.unit;
-  /** Prix barré (initial) : proportionnel au prix promo affiché (×2 si −50 %). */
+  /** Prix barré. Les poissons frais utilisent le prix boutique ; les plats restent à −50 %. */
   const compareAtFor = (p, si = 0) => {
+    if (p.shopPath) return p.compareAt || null;
     const cur = priceAt(p, si);
     if (!cur) return null;
     if (p.compareAt && p.unit) return Math.round(cur * (p.compareAt / p.unit));
     return Math.round(cur * 2);
   };
-  const discountLabel = (p) => `−${p?.discountPercent || 50} %`;
+  const discountLabel = (p) => {
+    if (p.shopPath) return p.compareAt ? `−${p.discountPercent} %` : '';
+    return `−${p?.discountPercent || 50} %`;
+  };
 
   const handleAdd = (p, si = 0, e) => {
     e?.preventDefault?.();
@@ -376,22 +413,34 @@ export default function RepasRefontePage({
         <span className="hb-stripes s1" />
         <span className="hb-stripes s2" />
         <div className="hb-copy">
-          <p className="hb-script">{HERO_SCRIPTS[p.id] || 'Fait maison'}</p>
+          <p className="hb-script">{p.script || HERO_SCRIPTS[p.id] || 'Fait maison'}</p>
           <h2 className="hb-title">{twoToneTitle(p.name)}</h2>
           <p className="hb-sub">{p.desc}</p>
           <div className="hb-price">
-            <span className="lbl">{p.sizes ? 'Dès' : 'Prix promo'}</span>
-            <strong>{fmtXof(priceAt(p, si))} F</strong>
-            <s>{fmtXof(compareAtFor(p, si))} F</s>
-            <em className="hb-save">{discountLabel(p)}</em>
+            <span className="lbl">{p.shopPath ? 'Le kilo' : p.sizes ? 'Dès' : 'Prix promo'}</span>
+            <strong>
+              {fmtXof(priceAt(p, si))} F
+              {p.shopPath ? <small className="hb-per"> / kg</small> : null}
+            </strong>
+            {compareAtFor(p, si) ? <s>{fmtXof(compareAtFor(p, si))} F</s> : null}
+            {discountLabel(p) ? <em className="hb-save">{discountLabel(p)}</em> : null}
           </div>
           <div className="hb-cta">
-            <button type="button" className="hb-btn" onClick={(e) => handleAdd(p, si, e)}>
-              <i>
-                <Ico id="i-arrow" />
-              </i>
-              Commander
-            </button>
+            {p.shopPath ? (
+              <Link to={p.shopPath} className="hb-btn">
+                <i>
+                  <Ico id="i-arrow" />
+                </i>
+                Commander
+              </Link>
+            ) : (
+              <button type="button" className="hb-btn" onClick={(e) => handleAdd(p, si, e)}>
+                <i>
+                  <Ico id="i-arrow" />
+                </i>
+                Commander
+              </button>
+            )}
             <button type="button" className="hb-ghost" onClick={() => go('menu')}>
               Voir le menu
             </button>
@@ -409,7 +458,7 @@ export default function RepasRefontePage({
             <div className="hb-glow" />
           </div>
           <div className="hb-par" style={{ '--d': 22 }}>
-            <img className={`hb-dish${HERO_LARGE.has(p.id) ? ' is-lg' : ''}`} src={p.cutImg} alt={p.name} />
+            <img className={`hb-dish${HERO_LARGE.has(p.id) || p.shopPath ? ' is-lg' : ''}${p.shopPath ? ' is-fresh' : ''}`} src={p.cutImg} alt={p.name} />
           </div>
           <div className="hb-par" style={{ '--d': 40 }}>
             {spots.map(([x, y, w, far], k) => (
@@ -421,12 +470,14 @@ export default function RepasRefontePage({
             ))}
           </div>
           <div className="hb-par" style={{ '--d': 16 }}>
-            <div className="hb-bubble">
-              <svg viewBox="0 0 200 140" aria-hidden="true">
-                <path d="M18 72c8-34 46-58 82-58s74 24 82 58c8 34-18 62-82 62S10 106 18 72z" />
-              </svg>
-              <span>{discountLabel(p)}</span>
-            </div>
+            {discountLabel(p) ? (
+              <div className="hb-bubble">
+                <svg viewBox="0 0 200 140" aria-hidden="true">
+                  <path d="M18 72c8-34 46-58 82-58s74 24 82 58c8 34-18 62-82 62S10 106 18 72z" />
+                </svg>
+                <span>{discountLabel(p)}</span>
+              </div>
+            ) : null}
           </div>
         </div>
       </article>
@@ -436,14 +487,17 @@ export default function RepasRefontePage({
   const renderCard = (p, feat = false) => {
     const si = sizeSel[p.id] || 0;
     const catName = REFONTE_CATS.find((c) => c.id === p.cat)?.name || p.catLabel;
+    const href = p.shopPath || mealProductPath(p.id);
+    const save = discountLabel(p);
+    const struck = compareAtFor(p, si);
     return (
       <article
         key={p.id}
-        className={`card reveal${feat ? ' feat' : ''}${favs.has(p.id) ? ' is-fav' : ''}`}
+        className={`card reveal${feat ? ' feat' : ''}${favs.has(p.id) ? ' is-fav' : ''}${p.shopPath ? ' is-fresh' : ''}`}
         data-id={p.id}
       >
         <div className="card-media">
-          <span className="badge promo">{discountLabel(p)}</span>
+          {save ? <span className="badge promo">{save}</span> : null}
           <button
             type="button"
             className={`fav${favs.has(p.id) ? ' on' : ''}`}
@@ -452,13 +506,13 @@ export default function RepasRefontePage({
           >
             <Ico id="i-heart" />
           </button>
-          <Link to={mealProductPath(p.id)} onClick={() => onOpenProduct?.(p.product)}>
+          <Link to={href} onClick={() => onOpenProduct?.(p.product)}>
             <img src={p.cardImg} alt={p.name} width={1080} height={1080} loading="lazy" />
           </Link>
         </div>
         <div className="card-body">
           <p className="card-cat">{catName}</p>
-          <Link to={mealProductPath(p.id)}>
+          <Link to={href}>
             <h3>{p.name}</h3>
           </Link>
           <p className="card-desc">{p.desc}</p>
@@ -478,12 +532,20 @@ export default function RepasRefontePage({
           ) : null}
           <div className="card-foot">
             <div className="card-price">
-              <strong>{fmtXof(priceAt(p, si))} F</strong>
-              <s>{fmtXof(compareAtFor(p, si))} F</s>
+              <strong>
+                {fmtXof(priceAt(p, si))} F{p.shopPath ? <small> / kg</small> : null}
+              </strong>
+              {struck ? <s>{fmtXof(struck)} F</s> : null}
             </div>
-            <button type="button" className="add" aria-label={`Ajouter ${p.name}`} onClick={(e) => handleAdd(p, si, e)}>
-              <Ico id="i-plus" />
-            </button>
+            {p.shopPath ? (
+              <Link to={href} className="add" aria-label={`Commander ${p.name}`}>
+                <Ico id="i-arrow" />
+              </Link>
+            ) : (
+              <button type="button" className="add" aria-label={`Ajouter ${p.name}`} onClick={(e) => handleAdd(p, si, e)}>
+                <Ico id="i-plus" />
+              </button>
+            )}
           </div>
         </div>
       </article>
@@ -654,27 +716,42 @@ export default function RepasRefontePage({
             <img className="m-brush" src={`${REFONTE_IMG}brush-band.png`} alt="" />
             <span className="m-stripes" aria-hidden="true" />
             <div className="m-hero-copy">
-              <p className="m-script">{HERO_SCRIPTS[mCurrent.id] || 'Fait maison'}</p>
+              <p className="m-script">{mCurrent.script || HERO_SCRIPTS[mCurrent.id] || 'Fait maison'}</p>
               <h2>{twoToneTitle(mCurrent.name)}</h2>
               <p className="m-price">
-                <b>{fmtXof(mCurrent.unit)} F</b>
-                <s>{fmtXof(compareAtFor(mCurrent))} F</s>
+                <b>
+                  {fmtXof(mCurrent.unit)} F{mCurrent.shopPath ? <small> / kg</small> : null}
+                </b>
+                {compareAtFor(mCurrent) ? <s>{fmtXof(compareAtFor(mCurrent))} F</s> : null}
               </p>
-              <button type="button" className="m-hero-cta" onClick={(e) => handleAdd(mCurrent, 0, e)}>
-                <i>
-                  <Ico id="i-arrow" />
-                </i>
-                Commander
-              </button>
+              {mCurrent.shopPath ? (
+                <Link to={mCurrent.shopPath} className="m-hero-cta">
+                  <i>
+                    <Ico id="i-arrow" />
+                  </i>
+                  Commander
+                </Link>
+              ) : (
+                <button type="button" className="m-hero-cta" onClick={(e) => handleAdd(mCurrent, 0, e)}>
+                  <i>
+                    <Ico id="i-arrow" />
+                  </i>
+                  Commander
+                </button>
+              )}
             </div>
-            <div className={`m-hero-img${HERO_LARGE.has(mCurrent.id) ? ' is-lg' : ''}`}>
+            <div className={`m-hero-img${HERO_LARGE.has(mCurrent.id) || mCurrent.shopPath ? ' is-lg' : ''}${mCurrent.shopPath ? ' is-fresh' : ''}`}>
               <img src={mCurrent.cutImg} alt={mCurrent.name} />
             </div>
             <div className="m-bubble">
-              <svg viewBox="0 0 200 140" aria-hidden="true">
-                <path d="M18 72c8-34 46-58 82-58s74 24 82 58c8 34-18 62-82 62S10 106 18 72z" />
-              </svg>
-              <span>{discountLabel(mCurrent)}</span>
+              {discountLabel(mCurrent) ? (
+                <>
+                  <svg viewBox="0 0 200 140" aria-hidden="true">
+                    <path d="M18 72c8-34 46-58 82-58s74 24 82 58c8 34-18 62-82 62S10 106 18 72z" />
+                  </svg>
+                  <span>{discountLabel(mCurrent)}</span>
+                </>
+              ) : null}
             </div>
             <div className="m-dots">
               {slideList.map((_, k) => (
@@ -685,7 +762,7 @@ export default function RepasRefontePage({
         ) : null}
         <div className="m-cats" role="tablist" aria-label="Catégories">
           {REFONTE_CATS.map((c) => {
-            const n = c.id === 'all' ? items.length : items.filter((p) => p.cat === c.id).length;
+            const n = c.id === 'all' ? catalogue.length : catalogue.filter((p) => p.cat === c.id).length;
             return (
               <button
                 key={c.id}
@@ -698,7 +775,7 @@ export default function RepasRefontePage({
                 }}
               >
                 <span className="m-cat-img">
-                  <img src={cutSrc(c.icon)} alt="" loading="lazy" />
+                  <img src={catThumb(c)} alt="" loading="lazy" />
                 </span>
                 <strong>{c.name}</strong>
                 <small>
@@ -716,23 +793,35 @@ export default function RepasRefontePage({
             </button>
           </div>
           <div className="m-picks-row">
-            {mPicks.map((p) => (
-              <article key={p.id} className="m-pick">
-                <Link to={mealProductPath(p.id)} className="m-pick-media">
+            {mPicks.map((p) => {
+              const href = p.shopPath || mealProductPath(p.id);
+              const struck = compareAtFor(p);
+              return (
+              <article key={p.id} className={`m-pick${p.shopPath ? ' is-fresh' : ''}`}>
+                <Link to={href} className="m-pick-media">
                   <img src={p.cardImg} alt={p.name} loading="lazy" />
                 </Link>
                 <h3>{p.name}</h3>
                 <div className="m-pick-foot">
                   <div>
-                    <strong>{fmtXof(p.unit)} F</strong>
-                    <s>{fmtXof(compareAtFor(p))} F</s>
+                    <strong>
+                      {fmtXof(p.unit)} F{p.shopPath ? <small> / kg</small> : null}
+                    </strong>
+                    {struck ? <s>{fmtXof(struck)} F</s> : null}
                   </div>
-                  <button type="button" className="m-plus" aria-label={`Ajouter ${p.name}`} onClick={(e) => handleAdd(p, 0, e)}>
-                    <Ico id="i-plus" />
-                  </button>
+                  {p.shopPath ? (
+                    <Link to={href} className="m-plus" aria-label={`Commander ${p.name}`}>
+                      <Ico id="i-arrow" />
+                    </Link>
+                  ) : (
+                    <button type="button" className="m-plus" aria-label={`Ajouter ${p.name}`} onClick={(e) => handleAdd(p, 0, e)}>
+                      <Ico id="i-plus" />
+                    </button>
+                  )}
                 </div>
               </article>
-            ))}
+              );
+            })}
           </div>
         </section>
       </div>
@@ -815,7 +904,7 @@ export default function RepasRefontePage({
       <section className="cats" aria-label="Catégories">
         <div className="cats-row">
           {REFONTE_CATS.map((c) => {
-            const n = c.id === 'all' ? items.length : items.filter((p) => p.cat === c.id).length;
+            const n = c.id === 'all' ? catalogue.length : catalogue.filter((p) => p.cat === c.id).length;
             return (
               <button
                 key={c.id}
@@ -828,7 +917,7 @@ export default function RepasRefontePage({
                 }}
               >
                 <span className="cat-img">
-                  <img src={cutSrc(c.icon)} alt="" loading="lazy" />
+                  <img src={catThumb(c)} alt="" loading="lazy" />
                 </span>
                 <strong>{c.name}</strong>
                 <small>

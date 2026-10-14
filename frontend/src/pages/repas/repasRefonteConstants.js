@@ -154,6 +154,7 @@ export const HERO_SCRIPTS = {
 
 export const REFONTE_CATS = [
   { id: 'all', name: 'Tout le menu', icon: 'brochette' },
+  { id: 'frais', name: 'Poisson frais', icon: 'frais' },
   { id: 'braise', name: 'Braisés & fumés', icon: 'tilapia-braise' },
   { id: 'frit', name: 'Frits & panés', icon: 'poisson-pane' },
   { id: 'street', name: 'Street food', icon: 'shawarma-2' },
