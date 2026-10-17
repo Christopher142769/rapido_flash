@@ -13,7 +13,7 @@ import {
 import { adaptProducts, buildHeroSlides, freshShopSlides } from './repasRefonteAdapter';
 import { mealProductPath } from '../../utils/mealPaths';
 import { loadMealCart, mealCartCount, clearMealCart } from '../../utils/mealCart';
-import RepasDeliveryHours from './RepasDeliveryHours';
+import RepasDeliveryHours, { RepasDeliveryStrip } from './RepasDeliveryHours';
 import { mealDeliveryFeeForCity, mealShopContact } from '../../utils/mealShopSettings';
 import { getMealCatalogueUrgency } from '../../utils/mealShopUrgency';
 import { trackProductClick } from '../../utils/analyticsBeacon';
@@ -564,6 +564,7 @@ export default function RepasRefontePage({
       />
 
       <div className="rf-top" ref={topRef}>
+      <RepasDeliveryStrip settings={settings} onOrder={() => go('menu')} />
       <div className="rf-urgency" role="region" aria-label="Offre promotionnelle">
         <div className="rf-urgency-inner">
           <div className="rf-urgency-copy">

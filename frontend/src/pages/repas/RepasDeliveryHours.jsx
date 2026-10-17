@@ -24,6 +24,39 @@ function beninHour() {
   return h + m / 60;
 }
 
+/** Bandeau compact (au-dessus de la navbar) : horaires + accès rapide à la commande. */
+export function RepasDeliveryStrip({ settings, onOrder }) {
+  const [now, setNow] = useState(() => beninHour());
+  useEffect(() => {
+    const id = setInterval(() => setNow(beninHour()), 60000);
+    return () => clearInterval(id);
+  }, []);
+  const isOpen = now >= OPEN_HOUR;
+  return (
+    <div className="rf-dstrip" role="region" aria-label="Horaires de livraison">
+      <div className="rf-dstrip-inner">
+        <span className={`rf-dstrip-status${isOpen ? ' is-open' : ''}`}>
+          <i aria-hidden="true" />
+          {isOpen ? 'Ouvert' : 'Fermé'}
+        </span>
+        <span className="rf-dstrip-hours">
+          <Ico id="i-truck" />
+          <span className="rf-dstrip-long">Livraison de </span>
+          <strong>09h à 00h</strong>
+        </span>
+        <span className="rf-dstrip-fees">
+          Cotonou <b>{fmtXof(mealDeliveryFeeForCity(settings, 'Cotonou'))} F</b>
+          <em aria-hidden="true">·</em>
+          Calavi <b>{fmtXof(mealDeliveryFeeForCity(settings, 'Calavi'))} F</b>
+        </span>
+        <button type="button" className="rf-dstrip-cta" onClick={onOrder}>
+          Commander <Ico id="i-arrow" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function RepasDeliveryHours({ settings }) {
   const [now, setNow] = useState(() => beninHour());
   useEffect(() => {
