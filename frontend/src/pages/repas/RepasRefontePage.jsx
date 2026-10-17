@@ -13,6 +13,7 @@ import {
 import { adaptProducts, buildHeroSlides, freshShopSlides } from './repasRefonteAdapter';
 import { mealProductPath } from '../../utils/mealPaths';
 import { loadMealCart, mealCartCount, clearMealCart } from '../../utils/mealCart';
+import RepasDeliveryHours from './RepasDeliveryHours';
 import { mealDeliveryFeeForCity, mealShopContact } from '../../utils/mealShopSettings';
 import { getMealCatalogueUrgency } from '../../utils/mealShopUrgency';
 import { trackProductClick } from '../../utils/analyticsBeacon';
@@ -1108,6 +1109,8 @@ export default function RepasRefontePage({
           </div>
         </div>
       </section>
+
+      <RepasDeliveryHours settings={settings} />
 
       <footer className="foot" id="contact">
         <div className="wrap">
