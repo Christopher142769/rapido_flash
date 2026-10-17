@@ -9,6 +9,7 @@ import ShopDeliveryNotice, {
   DEFAULT_MEAL_DELIVERY_NOTICE_MESSAGE,
 } from '../../components/shop/ShopDeliveryNotice';
 import { getTodayDateKey } from '../../utils/shopDeliveryDate';
+import { mealDeliveryFeeForCity, mealShopContact } from '../../utils/mealShopSettings';
 import ShopQuantityPicker from '../../components/shop/ShopQuantityPicker';
 import ShopQuantityModal from '../../components/shop/ShopQuantityModal';
 import MealSidePicker from '../../components/shop/MealSidePicker';
@@ -36,7 +37,6 @@ import {
   displayProductDesc,
   displayProductName,
   fmtXof,
-  MEAL_SHOP_PHONE_DIGITS,
   refonteGalleryUrls,
 } from './repasRefonteConstants';
 import { adaptProducts, patchMealProduct } from './repasRefonteAdapter';
@@ -238,7 +238,7 @@ export default function MealProductLanding() {
   const unitPrice = promoState?.isPromoLive ? promoState.promoPrice : product?.basePrice;
   const unitBasePrice = product?.basePrice ?? 0;
   const hasQuantity = quantity >= 1;
-  const shopDeliveryFee = Math.max(0, Number(shopSettings?.deliveryFee) || 0);
+  const shopDeliveryFee = mealDeliveryFeeForCity(shopSettings, customer.city);
   const deliveryFee = promoState?.freeDelivery ? 0 : shopDeliveryFee;
 
   const sideOptions = useMemo(() => productSideOptions(product), [product]);
@@ -620,7 +620,7 @@ export default function MealProductLanding() {
       ) : null}
 
       <div id="shop-section-trust">
-        <ShopTrustCards whatsappNumber={MEAL_SHOP_PHONE_DIGITS} />
+        <ShopTrustCards whatsappNumber={mealShopContact(shopSettings).digits} />
       </div>
 
       <ShopPrivacyFooter className="shop-privacy-footer--sticky-pad" />

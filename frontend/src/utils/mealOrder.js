@@ -4,7 +4,7 @@ import {
   formatCustomerFullName,
   formatCustomerAddress,
 } from './shopOrder';
-import { MEAL_SHOP_PHONE_DIGITS } from '../pages/repas/repasRefonteConstants';
+import { mealShopContact } from './mealShopSettings';
 import { formatPriceXof } from './shopPromo';
 
 export { emptyCustomerForm, validateCustomerForm };
@@ -117,14 +117,14 @@ export function buildMealWhatsAppMessage(order) {
   return lines.join('\n');
 }
 
-export function buildMealWhatsAppOrderUrl(order) {
-  const raw = MEAL_SHOP_PHONE_DIGITS;
+export function buildMealWhatsAppOrderUrl(order, shopSettings) {
+  const raw = mealShopContact(shopSettings).digits;
   if (!raw) return null;
   return `https://wa.me/${raw}?text=${encodeURIComponent(buildMealWhatsAppMessage(order))}`;
 }
 
-export async function openMealOrderWhatsAppTrack(order) {
-  const url = buildMealWhatsAppOrderUrl(order);
+export async function openMealOrderWhatsAppTrack(order, shopSettings) {
+  const url = buildMealWhatsAppOrderUrl(order, shopSettings);
   if (!url) return false;
   if (order._id || order.orderId) {
     const id = order._id || order.orderId;

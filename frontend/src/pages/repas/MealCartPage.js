@@ -27,6 +27,7 @@ import {
   submitMealOrderToApi,
   saveMealOrder,
 } from '../../utils/mealOrder';
+import { mealDeliveryFeeForCity } from '../../utils/mealShopSettings';
 import { mealConfirmationPath, mealProductPath } from '../../utils/mealPaths';
 import { trackCtaClick, trackRapido } from '../../utils/analyticsBeacon';
 import './MealCartPage.css';
@@ -40,7 +41,7 @@ export default function MealCartPage() {
   const [items, setItems] = useState(() => loadMealCart());
   const [customer, setCustomer] = useState(() => emptyCustomerForm());
   const [errors, setErrors] = useState({});
-  const [deliveryFee, setDeliveryFee] = useState(500);
+  const [shopSettings, setShopSettings] = useState(null);
   const [shopClosed, setShopClosed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -53,7 +54,7 @@ export default function MealCartPage() {
     axios
       .get(`${API_URL}/meal-shop/public`)
       .then((res) => {
-        setDeliveryFee(Number(res.data?.deliveryFee) || 0);
+        setShopSettings(res.data);
         setShopClosed(!!res.data?.isShopClosed);
       })
       .catch(() => {});
@@ -80,6 +81,7 @@ export default function MealCartPage() {
     };
   }, [checkoutOpen]);
 
+  const deliveryFee = mealDeliveryFeeForCity(shopSettings, customer.city);
   const totals = useMemo(
     () => estimateMealCartTotals(items, deliveryFee, false),
     [items, deliveryFee]

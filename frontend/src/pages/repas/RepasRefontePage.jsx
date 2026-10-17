@@ -9,12 +9,11 @@ import {
   HERO_SCRIPTS,
   fmtXof,
   cutSrc,
-  MEAL_SHOP_PHONE_DIGITS,
-  MEAL_SHOP_PHONE_DISPLAY,
 } from './repasRefonteConstants';
 import { adaptProducts, buildHeroSlides, freshShopSlides } from './repasRefonteAdapter';
 import { mealProductPath } from '../../utils/mealPaths';
 import { loadMealCart, mealCartCount, clearMealCart } from '../../utils/mealCart';
+import { mealDeliveryFeeForCity, mealShopContact } from '../../utils/mealShopSettings';
 import { getMealCatalogueUrgency } from '../../utils/mealShopUrgency';
 import { trackProductClick } from '../../utils/analyticsBeacon';
 import ShopCountdown from '../../components/shop/ShopCountdown';
@@ -170,8 +169,7 @@ export default function RepasRefontePage({
     autoplayMs: 6500,
   });
 
-  const waDigits = MEAL_SHOP_PHONE_DIGITS;
-  const phoneDisplay = MEAL_SHOP_PHONE_DISPLAY;
+  const { digits: waDigits, display: phoneDisplay } = mealShopContact(settings);
   const urgency = useMemo(
     () => getMealCatalogueUrgency(settings, new Date(urgencyClock)),
     [settings, urgencyClock]
@@ -383,6 +381,9 @@ export default function RepasRefontePage({
     0
   );
 
+  const cartDeliveryFee = cartLines.length ? mealDeliveryFeeForCity(settings, city) : 0;
+  const cartGrandTotal = cartSubtotal + cartDeliveryFee;
+
   const waCartHref = useMemo(() => {
     if (!waDigits || !cartLines.length) return '#';
     const msg =
@@ -390,9 +391,10 @@ export default function RepasRefontePage({
       cartLines
         .map((l) => `- ${l.quantity} x ${l.name} : ${fmtXof((l.unitPrice || 0) * l.quantity)} F`)
         .join('\n') +
-      `\nTotal : ${fmtXof(cartSubtotal)} F\nVille : ${city}`;
+      `\nLivraison (${city}) : ${fmtXof(cartDeliveryFee)} F` +
+      `\nTotal : ${fmtXof(cartGrandTotal)} F\nVille : ${city}`;
     return `https://wa.me/${waDigits}?text=${encodeURIComponent(msg)}`;
-  }, [waDigits, cartLines, cartSubtotal, city]);
+  }, [waDigits, cartLines, cartDeliveryFee, cartGrandTotal, city]);
 
   const current = slideList[heroIdx] || slideList[0];
   const mCurrent = slideList[mIdx] || slideList[0];
@@ -1212,11 +1214,11 @@ export default function RepasRefontePage({
             </div>
             <div className="sub">
               <span>Livraison</span>
-              <span>Selon la zone</span>
+              <span>{cartLines.length ? `${fmtXof(cartDeliveryFee)} F (${city})` : 'Selon la ville'}</span>
             </div>
             <div className="grand">
               <span>Total</span>
-              <span>{fmtXof(cartSubtotal)} F</span>
+              <span>{fmtXof(cartGrandTotal)} F</span>
             </div>
             {cartLines.length ? (
               <button type="button" className="btn-clear-cart" onClick={handleClearCart}>

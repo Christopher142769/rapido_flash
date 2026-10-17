@@ -37,8 +37,11 @@ const mealShopSettingsSchema = new mongoose.Schema(
       ctaLabel: { type: String, default: 'Voir les plats', trim: true },
     },
     categories: { type: [String], default: [] },
-    /** Frais de livraison globaux (FCFA) pour toute la commande. */
+    /** @deprecated remplacé par deliveryFeeCotonou / deliveryFeeCalavi. */
     deliveryFee: { type: Number, default: 500, min: 0 },
+    /** Frais de livraison (FCFA) par ville, appliqués à toute la commande. */
+    deliveryFeeCotonou: { type: Number, default: 700, min: 0 },
+    deliveryFeeCalavi: { type: Number, default: 1000, min: 0 },
     /**
      * Message NB livraison affiché sur les fiches produits où showDeliveryNotice est actif.
      * Shop Repas : livraison dans les prochaines 24 h (pas J+1).
@@ -61,8 +64,8 @@ const mealShopSettingsSchema = new mongoose.Schema(
       enabled: { type: Boolean, default: false },
       maxOrders: { type: Number, default: 0, min: 0 },
     },
-    /** WhatsApp ouvert via « Suivre ma commande » (Shop Repas). */
-    trackingWhatsAppNumber: { type: String, default: '', trim: true },
+    /** WhatsApp / téléphone boutique Repas (suivi, commande). Vide = défaut mealShopConfig. */
+    trackingWhatsAppNumber: { type: String, default: '22940317568', trim: true },
     /**
      * Compteur / urgence de la page catalogue /repas uniquement.
      * Indépendant des promos Shop Express et des promos par plat.

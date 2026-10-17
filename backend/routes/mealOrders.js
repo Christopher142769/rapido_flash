@@ -17,14 +17,11 @@ const {
   responsableMealListFilter,
 } = require('../utils/responsableAccess');
 
+const { MEAL_CITIES, getMealDeliveryFee, resolveTrackingWhatsApp } = require('../utils/mealShopConfig');
+
 const router = express.Router();
 
-const SHOP_CITIES = ['Cotonou', 'Calavi'];
-const SHOP_WA = '2290143949494';
-
-async function getMealShopTrackingWhatsApp() {
-  return SHOP_WA;
-}
+const SHOP_CITIES = MEAL_CITIES;
 
 function validateCustomer(customer) {
   const c = customer || {};
@@ -143,7 +140,7 @@ router.post('/', async (req, res) => {
       if (result.promoState?.freeDelivery) anyFreeDelivery = true;
     }
 
-    const shopDelivery = Math.max(0, Math.round(Number(settings.deliveryFee) || 0));
+    const shopDelivery = getMealDeliveryFee(settings, String(customer.city).trim());
     const totals = computeMealOrderTotals(builtItems, shopDelivery, anyFreeDelivery);
     const orderNumber = await generateMealOrderNumber();
 
@@ -170,7 +167,7 @@ router.post('/', async (req, res) => {
         city: String(customer.city).trim(),
         addressDescription: String(customer.addressDescription).trim(),
       },
-      whatsappNumber: await getMealShopTrackingWhatsApp(),
+      whatsappNumber: resolveTrackingWhatsApp(settings).digits,
       statut: 'en_attente',
       commercialStatus: 'commande',
       orderDate: new Date(),

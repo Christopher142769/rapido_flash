@@ -52,9 +52,15 @@ export const REFONTE_PRODUCT_DESCS = {
   'rillettes-de-poissons': 'Pot de rillettes de poisson KING FISH, saveur authentique.',
 };
 
-/** WhatsApp et téléphone de la boutique Repas. */
-export const MEAL_SHOP_PHONE_DIGITS = '2290143949494';
-export const MEAL_SHOP_PHONE_DISPLAY = '+229 01 43 94 94 94';
+/**
+ * Repli d'affichage avant chargement des réglages dashboard (miroir de
+ * backend/utils/mealShopConfig.js). Les vraies valeurs viennent de /meal-shop/public.
+ */
+export const MEAL_SHOP_DEFAULTS = {
+  deliveryFees: { Cotonou: 700, Calavi: 1000 },
+  whatsappDigits: '22940317568',
+  whatsappDisplay: '+229 40 31 75 68',
+};
 
 export function displayProductDesc(slug, fallback = '') {
   const key = String(slug || '').trim().toLowerCase();

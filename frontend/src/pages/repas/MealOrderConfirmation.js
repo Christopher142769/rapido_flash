@@ -5,7 +5,7 @@ import {
   formatCustomerFullName,
   formatCustomerAddress,
 } from '../../utils/shopOrder';
-import { MEAL_SHOP_PHONE_DISPLAY } from './repasRefonteConstants';
+import { mealShopContact, useMealShopSettings } from '../../utils/mealShopSettings';
 import { formatPriceXof } from '../../utils/shopPromo';
 import { mealCatalogPath, mealConfirmationPath, mealProductPath } from '../../utils/mealPaths';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
@@ -22,7 +22,8 @@ export default function MealOrderConfirmation() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const order = useMemo(() => loadMealOrder(), []);
-  const shopWaDisplay = MEAL_SHOP_PHONE_DISPLAY;
+  const shopSettings = useMealShopSettings();
+  const shopWaDisplay = mealShopContact(shopSettings).display;
 
   useEffect(() => {
     if (!order) {
@@ -61,7 +62,7 @@ export default function MealOrderConfirmation() {
 
   const handleTrack = async (e) => {
     e.preventDefault();
-    const opened = await openMealOrderWhatsAppTrack(order);
+    const opened = await openMealOrderWhatsAppTrack(order, shopSettings);
     if (!opened) {
       alert(`WhatsApp indisponible. Contactez Rapido au ${shopWaDisplay}.`);
     }

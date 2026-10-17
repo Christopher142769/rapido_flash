@@ -668,16 +668,26 @@ export default function ShopRepasDashboard() {
           </header>
 
           <section className="shop-dash-form-block">
-            <ShopFormSectionHead step="1" title="Livraison & catégories" subtitle="Frais globaux et filtres du catalogue." />
+            <ShopFormSectionHead step="1" title="Livraison & catégories" subtitle="Frais de livraison par ville (tous les plats) et filtres du catalogue." />
             <div className="shop-dash-grid">
               <div>
-                <label>Frais de livraison (FCFA)</label>
+                <label>Livraison Cotonou (FCFA)</label>
                 <input
                   className="shop-dash-input"
                   type="number"
                   min={0}
-                  value={settings.deliveryFee ?? 500}
-                  onChange={(e) => setSettings((s) => ({ ...s, deliveryFee: e.target.value }))}
+                  value={settings.deliveryFeeCotonou ?? 700}
+                  onChange={(e) => setSettings((s) => ({ ...s, deliveryFeeCotonou: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label>Livraison Calavi (FCFA)</label>
+                <input
+                  className="shop-dash-input"
+                  type="number"
+                  min={0}
+                  value={settings.deliveryFeeCalavi ?? 1000}
+                  onChange={(e) => setSettings((s) => ({ ...s, deliveryFeeCalavi: e.target.value }))}
                 />
               </div>
               <div>
@@ -757,7 +767,8 @@ export default function ShopRepasDashboard() {
               disabled={saving}
               onClick={() =>
                 saveSettings({
-                  deliveryFee: Number(settings.deliveryFee) || 0,
+                  deliveryFeeCotonou: Number(settings.deliveryFeeCotonou) || 0,
+                  deliveryFeeCalavi: Number(settings.deliveryFeeCalavi) || 0,
                   categories: settings.categories,
                   deliveryNoticeMessage: settings.deliveryNoticeMessage || '',
                   trackingWhatsAppNumber: settings.trackingWhatsAppNumber || '',
@@ -771,11 +782,11 @@ export default function ShopRepasDashboard() {
           <section className="shop-dash-form-block">
             <ShopFormSectionHead
               step="1b"
-              title="Suivre ma commande"
-              subtitle="Numéro WhatsApp ouvert quand le client clique sur « Suivre ma commande » après validation."
+              title="WhatsApp de la boutique repas"
+              subtitle="Numéro utilisé pour commander, suivre une commande et contacter la boutique sur /repas."
             />
             <div>
-              <label>WhatsApp suivi commande</label>
+              <label>WhatsApp suivi des repas</label>
               <input
                 className="shop-dash-input"
                 value={settings.trackingWhatsAppNumber ?? ''}
@@ -783,8 +794,8 @@ export default function ShopRepasDashboard() {
                 placeholder="Ex. 40 31 75 68 ou 22940317568"
               />
               <p className="shop-dash-hint">
-                Laisser vide pour utiliser le numéro Rapido par défaut (+229 40 31 75 68). Un seul numéro pour
-                toute la boutique repas.
+                Laisser vide pour utiliser le numéro par défaut (+229 40 31 75 68). Un seul numéro pour toute la
+                boutique repas (indicatif +229 ajouté automatiquement).
               </p>
             </div>
             <button

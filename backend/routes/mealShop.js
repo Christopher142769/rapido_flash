@@ -5,6 +5,7 @@ const upload = require('../middleware/uploadMealProduct');
 const { getShopClosureState } = require('../utils/shopClosure');
 const { getShopOrderLimitState, mergeClosureWithOrderLimit } = require('../utils/shopOrderLimit');
 const MealOrder = require('../models/MealOrder');
+const { resolveDeliveryFees, resolveTrackingWhatsApp, normalizeBeninDigits } = require('../utils/mealShopConfig');
 
 const router = express.Router();
 
@@ -49,8 +50,18 @@ function serializeSettings(doc, ordersToday = 0) {
   );
   const availability = mergeClosureWithOrderLimit(closureState, limitState, new Date());
   const notice = String(raw.deliveryNoticeMessage || '').trim();
+  const deliveryFees = resolveDeliveryFees(raw);
+  const tracking = resolveTrackingWhatsApp(raw);
   return {
     ...raw,
+    deliveryFeeCotonou: deliveryFees.Cotonou,
+    deliveryFeeCalavi: deliveryFees.Calavi,
+    deliveryFees,
+    /** Compat anciens clients : frais Cotonou. */
+    deliveryFee: deliveryFees.Cotonou,
+    trackingWhatsAppNumber: tracking.digits,
+    trackingWhatsAppDigits: tracking.digits,
+    trackingWhatsAppDisplay: tracking.display,
     trustItems: raw.trustItems?.length ? raw.trustItems : DEFAULT_TRUST,
     deliveryNoticeMessage: notice === LEGACY_DELIVERY_NOTICE ? '' : notice,
     deliveryNoticeMessageDefault: DEFAULT_DELIVERY_NOTICE,
@@ -125,18 +136,19 @@ router.put('/', auth, isRestaurant, async (req, res) => {
         .map((c) => String(c).trim())
         .filter(Boolean);
     }
-    if (body.deliveryFee != null) {
-      doc.deliveryFee = Math.max(0, Math.round(Number(body.deliveryFee) || 0));
-    }
+    const feeIn = (v) => Math.max(0, Math.round(Number(v) || 0));
+    const feesBody = body.deliveryFees || {};
+    const cotonouIn = body.deliveryFeeCotonou ?? feesBody.Cotonou;
+    const calaviIn = body.deliveryFeeCalavi ?? feesBody.Calavi;
+    if (cotonouIn != null && cotonouIn !== '') doc.deliveryFeeCotonou = feeIn(cotonouIn);
+    if (calaviIn != null && calaviIn !== '') doc.deliveryFeeCalavi = feeIn(calaviIn);
     if (body.deliveryNoticeMessage != null) {
       doc.deliveryNoticeMessage = String(body.deliveryNoticeMessage || '')
         .trim()
         .slice(0, 500);
     }
     if (body.trackingWhatsAppNumber != null) {
-      doc.trackingWhatsAppNumber = String(body.trackingWhatsAppNumber || '')
-        .trim()
-        .slice(0, 30);
+      doc.trackingWhatsAppNumber = normalizeBeninDigits(body.trackingWhatsAppNumber).slice(0, 20);
     }
     if (body.shopClosure != null) {
       const sc = body.shopClosure;
