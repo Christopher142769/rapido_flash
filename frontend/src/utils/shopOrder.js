@@ -94,7 +94,9 @@ export function emptyCustomerForm() {
 export function buildShopOrderPayload(product, promoState, quantity, customer, options = {}) {
   const unitPrice = promoState?.isPromoLive ? promoState.promoPrice : product.basePrice;
   const quantityUnit = normalizeShopQuantityUnit(product.quantityUnit);
-  const deliveryFee = getShopDeliveryFee(product, promoState);
+  const deliveryFee = Number.isFinite(options.deliveryFee)
+    ? options.deliveryFee
+    : getShopDeliveryFee(product, promoState);
   const eviscerationCleaning = !!options.eviscerationCleaning;
   const { subtotalPrice, totalPrice, eviscerationFee } = computeShopOrderTotals(
     unitPrice,

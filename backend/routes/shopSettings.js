@@ -2,6 +2,8 @@ const express = require('express');
 const ShopSettings = require('../models/ShopSettings');
 const { auth, isRestaurant } = require('../middleware/auth');
 
+const { resolveDeliveryFees } = require('../utils/mealShopConfig');
+
 const router = express.Router();
 
 const DEFAULT_MESSAGE =
@@ -15,8 +17,12 @@ async function getOrCreate() {
 
 function serialize(doc) {
   const raw = doc.toObject ? doc.toObject() : { ...doc };
+  const deliveryFees = resolveDeliveryFees(raw);
   return {
     ...raw,
+    deliveryFeeCotonou: deliveryFees.Cotonou,
+    deliveryFeeCalavi: deliveryFees.Calavi,
+    deliveryFees,
     deliveryNoticeMessage: String(raw.deliveryNoticeMessage || '').trim(),
     deliveryNoticeMessageDefault: DEFAULT_MESSAGE,
   };
@@ -49,6 +55,10 @@ router.put('/', auth, isRestaurant, async (req, res) => {
         .trim()
         .slice(0, 500);
     }
+    const feeIn = (v) => Math.max(0, Math.round(Number(v) || 0));
+    const { deliveryFeeCotonou, deliveryFeeCalavi } = req.body || {};
+    if (deliveryFeeCotonou != null && deliveryFeeCotonou !== '') doc.deliveryFeeCotonou = feeIn(deliveryFeeCotonou);
+    if (deliveryFeeCalavi != null && deliveryFeeCalavi !== '') doc.deliveryFeeCalavi = feeIn(deliveryFeeCalavi);
     await doc.save();
     res.json(serialize(doc));
   } catch (err) {

@@ -2,6 +2,8 @@ const express = require('express');
 const User = require('../models/User');
 const ShopProduct = require('../models/ShopProduct');
 const ShopOrder = require('../models/ShopOrder');
+const ShopSettings = require('../models/ShopSettings');
+const { getMealDeliveryFee } = require('../utils/mealShopConfig');
 const { auth, isRestaurant, isCommercialStaff } = require('../middleware/auth');
 const { generateShopOrderNumber } = require('../utils/shopOrderNumber');
 const { getShopPromoState, getShopDeliveryFee, computeShopOrderTotals } = require('../utils/shopPromo');
@@ -111,7 +113,10 @@ router.post('/', async (req, res) => {
     const promoState = getShopPromoState(product);
     const quantityUnit = normalizeShopQuantityUnit(product.quantityUnit);
     const unitPrice = promoState.isPromoLive ? promoState.promoPrice : promoState.basePrice;
-    const deliveryFee = getShopDeliveryFee(product, promoState);
+    const shopSettings = await ShopSettings.findOne({ key: 'default' });
+    const deliveryFee = promoState.freeDelivery
+      ? 0
+      : getMealDeliveryFee(shopSettings, String(customer.city || '').trim());
     const eviscerationCleaning =
       product.eviscerationEnabled !== false &&
       !!req.body?.eviscerationCleaning &&

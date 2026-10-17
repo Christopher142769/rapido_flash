@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { mealDeliveryFeeForCity } from '../../utils/mealShopSettings';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import PageLoader from '../../components/PageLoader';
@@ -206,7 +207,11 @@ export default function ShopProductLanding() {
   const quantityDisplay = formatQuantityWithUnit(quantity, quantityUnit);
   const priceUnitSuffix = getPriceUnitSuffix(quantityUnit);
   const hasQuantity = quantity >= 1;
-  const deliveryFee = promoState ? getShopDeliveryFee(product, promoState) : 0;
+  const deliveryFee = promoState
+    ? promoState.freeDelivery
+      ? 0
+      : mealDeliveryFeeForCity(shopSettings, customer.city)
+    : 0;
   const subtotalPrice = hasQuantity ? (unitPrice || 0) * quantity : 0;
   const totalBasePrice = hasQuantity ? unitBasePrice * quantity : 0;
   const orderTotals = hasQuantity
@@ -270,6 +275,7 @@ export default function ShopProductLanding() {
 
     const order = buildShopOrderPayload(product, promoState, orderQuantity, customer, {
       eviscerationCleaning: eviscerationAvailable && eviscerationCleaning,
+      deliveryFee,
     });
     setSubmitting(true);
     try {

@@ -195,6 +195,8 @@ export default function ShopDashboard() {
   const [shopNoticeMessage, setShopNoticeMessage] = useState('');
   const [shopNoticeDefault, setShopNoticeDefault] = useState('');
   const [savingNotice, setSavingNotice] = useState(false);
+  const [cityFees, setCityFees] = useState({ cotonou: 700, calavi: 1000 });
+  const [savingFees, setSavingFees] = useState(false);
 
   const formRef = useRef(form);
   const editingIdRef = useRef(editingId);
@@ -222,6 +224,10 @@ export default function ShopDashboard() {
       .then((res) => {
         setShopNoticeMessage(res.data?.deliveryNoticeMessage || '');
         setShopNoticeDefault(res.data?.deliveryNoticeMessageDefault || '');
+        setCityFees({
+          cotonou: res.data?.deliveryFeeCotonou ?? 700,
+          calavi: res.data?.deliveryFeeCalavi ?? 1000,
+        });
       })
       .catch(() => {});
   }, [loadProducts, authHeaders]);
@@ -1526,6 +1532,66 @@ export default function ShopDashboard() {
           </div>
         </form>
       ) : null}
+
+      <div className="shop-dash-card shop-dash-form" style={{ marginBottom: 20 }}>
+        <header className="shop-dash-form-header">
+          <div>
+            <h3 className="shop-dash-form-title">Frais de livraison par ville</h3>
+            <p className="shop-dash-form-sub">
+              Appliqués à tous les produits du Shop selon la ville choisie par le client (remplace le frais par
+              produit).
+            </p>
+          </div>
+        </header>
+        <div className="shop-dash-grid">
+          <div>
+            <label>Livraison Cotonou (FCFA)</label>
+            <input
+              className="shop-dash-input"
+              type="number"
+              min={0}
+              value={cityFees.cotonou}
+              onChange={(e) => setCityFees((f) => ({ ...f, cotonou: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label>Livraison Calavi (FCFA)</label>
+            <input
+              className="shop-dash-input"
+              type="number"
+              min={0}
+              value={cityFees.calavi}
+              onChange={(e) => setCityFees((f) => ({ ...f, calavi: e.target.value }))}
+            />
+          </div>
+        </div>
+        <button
+          type="button"
+          className="shop-dash-btn shop-dash-btn--primary"
+          style={{ marginTop: 12 }}
+          disabled={savingFees}
+          onClick={async () => {
+            setSavingFees(true);
+            try {
+              const res = await axios.put(
+                `${API_URL}/shop-settings`,
+                {
+                  deliveryFeeCotonou: Number(cityFees.cotonou) || 0,
+                  deliveryFeeCalavi: Number(cityFees.calavi) || 0,
+                },
+                authHeaders
+              );
+              setCityFees({ cotonou: res.data?.deliveryFeeCotonou, calavi: res.data?.deliveryFeeCalavi });
+            } catch (err) {
+              alert(err.response?.data?.message || 'Erreur');
+            } finally {
+              setSavingFees(false);
+            }
+          }}
+        >
+          {savingFees ? 'Enregistrement…' : 'Enregistrer les frais'}
+        </button>
+      </div>
 
       <div className="shop-dash-card shop-dash-form" style={{ marginBottom: 20 }}>
         <header className="shop-dash-form-header">
