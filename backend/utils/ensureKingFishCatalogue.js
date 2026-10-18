@@ -139,14 +139,19 @@ async function ensureKingFishCatalogue() {
     }
   }
 
-  // Pas de suppléments sur les produits d'épicerie (une seule fois : seulement si le champ n'a jamais été défini).
-  await MealProduct.collection.updateMany(
-    {
-      allowExtras: { $exists: false },
-      slug: { $in: ['rillettes-de-poissons', 'rillettes', 'chips-de-poisson-spicy', 'chips-de-poisson-nature'] },
-    },
-    { $set: { allowExtras: false } }
-  );
+  // Pas de suppléments sur les produits d'épicerie : une seule fois (marqueur), pour ne pas écraser
+  // ensuite le choix fait dans le dashboard. (Les save() ci-dessus persistent le défaut true, d'où le marqueur.)
+  const flagged = await MealShopSettings.collection.findOne({ key: 'default', extrasEpicerieDone: true });
+  if (!flagged) {
+    await MealProduct.collection.updateMany(
+      { slug: { $in: ['rillettes-de-poissons', 'rillettes', 'chips-de-poisson-spicy', 'chips-de-poisson-nature'] } },
+      { $set: { allowExtras: false } }
+    );
+    await MealShopSettings.collection.updateOne(
+      { key: 'default' },
+      { $set: { extrasEpicerieDone: true } }
+    );
+  }
   // Les options de taille précisent qu'il s'agit de la taille du poisson.
   await MealProduct.collection.updateMany(
     { 'optionGroups.name': 'Taille' },
