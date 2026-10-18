@@ -520,7 +520,8 @@ export default function RepasRefontePage({
           </Link>
           <p className="card-desc">{p.desc}</p>
           {p.sizes ? (
-            <div className="sizes">
+            <div className="sizes" role="group" aria-label="Taille du poisson">
+              <span className="sizes-lbl">Taille du poisson</span>
               {p.sizes.map((s, k) => (
                 <button
                   key={s}
@@ -950,7 +951,7 @@ export default function RepasRefontePage({
             <p className="kicker">À propos de nous</p>
             <h2 className="h2">Nous servons le meilleur poisson de votre ville.</h2>
             <p className="lead">
-              Tilapia et machoiron d&apos;élevage local, braisés, fumés ou frits à la commande dans les cuisines King Fish,
+              Tilapia et mâchoiron d&apos;élevage local, braisés, fumés ou frits à la commande dans les cuisines King Fish,
               puis livrés chauds par Rapido à Cotonou comme à Calavi.
             </p>
             <ul className="feats">
@@ -1127,7 +1128,7 @@ export default function RepasRefontePage({
               <li>WhatsApp : {phoneDisplay}</li>
               <li>rapido.online/repas</li>
               <li>
-                <Link to="/repas/panier">Panier &amp; checkout</Link>
+                <Link to="/repas/panier">Panier &amp; commande</Link>
               </li>
             </ul>
           </div>

@@ -143,6 +143,7 @@ router.post('/', auth, isRestaurant, upload.fields([
       optionGroups: normalizeOptionGroups(parseJsonField(req.body.optionGroups, [])),
       allowSpecifications:
         req.body.allowSpecifications !== false && req.body.allowSpecifications !== 'false',
+      allowExtras: req.body.allowExtras !== false && req.body.allowExtras !== 'false',
       promo: buildPromoFromBody(req.body),
     });
     await product.save();
@@ -196,6 +197,9 @@ router.put('/:id', auth, isRestaurant, upload.fields([
     if (req.body.allowSpecifications != null) {
       product.allowSpecifications =
         req.body.allowSpecifications === true || req.body.allowSpecifications === 'true';
+    }
+    if (req.body.allowExtras != null) {
+      product.allowExtras = req.body.allowExtras === true || req.body.allowExtras === 'true';
     }
     if (req.body.promo != null) product.promo = buildPromoFromBody(req.body);
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { formatPriceXof } from '../../utils/shopPromo';
+import { displayOptionGroupName } from '../../pages/repas/repasRefonteConstants';
 import { isChoiceSelected, optionChoiceKey, optionGroupKey } from '../../utils/mealOptions';
 import './MealOptionGroups.css';
 
@@ -19,7 +20,7 @@ export default function MealOptionGroups({ groups = [], selection = {}, onToggle
           <div key={optionGroupKey(g)} className="meal-opt-group">
             <div className="meal-opt-group-head">
               <strong>
-                {g.name}
+                {displayOptionGroupName(g.name)}
                 {g.required ? <span className="meal-opt-req"> *</span> : null}
               </strong>
               <span className="meal-opt-hint">

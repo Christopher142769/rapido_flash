@@ -4,6 +4,7 @@ import {
   formatCustomerFullName,
   formatCustomerAddress,
 } from './shopOrder';
+import { displayOptionGroupName } from '../pages/repas/repasRefonteConstants';
 import { mealShopContact } from './mealShopSettings';
 import { formatPriceXof } from './shopPromo';
 
@@ -76,7 +77,7 @@ export function buildMealWhatsAppMessage(order) {
     }
     (it.options || []).forEach((o) => {
       const suffix = Number(o.price) > 0 ? ` (${formatPriceXof(o.price)})` : '';
-      lines.push('', `*${o.groupName} :* ${o.choiceLabel}${suffix}`);
+      lines.push('', `*${displayOptionGroupName(o.groupName)} :* ${o.choiceLabel}${suffix}`);
     });
     (it.accompagnements || []).forEach((a) => {
       const label = a.role === 'extra' ? 'Supplément' : 'Accompagnement';

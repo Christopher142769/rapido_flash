@@ -87,6 +87,7 @@ const emptyForm = () => ({
   accompagnements: [],
   optionGroups: [],
   allowSpecifications: true,
+  allowExtras: true,
   showDeliveryNotice: true,
   promo: {
     active: false,
@@ -259,6 +260,7 @@ export default function ShopRepasDashboard() {
         })),
       })),
       allowSpecifications: p.allowSpecifications !== false,
+      allowExtras: p.allowExtras !== false,
       promo: {
         active: !!p.promo?.active,
         priceMode: p.promo?.priceMode || 'percent',
@@ -407,6 +409,7 @@ export default function ShopRepasDashboard() {
           }))
           .filter((g) => g.name && g.choices.length),
         allowSpecifications: form.allowSpecifications !== false,
+        allowExtras: form.allowExtras !== false,
         promo,
       };
 
@@ -1641,6 +1644,14 @@ export default function ShopRepasDashboard() {
                 }
               />
               Autoriser le client à saisir une spécification de son plat
+            </label>
+            <label className="shop-dash-check" style={{ marginTop: '0.5rem' }}>
+              <input
+                type="checkbox"
+                checked={form.allowExtras !== false}
+                onChange={(e) => setForm((f) => ({ ...f, allowExtras: e.target.checked }))}
+              />
+              Proposer les suppléments (décocher pour rillettes, chips…)
             </label>
           </section>
 

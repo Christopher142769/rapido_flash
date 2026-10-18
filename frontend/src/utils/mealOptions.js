@@ -1,4 +1,5 @@
 /** Sélection d'options Shop Repas (choix unique/multiple, payant ou gratuit). */
+import { displayOptionGroupName } from '../pages/repas/repasRefonteConstants';
 
 export function optionGroupKey(group) {
   return String(group?._id || group?.name || '');
@@ -68,7 +69,7 @@ export function validateOptionSelection(groups = [], state = {}) {
   for (const g of groups || []) {
     const availableChoices = (g.choices || []).filter((c) => c.available !== false);
     if (g.required && availableChoices.length > 0 && (state[optionGroupKey(g)] || []).length < 1) {
-      return `Choix requis : ${g.name}`;
+      return `Choix requis : ${displayOptionGroupName(g.name)}`;
     }
   }
   return '';

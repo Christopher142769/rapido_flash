@@ -10,7 +10,7 @@ const IMG = '/images/repas/refonte/machoiron-frit-photo.webp';
 
 function taille(choices) {
   return {
-    name: 'Taille',
+    name: 'Taille du poisson',
     selectionType: 'single',
     required: true,
     choices: choices.map(([label, price]) => ({
@@ -33,8 +33,8 @@ const NAME_AND_COPY = [
   },
   {
     slug: 'machoiron-braise',
-    name: 'Machoiron braisé',
-    shortDescription: 'Machoiron braisé entier et légumes.',
+    name: 'Mâchoiron braisé',
+    shortDescription: 'Mâchoiron braisé entier et légumes.',
   },
 ];
 
@@ -42,12 +42,12 @@ const NAME_FIXES = {
   shawarma: { name: 'Chawarma', shortDescription: 'Wrap généreux au poisson, sauce crémeuse et légumes croquants.' },
   'filet-poisson-pouiller': { name: 'Filet de poisson poêlé', shortDescription: 'Filet poêlé, croustillant dehors et fondant dedans.' },
   'brochette-de-poisson': {
-    name: 'Brochette de poisson',
-    shortDescription: 'Brochette de poisson marinée au feu, idéale avec frites ou attiéké.',
+    name: 'Brochettes de poisson',
+    shortDescription: 'Brochettes de poisson marinées au feu, idéales avec frites ou attiéké.',
   },
   'monyo-machoiron-fume': {
-    name: 'Monyo de machoiron fumé',
-    shortDescription: "Machoiron fumé à l'ancienne aux saveurs intenses.",
+    name: 'Monyo de mâchoiron fumé',
+    shortDescription: "Mâchoiron fumé à l'ancienne aux saveurs intenses.",
   },
   'rillettes-de-poissons': {
     name: 'Rillettes de poisson',
@@ -92,10 +92,10 @@ async function ensureKingFishCatalogue() {
   if (!fried) {
     fried = new MealProduct({
       slug: 'monyo-machoiron-frit',
-      name: 'Monyo de machoiron frit',
+      name: 'Monyo de mâchoiron frit',
       category: 'Poissons',
       basePrice: 1500,
-      shortDescription: 'Machoiron frit, monyo tomate-oignon et sauce maison.',
+      shortDescription: 'Mâchoiron frit, monyo tomate-oignon et sauce maison.',
       mainImage: IMG,
       images: [IMG],
       accompagnements: sides,
@@ -110,7 +110,7 @@ async function ensureKingFishCatalogue() {
   } else if (!fried.optionGroups?.length) {
     fried.optionGroups = [taille([['Moyen', 0], ['Grand', 500]])];
     if (!fried.basePrice) fried.basePrice = 1500;
-    fried.name = fried.name || 'Monyo de machoiron frit';
+    fried.name = fried.name || 'Monyo de mâchoiron frit';
     fried.published = true;
     fried.available = true;
     if (!fried.accompagnements?.length && sides.length) fried.accompagnements = sides;
@@ -129,8 +129,8 @@ async function ensureKingFishCatalogue() {
           active: true,
           imageUrl: '',
           imageUrls: [],
-          title: 'Monyo de machoiron frit',
-          subtitle: 'Machoiron frit, monyo tomate-oignon et sauce maison.',
+          title: 'Monyo de mâchoiron frit',
+          subtitle: 'Mâchoiron frit, monyo tomate-oignon et sauce maison.',
           ctaLabel: 'Commander',
           ctaHref: '#menu',
         },
@@ -138,6 +138,21 @@ async function ensureKingFishCatalogue() {
       await settings.save();
     }
   }
+
+  // Pas de suppléments sur les produits d'épicerie (une seule fois : seulement si le champ n'a jamais été défini).
+  await MealProduct.collection.updateMany(
+    {
+      allowExtras: { $exists: false },
+      slug: { $in: ['rillettes-de-poissons', 'rillettes', 'chips-de-poisson-spicy', 'chips-de-poisson-nature'] },
+    },
+    { $set: { allowExtras: false } }
+  );
+  // Les options de taille précisent qu'il s'agit de la taille du poisson.
+  await MealProduct.collection.updateMany(
+    { 'optionGroups.name': 'Taille' },
+    { $set: { 'optionGroups.$[g].name': 'Taille du poisson' } },
+    { arrayFilters: [{ 'g.name': 'Taille' }] }
+  );
 
   console.log('🍽️ Catalogue King Fish aligné (noms)');
 }

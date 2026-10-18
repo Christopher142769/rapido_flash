@@ -555,6 +555,7 @@ export default function MealProductLanding() {
               }}
               extraQty={extraQty}
               onExtraQty={(key, next) => setExtraQty((current) => ({ ...current, [key]: next }))}
+              allowExtras={product?.allowExtras !== false}
               highlightSide={highlightAcc && !hasSelectedAcc}
               sideError={sideError}
             />

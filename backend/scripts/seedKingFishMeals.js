@@ -62,10 +62,10 @@ const PRODUCTS = [
   },
   {
     slug: 'brochette-de-poisson',
-    name: 'Brochette de poisson',
+    name: 'Brochettes de poisson',
     category: 'Poissons',
     basePrice: 1500,
-    shortDescription: 'Brochette de poisson marinée au feu, idéale avec frites ou attiéké.',
+    shortDescription: 'Brochettes de poisson marinées au feu, idéales avec frites ou attiéké.',
     mainImage: `${IMG}/brochette-photo.webp`,
     images: [`${IMG}/brochette-photo.webp`],
     accompagnements: FISH_SIDES,
@@ -93,7 +93,7 @@ const PRODUCTS = [
     accompagnements: FISH_SIDES,
     optionGroups: [
       {
-        name: 'Taille',
+        name: 'Taille du poisson',
         selectionType: 'single',
         required: true,
         choices: [
@@ -116,7 +116,7 @@ const PRODUCTS = [
     accompagnements: FISH_SIDES,
     optionGroups: [
       {
-        name: 'Taille',
+        name: 'Taille du poisson',
         selectionType: 'single',
         required: true,
         choices: [
@@ -138,7 +138,7 @@ const PRODUCTS = [
     accompagnements: FISH_SIDES,
     optionGroups: [
       {
-        name: 'Taille',
+        name: 'Taille du poisson',
         selectionType: 'single',
         required: true,
         choices: [
@@ -160,7 +160,7 @@ const PRODUCTS = [
     accompagnements: FISH_SIDES,
     optionGroups: [
       {
-        name: 'Taille',
+        name: 'Taille du poisson',
         selectionType: 'single',
         required: true,
         choices: [
@@ -188,6 +188,7 @@ const PRODUCTS = [
   },
   {
     slug: 'rillettes-de-poissons',
+    allowExtras: false,
     name: 'Rillettes de poisson',
     category: 'Gourmet',
     basePrice: 2500,
@@ -211,6 +212,7 @@ const PRODUCTS = [
   },
   {
     slug: 'chips-de-poisson-spicy',
+    allowExtras: false,
     name: 'Chips de poisson Spicy',
     category: 'Snacks',
     basePrice: 1000,
@@ -222,6 +224,7 @@ const PRODUCTS = [
   },
   {
     slug: 'chips-de-poisson-nature',
+    allowExtras: false,
     name: 'Chips de poisson Nature',
     category: 'Snacks',
     basePrice: 1000,
@@ -248,6 +251,7 @@ async function upsertProduct(def) {
     available: true,
     showDeliveryNotice: true,
     allowSpecifications: true,
+    allowExtras: def.allowExtras !== false,
     sortOrder: def.sortOrder,
     currency: 'XOF',
   };

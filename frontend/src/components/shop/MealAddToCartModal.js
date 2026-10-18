@@ -144,6 +144,7 @@ export default function MealAddToCartModal({
           }}
           extraQty={extraQty}
           onExtraQty={(key, next) => setExtraQty((current) => ({ ...current, [key]: next }))}
+          allowExtras={product?.allowExtras !== false}
           highlightSide={false}
           sideError={hasAcc && error && !selectedAcc.some((a) => a.role === 'side') ? error : ''}
         />

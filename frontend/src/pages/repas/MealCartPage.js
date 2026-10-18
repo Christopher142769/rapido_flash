@@ -27,6 +27,7 @@ import {
   submitMealOrderToApi,
   saveMealOrder,
 } from '../../utils/mealOrder';
+import { displayOptionGroupName } from './repasRefonteConstants';
 import { mealDeliveryFeeForCity } from '../../utils/mealShopSettings';
 import { mealConfirmationPath, mealProductPath } from '../../utils/mealPaths';
 import { trackCtaClick, trackRapido } from '../../utils/analyticsBeacon';
@@ -203,7 +204,7 @@ export default function MealCartPage() {
                   </span>
                   {(it.options || []).map((o, i) => (
                     <span key={`opt-${i}`} className="meal-cart-acc">
-                      {o.groupName}: {o.choiceLabel}
+                      {displayOptionGroupName(o.groupName)}: {o.choiceLabel}
                       {Number(o.price) > 0 ? ` · ${formatPriceXof(o.price)}` : ''}
                     </span>
                   ))}

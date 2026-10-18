@@ -84,6 +84,8 @@ const mealProductSchema = new mongoose.Schema(
     optionGroups: { type: [optionGroupSchema], default: [] },
     /** Autoriser le client à saisir une spécification de son plat. */
     allowSpecifications: { type: Boolean, default: true },
+    /** Proposer les suppléments (frites, riz…) sur ce plat. Désactivé pour rillettes, chips… */
+    allowExtras: { type: Boolean, default: true },
     promo: {
       active: { type: Boolean, default: false },
       priceMode: { type: String, enum: ['percent', 'manual'], default: 'percent' },

@@ -5,6 +5,7 @@ import {
   formatCustomerFullName,
   formatCustomerAddress,
 } from '../../utils/shopOrder';
+import { displayOptionGroupName } from './repasRefonteConstants';
 import { mealShopContact, useMealShopSettings } from '../../utils/mealShopSettings';
 import { formatPriceXof } from '../../utils/shopPromo';
 import { mealCatalogPath, mealConfirmationPath, mealProductPath } from '../../utils/mealPaths';
@@ -105,7 +106,7 @@ export default function MealOrderConfirmation() {
                   {(it.options || []).map((o, oi) => (
                     <div key={`${it._id || idx}-opt-${oi}`} className="shop-confirm-item-acc">
                       <dt>
-                        • {o.groupName}: {o.choiceLabel}
+                        • {displayOptionGroupName(o.groupName)}: {o.choiceLabel}
                       </dt>
                       <dd>{Number(o.price) > 0 ? formatPriceXof(o.price) : 'Inclus'}</dd>
                     </div>

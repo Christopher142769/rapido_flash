@@ -7,16 +7,16 @@ export const REFONTE_PRODUCT_NAMES = {
   'poisson-pane': 'Poisson pané',
   'filet-poisson-pouiller': 'Filet de poisson poêlé',
   'filet-poele': 'Filet de poisson poêlé',
-  'brochette-de-poisson': 'Brochette de poisson',
-  brochette: 'Brochette de poisson',
-  'monyo-machoiron-fume': 'Monyo de machoiron fumé',
-  'machoiron-fume': 'Monyo de machoiron fumé',
+  'brochette-de-poisson': 'Brochettes de poisson',
+  brochette: 'Brochettes de poisson',
+  'monyo-machoiron-fume': 'Monyo de mâchoiron fumé',
+  'machoiron-fume': 'Monyo de mâchoiron fumé',
   'monyo-tilapia-frite': 'Monyo de tilapia frit',
   'tilapia-frite': 'Monyo de tilapia frit',
-  'monyo-machoiron-frit': 'Monyo de machoiron frit',
-  'machoiron-frit': 'Monyo de machoiron frit',
+  'monyo-machoiron-frit': 'Monyo de mâchoiron frit',
+  'machoiron-frit': 'Monyo de mâchoiron frit',
   'tilapia-braise': 'Tilapia braisé',
-  'machoiron-braise': 'Machoiron braisé',
+  'machoiron-braise': 'Mâchoiron braisé',
   omelette: 'Omelette',
   'rillettes-de-poissons': 'Rillettes de poisson',
   rillettes: 'Rillettes de poisson',
@@ -35,19 +35,19 @@ export function displayProductName(slug, fallback = '') {
 
 /** Descriptions affichées (prioritaires sur la base). */
 export const REFONTE_PRODUCT_DESCS = {
-  'brochette-de-poisson': 'Brochette de poisson marinée au feu, idéale avec frites ou attiéké.',
-  brochette: 'Brochette de poisson marinée au feu, idéale avec frites ou attiéké.',
-  'machoiron-braise': 'Machoiron braisé entier et légumes.',
+  'brochette-de-poisson': 'Brochettes de poisson marinées au feu, idéales avec frites ou attiéké.',
+  brochette: 'Brochettes de poisson marinées au feu, idéales avec frites ou attiéké.',
+  'machoiron-braise': 'Mâchoiron braisé entier et légumes.',
   'salade-king-fish':
     'Salade fraîche, poisson fumé, tomate, carotte, œufs, concombre et sauce maison.',
   salade: 'Salade fraîche, poisson fumé, tomate, carotte, œufs, concombre et sauce maison.',
   shawarma: 'Wrap généreux au poisson, sauce crémeuse et légumes croquants.',
-  'monyo-machoiron-fume': "Machoiron fumé à l'ancienne aux saveurs intenses.",
-  'machoiron-fume': "Machoiron fumé à l'ancienne aux saveurs intenses.",
+  'monyo-machoiron-fume': "Mâchoiron fumé à l'ancienne aux saveurs intenses.",
+  'machoiron-fume': "Mâchoiron fumé à l'ancienne aux saveurs intenses.",
   'monyo-tilapia-frite': 'Tilapia frit croustillant, portion généreuse, servi avec son monyo.',
   'tilapia-frite': 'Tilapia frit croustillant, portion généreuse, servi avec son monyo.',
-  'monyo-machoiron-frit': 'Machoiron frit, monyo tomate-oignon et sauce maison.',
-  'machoiron-frit': 'Machoiron frit, monyo tomate-oignon et sauce maison.',
+  'monyo-machoiron-frit': 'Mâchoiron frit, monyo tomate-oignon et sauce maison.',
+  'machoiron-frit': 'Mâchoiron frit, monyo tomate-oignon et sauce maison.',
   rillettes: 'Pot de rillettes de poisson KING FISH, saveur authentique.',
   'rillettes-de-poissons': 'Pot de rillettes de poisson KING FISH, saveur authentique.',
 };
@@ -71,6 +71,13 @@ export function displayProductDesc(slug, fallback = '') {
 export function displaySideName(name) {
   const raw = String(name || '').trim();
   if (/l[ée]gumes?\s+saut[ée]s?/i.test(raw)) return 'Légumes sautés';
+  return raw;
+}
+
+/** « Taille » → « Taille du poisson » (groupes d'options de taille). */
+export function displayOptionGroupName(name) {
+  const raw = String(name || '').trim();
+  if (/^tailles?$/i.test(raw)) return 'Taille du poisson';
   return raw;
 }
 

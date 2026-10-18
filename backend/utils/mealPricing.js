@@ -171,7 +171,8 @@ function buildMealOrderLine(product, line) {
     : selected.map((s, index) => ({ ...s, role: index === 0 ? 'side' : 'extra' }));
 
   const sides = classified.filter((s) => s.role === 'side');
-  const extras = classified.filter((s) => s.role === 'extra');
+  const extras =
+    product.allowExtras === false ? [] : classified.filter((s) => s.role === 'extra');
 
   if (catalog.length > 0 && sides.length !== 1) {
     return { error: 'Choisissez un seul accompagnement' };
@@ -265,6 +266,7 @@ function serializeMealProduct(product) {
     accompagnements: normalizeAccompagnements(doc.accompagnements),
     optionGroups: normalizeOptionGroups(doc.optionGroups),
     allowSpecifications: doc.allowSpecifications !== false,
+    allowExtras: doc.allowExtras !== false,
   };
 }
 

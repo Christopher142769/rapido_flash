@@ -10,6 +10,7 @@ export default function MealSidePicker({
   onExtraQty,
   highlightSide,
   sideError,
+  allowExtras = true,
 }) {
   const extras = supplementOptions();
 
@@ -44,6 +45,7 @@ export default function MealSidePicker({
         </fieldset>
       ) : null}
 
+      {allowExtras ? (
       <fieldset id="meal-extra-section" className="meal-picks meal-picks--extra">
         <legend>Suppléments</legend>
         <p>Ajoutez ce que vous voulez. 500 F, frites à 1 000 F.</p>
@@ -85,6 +87,7 @@ export default function MealSidePicker({
           })}
         </div>
       </fieldset>
+      ) : null}
     </div>
   );
 }

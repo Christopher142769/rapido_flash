@@ -154,8 +154,8 @@ export function adaptProducts(products, mediaBase) {
 const FRESH_SHOP = [
   {
     slug: 'machoiron',
-    name: 'Machoiron frais',
-    desc: 'Machoiron frais, livré chez vous au kilo.',
+    name: 'Mâchoiron frais',
+    desc: 'Mâchoiron frais, livré chez vous au kilo.',
     img: 'machoiron-frais-photo.webp',
   },
   {
