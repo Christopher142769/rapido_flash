@@ -18,8 +18,68 @@ const DEFAULT_SIDES = [
   ['Frites', 500, 1000],
 ];
 
+/** Variantes d'orthographe héritées des anciennes données par plat → nom officiel. */
+const ALIASES = {
+  'legume saute': 'Légumes sautés',
+  'legumes saute': 'Légumes sautés',
+  'legume sautes': 'Légumes sautés',
+  alloco: 'Aloko',
+  aloco: 'Aloko',
+  frite: 'Frites',
+  'banane bouilli': 'Banane bouillie',
+  'banane bouillies': 'Banane bouillie',
+};
+
+/** Fusionne les doublons (une seule fois) : « Légume sauté », « Alloco »… → nom officiel, prix par défaut. */
+async function mergeAliasSides() {
+  const flagged = await MealSettingsFlag.get();
+  if (flagged) return;
+  const sides = await MealSide.find();
+  for (const side of sides) {
+    const officialName = ALIASES[normSideName(side.name)];
+    if (!officialName) continue;
+    const target = sides.find((o) => o !== side && normSideName(o.name) === normSideName(officialName));
+    const defaults = DEFAULT_SIDES.find(([n]) => n === officialName);
+    if (target) {
+      const ids = new Set([...(target.products || []), ...(side.products || [])].map(String));
+      target.products = [...ids];
+      target.allProducts = target.allProducts || side.allProducts;
+      await target.save();
+      await MealSide.deleteOne({ _id: side._id });
+    } else {
+      side.name = officialName;
+      if (defaults) {
+        side.price = defaults[1];
+        side.extraPrice = defaults[2];
+        side.extraEnabled = true;
+      }
+      await side.save();
+    }
+  }
+  await MealSettingsFlag.set();
+  console.log('🍚 Accompagnements : doublons fusionnés');
+}
+
+const MealSettingsFlag = {
+  async get() {
+    const MealShopSettings = require('../models/MealShopSettings');
+    return !!(await MealShopSettings.collection.findOne({ key: 'default', sidesAliasesMergedV1: true }));
+  },
+  async set() {
+    const MealShopSettings = require('../models/MealShopSettings');
+    await MealShopSettings.collection.updateOne(
+      { key: 'default' },
+      { $set: { sidesAliasesMergedV1: true } },
+      { upsert: false }
+    );
+  },
+};
+
 async function ensureMealSides() {
-  if ((await MealSide.countDocuments()) > 0) return;
+  if ((await MealSide.countDocuments()) > 0) {
+    await mergeAliasSides();
+    return;
+  }
 
   const products = await MealProduct.find().lean();
   const byKey = new Map();
@@ -48,6 +108,7 @@ async function ensureMealSides() {
   }
 
   await MealSide.insertMany([...byKey.values()]);
+  await mergeAliasSides();
   console.log(`🍚 Catalogue accompagnements créé (${byKey.size})`);
 }
 
