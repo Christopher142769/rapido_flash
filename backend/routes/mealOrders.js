@@ -6,6 +6,7 @@ const MealShopSettings = require('../models/MealShopSettings');
 const { auth, isKitchenStaff, isRestaurantAdmin } = require('../middleware/auth');
 const { generateMealOrderNumber } = require('../utils/mealOrderNumber');
 const { buildMealOrderLine, computeMealOrderTotals } = require('../utils/mealPricing');
+const { loadMealSides } = require('../utils/mealSides');
 const { getShopClosureState } = require('../utils/shopClosure');
 const { getShopOrderLimitState, mergeClosureWithOrderLimit } = require('../utils/shopOrderLimit');
 const { sendToUserIds } = require('../services/pushNotifications');
@@ -124,6 +125,7 @@ router.post('/', async (req, res) => {
       });
     }
 
+    const mealSides = await loadMealSides();
     const builtItems = [];
     let anyFreeDelivery = false;
 
@@ -134,7 +136,7 @@ router.post('/', async (req, res) => {
       if (!product) {
         return res.status(404).json({ message: `Plat indisponible` });
       }
-      const result = buildMealOrderLine(product, line);
+      const result = buildMealOrderLine(product, line, mealSides);
       if (result.error) return res.status(400).json({ message: result.error });
       builtItems.push(result.item);
       if (result.promoState?.freeDelivery) anyFreeDelivery = true;

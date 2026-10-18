@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { formatPriceXof } from '../../utils/shopPromo';
 import MealOptionGroups from './MealOptionGroups';
 import MealSidePicker from './MealSidePicker';
-import { buildSideLines, productSideOptions } from '../../pages/repas/mealSides';
+import { buildSideLines, productSideOptions, supplementOptions } from '../../pages/repas/mealSides';
 import {
   buildOptionSelection,
   toggleOptionChoice,
@@ -144,7 +144,7 @@ export default function MealAddToCartModal({
           }}
           extraQty={extraQty}
           onExtraQty={(key, next) => setExtraQty((current) => ({ ...current, [key]: next }))}
-          allowExtras={product?.allowExtras !== false}
+          extras={supplementOptions(product)}
           highlightSide={false}
           sideError={hasAcc && error && !selectedAcc.some((a) => a.role === 'side') ? error : ''}
         />

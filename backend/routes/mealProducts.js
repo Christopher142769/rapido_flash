@@ -4,6 +4,7 @@ const { auth, isRestaurant } = require('../middleware/auth');
 const upload = require('../middleware/uploadMealProduct');
 const { uniqueSlug } = require('../utils/slugify');
 const { normalizeAccompagnements, normalizeOptionGroups, serializeMealProduct } = require('../utils/mealPricing');
+const { loadMealSides } = require('../utils/mealSides');
 const { normalizeCopySections } = require('../utils/normalizeShopCopySections');
 
 const router = express.Router();
@@ -59,7 +60,8 @@ router.get('/public', async (req, res) => {
   try {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     const products = await MealProduct.find({ published: true }).sort({ sortOrder: 1, createdAt: -1 });
-    res.json(products.map((p) => serializeMealProduct(p)));
+    const sides = await loadMealSides();
+    res.json(products.map((p) => serializeMealProduct(p, sides)));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -70,7 +72,7 @@ router.get('/public/:slug', async (req, res) => {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     const product = await MealProduct.findOne({ slug: req.params.slug.toLowerCase(), published: true });
     if (!product) return res.status(404).json({ message: 'Plat introuvable' });
-    res.json(serializeMealProduct(product));
+    res.json(serializeMealProduct(product, await loadMealSides()));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -81,7 +83,8 @@ router.get('/public/:slug', async (req, res) => {
 router.get('/', auth, isRestaurant, async (req, res) => {
   try {
     const products = await MealProduct.find().sort({ sortOrder: 1, createdAt: -1 });
-    res.json(products.map((p) => serializeMealProduct(p)));
+    const sides = await loadMealSides();
+    res.json(products.map((p) => serializeMealProduct(p, sides)));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -100,7 +103,7 @@ router.get('/:id', auth, isRestaurant, async (req, res) => {
   try {
     const product = await MealProduct.findById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Plat introuvable' });
-    res.json(serializeMealProduct(product));
+    res.json(serializeMealProduct(product, await loadMealSides()));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -147,7 +150,7 @@ router.post('/', auth, isRestaurant, upload.fields([
       promo: buildPromoFromBody(req.body),
     });
     await product.save();
-    res.status(201).json(serializeMealProduct(product));
+    res.status(201).json(serializeMealProduct(product, await loadMealSides()));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -219,7 +222,7 @@ router.put('/:id', auth, isRestaurant, upload.fields([
     }
 
     await product.save();
-    res.json(serializeMealProduct(product));
+    res.json(serializeMealProduct(product, await loadMealSides()));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -237,7 +240,7 @@ router.patch('/:id/promo', auth, isRestaurant, async (req, res) => {
       product.promo.active = req.body.active === true || req.body.active === 'true';
     }
     await product.save();
-    res.json(serializeMealProduct(product));
+    res.json(serializeMealProduct(product, await loadMealSides()));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

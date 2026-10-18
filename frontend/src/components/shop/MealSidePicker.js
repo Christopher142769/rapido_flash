@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatSidePriceLabel, supplementOptions } from '../../pages/repas/mealSides';
+import { formatSidePriceLabel } from '../../pages/repas/mealSides';
 import './MealSidePicker.css';
 
 export default function MealSidePicker({
@@ -10,9 +10,8 @@ export default function MealSidePicker({
   onExtraQty,
   highlightSide,
   sideError,
-  allowExtras = true,
+  extras = [],
 }) {
-  const extras = supplementOptions();
 
   return (
     <div className="meal-picks-wrap">
@@ -22,7 +21,7 @@ export default function MealSidePicker({
           className={`meal-picks${highlightSide && !sideKey ? ' is-highlight' : ''}`}
         >
           <legend>Accompagnement</legend>
-          <p>Un seul choix. Offert, sauf les frites à 500 F.</p>
+          <p>Un seul choix.</p>
           <div className="meal-picks-grid" role="radiogroup" aria-label="Accompagnement">
             {sides.map((side) => {
               const on = sideKey === side.key;
@@ -36,7 +35,7 @@ export default function MealSidePicker({
                   onClick={() => onSideKey(side.key)}
                 >
                   <b>{side.name}</b>
-                  <small>{formatSidePriceLabel(side.name, 'side')}</small>
+                  <small>{formatSidePriceLabel(side.price, 'side')}</small>
                 </button>
               );
             })}
@@ -45,10 +44,10 @@ export default function MealSidePicker({
         </fieldset>
       ) : null}
 
-      {allowExtras ? (
+      {extras.length ? (
       <fieldset id="meal-extra-section" className="meal-picks meal-picks--extra">
         <legend>Suppléments</legend>
-        <p>Ajoutez ce que vous voulez. 500 F, frites à 1 000 F.</p>
+        <p>Ajoutez ce que vous voulez, le prix est indiqué sur chaque supplément.</p>
         <div className="meal-picks-grid">
           {extras.map((extra) => {
             const qty = Math.max(0, Number(extraQty?.[extra.key]) || 0);
@@ -61,7 +60,7 @@ export default function MealSidePicker({
                   onClick={() => onExtraQty(extra.key, qty > 0 ? 0 : 1)}
                 >
                   <b>{extra.name}</b>
-                  <small>{formatSidePriceLabel(extra.name, 'extra')}</small>
+                  <small>{formatSidePriceLabel(extra.price, 'extra')}</small>
                 </button>
                 {qty > 0 ? (
                   <div className="meal-extra-qty">

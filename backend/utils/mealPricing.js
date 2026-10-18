@@ -8,39 +8,7 @@ function isItemAvailable(item) {
   return item?.available !== false;
 }
 
-const CANONICAL_SIDES = [
-  'Riz',
-  'Légumes sautés',
-  'Akassa',
-  'Attiéké',
-  'Aloko',
-  'Banane bouillie',
-  'Spaghetti',
-  'Wassa wassa',
-  'Frites',
-];
-
-function normSideName(name) {
-  return String(name || '')
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-}
-
-function isFriesName(name) {
-  return /frites?/.test(normSideName(name));
-}
-
-function mealSidePrice(name, role) {
-  if (role === 'extra') return isFriesName(name) ? 1000 : 500;
-  return isFriesName(name) ? 500 : 0;
-}
-
-function findCanonicalSide(name) {
-  const key = normSideName(name);
-  return CANONICAL_SIDES.find((side) => normSideName(side) === key) || null;
-}
+const { sidesForProduct, supplementsForProduct, normSideName } = require('./mealSides');
 
 function normalizeAccompagnements(list) {
   if (!Array.isArray(list)) return [];
@@ -145,7 +113,7 @@ function getMealUnitPrice(product, now = new Date()) {
  * @param {object} product MealProduct doc
  * @param {{ quantity: number, accompagnements?: { id?: string, name?: string, quantity: number }[] }} line
  */
-function buildMealOrderLine(product, line) {
+function buildMealOrderLine(product, line, mealSides = []) {
   if (product?.available === false) {
     return { error: 'Ce plat est temporairement indisponible' };
   }
@@ -156,7 +124,8 @@ function buildMealOrderLine(product, line) {
   }
 
   const { promoState, unitPrice } = getMealUnitPrice(product);
-  const catalog = (product.accompagnements || []).filter(isItemAvailable);
+  const catalog = sidesForProduct(product, mealSides);
+  const supplements = supplementsForProduct(product, mealSides);
   const selected = (Array.isArray(line?.accompagnements) ? line.accompagnements : [])
     .map((s) => ({
       ...s,
@@ -171,8 +140,7 @@ function buildMealOrderLine(product, line) {
     : selected.map((s, index) => ({ ...s, role: index === 0 ? 'side' : 'extra' }));
 
   const sides = classified.filter((s) => s.role === 'side');
-  const extras =
-    product.allowExtras === false ? [] : classified.filter((s) => s.role === 'extra');
+  const extras = product.allowExtras === false ? [] : classified.filter((s) => s.role === 'extra');
 
   if (catalog.length > 0 && sides.length !== 1) {
     return { error: 'Choisissez un seul accompagnement' };
@@ -192,7 +160,7 @@ function buildMealOrderLine(product, line) {
         normSideName(a.name) === normSideName(s.name)
     );
     if (!match) return { error: `Accompagnement inconnu : ${s.name || s.id}` };
-    const price = mealSidePrice(match.name, 'side');
+    const price = match.price;
     accompagnements.push({
       accompagnementId: String(match._id || ''),
       name: match.name,
@@ -204,13 +172,15 @@ function buildMealOrderLine(product, line) {
   }
 
   for (const s of extras) {
-    const canonical = findCanonicalSide(s.name);
-    if (!canonical) return { error: `Supplément inconnu : ${s.name || s.id}` };
+    const match = supplements.find(
+      (a) => (s.id && String(s.id) === a._id) || normSideName(a.name) === normSideName(s.name)
+    );
+    if (!match) return { error: `Supplément inconnu : ${s.name || s.id}` };
     const safeQty = Math.min(5, s.quantity);
-    const price = mealSidePrice(canonical, 'extra');
+    const price = match.price;
     accompagnements.push({
       accompagnementId: '',
-      name: canonical,
+      name: match.name,
       price,
       quantity: safeQty,
       role: 'extra',
@@ -256,14 +226,15 @@ function computeMealOrderTotals(items, deliveryFee, freeDelivery = false) {
   };
 }
 
-function serializeMealProduct(product) {
+function serializeMealProduct(product, mealSides = null) {
   const doc = product.toObject ? product.toObject() : { ...product };
   const promoState = getShopPromoState(doc);
   return {
     ...doc,
     ...promoState,
     available: doc.available !== false,
-    accompagnements: normalizeAccompagnements(doc.accompagnements),
+    accompagnements: mealSides ? sidesForProduct(doc, mealSides) : normalizeAccompagnements(doc.accompagnements),
+    supplements: mealSides ? supplementsForProduct(doc, mealSides) : [],
     optionGroups: normalizeOptionGroups(doc.optionGroups),
     allowSpecifications: doc.allowSpecifications !== false,
     allowExtras: doc.allowExtras !== false,

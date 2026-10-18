@@ -1,33 +1,17 @@
 import { displaySideName } from './repasRefonteConstants';
 
-/** Carte des accompagnements King Fish. */
-export const MEAL_SIDE_NAMES = [
-  'Riz',
-  'Légumes sautés',
-  'Akassa',
-  'Attiéké',
-  'Aloko',
-  'Banane bouillie',
-  'Spaghetti',
-  'Wassa wassa',
-  'Frites',
-];
-
-export function isFriesName(name) {
-  return /frites?/i.test(String(name || ''));
+/**
+ * Accompagnements et suppléments : la liste et les prix viennent du catalogue géré dans le
+ * dashboard (product.accompagnements / product.supplements fournis par l'API).
+ */
+function formatAmount(price) {
+  return String(Math.round(Number(price) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
-/** Accompagnement : offert, frites 500 F. Supplément : 500 F, frites 1 000 F. */
-export function mealSidePrice(name, role) {
-  if (role === 'extra') return isFriesName(name) ? 1000 : 500;
-  return isFriesName(name) ? 500 : 0;
-}
-
-export function formatSidePriceLabel(name, role) {
-  const price = mealSidePrice(name, role);
-  const amount = String(price).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-  if (role === 'extra') return `+ ${amount} F`;
-  return price > 0 ? `${amount} F` : 'Gratuit';
+export function formatSidePriceLabel(price, role) {
+  const value = Math.max(0, Math.round(Number(price) || 0));
+  if (role === 'extra') return `+ ${formatAmount(value)} F`;
+  return value > 0 ? `${formatAmount(value)} F` : 'Gratuit';
 }
 
 export function productSideOptions(product) {
@@ -37,14 +21,19 @@ export function productSideOptions(product) {
       key: String(a._id || a.name),
       id: a._id || '',
       name: displaySideName(a.name),
+      price: Math.max(0, Math.round(Number(a.price) || 0)),
     }));
 }
 
-export function supplementOptions() {
-  return MEAL_SIDE_NAMES.map((name) => ({
-    key: name,
-    name: displaySideName(name),
-  }));
+export function supplementOptions(product) {
+  return (product?.supplements || [])
+    .filter((s) => s && String(s.name || '').trim())
+    .map((s) => ({
+      key: String(s._id || s.name),
+      id: s._id || '',
+      name: displaySideName(s.name),
+      price: Math.max(0, Math.round(Number(s.price) || 0)),
+    }));
 }
 
 export function buildSideLines(product, sideKey, extraQty) {
@@ -54,17 +43,18 @@ export function buildSideLines(product, sideKey, extraQty) {
     lines.push({
       id: side.id,
       name: side.name,
-      price: mealSidePrice(side.name, 'side'),
+      price: side.price,
       quantity: 1,
       role: 'side',
     });
   }
-  supplementOptions().forEach((extra) => {
+  supplementOptions(product).forEach((extra) => {
     const quantity = Math.min(5, Math.max(0, Math.round(Number(extraQty?.[extra.key]) || 0)));
     if (quantity < 1) return;
     lines.push({
+      id: extra.id,
       name: extra.name,
-      price: mealSidePrice(extra.name, 'extra'),
+      price: extra.price,
       quantity,
       role: 'extra',
     });

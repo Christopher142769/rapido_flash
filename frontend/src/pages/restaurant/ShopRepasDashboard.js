@@ -18,6 +18,7 @@ import { mealProductPath } from '../../utils/mealPaths';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
 import ShopFormSectionHead from '../../components/shop/ShopFormSectionHead';
 import ShopCopyBlockEditor from '../../components/shop/ShopCopyBlockEditor';
+import MealSidesManager from './MealSidesManager';
 import ShopBusyOverlay from '../../components/shop/ShopBusyOverlay';
 import SectionRefreshButton from '../../components/dashboard/SectionRefreshButton';
 import { useRegisterDashboardRefresh } from '../../context/DashboardRefreshContext';
@@ -41,7 +42,6 @@ import { getMediaBaseUrl } from '../../utils/mediaUrl';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const BASE_URL = getMediaBaseUrl();
 
-const emptyAcc = () => ({ name: '', price: '', required: false, available: true, maxQuantity: 5 });
 
 const emptyOptionChoice = () => ({ label: '', price: '', available: true });
 const emptyOptionGroup = () => ({
@@ -148,6 +148,7 @@ export default function ShopRepasDashboard() {
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [showBoutique, setShowBoutique] = useState(false);
+  const [showSides, setShowSides] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState('');
@@ -382,16 +383,6 @@ export default function ShopRepasDashboard() {
         mainImage: galleryList[0] || '',
         images: galleryList.slice(1),
         copySections: Array.isArray(form.copySections) ? form.copySections : [],
-        accompagnements: form.accompagnements
-          .filter((a) => a.name?.trim())
-          .map((a) => ({
-            _id: a._id,
-            name: a.name.trim(),
-            price: Math.max(0, Number(a.price) || 0),
-            required: !!a.required,
-            available: a.available !== false,
-            maxQuantity: Math.max(1, Number(a.maxQuantity) || 5),
-          })),
         optionGroups: (form.optionGroups || [])
           .map((g) => ({
             _id: g._id,
@@ -641,10 +632,22 @@ export default function ShopRepasDashboard() {
               className="shop-dash-btn secondary"
               onClick={() => {
                 setShowBoutique((v) => !v);
+                setShowSides(false);
                 setShowForm(false);
               }}
             >
               <FaStore /> {showBoutique ? 'Masquer boutique' : 'Réglages boutique'}
+            </button>
+            <button
+              type="button"
+              className="shop-dash-btn secondary"
+              onClick={() => {
+                setShowSides((v) => !v);
+                setShowBoutique(false);
+                setShowForm(false);
+              }}
+            >
+              🍚 {showSides ? 'Masquer accompagnements' : 'Accompagnements'}
             </button>
           </div>
         </div>
@@ -655,6 +658,15 @@ export default function ShopRepasDashboard() {
 
       {error ? <p className="shop-repas-flash shop-repas-flash--err">{error}</p> : null}
       {ok ? <p className="shop-repas-flash shop-repas-flash--ok">{ok}</p> : null}
+
+      {showSides ? (
+        <MealSidesManager
+          products={products}
+          authHeaders={authHeaders}
+          onClose={() => setShowSides(false)}
+          onChanged={load}
+        />
+      ) : null}
 
       {showBoutique && settings ? (
         <div className="shop-dash-card shop-dash-form">
@@ -1395,83 +1407,20 @@ export default function ShopRepasDashboard() {
               onRefresh={refreshPage}
               refreshing={refreshing}
             />
-            {form.accompagnements.map((a, idx) => (
-              <div key={idx} className="shop-repas-acc-row">
-                <input
-                  className="shop-dash-input"
-                  placeholder="Nom"
-                  value={a.name}
-                  onChange={(e) =>
-                    setForm((f) => {
-                      const next = [...f.accompagnements];
-                      next[idx] = { ...next[idx], name: e.target.value };
-                      return { ...f, accompagnements: next };
-                    })
-                  }
-                />
-                <input
-                  className="shop-dash-input"
-                  type="number"
-                  min={0}
-                  placeholder="Prix"
-                  value={a.price}
-                  onChange={(e) =>
-                    setForm((f) => {
-                      const next = [...f.accompagnements];
-                      next[idx] = { ...next[idx], price: e.target.value };
-                      return { ...f, accompagnements: next };
-                    })
-                  }
-                />
-                <label className="shop-dash-check shop-repas-acc-check">
-                  <input
-                    type="checkbox"
-                    checked={!!a.required}
-                    onChange={(e) =>
-                      setForm((f) => {
-                        const next = [...f.accompagnements];
-                        next[idx] = { ...next[idx], required: e.target.checked };
-                        return { ...f, accompagnements: next };
-                      })
-                    }
-                  />
-                  Requis
-                </label>
-                <label className="shop-dash-check shop-repas-acc-check">
-                  <input
-                    type="checkbox"
-                    checked={a.available !== false}
-                    onChange={(e) =>
-                      setForm((f) => {
-                        const next = [...f.accompagnements];
-                        next[idx] = { ...next[idx], available: e.target.checked };
-                        return { ...f, accompagnements: next };
-                      })
-                    }
-                  />
-                  Dispo
-                </label>
-                <button
-                  type="button"
-                  className="shop-dash-icon-btn shop-dash-icon-btn--danger"
-                  onClick={() =>
-                    setForm((f) => ({
-                      ...f,
-                      accompagnements: f.accompagnements.filter((_, i) => i !== idx),
-                    }))
-                  }
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              className="shop-dash-btn secondary"
-              onClick={() => setForm((f) => ({ ...f, accompagnements: [...f.accompagnements, emptyAcc()] }))}
-            >
-              + Accompagnement
-            </button>
+            <p className="shop-dash-hint">
+              Les accompagnements se gèrent une seule fois dans la section « Accompagnements » (bouton en haut
+              de la page) : vous y choisissez pour quels plats chacun est proposé.
+            </p>
+            {editingId ? (
+              <p className="shop-dash-hint">
+                Proposés sur ce plat :{' '}
+                <strong>
+                  {(products.find((p) => p._id === editingId)?.accompagnements || [])
+                    .map((a) => a.name)
+                    .join(', ') || 'aucun'}
+                </strong>
+              </p>
+            ) : null}
           </section>
 
           <section className="shop-dash-form-block">

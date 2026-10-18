@@ -40,7 +40,7 @@ import {
   refonteGalleryUrls,
 } from './repasRefonteConstants';
 import { adaptProducts, patchMealProduct } from './repasRefonteAdapter';
-import { buildSideLines, productSideOptions } from './mealSides';
+import { buildSideLines, productSideOptions, supplementOptions } from './mealSides';
 import {
   trackCtaClick,
   trackProductView,
@@ -555,7 +555,7 @@ export default function MealProductLanding() {
               }}
               extraQty={extraQty}
               onExtraQty={(key, next) => setExtraQty((current) => ({ ...current, [key]: next }))}
-              allowExtras={product?.allowExtras !== false}
+              extras={supplementOptions(product)}
               highlightSide={highlightAcc && !hasSelectedAcc}
               sideError={sideError}
             />
