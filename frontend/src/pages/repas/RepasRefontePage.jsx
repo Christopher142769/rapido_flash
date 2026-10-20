@@ -320,13 +320,17 @@ export default function RepasRefontePage({
 
   const trioIds = ['monyo-machoiron-fume', 'brochette-de-poisson', 'shawarma'];
   const trio = useMemo(() => {
-    const picked = trioIds.map((id) => items.find((p) => p.id === id)).filter(Boolean);
+    const picked = trioIds
+      .map((id) => items.find((p) => p.id === id || (id === 'shawarma' && p.id === 'chawarma')))
+      .filter(Boolean);
     return picked.length ? picked : items.slice(0, 3);
   }, [items]);
 
   const mPicks = useMemo(() => {
     const ids = ['shawarma', 'brochette-de-poisson', 'tilapia-braise', 'poisson-pane', 'monyo-machoiron-fume', 'salade-king-fish'];
-    const picked = ids.map((id) => items.find((p) => p.id === id)).filter(Boolean);
+    const picked = ids
+      .map((id) => items.find((p) => p.id === id || (id === 'shawarma' && p.id === 'chawarma')))
+      .filter(Boolean);
     const meals = picked.length ? picked : items.slice(0, 6);
     return meals;
   }, [items]);

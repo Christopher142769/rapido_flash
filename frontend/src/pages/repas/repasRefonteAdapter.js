@@ -38,10 +38,7 @@ function resolveFallbackAssets(slug) {
       cutImg: g2.cut ? cutSrc(g2.cut) : cardImgSrc(g2.img),
     };
   }
-  return {
-    cardImg: `${REFONTE_IMG}tilapia-braise.jpg`,
-    cutImg: cutSrc('tilapia-braise'),
-  };
+  return null;
 }
 
 /**
@@ -52,10 +49,12 @@ function resolveProductImages(product, mediaBase, slug) {
   const fallback = resolveFallbackAssets(slug);
   const apiRaw = product.mainImage || product.images?.[0] || null;
   const apiUrl = apiRaw ? getImageUrl(apiRaw, null, mediaBase) : null;
-  return {
-    cardImg: fallback.cardImg || apiUrl,
-    heroImg: fallback.cutImg || apiUrl || fallback.cardImg,
-  };
+  if (fallback) {
+    return { cardImg: fallback.cardImg, heroImg: fallback.cutImg };
+  }
+  // Slug inconnu (plat renommé ou nouveau) : on utilise la propre image du plat saisie dans le dashboard.
+  const own = apiUrl || `${REFONTE_IMG}tilapia-braise.jpg`;
+  return { cardImg: own, heroImg: own };
 }
 
 /**

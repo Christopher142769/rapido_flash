@@ -4,6 +4,7 @@ export const REFONTE_IMG = '/images/repas/refonte/';
 /** Noms catalogue officiels (hero + cartes) — source de vérité affichage. */
 export const REFONTE_PRODUCT_NAMES = {
   shawarma: 'Chawarma',
+  chawarma: 'Chawarma',
   'poisson-pane': 'Poisson pané',
   'filet-poisson-pouiller': 'Filet de poisson poêlé',
   'filet-poele': 'Filet de poisson poêlé',
@@ -28,9 +29,18 @@ export const REFONTE_PRODUCT_NAMES = {
   'chips-nature': 'Chips de poisson Nature',
 };
 
+/** Corrections d'orthographe appliquées aux textes affichés (y compris ceux saisis dans le dashboard). */
+export function fixFrench(text) {
+  return String(text || '')
+    .replace(/\bmachoiron/g, 'mâchoiron')
+    .replace(/\bMachoiron/g, 'Mâchoiron')
+    .replace(/\bshawarma/gi, (m) => (m[0] === 'S' ? 'Chawarma' : 'chawarma'));
+}
+
+/** Le nom saisi dans le dashboard prime ; les noms ci-dessus ne servent que de repli. */
 export function displayProductName(slug, fallback = '') {
   const key = String(slug || '').trim().toLowerCase();
-  return REFONTE_PRODUCT_NAMES[key] || String(fallback || '').trim() || key;
+  return fixFrench(String(fallback || '').trim() || REFONTE_PRODUCT_NAMES[key] || key);
 }
 
 /** Descriptions affichées (prioritaires sur la base). */
@@ -41,6 +51,7 @@ export const REFONTE_PRODUCT_DESCS = {
   'salade-king-fish':
     'Salade fraîche, poisson fumé, tomate, carotte, œufs, concombre et sauce maison.',
   salade: 'Salade fraîche, poisson fumé, tomate, carotte, œufs, concombre et sauce maison.',
+  chawarma: 'Wrap généreux au poisson, sauce crémeuse et légumes croquants.',
   shawarma: 'Wrap généreux au poisson, sauce crémeuse et légumes croquants.',
   'monyo-machoiron-fume': "Mâchoiron fumé à l'ancienne aux saveurs intenses.",
   'machoiron-fume': "Mâchoiron fumé à l'ancienne aux saveurs intenses.",
@@ -64,7 +75,7 @@ export const MEAL_SHOP_DEFAULTS = {
 
 export function displayProductDesc(slug, fallback = '') {
   const key = String(slug || '').trim().toLowerCase();
-  return REFONTE_PRODUCT_DESCS[key] || String(fallback || '').trim();
+  return fixFrench(String(fallback || '').trim() || REFONTE_PRODUCT_DESCS[key] || '');
 }
 
 /** Accompagnement : « Légumes sautés » (pluriel). */
@@ -105,6 +116,7 @@ export function masculineSizeLabel(label) {
 export const REFONTE_SLUG_ASSETS = {
   'tilapia-braise': { img: 'tilapia-braise', cut: 'tilapia-braise' },
   shawarma: { img: 'shawarma-2', cut: 'shawarma-2' },
+  chawarma: { img: 'shawarma-2', cut: 'shawarma-2' },
   'brochette-de-poisson': { img: 'brochette-photo.webp', cut: null },
   brochette: { img: 'brochette-photo.webp', cut: null },
   'poisson-pane': { img: 'poisson-pane', cut: 'poisson-pane' },
@@ -144,6 +156,7 @@ export const HERO_LARGE = new Set([
 export const HERO_SCRIPTS = {
   'tilapia-braise': 'Braisé au feu de bois',
   shawarma: 'Le favori de la rue',
+  chawarma: 'Le favori de la rue',
   'brochette-de-poisson': 'Grillées minute',
   brochette: 'Grillées minute',
   'poisson-pane': 'Doré & croustillant',
