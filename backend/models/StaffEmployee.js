@@ -11,6 +11,11 @@ const staffEmployeeSchema = new mongoose.Schema(
     restDays: { type: [Number], default: [] },
     /** Jours travaillés par semaine (ex. Gloria = 4). */
     contractDaysPerWeek: { type: Number, default: 5, min: 1, max: 7 },
+    /** 'livreur' : accès au flux livraison (QR + signature client). */
+    role: { type: String, enum: ['staff', 'livreur'], default: 'staff', index: true },
+    pinHash: { type: String, default: '', select: false },
+    pinFailures: { type: Number, default: 0, select: false },
+    pinLockedUntil: { type: Date, default: null, select: false },
     notes: { type: String, default: '', trim: true, maxlength: 500 },
   },
   { timestamps: true }

@@ -5,6 +5,7 @@ import {
   FaCalendarAlt,
   FaClipboardList,
   FaImages,
+  FaMotorcycle,
   FaQrcode,
   FaSignOutAlt,
   FaTimes,
@@ -20,6 +21,7 @@ const NAV = [
   { to: '/rh/personnel', label: 'Personnel', Icon: FaUsers },
   { to: '/rh/planning', label: 'Planning', Icon: FaCalendarAlt },
   { to: '/rh/registre', label: 'Registre', Icon: FaClipboardList },
+  { to: '/rh/livreurs', label: 'Livreurs', Icon: FaMotorcycle },
   { to: '/rh/photos', label: 'Photos', Icon: FaImages },
 ];
 

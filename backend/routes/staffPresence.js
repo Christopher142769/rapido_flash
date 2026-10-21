@@ -867,6 +867,9 @@ router.patch('/sites/:siteId', auth, isStaffPresence, async (req, res) => {
       notes: req.body?.notes,
       active: req.body?.active,
       sortOrder: req.body?.sortOrder,
+      lat: req.body?.lat,
+      lng: req.body?.lng,
+      radiusM: req.body?.radiusM,
     });
     res.json({ site });
   } catch (e) {

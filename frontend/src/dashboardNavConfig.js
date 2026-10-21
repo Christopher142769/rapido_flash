@@ -240,6 +240,13 @@ export function buildDashboardNavItems({
       Icon: FaUserCheck,
     },
     {
+      id: 'presence-livreurs',
+      label: 'Livreurs (présence)',
+      path: toDashboardPath('/presence-livreurs'),
+      section: GESTION_NAV_SECTION,
+      Icon: FaMotorcycle,
+    },
+    {
       id: 'presence-photos',
       label: 'Photos présence',
       path: toDashboardPath('/presence-photos'),

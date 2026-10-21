@@ -165,6 +165,20 @@ async function updateSite(siteId, patch = {}) {
     }
     doc.label = cleanLabel;
   }
+  if (patch.lat !== undefined || patch.lng !== undefined) {
+    const lat = patch.lat === null || patch.lat === '' ? null : Number(patch.lat);
+    const lng = patch.lng === null || patch.lng === '' ? null : Number(patch.lng);
+    if ((lat === null) !== (lng === null) || (lat !== null && (Math.abs(lat) > 90 || Math.abs(lng) > 180 || !Number.isFinite(lat) || !Number.isFinite(lng)))) {
+      const err = new Error('Coordonnées GPS invalides');
+      err.status = 400;
+      throw err;
+    }
+    doc.lat = lat;
+    doc.lng = lng;
+  }
+  if (patch.radiusM != null && Number.isFinite(Number(patch.radiusM))) {
+    doc.radiusM = Math.min(5000, Math.max(30, Number(patch.radiusM)));
+  }
   if (patch.notes != null) doc.notes = String(patch.notes).trim().slice(0, 500);
   if (patch.active != null) doc.active = !!patch.active;
   if (patch.sortOrder != null && Number.isFinite(Number(patch.sortOrder))) {

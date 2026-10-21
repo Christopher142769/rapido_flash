@@ -15,6 +15,10 @@ const staffSiteSchema = new mongoose.Schema(
     label: { type: String, required: true, trim: true, maxlength: 80 },
     active: { type: Boolean, default: true, index: true },
     sortOrder: { type: Number, default: 0 },
+    /** Référence GPS du site (contrôle des scans livreurs). */
+    lat: { type: Number, default: null },
+    lng: { type: Number, default: null },
+    radiusM: { type: Number, default: 300, min: 30, max: 5000 },
     notes: { type: String, default: '', trim: true, maxlength: 500 },
   },
   { timestamps: true }

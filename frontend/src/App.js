@@ -58,6 +58,9 @@ import PushNotificationsDashboard from './pages/restaurant/PushNotificationsDash
 import InvitesDashboard from './pages/restaurant/InvitesDashboard';
 import StaffPresenceDashboard from './pages/restaurant/StaffPresenceDashboard';
 import StaffPresenceActivePage from './pages/client/StaffPresenceActivePage';
+import LivreurApp from './pages/livreur/LivreurApp';
+import RhLivreursPage from './pages/rh/RhLivreursPage';
+import LivreursDashboardPage from './pages/restaurant/LivreursDashboardPage';
 import StaffPresencePhotosPage from './pages/restaurant/StaffPresencePhotosPage';
 import RhGate from './pages/rh/RhGate';
 import RhAppLayout from './pages/rh/RhAppLayout';
@@ -179,6 +182,7 @@ function AppRoutes() {
     location.pathname.startsWith('/responsables') ||
     location.pathname.startsWith('/commerciaux') ||
     location.pathname.startsWith('/rh') ||
+    location.pathname.startsWith('/livreur') ||
     location.pathname.startsWith('/présence') ||
     location.pathname.startsWith('/presence');
 
@@ -266,6 +270,7 @@ function AppRoutes() {
             <Route path="planning" element={<RhPlanningPage />} />
             <Route path="registre" element={<RhRegistrePage />} />
             <Route path="photos" element={<RhPhotosPage />} />
+            <Route path="livreurs" element={<RhLivreursPage />} />
           </Route>
         </Route>
 
@@ -294,6 +299,8 @@ function AppRoutes() {
         <Route path="/repas/panier" element={<MealCartPage />} />
         <Route path="/invites/:code" element={<InvitesCheckPage />} />
         <Route path="/invités/:code" element={<InvitesCheckPage />} />
+        <Route path="/livreur" element={<LivreurApp />} />
+        <Route path="/livreur/scan/:token" element={<LivreurApp />} />
         <Route path="/présence/:code" element={<StaffPresencePage />} />
         <Route path="/presence/:code" element={<StaffPresencePage />} />
         <Route path="/présence-actif/:siteId" element={<StaffPresenceActivePage />} />
@@ -328,6 +335,7 @@ function AppRoutes() {
           <Route path="shop-repas" element={<ShopRepasDashboard />} />
           <Route path="invites" element={<InvitesDashboard />} />
           <Route path="presence-personnel" element={<StaffPresenceDashboard />} />
+          <Route path="presence-livreurs" element={<LivreursDashboardPage />} />
           <Route path="presence-photos" element={<StaffPresencePhotosPage />} />
           <Route path="categories" element={<Categories />} />
           <Route path="commandes" element={<RestaurantCommandes />} />

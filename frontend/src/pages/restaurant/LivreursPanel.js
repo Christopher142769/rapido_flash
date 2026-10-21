@@ -1,0 +1,412 @@
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import axios from 'axios';
+import { QRCodeSVG } from 'qrcode.react';
+import './LivreursPanel.css';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const TZ = 'Africa/Porto-Novo';
+
+const authCfg = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+const get = (url, params) => axios.get(`${API_URL}/livreur${url}`, { ...authCfg(), params });
+const send = (method, url, data) => axios({ method, url: `${API_URL}/livreur${url}`, data, ...authCfg() });
+const patchSite = (id, body) => axios.patch(`${API_URL}/staff-presence/sites/${id}`, body, authCfg());
+const errMsg = (e) => e?.response?.data?.message || e?.message || 'Erreur';
+
+const todayKey = () => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date());
+const dt = (d) => (d ? new Date(d).toLocaleString('fr-FR', { timeZone: TZ, dateStyle: 'short', timeStyle: 'medium' }) : '—');
+const dur = (s) => {
+  if (s == null) return '—';
+  const m = Math.floor(s / 60);
+  return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min ${s % 60} s`;
+};
+
+const FLAGS = {
+  out_of_zone: 'Hors zone',
+  no_geo: 'Sans GPS',
+  low_gps_accuracy: 'GPS imprécis',
+  too_short: 'Trop court',
+  too_long: 'Trop long',
+  not_clocked_in: 'Non pointé',
+  duplicate_signature: 'Signature dupliquée',
+  weak_signature: 'Signature sommaire',
+  clock_skew: 'Heure téléphone décalée',
+  repeat_client: 'Client répété',
+  cancelled_by_hr: 'Annulé RH',
+};
+
+const STATUS = { active: 'En cours', awaiting_signature: 'Attente signature', completed: 'Terminée', cancelled: 'Annulée' };
+const EVENT_LABELS = {
+  login: 'Connexion',
+  login_failed: 'Connexion refusée',
+  scan_rejected: 'Scan rejeté',
+  delivery_start: 'Début livraison',
+  delivery_end_scan: 'Scan de fin',
+  delivery_end_rescan: 'Rescan de fin',
+  delivery_context: 'Contexte modifié',
+  delivery_signed: 'Signature client',
+  admin_cancel: 'Annulation RH',
+  admin_livreur_set: 'Livreur créé/PIN',
+  admin_livreur_update: 'Livreur modifié',
+};
+
+function Flags({ flags }) {
+  if (!flags?.length) return <span className="lvp-ok">RAS</span>;
+  return flags.map((f) => (
+    <span key={f} className="lvp-flag">{FLAGS[f] || f}</span>
+  ));
+}
+
+function SignatureThumb({ id }) {
+  const [url, setUrl] = useState('');
+  useEffect(() => {
+    let u;
+    axios
+      .get(`${API_URL}/livreur/admin/deliveries/${id}/signature`, { ...authCfg(), responseType: 'blob' })
+      .then((r) => {
+        u = URL.createObjectURL(r.data);
+        setUrl(u);
+      })
+      .catch(() => {});
+    return () => u && URL.revokeObjectURL(u);
+  }, [id]);
+  return url ? <a href={url} target="_blank" rel="noreferrer"><img src={url} alt="Signature" className="lvp-sig" /></a> : <span>—</span>;
+}
+
+/* ───────── Écran QR du site ───────── */
+function StationTab({ sites }) {
+  const [siteId, setSiteId] = useState('');
+  const [qr, setQr] = useState({});
+  const [err, setErr] = useState('');
+  const cur = useRef({});
+  useEffect(() => {
+    if (!siteId && sites[0]) setSiteId(sites[0].id);
+  }, [sites, siteId]);
+
+  useEffect(() => {
+    if (!siteId) return undefined;
+    cur.current = {};
+    setQr({});
+    let stop = false;
+    const tick = async () => {
+      try {
+        const { data } = await get(`/admin/station/${siteId}`, { start: cur.current.start?.token, end: cur.current.end?.token });
+        if (stop) return;
+        ['start', 'end'].forEach((k) => {
+          if (!data[k].keep) cur.current[k] = data[k];
+        });
+        setQr({ ...cur.current });
+        setErr('');
+      } catch (e) {
+        setErr(errMsg(e));
+      }
+    };
+    tick();
+    const i = setInterval(tick, 3000);
+    return () => {
+      stop = true;
+      clearInterval(i);
+    };
+  }, [siteId]);
+
+  return (
+    <div>
+      <p className="lvp-hint">
+        Affichez cette page sur un écran du site. Chaque QR est signé, valable 60 s et à usage unique : il se
+        renouvelle seul après chaque scan. Une capture d’écran ou une photo ne peut donc pas servir de fausse preuve.
+      </p>
+      <select value={siteId} onChange={(e) => setSiteId(e.target.value)}>
+        {sites.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+      </select>
+      {err ? <p className="lvp-err">{err}</p> : null}
+      <div className="lvp-qrs">
+        {[['start', 'DÉBUT de livraison'], ['end', 'FIN de livraison']].map(([k, label]) => (
+          <div key={k} className="lvp-qr">
+            <h3>{label}</h3>
+            {qr[k]?.url ? <QRCodeSVG value={qr[k].url} size={240} level="M" includeMargin /> : <p>…</p>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ───────── Gestion livreurs + zone ───────── */
+function ManageTab({ data, reload }) {
+  const [form, setForm] = useState({ firstName: '', lastName: '', siteId: '', pin: '' });
+  const [msg, setMsg] = useState('');
+  const sites = data.sites;
+
+  const call = async (fn) => {
+    try {
+      await fn();
+      setMsg('Enregistré.');
+      reload();
+    } catch (e) {
+      setMsg(errMsg(e));
+    }
+  };
+
+  const locate = (site) =>
+    navigator.geolocation.getCurrentPosition(
+      (p) => call(() => patchSite(site.id, { lat: p.coords.latitude, lng: p.coords.longitude })),
+      () => setMsg('Position indisponible'),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+
+  return (
+    <div>
+      {msg ? <p className="lvp-hint">{msg}</p> : null}
+      <h3>Livreurs</h3>
+      <table className="lvp-table">
+        <thead><tr><th>Nom</th><th>Site</th><th>PIN</th><th>Actif</th><th /></tr></thead>
+        <tbody>
+          {data.livreurs.map((l) => (
+            <tr key={l.id}>
+              <td>{l.name}</td>
+              <td>{l.siteId}</td>
+              <td>{l.hasPin ? 'défini' : '—'}</td>
+              <td>{l.active ? 'oui' : 'non'}</td>
+              <td>
+                <button type="button" onClick={() => {
+                  const pin = window.prompt('Nouveau PIN (4 à 8 chiffres)');
+                  if (pin) call(() => send('patch', `/admin/livreurs/${l.id}`, { pin }));
+                }}>Changer PIN</button>{' '}
+                <button type="button" onClick={() => call(() => send('patch', `/admin/livreurs/${l.id}`, { active: !l.active }))}>
+                  {l.active ? 'Désactiver' : 'Réactiver'}
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <form className="lvp-form" onSubmit={(e) => { e.preventDefault(); call(() => send('post', '/admin/livreurs', form).then(() => setForm({ firstName: '', lastName: '', siteId: form.siteId, pin: '' }))); }}>
+        <input placeholder="Prénom" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} required />
+        <input placeholder="Nom" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
+        <select value={form.siteId} onChange={(e) => setForm({ ...form, siteId: e.target.value })} required>
+          <option value="">Site…</option>
+          {sites.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+        </select>
+        <input placeholder="PIN (4-8 chiffres)" inputMode="numeric" value={form.pin} onChange={(e) => setForm({ ...form, pin: e.target.value.replace(/\D/g, '') })} required />
+        <button>Ajouter le livreur</button>
+      </form>
+
+      <h3>Zone GPS des sites (contrôle des scans)</h3>
+      <p className="lvp-hint">
+        Les scans de début hors du rayon sont signalés comme anomalie. Placez-vous là où l’écran QR est installé puis
+        cliquez « Définir ma position ».
+      </p>
+      <table className="lvp-table">
+        <thead><tr><th>Site</th><th>Position</th><th>Rayon (m)</th><th /></tr></thead>
+        <tbody>
+          {sites.map((s) => (
+            <tr key={s.id}>
+              <td>{s.label}</td>
+              <td>{s.lat != null ? `${s.lat.toFixed(5)}, ${s.lng.toFixed(5)}` : 'non définie (contrôle désactivé)'}</td>
+              <td>
+                <input type="number" min={30} max={5000} defaultValue={s.radiusM} style={{ width: 80 }}
+                  onBlur={(e) => Number(e.target.value) !== s.radiusM && call(() => patchSite(s.id, { radiusM: Number(e.target.value) }))} />
+              </td>
+              <td><button type="button" onClick={() => locate(s)}>Définir ma position</button></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="lvp-hint">
+        Seuils d’anomalie : durée &lt; {dur(data.thresholds.minDurationSeconds)} ou &gt; {dur(data.thresholds.maxDurationSeconds)}.
+      </p>
+    </div>
+  );
+}
+
+/* ───────── Panneau principal ───────── */
+export default function LivreursPanel() {
+  const [tab, setTab] = useState('overview');
+  const [meta, setMeta] = useState({ livreurs: [], sites: [], thresholds: { minDurationSeconds: 0, maxDurationSeconds: 0 } });
+  const [filters, setFilters] = useState({ dateFrom: todayKey(), dateTo: todayKey(), employeeId: '', flagged: false });
+  const [deliveries, setDeliveries] = useState([]);
+  const [presence, setPresence] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [verify, setVerify] = useState(null);
+  const [error, setError] = useState('');
+
+  const loadMeta = useCallback(async () => {
+    try {
+      setMeta((await get('/admin/livreurs')).data);
+    } catch (e) {
+      setError(errMsg(e));
+    }
+  }, []);
+
+  const loadData = useCallback(async () => {
+    try {
+      const q = { dateFrom: filters.dateFrom, dateTo: filters.dateTo };
+      const [d, p] = await Promise.all([
+        get('/admin/deliveries', { ...q, employeeId: filters.employeeId || undefined, flagged: filters.flagged || undefined }),
+        get('/admin/presence', q),
+      ]);
+      setDeliveries(d.data);
+      setPresence(p.data.filter((r) => !filters.employeeId || String(r.employeeId) === filters.employeeId));
+      setError('');
+    } catch (e) {
+      setError(errMsg(e));
+    }
+  }, [filters]);
+
+  const loadEvents = useCallback(async () => {
+    try {
+      const from = new Date(`${filters.dateFrom}T00:00:00+01:00`).toISOString();
+      const to = new Date(`${filters.dateTo}T23:59:59+01:00`).toISOString();
+      const [ev, v] = await Promise.all([
+        get('/admin/events', { from, to, employeeId: filters.employeeId || undefined }),
+        get('/admin/audit/verify'),
+      ]);
+      setEvents(ev.data);
+      setVerify(v.data);
+    } catch (e) {
+      setError(errMsg(e));
+    }
+  }, [filters]);
+
+  useEffect(() => { loadMeta(); }, [loadMeta]);
+  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { if (tab === 'audit') loadEvents(); }, [tab, loadEvents]);
+
+  const summary = useMemo(() => ({
+    done: deliveries.filter((d) => d.status === 'completed').length,
+    flagged: deliveries.filter((d) => d.flags?.length).length,
+    open: deliveries.filter((d) => ['active', 'awaiting_signature'].includes(d.status)).length,
+  }), [deliveries]);
+
+  const cancel = async (d) => {
+    const reason = window.prompt(`Annuler la livraison de ${d.livreurName} ? Motif :`);
+    if (!reason) return;
+    try {
+      await send('post', `/admin/deliveries/${d._id}/cancel`, { reason });
+      loadData();
+    } catch (e) {
+      setError(errMsg(e));
+    }
+  };
+
+  const exportCsv = () => {
+    const rows = [['Livreur', 'Site', 'Statut', 'Début', 'Scan fin', 'Signature', 'Durée (s)', 'Réf', 'Client', 'Téléphone', 'Anomalies']];
+    deliveries.forEach((d) => rows.push([d.livreurName, d.siteLabel, STATUS[d.status], dt(d.startedAt), dt(d.endScannedAt), dt(d.signedAt), d.durationSeconds ?? '', d.orderRef, d.clientName, d.clientPhone, (d.flags || []).join('|')]));
+    const csv = rows.map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(';')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([`﻿${csv}`], { type: 'text/csv' }));
+    a.download = `livraisons-${filters.dateFrom}_${filters.dateTo}.csv`;
+    a.click();
+  };
+
+  return (
+    <div className="lvp">
+      <nav className="lvp-tabs">
+        {[['overview', 'Livraisons & heures'], ['station', 'Écran QR'], ['manage', 'Livreurs & zone'], ['audit', 'Journal d’audit']].map(([id, label]) => (
+          <button key={id} type="button" className={tab === id ? 'is-on' : ''} onClick={() => setTab(id)}>{label}</button>
+        ))}
+      </nav>
+      {error ? <p className="lvp-err">{error}</p> : null}
+
+      {tab !== 'station' && tab !== 'manage' ? (
+        <div className="lvp-filters">
+          <label>Du <input type="date" value={filters.dateFrom} onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })} /></label>
+          <label>Au <input type="date" value={filters.dateTo} onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })} /></label>
+          <select value={filters.employeeId} onChange={(e) => setFilters({ ...filters, employeeId: e.target.value })}>
+            <option value="">Tous les livreurs</option>
+            {meta.livreurs.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+          </select>
+          <label><input type="checkbox" checked={filters.flagged} onChange={(e) => setFilters({ ...filters, flagged: e.target.checked })} /> Anomalies seulement</label>
+          <button type="button" onClick={tab === 'audit' ? loadEvents : loadData}>Actualiser</button>
+          {tab === 'overview' ? <button type="button" onClick={exportCsv}>Export CSV</button> : null}
+        </div>
+      ) : null}
+
+      {tab === 'overview' ? (
+        <>
+          <p className="lvp-stats">
+            <b>{summary.done}</b> terminées · <b>{summary.open}</b> en cours · <b className={summary.flagged ? 'lvp-bad' : ''}>{summary.flagged}</b> avec anomalie
+          </p>
+          <h3>Livraisons</h3>
+          <div className="lvp-scroll">
+            <table className="lvp-table">
+              <thead><tr><th>Livreur</th><th>Statut</th><th>Début</th><th>Scan fin</th><th>Signé</th><th>Durée</th><th>Réf.</th><th>Client</th><th>Signature</th><th>GPS (m du site)</th><th>Anomalies</th><th /></tr></thead>
+              <tbody>
+                {deliveries.map((d) => (
+                  <tr key={d._id} className={d.flags?.length ? 'lvp-row-flag' : ''}>
+                    <td>{d.livreurName}<br /><small>{d.siteLabel}</small></td>
+                    <td>{STATUS[d.status]}</td>
+                    <td>{dt(d.startedAt)}</td>
+                    <td>{dt(d.endScannedAt)}</td>
+                    <td>{dt(d.signedAt)}</td>
+                    <td>{dur(d.durationSeconds)}</td>
+                    <td>{d.orderRef || '—'}{d.note ? <><br /><small>{d.note}</small></> : null}</td>
+                    <td>{d.clientName || '—'}<br /><small>{d.clientPhone}</small></td>
+                    <td>{d.hasSignature ? <SignatureThumb id={d._id} /> : '—'}</td>
+                    <td><small>début {d.startGeo?.distanceM ?? '?'} · fin {d.endGeo?.distanceM ?? '?'} · sign. {d.signGeo?.distanceM ?? '?'}</small></td>
+                    <td><Flags flags={d.flags} /></td>
+                    <td>{['active', 'awaiting_signature'].includes(d.status) ? <button type="button" onClick={() => cancel(d)}>Annuler</button> : null}</td>
+                  </tr>
+                ))}
+                {!deliveries.length ? <tr><td colSpan={12}>Aucune livraison sur la période.</td></tr> : null}
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Arrivées / sorties des livreurs (pointage selfie)</h3>
+          <div className="lvp-scroll">
+            <table className="lvp-table">
+              <thead><tr><th>Livreur</th><th>Site</th><th>Type</th><th>Heure</th><th>Durée travaillée</th></tr></thead>
+              <tbody>
+                {presence.map((r) => (
+                  <tr key={r._id}>
+                    <td>{`${r.firstName} ${r.lastName || ''}`.trim()}</td>
+                    <td>{r.siteLabel}</td>
+                    <td>{r.kind === 'exit' ? 'Sortie' : 'Arrivée'}</td>
+                    <td>{dt(r.checkedAt)}</td>
+                    <td>{r.workedMinutes != null ? `${Math.floor(r.workedMinutes / 60)} h ${r.workedMinutes % 60} min` : '—'}</td>
+                  </tr>
+                ))}
+                {!presence.length ? <tr><td colSpan={5}>Aucun pointage livreur sur la période.</td></tr> : null}
+              </tbody>
+            </table>
+          </div>
+        </>
+      ) : null}
+
+      {tab === 'station' ? <StationTab sites={meta.sites} /> : null}
+      {tab === 'manage' ? <ManageTab data={meta} reload={loadMeta} /> : null}
+
+      {tab === 'audit' ? (
+        <>
+          {verify ? (
+            <p className={verify.ok ? 'lvp-ok' : 'lvp-err'}>
+              {verify.ok ? `Chaîne d’intégrité vérifiée : ${verify.checked} événements, aucune altération.` : `ALTÉRATION DÉTECTÉE à l’événement n°${verify.brokenAtSeq}.`}
+            </p>
+          ) : null}
+          <div className="lvp-scroll">
+            <table className="lvp-table">
+              <thead><tr><th>#</th><th>Heure serveur</th><th>Événement</th><th>Livreur</th><th>Détails</th></tr></thead>
+              <tbody>
+                {events.map((e) => (
+                  <tr key={e._id}>
+                    <td>{e.seq}</td>
+                    <td>{dt(e.at)}</td>
+                    <td>{EVENT_LABELS[e.type] || e.type}</td>
+                    <td>{e.livreurName}</td>
+                    <td><small>{[
+                      e.data?.reason && `motif: ${e.data.reason}`,
+                      e.data?.clientName && `client: ${e.data.clientName} ${e.data.clientPhone || ''}`,
+                      e.data?.geo && `GPS ${e.data.geo.lat?.toFixed(4)},${e.data.geo.lng?.toFixed(4)} (${e.data.geo.distanceM ?? '?'} m)`,
+                      e.data?.flags?.length && `⚠ ${e.data.flags.map((f) => FLAGS[f] || f).join(', ')}`,
+                      e.data?.ip && `IP ${e.data.ip}`,
+                    ].filter(Boolean).join(' · ')}</small></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
+}
