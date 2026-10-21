@@ -11,7 +11,7 @@ const TZ = 'Africa/Porto-Novo';
 const api = axios.create({ baseURL: `${API_URL}/livreur` });
 api.interceptors.request.use((cfg) => {
   const t = localStorage.getItem(TOKEN_KEY);
-  if (t) cfg.headers['x-livreur-token'] = t;
+  if (t) cfg.headers.Authorization = `Bearer ${t}`;
   return cfg;
 });
 

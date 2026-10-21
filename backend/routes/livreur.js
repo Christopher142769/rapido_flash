@@ -54,7 +54,7 @@ async function getSite(siteId) {
 }
 
 async function livreurAuth(req, res, next) {
-  const payload = S.verify(req.headers['x-livreur-token']);
+  const payload = S.verify(String(req.headers.authorization || '').replace(/^Bearer /, '') || req.headers['x-livreur-token']);
   if (!payload || payload.t !== 'sess') return res.status(401).json({ message: 'Session expirée, reconnectez-vous.' });
   const employee = await StaffEmployee.findOne({ _id: payload.id, active: true, role: 'livreur' }).lean();
   if (!employee) return res.status(401).json({ message: 'Compte livreur inactif.' });
