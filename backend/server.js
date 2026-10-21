@@ -165,6 +165,7 @@ app.use('/api/meal-orders', require('./routes/mealOrders'));
 app.use('/api/invitations', require('./routes/invitations'));
 app.use('/api/staff-presence', require('./routes/staffPresence'));
 app.use('/api/livreur', require('./routes/livreur'));
+app.use('/api/notification-recipients', require('./routes/notificationRecipients'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/whatsapp/webhook', require('./routes/whatsappWebhook'));
 app.use('/api/commercial', require('./routes/commercial'));

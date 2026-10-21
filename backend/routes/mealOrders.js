@@ -9,6 +9,7 @@ const { buildMealOrderLine, computeMealOrderTotals } = require('../utils/mealPri
 const { loadMealSides } = require('../utils/mealSides');
 const { getShopClosureState } = require('../utils/shopClosure');
 const { getShopOrderLimitState, mergeClosureWithOrderLimit } = require('../utils/shopOrderLimit');
+const { notifyMealOrderCreated } = require('../services/mealOrderMailer');
 const { sendToUserIds } = require('../services/pushNotifications');
 const { normalizeBeninPhoneDigits } = require('../utils/phoneDigits');
 const { getTodayDateKey, deliveryDateKeyToDate } = require('../utils/shopDeliveryDate');
@@ -177,6 +178,8 @@ router.post('/', async (req, res) => {
     });
 
     await order.save();
+
+    notifyMealOrderCreated(order.toObject()).catch((err) => console.error('Email repas:', err?.message || err));
 
     const staffIds = await getStaffUserIds();
     const kitchenIds = await getKitchenUserIds();

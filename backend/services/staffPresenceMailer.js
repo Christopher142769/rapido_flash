@@ -3,21 +3,9 @@ const { siteLabel } = require('../utils/staffPresenceSites');
 const { shiftLabel, formatMinutesLabel, TZ } = require('../utils/staffPresenceShifts');
 const { readSelfieBuffer, publicSelfieUrl } = require('../utils/staffPresenceSelfie');
 
-const DEFAULT_NOTIFY = [
-  'florencechanca@gmail.com',
-  'christopherguidibi@gmail.com',
-];
+const { recipientsFor } = require('../utils/notificationRecipients');
 
-function notifyRecipients() {
-  const raw = String(process.env.STAFF_PRESENCE_NOTIFY_EMAILS || '').trim();
-  if (raw) {
-    return raw
-      .split(/[,;]/)
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean);
-  }
-  return DEFAULT_NOTIFY;
-}
+const notifyRecipients = () => recipientsFor('presence');
 
 function escapeHtml(s) {
   return String(s || '')
@@ -44,7 +32,7 @@ function formatCheckedAt(d) {
  * Alerte email à chaque arrivée ou sortie enregistrée (avec selfie en pièce jointe).
  */
 async function notifyPresenceRecorded({ record, arrivalRecord = null }) {
-  const emails = notifyRecipients();
+  const emails = await notifyRecipients();
   if (!emails.length || !record) return { sent: false, reason: 'no_recipients' };
 
   const kind = record.kind === 'exit' ? 'exit' : 'arrival';

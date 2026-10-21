@@ -218,6 +218,68 @@ function ManageTab({ data, reload }) {
   );
 }
 
+/* ───────── Destinataires e-mail ───────── */
+const CHANNEL_LABELS = {
+  presence: 'Présence du personnel (arrivées / sorties)',
+  livreur: 'Livreurs (début, fin, signature)',
+  repas: 'Commandes Repas (nouvelle commande)',
+};
+
+function EmailsTab() {
+  const [data, setData] = useState(null);
+  const [draft, setDraft] = useState({});
+  const [msg, setMsg] = useState('');
+  const load = useCallback(async () => {
+    try {
+      setData((await axios.get(`${API_URL}/notification-recipients`, authCfg())).data);
+    } catch (e) {
+      setMsg(errMsg(e));
+    }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  const add = async (channel) => {
+    try {
+      await axios.post(`${API_URL}/notification-recipients`, { channel, email: draft[channel] }, authCfg());
+      setDraft({ ...draft, [channel]: '' });
+      setMsg('Adresse ajoutée.');
+      load();
+    } catch (e) {
+      setMsg(errMsg(e));
+    }
+  };
+  const remove = async (id) => {
+    try {
+      await axios.delete(`${API_URL}/notification-recipients/${id}`, authCfg());
+      load();
+    } catch (e) {
+      setMsg(errMsg(e));
+    }
+  };
+  if (!data) return <p>{msg || 'Chargement…'}</p>;
+  return (
+    <div>
+      <p className="lvp-hint">Les adresses par défaut restent toujours actives ; ajoutez-en autant que nécessaire, elles reçoivent les e-mails immédiatement.</p>
+      {msg ? <p className="lvp-hint">{msg}</p> : null}
+      {Object.keys(CHANNEL_LABELS).map((ch) => (
+        <section key={ch}>
+          <h3>{CHANNEL_LABELS[ch]}</h3>
+          <ul>
+            {data[ch].defaults.map((e) => <li key={e}>{e} <small>(par défaut)</small></li>)}
+            {data[ch].added.map((r) => (
+              <li key={r.id}>{r.email} <button type="button" onClick={() => remove(r.id)}>Retirer</button></li>
+            ))}
+            {!data[ch].defaults.length && !data[ch].added.length ? <li><small>Aucune adresse : aucun e-mail envoyé.</small></li> : null}
+          </ul>
+          <form className="lvp-form" onSubmit={(e) => { e.preventDefault(); add(ch); }}>
+            <input type="email" placeholder="nouvelle@adresse.com" value={draft[ch] || ''} onChange={(e) => setDraft({ ...draft, [ch]: e.target.value })} required />
+            <button>Ajouter</button>
+          </form>
+        </section>
+      ))}
+    </div>
+  );
+}
+
 /* ───────── Panneau principal ───────── */
 export default function LivreursPanel() {
   const [tab, setTab] = useState('overview');
@@ -301,13 +363,13 @@ export default function LivreursPanel() {
   return (
     <div className="lvp">
       <nav className="lvp-tabs">
-        {[['overview', 'Livraisons & heures'], ['station', 'Écran QR'], ['manage', 'Livreurs & zone'], ['audit', 'Journal d’audit']].map(([id, label]) => (
+        {[['overview', 'Livraisons & heures'], ['station', 'Écran QR'], ['manage', 'Livreurs & zone'], ['audit', 'Journal d’audit'], ['emails', 'E-mails']].map(([id, label]) => (
           <button key={id} type="button" className={tab === id ? 'is-on' : ''} onClick={() => setTab(id)}>{label}</button>
         ))}
       </nav>
       {error ? <p className="lvp-err">{error}</p> : null}
 
-      {tab !== 'station' && tab !== 'manage' ? (
+      {!['station', 'manage', 'emails'].includes(tab) ? (
         <div className="lvp-filters">
           <label>Du <input type="date" value={filters.dateFrom} onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })} /></label>
           <label>Au <input type="date" value={filters.dateTo} onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })} /></label>
@@ -374,6 +436,7 @@ export default function LivreursPanel() {
       ) : null}
 
       {tab === 'station' ? <StationTab sites={meta.sites} /> : null}
+      {tab === 'emails' ? <EmailsTab /> : null}
       {tab === 'manage' ? <ManageTab data={meta} reload={loadMeta} /> : null}
 
       {tab === 'audit' ? (

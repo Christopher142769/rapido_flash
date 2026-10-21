@@ -1,5 +1,5 @@
 const { sendStaffPresenceNotification } = require('../utils/mailer');
-const { notifyRecipients } = require('./staffPresenceMailer');
+const { recipientsFor } = require('../utils/notificationRecipients');
 const { siteLabel } = require('../utils/staffPresenceSites');
 const { TZ } = require('../utils/staffPresenceShifts');
 
@@ -45,7 +45,7 @@ const FLAG_LABELS = {
  * Envoi non bloquant (les erreurs sont journalisées par l'appelant).
  */
 async function notifyLivreurEvent({ kind, delivery, signatureBuffer = null }) {
-  const to = notifyRecipients();
+  const to = await recipientsFor('livreur');
   if (!to.length || !delivery) return { sent: false };
   const titles = {
     start: 'Début de livraison',
