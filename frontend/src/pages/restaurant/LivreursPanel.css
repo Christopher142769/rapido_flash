@@ -80,3 +80,5 @@
   .lvp-time,.lvp-worked{grid-column:2/-1;text-align:left}
   .lvp-filters>*{flex:1 1 140px}
 }
+
+.lvp-steps small{font-size:12px;color:var(--muted);font-weight:500}

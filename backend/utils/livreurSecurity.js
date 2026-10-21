@@ -66,7 +66,7 @@ function haversineM(lat1, lng1, lat2, lng2) {
 }
 
 /** Position envoyée par le téléphone → objet normalisé (+ distance au site si référence connue). */
-function buildGeo(body, site) {
+async function buildGeo(body, site) {
   const lat = Number(body?.lat);
   const lng = Number(body?.lng);
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
@@ -75,6 +75,11 @@ function buildGeo(body, site) {
   if (site && Number.isFinite(site.lat) && Number.isFinite(site.lng)) {
     geo.distanceM = Math.round(haversineM(lat, lng, site.lat, site.lng));
     geo.inZone = geo.distanceM <= (site.radiusM || 300) + Math.min(accuracy || 0, 150);
+  }
+  const named = await require('./reverseGeocode').reverseGeocode(lat, lng);
+  if (named) {
+    geo.place = named.place;
+    geo.nearby = named.nearby;
   }
   return geo;
 }

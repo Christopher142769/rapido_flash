@@ -110,7 +110,6 @@ export default function LivreurApp() {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [scanning, setScanning] = useState(false);
-  const [ticket, setTicket] = useState('');
   const [ctx, setCtx] = useState({ orderRef: '', note: '' });
   const [client, setClient] = useState({ name: '', phone: '' });
   const padRef = useRef(null);
@@ -159,8 +158,18 @@ export default function LivreurApp() {
     localStorage.removeItem(TOKEN_KEY);
     setAuthed(false);
     setMe(null);
-    setTicket('');
   };
+
+  const postWithGeo = useCallback(
+    async (url, extra = {}) => {
+      const geo = await getGeo();
+      if (geo.lat == null) {
+        throw new Error('Position GPS indisponible : activez la localisation du téléphone (précision élevée) puis réessayez.');
+      }
+      return api.post(url, { ...extra, ...geo, clientTime: new Date().toISOString() });
+    },
+    []
+  );
 
   const submitScan = useCallback(
     async (token) => {
@@ -169,14 +178,8 @@ export default function LivreurApp() {
       setInfo('');
       setScanning(false);
       try {
-        const geo = await getGeo();
-        const { data } = await api.post('/scan', { token, ...geo, clientTime: new Date().toISOString() });
-        if (data.kind === 'end') {
-          setTicket(data.ticket);
-          setInfo('Fin de livraison scannée. Faites signer le client.');
-        } else {
-          setInfo('Livraison démarrée. Bonne route !');
-        }
+        await postWithGeo('/scan', { token });
+        setInfo('Livraison démarrée : votre position a été enregistrée. Bonne route !');
         await loadMe();
       } catch (e) {
         setError(errMsg(e));
@@ -185,8 +188,23 @@ export default function LivreurApp() {
         if (scanToken) navigate('/livreur', { replace: true });
       }
     },
-    [loadMe, navigate, scanToken]
+    [loadMe, navigate, scanToken, postWithGeo]
   );
+
+  const startNext = async () => {
+    setBusy(true);
+    setError('');
+    setInfo('');
+    try {
+      await postWithGeo('/delivery/start');
+      setInfo('Nouvelle livraison démarrée : votre position a été enregistrée.');
+      await loadMe();
+    } catch (e) {
+      setError(errMsg(e));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   // Arrivée par le lien du QR : traiter dès que connecté (le jeton ne sert qu'une fois).
   useEffect(() => {
@@ -215,8 +233,8 @@ export default function LivreurApp() {
     try {
       const blob = await pad.toBlob();
       const geo = await getGeo();
+      if (geo.lat == null) throw new Error('Position GPS indisponible : activez la localisation du téléphone puis réessayez.');
       const fd = new FormData();
-      fd.append('ticket', ticket);
       fd.append('clientName', client.name);
       fd.append('clientPhone', client.phone);
       fd.append('strokes', String(pad.strokes()));
@@ -224,9 +242,8 @@ export default function LivreurApp() {
       Object.entries(geo).forEach(([k, v]) => fd.append(k, String(v)));
       fd.append('signature', blob, 'signature.png');
       await api.post('/finish', fd);
-      setTicket('');
       setClient({ name: '', phone: '' });
-      setInfo('Livraison terminée et signature envoyée. Vous pouvez en démarrer une nouvelle.');
+      setInfo('Livraison terminée, signature et position envoyées. Vous pouvez démarrer la suivante.');
       await loadMe();
     } catch (err) {
       setError(errMsg(err));
@@ -255,8 +272,8 @@ export default function LivreurApp() {
 
         {authed && me ? (
           <ol className="lv-stepper" aria-label="Progression">
-            {[['Début', 1], ['Fin', 2], ['Signature', 3]].map(([label, n]) => {
-              const cur = status === 'active' ? 2 : status === 'awaiting_signature' ? 3 : 1;
+            {[['Départ', 1], ['Signature', 2]].map(([label, n]) => {
+              const cur = status === 'active' ? 2 : 1;
               return (
                 <li key={n} className={n < cur ? 'is-done' : n === cur ? 'is-cur' : ''}>
                   <span>{n < cur ? '✓' : n}</span>
@@ -290,56 +307,60 @@ export default function LivreurApp() {
           </form>
         ) : !me ? (
           <p className="lv-hint">Chargement…</p>
-        ) : status === 'awaiting_signature' && ticket ? (
-          <form onSubmit={finish} className="lv-form">
-            <h2>Signature du client</h2>
-            <p className="lv-hint">Durée : {fmtDur(me.current.durationSeconds)} · début {fmtTime(me.current.startedAt)}</p>
-            <label>
-              Nom du client
-              <input value={client.name} onChange={(e) => setClient({ ...client, name: e.target.value })} maxLength={120} autoComplete="off" required />
-            </label>
-            <label>
-              Téléphone du client
-              <input type="tel" inputMode="tel" value={client.phone} onChange={(e) => setClient({ ...client, phone: e.target.value })} maxLength={20} autoComplete="off" required />
-            </label>
-            <p className="lv-label">Le client signe ci-dessous</p>
-            <SignaturePad ref={padRef} />
-            <button className="lv-btn" disabled={busy}>{busy ? 'Envoi…' : 'Émarger et terminer la livraison'}</button>
-          </form>
-        ) : status === 'awaiting_signature' ? (
-          <div className="lv-form">
-            <p className="lv-hint">Le QR de fin est scanné. Rescannez-le pour ouvrir l’écran de signature (délai de 20 min dépassé ou page rechargée).</p>
-            <button className="lv-btn" onClick={() => setScanning(true)}>Scanner le QR de fin</button>
-          </div>
         ) : status === 'active' ? (
+          <>
+            <div className="lv-form">
+              <div className="lv-hero"><span className="lv-hero-ico" aria-hidden>📍</span><h2>Livraison en cours</h2></div>
+              <Elapsed since={me.current.startedAt} offsetMs={offsetMs} />
+              <p className="lv-hint">
+                Départ à {fmtTime(me.current.startedAt)} (heure du serveur)
+                {me.current.startPlace ? <><br />depuis <strong>{me.current.startPlace}</strong></> : null}
+              </p>
+              <label>
+                N° de commande / référence
+                <input value={ctx.orderRef} maxLength={80} onChange={(e) => setCtx({ ...ctx, orderRef: e.target.value })} />
+              </label>
+              <label>
+                Note (destination…)
+                <input value={ctx.note} maxLength={300} onChange={(e) => setCtx({ ...ctx, note: e.target.value })} />
+              </label>
+              <button type="button" className="lv-btn lv-btn--ghost" onClick={saveCtx}>Enregistrer</button>
+            </div>
+            <form onSubmit={finish} className="lv-form lv-finish">
+              <h2>Terminer la livraison</h2>
+              <p className="lv-hint">À l’arrivée, le client renseigne ses informations puis signe. Votre position sera enregistrée.</p>
+              <label>
+                Nom du client
+                <input value={client.name} onChange={(e) => setClient({ ...client, name: e.target.value })} maxLength={120} autoComplete="off" required />
+              </label>
+              <label>
+                Téléphone du client
+                <input type="tel" inputMode="tel" value={client.phone} onChange={(e) => setClient({ ...client, phone: e.target.value })} maxLength={20} autoComplete="off" required />
+              </label>
+              <p className="lv-label">Signature du client</p>
+              <SignaturePad ref={padRef} />
+              <button className="lv-btn" disabled={busy}>{busy ? 'Envoi…' : 'Émarger et terminer la livraison'}</button>
+            </form>
+          </>
+        ) : me.qrToday ? (
           <div className="lv-form">
-            <div className="lv-hero"><span className="lv-hero-ico" aria-hidden>📍</span><h2>Livraison en cours</h2></div>
-            <Elapsed since={me.current.startedAt} offsetMs={offsetMs} />
-            <p className="lv-hint">Départ à {fmtTime(me.current.startedAt)} (heure du serveur)</p>
-            <label>
-              N° de commande / référence
-              <input value={ctx.orderRef} maxLength={80} onChange={(e) => setCtx({ ...ctx, orderRef: e.target.value })} />
-            </label>
-            <label>
-              Note (destination…)
-              <input value={ctx.note} maxLength={300} onChange={(e) => setCtx({ ...ctx, note: e.target.value })} />
-            </label>
-            <button type="button" className="lv-btn lv-btn--ghost" onClick={saveCtx}>Enregistrer</button>
-            <button type="button" className="lv-btn" disabled={busy} onClick={() => setScanning(true)}>Scanner le QR de fin</button>
-          </div>
-        ) : (
-          <div className="lv-form">
-            <div className="lv-hero"><span className="lv-hero-ico" aria-hidden>🛵</span><h2>Prêt pour une livraison</h2></div>
-            <p className="lv-hint">Scannez le QR « DÉBUT » affiché sur l’écran du site.</p>
-            <button type="button" className="lv-btn" disabled={busy} onClick={() => setScanning(true)}>Scanner le QR de début</button>
+            <div className="lv-hero"><span className="lv-hero-ico" aria-hidden>🛵</span><h2>Nouvelle livraison</h2></div>
+            <p className="lv-hint">Votre journée est lancée. Appuyez pour démarrer la livraison suivante : votre position actuelle est relevée, sans nouveau QR.</p>
+            <button type="button" className="lv-btn" disabled={busy} onClick={startNext}>{busy ? 'Localisation…' : 'Démarrer une livraison'}</button>
             <p className="lv-hint">Livraisons aujourd’hui : <strong>{me.todayCount}</strong></p>
             {me.recent?.length ? (
               <ul className="lv-recent">
                 {me.recent.slice(0, 5).map((d) => (
-                  <li key={d.id}>{fmtTime(d.startedAt)} → {fmtTime(d.signedAt)} · {fmtDur(d.durationSeconds)} · {d.clientName}</li>
+                  <li key={d.id}>{fmtTime(d.startedAt)} → {fmtTime(d.signedAt)} · {fmtDur(d.durationSeconds)} · {d.clientName}{d.endPlace ? ` · ${d.endPlace}` : ''}</li>
                 ))}
               </ul>
             ) : null}
+          </div>
+        ) : (
+          <div className="lv-form">
+            <div className="lv-hero"><span className="lv-hero-ico" aria-hidden>🛵</span><h2>Début de journée</h2></div>
+            <p className="lv-hint">Pointez d’abord votre arrivée avec le QR de présence (selfie). Pour votre première livraison, scannez le QR « Livraison » affiché sur l’écran du site : les suivantes se feront depuis cet espace.</p>
+            <button type="button" className="lv-btn" disabled={busy} onClick={() => setScanning(true)}>Scanner le QR de livraison</button>
           </div>
         )}
 

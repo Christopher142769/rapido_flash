@@ -5,6 +5,8 @@ const geoSchema = new mongoose.Schema(
     lat: Number,
     lng: Number,
     accuracy: Number,
+    place: { type: String, default: '' },
+    nearby: { type: [String], default: [] },
     distanceM: { type: Number, default: null },
     inZone: { type: Boolean, default: null },
   },
@@ -25,6 +27,8 @@ const livreurDeliverySchema = new mongoose.Schema(
       default: 'active',
       index: true,
     },
+    /** 'qr' : 1re livraison de la journée (scan du QR) ; 'app' : enchaînement depuis l'espace livreur. */
+    startVia: { type: String, enum: ['qr', 'app'], default: 'qr' },
     startedAt: { type: Date, required: true },
     endScannedAt: { type: Date, default: null },
     signedAt: { type: Date, default: null },

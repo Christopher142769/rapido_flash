@@ -69,6 +69,8 @@ const publicDelivery = (d) =>
     siteId: d.siteId,
     siteLabel: siteLabel(d.siteId),
     startedAt: d.startedAt,
+    startPlace: d.startGeo?.place || '',
+    endPlace: d.endGeo?.place || '',
     endScannedAt: d.endScannedAt,
     signedAt: d.signedAt,
     durationSeconds: d.durationSeconds,
@@ -150,7 +152,14 @@ router.get('/me', livreurAuth, async (req, res) => {
       dateKey: dateKeyBenin(),
       status: 'completed',
     });
+    const qrToday = !!(await LivreurDelivery.exists({
+      employeeId: e._id,
+      dateKey: dateKeyBenin(),
+      startVia: 'qr',
+      status: { $ne: 'cancelled' },
+    }));
     res.json({
+      qrToday,
       name: fullName(e),
       siteId: e.siteId,
       siteLabel: siteLabel(e.siteId),
@@ -164,12 +173,67 @@ router.get('/me', livreurAuth, async (req, res) => {
   }
 });
 
-/** Un scan = QR signé, expirant (60 s), à usage unique. Début ou fin selon le QR. */
+async function createStart(req, res, { via, now }) {
+  const e = req.livreur;
+  const site = await getSite(e.siteId);
+  const geo = await S.buildGeo(req.body, site);
+  if (!geo) {
+    return res.status(400).json({ message: 'Position GPS requise : activez la localisation du téléphone puis réessayez.' });
+  }
+  const flags = [];
+  geoFlags(geo, flags, { zone: via === 'qr' });
+  clockSkewFlag(req.body, flags);
+  const dateKey = dateKeyBenin(now);
+  const yesterday = dateKeyBenin(new Date(now.getTime() - 24 * 3600 * 1000));
+  const clockedIn = await StaffPresenceRecord.exists({
+    employeeId: e._id,
+    kind: 'arrival',
+    dateKey: { $in: [dateKey, yesterday] },
+  });
+  if (!clockedIn) flags.push('not_clocked_in');
+  if (await LivreurDelivery.exists({ employeeId: e._id, status: { $in: ['active', 'awaiting_signature'] } })) {
+    return res.status(409).json({ message: 'Une livraison est déjà en cours. Terminez-la d’abord.' });
+  }
+  let delivery;
+  try {
+    delivery = await LivreurDelivery.create({
+      employeeId: e._id,
+      livreurName: fullName(e),
+      siteId: e.siteId,
+      dateKey,
+      status: 'active',
+      startVia: via,
+      startedAt: now,
+      startGeo: geo,
+      flags,
+      ip: clientIp(req),
+      userAgent: ua(req),
+    });
+  } catch (err) {
+    if (err?.code === 11000) {
+      return res.status(409).json({ message: 'Une livraison est déjà en cours. Terminez-la d’abord.' });
+    }
+    throw err;
+  }
+  await recordEvent({
+    type: 'delivery_start',
+    employeeId: e._id,
+    livreurName: fullName(e),
+    deliveryId: delivery._id,
+    siteId: e.siteId,
+    at: now,
+    data: { via, geo, flags, ip: clientIp(req) },
+  });
+  mail({ kind: 'start', delivery: delivery.toObject() });
+  return res.status(201).json({ ok: true, kind: 'start', delivery: publicDelivery(delivery) });
+}
+
+/** QR de livraison (signé, 60 s, usage unique) : lance la 1re livraison de la journée. */
 router.post('/scan', livreurAuth, async (req, res) => {
   try {
     const e = req.livreur;
     const payload = S.verify(req.body?.token);
-    if (!payload || payload.t !== 'qr' || !['start', 'end'].includes(payload.k)) {
+    if (!payload || payload.t !== 'qr' || payload.k !== 'start') {
       return res.status(400).json({ message: 'QR expiré ou invalide. Scannez le QR affiché à l’écran.' });
     }
     if (payload.s !== e.siteId) {
@@ -180,104 +244,32 @@ router.post('/scan', livreurAuth, async (req, res) => {
       await LivreurScanNonce.create({ nonce: payload.n });
     } catch (err) {
       if (err?.code === 11000) {
-        await recordEvent({ type: 'scan_rejected', employeeId: e._id, livreurName: fullName(e), siteId: e.siteId, data: { reason: 'qr_reused', kind: payload.k } });
+        await recordEvent({ type: 'scan_rejected', employeeId: e._id, livreurName: fullName(e), siteId: e.siteId, data: { reason: 'qr_reused' } });
         return res.status(409).json({ message: 'Ce QR a déjà été utilisé. Scannez le nouveau QR affiché.' });
       }
       throw err;
     }
+    await createStart(req, res, { via: 'qr', now: new Date() });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
-    const now = new Date();
-    const site = await getSite(e.siteId);
-    const geo = S.buildGeo(req.body, site);
-    const flags = [];
-    geoFlags(geo, flags, { zone: payload.k === 'start' });
-    clockSkewFlag(req.body, flags);
-
-    if (payload.k === 'start') {
-      const dateKey = dateKeyBenin(now);
-      const yesterday = dateKeyBenin(new Date(now.getTime() - 24 * 3600 * 1000));
-      const clockedIn = await StaffPresenceRecord.exists({
-        employeeId: e._id,
-        kind: 'arrival',
-        dateKey: { $in: [dateKey, yesterday] },
-      });
-      if (!clockedIn) flags.push('not_clocked_in');
-      if (await LivreurDelivery.exists({ employeeId: e._id, status: { $in: ['active', 'awaiting_signature'] } })) {
-        return res.status(409).json({ message: 'Une livraison est déjà en cours. Terminez-la d’abord.' });
-      }
-      let delivery;
-      try {
-        delivery = await LivreurDelivery.create({
-          employeeId: e._id,
-          livreurName: fullName(e),
-          siteId: e.siteId,
-          dateKey,
-          status: 'active',
-          startedAt: now,
-          startGeo: geo,
-          flags,
-          ip: clientIp(req),
-          userAgent: ua(req),
-        });
-      } catch (err) {
-        if (err?.code === 11000) {
-          return res.status(409).json({ message: 'Une livraison est déjà en cours. Terminez-la d’abord.' });
-        }
-        throw err;
-      }
-      await recordEvent({
-        type: 'delivery_start',
-        employeeId: e._id,
-        livreurName: fullName(e),
-        deliveryId: delivery._id,
-        siteId: e.siteId,
-        at: now,
-        data: { geo, flags, ip: clientIp(req) },
-      });
-      mail({ kind: 'start', delivery: delivery.toObject() });
-      return res.status(201).json({ ok: true, kind: 'start', delivery: publicDelivery(delivery) });
+/** Livraisons suivantes de la journée : plus de QR, la position est relevée au démarrage. */
+router.post('/delivery/start', livreurAuth, async (req, res) => {
+  try {
+    const qrToday = await LivreurDelivery.exists({
+      employeeId: req.livreur._id,
+      dateKey: dateKeyBenin(),
+      startVia: 'qr',
+      status: { $ne: 'cancelled' },
+    });
+    if (!qrToday) {
+      return res.status(403).json({ message: 'Scannez d’abord le QR de livraison pour commencer la journée.' });
     }
-
-    // fin
-    let delivery = await LivreurDelivery.findOne({
-      employeeId: e._id,
-      status: { $in: ['active', 'awaiting_signature'] },
-    });
-    if (!delivery) return res.status(409).json({ message: 'Aucune livraison en cours. Scannez d’abord le QR de début.' });
-    let first = false;
-    if (delivery.status === 'active') {
-      const durationSeconds = Math.round((now - delivery.startedAt) / 1000);
-      if (durationSeconds < MIN_DURATION_S) flags.push('too_short');
-      if (durationSeconds > MAX_DURATION_S) flags.push('too_long');
-      delivery = await LivreurDelivery.findOneAndUpdate(
-        { _id: delivery._id, status: 'active' },
-        {
-          $set: { status: 'awaiting_signature', endScannedAt: now, durationSeconds, endGeo: geo },
-          $addToSet: { flags: { $each: flags } },
-        },
-        { new: true }
-      );
-      if (!delivery) return res.status(409).json({ message: 'Livraison déjà mise à jour.' });
-      first = true;
-    }
-    await recordEvent({
-      type: first ? 'delivery_end_scan' : 'delivery_end_rescan',
-      employeeId: e._id,
-      livreurName: fullName(e),
-      deliveryId: delivery._id,
-      siteId: e.siteId,
-      at: now,
-      data: { geo, flags, durationSeconds: delivery.durationSeconds },
-    });
-    if (first) mail({ kind: 'end_scan', delivery: delivery.toObject() });
-    res.json({
-      ok: true,
-      kind: 'end',
-      ticket: S.finishTicket(e._id, delivery._id),
-      delivery: publicDelivery(delivery),
-    });
-  } catch (e) {
-    res.status(500).json({ message: e.message });
+    await createStart(req, res, { via: 'app', now: new Date() });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
@@ -309,10 +301,6 @@ router.patch('/delivery/context', livreurAuth, async (req, res) => {
 router.post('/finish', livreurAuth, uploadSignature.single('signature'), async (req, res) => {
   try {
     const e = req.livreur;
-    const ticket = S.verify(req.body?.ticket);
-    if (!ticket || ticket.t !== 'fin' || ticket.id !== String(e._id)) {
-      return res.status(400).json({ message: 'Délai dépassé. Rescannez le QR de fin.' });
-    }
     const clientName = ensureStr(req.body?.clientName, 120);
     const phone = S.phoneDigits(req.body?.clientPhone);
     if (clientName.length < 2) return res.status(400).json({ message: 'Nom du client requis.' });
@@ -323,15 +311,21 @@ router.post('/finish', livreurAuth, uploadSignature.single('signature'), async (
     if (!png || png.length < 200 || png.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') {
       return res.status(400).json({ message: 'Signature du client requise.' });
     }
-    const delivery = await LivreurDelivery.findOne({ _id: ticket.d, employeeId: e._id, status: 'awaiting_signature' });
-    if (!delivery) return res.status(409).json({ message: 'Cette livraison n’attend plus de signature.' });
+    const delivery = await LivreurDelivery.findOne({ employeeId: e._id, status: 'active' });
+    if (!delivery) return res.status(409).json({ message: 'Aucune livraison en cours.' });
 
     const now = new Date();
     const site = await getSite(e.siteId);
-    const geo = S.buildGeo(req.body, site);
+    const geo = await S.buildGeo(req.body, site);
+    if (!geo) {
+      return res.status(400).json({ message: 'Position GPS requise : activez la localisation du téléphone puis réessayez.' });
+    }
     const flags = [];
     geoFlags(geo, flags, { zone: false });
     clockSkewFlag(req.body, flags);
+    const durationSeconds = Math.round((now - delivery.startedAt) / 1000);
+    if (durationSeconds < MIN_DURATION_S) flags.push('too_short');
+    if (durationSeconds > MAX_DURATION_S) flags.push('too_long');
     const strokes = Number(req.body?.strokes) || 0;
     if (strokes < 2 || png.length < 1500) flags.push('weak_signature');
     const sha = crypto.createHash('sha256').update(png).digest('hex');
@@ -344,13 +338,16 @@ router.post('/finish', livreurAuth, uploadSignature.single('signature'), async (
     if (recentSame >= 3) flags.push('repeat_client');
 
     const updated = await LivreurDelivery.findOneAndUpdate(
-      { _id: delivery._id, status: 'awaiting_signature' },
+      { _id: delivery._id, status: 'active' },
       {
         $set: {
           status: 'completed',
           signedAt: now,
+          endScannedAt: now,
+          durationSeconds,
           clientName,
           clientPhone: clientPhone(phone),
+          endGeo: geo,
           signGeo: geo,
           signatureKey: crypto.randomBytes(16).toString('hex'),
           signatureMime: 'image/png',
@@ -369,12 +366,12 @@ router.post('/finish', livreurAuth, uploadSignature.single('signature'), async (
       deliveryId: updated._id,
       siteId: updated.siteId,
       at: now,
-      data: { clientName, clientPhone: updated.clientPhone, signatureSha256: sha, geo, flags, ip: clientIp(req) },
+      data: { clientName, clientPhone: updated.clientPhone, signatureSha256: sha, geo, flags, durationSeconds, ip: clientIp(req) },
     });
     mail({ kind: 'signature', delivery: updated.toObject(), signatureBuffer: png });
     res.json({ ok: true, delivery: publicDelivery(updated) });
-  } catch (e) {
-    res.status(500).json({ message: e.message });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
@@ -392,7 +389,7 @@ router.get('/admin/station/:siteId', ...admin, async (req, res) => {
     const siteId = normalizeSiteId(req.params.siteId);
     if (!isValidSiteId(siteId)) return res.status(400).json({ message: 'Site invalide' });
     const out = { siteId, siteLabel: siteLabel(siteId), serverTime: Date.now() };
-    for (const kind of ['start', 'end']) {
+    for (const kind of ['start']) {
       const cur = S.verify(req.query[kind]);
       const reusable =
         cur &&

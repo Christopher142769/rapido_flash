@@ -40,8 +40,6 @@ const EVENT_LABELS = {
   login_failed: 'Connexion refusée',
   scan_rejected: 'Scan rejeté',
   delivery_start: 'Début livraison',
-  delivery_end_scan: 'Scan de fin',
-  delivery_end_rescan: 'Rescan de fin',
   delivery_context: 'Contexte modifié',
   delivery_signed: 'Signature client',
   admin_cancel: 'Annulation RH',
@@ -89,9 +87,9 @@ function StationTab({ sites }) {
     let stop = false;
     const tick = async () => {
       try {
-        const { data } = await get(`/admin/station/${siteId}`, { start: cur.current.start?.token, end: cur.current.end?.token });
+        const { data } = await get(`/admin/station/${siteId}`, { start: cur.current.start?.token });
         if (stop) return;
-        ['start', 'end'].forEach((k) => {
+        ['start'].forEach((k) => {
           if (!data[k].keep) cur.current[k] = data[k];
         });
         setQr({ ...cur.current });
@@ -111,15 +109,17 @@ function StationTab({ sites }) {
   return (
     <div>
       <p className="lvp-hint">
-        Affichez cette page sur un écran du site. Chaque QR est signé, valable 60 s et à usage unique : il se
-        renouvelle seul après chaque scan. Une capture d’écran ou une photo ne peut donc pas servir de fausse preuve.
+        Ce QR sert uniquement à lancer la <b>première livraison de la journée</b> (position relevée au scan). Les
+        livraisons suivantes se démarrent depuis l’espace livreur, sans QR. Les QR d’arrivée / sortie avec selfie
+        sont ceux de « Codes QR » (comme le personnel). Ce QR est signé, valable 60 s et à usage unique : il se
+        renouvelle seul après chaque scan, une capture d’écran ne sert à rien.
       </p>
       <select value={siteId} onChange={(e) => setSiteId(e.target.value)}>
         {sites.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
       </select>
       {err ? <p className="lvp-err">{err}</p> : null}
       <div className="lvp-qrs">
-        {[['start', 'DÉBUT de livraison'], ['end', 'FIN de livraison']].map(([k, label]) => (
+        {[['start', 'QR LIVRAISON (1re livraison du jour)']].map(([k, label]) => (
           <div key={k} className="lvp-qr">
             <h3>{label}</h3>
             {qr[k]?.path ? <QRCodeSVG value={`${window.location.origin}${qr[k].path}`} size={240} level="M" includeMargin /> : <p>…</p>}
@@ -351,8 +351,8 @@ export default function LivreursPanel() {
   };
 
   const exportCsv = () => {
-    const rows = [['Livreur', 'Site', 'Statut', 'Début', 'Scan fin', 'Signature', 'Durée (s)', 'Réf', 'Client', 'Téléphone', 'Anomalies']];
-    deliveries.forEach((d) => rows.push([d.livreurName, d.siteLabel, STATUS[d.status], dt(d.startedAt), dt(d.endScannedAt), dt(d.signedAt), d.durationSeconds ?? '', d.orderRef, d.clientName, d.clientPhone, (d.flags || []).join('|')]));
+    const rows = [['Livreur', 'Site', 'Statut', 'Début', 'Lieu départ', 'Signature', 'Lieu arrivée', 'Durée (s)', 'Réf', 'Client', 'Téléphone', 'Anomalies']];
+    deliveries.forEach((d) => rows.push([d.livreurName, d.siteLabel, STATUS[d.status], dt(d.startedAt), d.startGeo?.place || '', dt(d.signedAt), d.endGeo?.place || '', d.durationSeconds ?? '', d.orderRef, d.clientName, d.clientPhone, (d.flags || []).join('|')]));
     const csv = rows.map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(';')).join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([`﻿${csv}`], { type: 'text/csv' }));
@@ -404,10 +404,10 @@ export default function LivreursPanel() {
                   <span className={`lvp-status lvp-status--${d.status}`}>{STATUS[d.status]}</span>
                 </header>
                 <ol className="lvp-steps">
-                  <li><em>Départ</em><span>{dt(d.startedAt)}</span></li>
-                  <li><em>Scan fin</em><span>{dt(d.endScannedAt)}</span></li>
-                  <li><em>Signature</em><span>{dt(d.signedAt)}</span></li>
+                  <li><em>Départ{d.startVia === 'qr' ? ' (QR)' : ''}</em><span>{dt(d.startedAt)}</span><small>{d.startGeo?.place || 'Lieu non identifié'}</small></li>
+                  <li><em>Arrivée / signature</em><span>{dt(d.signedAt)}</span><small>{d.endGeo?.place || (d.signedAt ? 'Lieu non identifié' : '')}</small></li>
                   <li><em>Durée</em><span className="lvp-dur">{dur(d.durationSeconds)}</span></li>
+                  <li><em>Alentours</em><small>{[...(d.startGeo?.nearby || []), ...(d.endGeo?.nearby || [])].filter((v, i, a) => a.indexOf(v) === i).slice(0, 4).join(' · ') || '—'}</small></li>
                 </ol>
                 {d.clientName ? (
                   <div className="lvp-client">
@@ -421,7 +421,7 @@ export default function LivreursPanel() {
                 ) : null}
                 {d.note ? <p className="lvp-note">{d.note}</p> : null}
                 <footer className="lvp-card-foot">
-                  <span className="lvp-geo">GPS : début {d.startGeo?.distanceM ?? '?'} m · fin {d.endGeo?.distanceM ?? '?'} m · signature {d.signGeo?.distanceM ?? '?'} m du site</span>
+                  <span className="lvp-geo">Du site : départ {d.startGeo?.distanceM ?? '?'} m · arrivée {d.endGeo?.distanceM ?? '?'} m</span>
                   <div className="lvp-flags"><Flags flags={d.flags} /></div>
                   {['active', 'awaiting_signature'].includes(d.status) ? (
                     <button type="button" className="lvp-btn lvp-btn--danger" onClick={() => cancel(d)}>Annuler</button>
@@ -475,7 +475,7 @@ export default function LivreursPanel() {
                     <td><small>{[
                       e.data?.reason && `motif: ${e.data.reason}`,
                       e.data?.clientName && `client: ${e.data.clientName} ${e.data.clientPhone || ''}`,
-                      e.data?.geo && `GPS ${e.data.geo.lat?.toFixed(4)},${e.data.geo.lng?.toFixed(4)} (${e.data.geo.distanceM ?? '?'} m)`,
+                      e.data?.geo && `${e.data.geo.place || `GPS ${e.data.geo.lat?.toFixed(4)},${e.data.geo.lng?.toFixed(4)}`}${e.data.via ? ` (${e.data.via === 'qr' ? 'QR' : 'appli'})` : ''}`,
                       e.data?.flags?.length && `⚠ ${e.data.flags.map((f) => FLAGS[f] || f).join(', ')}`,
                       e.data?.ip && `IP ${e.data.ip}`,
                     ].filter(Boolean).join(' · ')}</small></td>
