@@ -407,6 +407,7 @@ router.get('/admin/station/:siteId', ...admin, async (req, res) => {
         const { token } = S.newQrToken(siteId, kind);
         out[kind] = {
           token,
+          path: `/livreur/scan/${token}`,
           url: `${publicAppBaseUrl()}/livreur/scan/${token}`,
           expiresAt: S.verify(token).e,
         };

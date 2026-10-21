@@ -122,7 +122,7 @@ function StationTab({ sites }) {
         {[['start', 'DÉBUT de livraison'], ['end', 'FIN de livraison']].map(([k, label]) => (
           <div key={k} className="lvp-qr">
             <h3>{label}</h3>
-            {qr[k]?.url ? <QRCodeSVG value={qr[k].url} size={240} level="M" includeMargin /> : <p>…</p>}
+            {qr[k]?.path ? <QRCodeSVG value={`${window.location.origin}${qr[k].path}`} size={240} level="M" includeMargin /> : <p>…</p>}
           </div>
         ))}
       </div>
