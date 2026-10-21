@@ -167,11 +167,11 @@ function ManageTab({ data, reload }) {
               <td>{l.hasPin ? 'défini' : '—'}</td>
               <td>{l.active ? 'oui' : 'non'}</td>
               <td>
-                <button type="button" onClick={() => {
+                <button type="button" className="lvp-btn" onClick={() => {
                   const pin = window.prompt('Nouveau PIN (4 à 8 chiffres)');
                   if (pin) call(() => send('patch', `/admin/livreurs/${l.id}`, { pin }));
                 }}>Changer PIN</button>{' '}
-                <button type="button" onClick={() => call(() => send('patch', `/admin/livreurs/${l.id}`, { active: !l.active }))}>
+                <button type="button" className="lvp-btn" onClick={() => call(() => send('patch', `/admin/livreurs/${l.id}`, { active: !l.active }))}>
                   {l.active ? 'Désactiver' : 'Réactiver'}
                 </button>
               </td>
@@ -187,7 +187,7 @@ function ManageTab({ data, reload }) {
           {sites.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
         </select>
         <input placeholder="PIN (4-8 chiffres)" inputMode="numeric" value={form.pin} onChange={(e) => setForm({ ...form, pin: e.target.value.replace(/\D/g, '') })} required />
-        <button>Ajouter le livreur</button>
+        <button className="lvp-btn lvp-btn--primary">Ajouter le livreur</button>
       </form>
 
       <h3>Zone GPS des sites (contrôle des scans)</h3>
@@ -206,7 +206,7 @@ function ManageTab({ data, reload }) {
                 <input type="number" min={30} max={5000} defaultValue={s.radiusM} style={{ width: 80 }}
                   onBlur={(e) => Number(e.target.value) !== s.radiusM && call(() => patchSite(s.id, { radiusM: Number(e.target.value) }))} />
               </td>
-              <td><button type="button" onClick={() => locate(s)}>Définir ma position</button></td>
+              <td><button type="button" className="lvp-btn" onClick={() => locate(s)}>Définir ma position</button></td>
             </tr>
           ))}
         </tbody>
@@ -266,13 +266,13 @@ function EmailsTab() {
           <ul>
             {data[ch].defaults.map((e) => <li key={e}>{e} <small>(par défaut)</small></li>)}
             {data[ch].added.map((r) => (
-              <li key={r.id}>{r.email} <button type="button" onClick={() => remove(r.id)}>Retirer</button></li>
+              <li key={r.id}>{r.email} <button type="button" className="lvp-btn" onClick={() => remove(r.id)}>Retirer</button></li>
             ))}
             {!data[ch].defaults.length && !data[ch].added.length ? <li><small>Aucune adresse : aucun e-mail envoyé.</small></li> : null}
           </ul>
           <form className="lvp-form" onSubmit={(e) => { e.preventDefault(); add(ch); }}>
             <input type="email" placeholder="nouvelle@adresse.com" value={draft[ch] || ''} onChange={(e) => setDraft({ ...draft, [ch]: e.target.value })} required />
-            <button>Ajouter</button>
+            <button className="lvp-btn lvp-btn--primary">Ajouter</button>
           </form>
         </section>
       ))}
@@ -378,59 +378,75 @@ export default function LivreursPanel() {
             {meta.livreurs.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
           </select>
           <label><input type="checkbox" checked={filters.flagged} onChange={(e) => setFilters({ ...filters, flagged: e.target.checked })} /> Anomalies seulement</label>
-          <button type="button" onClick={tab === 'audit' ? loadEvents : loadData}>Actualiser</button>
-          {tab === 'overview' ? <button type="button" onClick={exportCsv}>Export CSV</button> : null}
+          <button type="button" className="lvp-btn" onClick={tab === 'audit' ? loadEvents : loadData}>Actualiser</button>
+          {tab === 'overview' ? <button type="button" className="lvp-btn lvp-btn--primary" onClick={exportCsv}>Export CSV</button> : null}
         </div>
       ) : null}
 
       {tab === 'overview' ? (
         <>
-          <p className="lvp-stats">
-            <b>{summary.done}</b> terminées · <b>{summary.open}</b> en cours · <b className={summary.flagged ? 'lvp-bad' : ''}>{summary.flagged}</b> avec anomalie
-          </p>
-          <h3>Livraisons</h3>
-          <div className="lvp-scroll">
-            <table className="lvp-table">
-              <thead><tr><th>Livreur</th><th>Statut</th><th>Début</th><th>Scan fin</th><th>Signé</th><th>Durée</th><th>Réf.</th><th>Client</th><th>Signature</th><th>GPS (m du site)</th><th>Anomalies</th><th /></tr></thead>
-              <tbody>
-                {deliveries.map((d) => (
-                  <tr key={d._id} className={d.flags?.length ? 'lvp-row-flag' : ''}>
-                    <td>{d.livreurName}<br /><small>{d.siteLabel}</small></td>
-                    <td>{STATUS[d.status]}</td>
-                    <td>{dt(d.startedAt)}</td>
-                    <td>{dt(d.endScannedAt)}</td>
-                    <td>{dt(d.signedAt)}</td>
-                    <td>{dur(d.durationSeconds)}</td>
-                    <td>{d.orderRef || '—'}{d.note ? <><br /><small>{d.note}</small></> : null}</td>
-                    <td>{d.clientName || '—'}<br /><small>{d.clientPhone}</small></td>
-                    <td>{d.hasSignature ? <SignatureThumb id={d._id} /> : '—'}</td>
-                    <td><small>début {d.startGeo?.distanceM ?? '?'} · fin {d.endGeo?.distanceM ?? '?'} · sign. {d.signGeo?.distanceM ?? '?'}</small></td>
-                    <td><Flags flags={d.flags} /></td>
-                    <td>{['active', 'awaiting_signature'].includes(d.status) ? <button type="button" onClick={() => cancel(d)}>Annuler</button> : null}</td>
-                  </tr>
-                ))}
-                {!deliveries.length ? <tr><td colSpan={12}>Aucune livraison sur la période.</td></tr> : null}
-              </tbody>
-            </table>
+          <div className="lvp-kpis">
+            <div className="lvp-kpi"><span>Terminées</span><b>{summary.done}</b></div>
+            <div className="lvp-kpi"><span>En cours</span><b>{summary.open}</b></div>
+            <div className={`lvp-kpi${summary.flagged ? ' is-alert' : ''}`}><span>Avec anomalie</span><b>{summary.flagged}</b></div>
+            <div className="lvp-kpi"><span>Pointages</span><b>{presence.length}</b></div>
           </div>
 
-          <h3>Arrivées / sorties des livreurs (pointage selfie)</h3>
-          <div className="lvp-scroll">
-            <table className="lvp-table">
-              <thead><tr><th>Livreur</th><th>Site</th><th>Type</th><th>Heure</th><th>Durée travaillée</th></tr></thead>
-              <tbody>
-                {presence.map((r) => (
-                  <tr key={r._id}>
-                    <td>{`${r.firstName} ${r.lastName || ''}`.trim()}</td>
-                    <td>{r.siteLabel}</td>
-                    <td>{r.kind === 'exit' ? 'Sortie' : 'Arrivée'}</td>
-                    <td>{dt(r.checkedAt)}</td>
-                    <td>{r.workedMinutes != null ? `${Math.floor(r.workedMinutes / 60)} h ${r.workedMinutes % 60} min` : '—'}</td>
-                  </tr>
-                ))}
-                {!presence.length ? <tr><td colSpan={5}>Aucun pointage livreur sur la période.</td></tr> : null}
-              </tbody>
-            </table>
+          <h3 className="lvp-h">Livraisons</h3>
+          <div className="lvp-cards">
+            {deliveries.map((d) => (
+              <article key={d._id} className={`lvp-card${d.flags?.length ? ' is-flag' : ''}`}>
+                <header className="lvp-card-head">
+                  <div>
+                    <strong>{d.livreurName}</strong>
+                    <small>{d.siteLabel}{d.orderRef ? ` · ${d.orderRef}` : ''}</small>
+                  </div>
+                  <span className={`lvp-status lvp-status--${d.status}`}>{STATUS[d.status]}</span>
+                </header>
+                <ol className="lvp-steps">
+                  <li><em>Départ</em><span>{dt(d.startedAt)}</span></li>
+                  <li><em>Scan fin</em><span>{dt(d.endScannedAt)}</span></li>
+                  <li><em>Signature</em><span>{dt(d.signedAt)}</span></li>
+                  <li><em>Durée</em><span className="lvp-dur">{dur(d.durationSeconds)}</span></li>
+                </ol>
+                {d.clientName ? (
+                  <div className="lvp-client">
+                    <div>
+                      <small>Client</small>
+                      <strong>{d.clientName}</strong>
+                      <span>{d.clientPhone}</span>
+                    </div>
+                    {d.hasSignature ? <SignatureThumb id={d._id} /> : null}
+                  </div>
+                ) : null}
+                {d.note ? <p className="lvp-note">{d.note}</p> : null}
+                <footer className="lvp-card-foot">
+                  <span className="lvp-geo">GPS : début {d.startGeo?.distanceM ?? '?'} m · fin {d.endGeo?.distanceM ?? '?'} m · signature {d.signGeo?.distanceM ?? '?'} m du site</span>
+                  <div className="lvp-flags"><Flags flags={d.flags} /></div>
+                  {['active', 'awaiting_signature'].includes(d.status) ? (
+                    <button type="button" className="lvp-btn lvp-btn--danger" onClick={() => cancel(d)}>Annuler</button>
+                  ) : null}
+                </footer>
+              </article>
+            ))}
+            {!deliveries.length ? <p className="lvp-empty">Aucune livraison sur la période.</p> : null}
+          </div>
+
+          <h3 className="lvp-h">Arrivées / sorties des livreurs</h3>
+          <div className="lvp-list">
+            {presence.map((r) => (
+              <div key={r._id} className="lvp-row">
+                <span className={`lvp-dot lvp-dot--${r.kind}`} />
+                <div>
+                  <strong>{`${r.firstName} ${r.lastName || ''}`.trim()}</strong>
+                  <small>{r.siteLabel}</small>
+                </div>
+                <span className="lvp-kind">{r.kind === 'exit' ? 'Sortie' : 'Arrivée'}</span>
+                <span className="lvp-time">{dt(r.checkedAt)}</span>
+                <span className="lvp-worked">{r.workedMinutes != null ? `${Math.floor(r.workedMinutes / 60)} h ${r.workedMinutes % 60} min` : ''}</span>
+              </div>
+            ))}
+            {!presence.length ? <p className="lvp-empty">Aucun pointage livreur sur la période.</p> : null}
           </div>
         </>
       ) : null}

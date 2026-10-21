@@ -253,6 +253,20 @@ export default function LivreurApp() {
           ) : null}
         </header>
 
+        {authed && me ? (
+          <ol className="lv-stepper" aria-label="Progression">
+            {[['Début', 1], ['Fin', 2], ['Signature', 3]].map(([label, n]) => {
+              const cur = status === 'active' ? 2 : status === 'awaiting_signature' ? 3 : 1;
+              return (
+                <li key={n} className={n < cur ? 'is-done' : n === cur ? 'is-cur' : ''}>
+                  <span>{n < cur ? '✓' : n}</span>
+                  {label}
+                </li>
+              );
+            })}
+          </ol>
+        ) : null}
+
         {error ? <p className="lv-msg lv-msg--err" role="alert">{error}</p> : null}
         {info ? <p className="lv-msg lv-msg--ok">{info}</p> : null}
 
@@ -299,7 +313,7 @@ export default function LivreurApp() {
           </div>
         ) : status === 'active' ? (
           <div className="lv-form">
-            <h2>Livraison en cours</h2>
+            <div className="lv-hero"><span className="lv-hero-ico" aria-hidden>📍</span><h2>Livraison en cours</h2></div>
             <Elapsed since={me.current.startedAt} offsetMs={offsetMs} />
             <p className="lv-hint">Départ à {fmtTime(me.current.startedAt)} (heure du serveur)</p>
             <label>
@@ -315,7 +329,7 @@ export default function LivreurApp() {
           </div>
         ) : (
           <div className="lv-form">
-            <h2>Prêt pour une livraison</h2>
+            <div className="lv-hero"><span className="lv-hero-ico" aria-hidden>🛵</span><h2>Prêt pour une livraison</h2></div>
             <p className="lv-hint">Scannez le QR « DÉBUT » affiché sur l’écran du site.</p>
             <button type="button" className="lv-btn" disabled={busy} onClick={() => setScanning(true)}>Scanner le QR de début</button>
             <p className="lv-hint">Livraisons aujourd’hui : <strong>{me.todayCount}</strong></p>
