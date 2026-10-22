@@ -278,6 +278,9 @@ router.patch('/delivery/context', livreurAuth, async (req, res) => {
   try {
     const orderRef = ensureStr(req.body?.orderRef, 80);
     const note = ensureStr(req.body?.note, 300);
+    if (orderRef.length < 2 || note.length < 2) {
+      return res.status(400).json({ message: 'Renseignez le numéro de commande et la destination.' });
+    }
     const d = await LivreurDelivery.findOneAndUpdate(
       { employeeId: req.livreur._id, status: 'active' },
       { $set: { orderRef, note } },
@@ -313,6 +316,9 @@ router.post('/finish', livreurAuth, uploadSignature.single('signature'), async (
     }
     const delivery = await LivreurDelivery.findOne({ employeeId: e._id, status: 'active' });
     if (!delivery) return res.status(409).json({ message: 'Aucune livraison en cours.' });
+    if (!delivery.orderRef || !delivery.note) {
+      return res.status(400).json({ message: 'Renseignez d’abord le numéro de commande et la destination avant de terminer.' });
+    }
 
     const now = new Date();
     const site = await getSite(e.siteId);

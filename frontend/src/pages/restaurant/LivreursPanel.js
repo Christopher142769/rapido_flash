@@ -75,10 +75,30 @@ function StationTab({ sites }) {
   const [siteId, setSiteId] = useState('');
   const [qr, setQr] = useState({});
   const [err, setErr] = useState('');
+  const [perm, setPerm] = useState(null);
   const cur = useRef({});
+  const permRef = useRef(null);
   useEffect(() => {
     if (!siteId && sites[0]) setSiteId(sites[0].id);
   }, [sites, siteId]);
+
+  useEffect(() => {
+    if (!siteId) return;
+    setPerm(null);
+    axios
+      .get(`${API_URL}/staff-presence/settings`, { ...authCfg(), params: { site: siteId } })
+      .then((r) => setPerm(r.data))
+      .catch((e) => setErr(errMsg(e)));
+  }, [siteId]);
+
+  const printPermanent = () => {
+    const w = window.open('', '_blank');
+    if (!w || !permRef.current) return;
+    w.document.write(`<html><head><title>QR présence livreurs</title><style>body{font-family:Arial;text-align:center}div{display:inline-block;margin:24px;padding:16px;border:1px solid #ccc;border-radius:12px}h2{margin:0 0 8px}</style></head><body>${permRef.current.innerHTML}</body></html>`);
+    w.document.close();
+    w.focus();
+    w.print();
+  };
 
   useEffect(() => {
     if (!siteId) return undefined;
@@ -118,13 +138,25 @@ function StationTab({ sites }) {
         {sites.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
       </select>
       {err ? <p className="lvp-err">{err}</p> : null}
-      <div className="lvp-qrs">
-        {[['start', 'QR LIVRAISON (1re livraison du jour)']].map(([k, label]) => (
-          <div key={k} className="lvp-qr">
+      <h3>QR de présence (permanents) — arrivée et départ de service</h3>
+      <p className="lvp-hint">Avec selfie, comme le personnel. Ces QR ne changent pas : vous pouvez les imprimer et les afficher.</p>
+      <div className="lvp-qrs" ref={permRef}>
+        {[['Arrivée de service', perm?.arrivalCode], ['Départ de service', perm?.exitCode]].map(([label, code]) => (
+          <div key={label} className="lvp-qr">
+            <h2 style={{ display: 'none' }}>{label}</h2>
             <h3>{label}</h3>
-            {qr[k]?.path ? <QRCodeSVG value={`${window.location.origin}${qr[k].path}`} size={240} level="M" includeMargin /> : <p>…</p>}
+            {code ? <QRCodeSVG value={`${window.location.origin}/presence/${encodeURIComponent(code)}`} size={220} level="M" includeMargin /> : <p>…</p>}
           </div>
         ))}
+      </div>
+      <button type="button" className="lvp-btn" onClick={printPermanent}>Imprimer les 2 QR de présence</button>
+
+      <h3>QR de livraison (renouvelé automatiquement)</h3>
+      <div className="lvp-qrs">
+        <div className="lvp-qr">
+          <h3>1re livraison de la journée</h3>
+          {qr.start?.path ? <QRCodeSVG value={`${window.location.origin}${qr.start.path}`} size={220} level="M" includeMargin /> : <p>…</p>}
+        </div>
       </div>
     </div>
   );
