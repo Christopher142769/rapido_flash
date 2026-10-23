@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
-import { QRCodeSVG } from 'qrcode.react';
+import { QRCodeCanvas, QRCodeSVG } from 'qrcode.react';
+import { exportLivreurQrPdf, fetchImageAsDataUrl } from '../../utils/exportStaffPresence';
 import './LivreursPanel.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -92,13 +93,29 @@ function StationTab({ sites }) {
       .catch((e) => setErr(errMsg(e)));
   }, [siteId]);
 
-  const printPermanent = () => {
-    const w = window.open('', '_blank');
-    if (!w || !permRef.current) return;
-    w.document.write(`<html><head><title>QR livreurs</title><style>body{font-family:Arial;text-align:center}div{display:inline-block;margin:24px;padding:16px;border:1px solid #ccc;border-radius:12px}h2{margin:0 0 8px}</style></head><body>${permRef.current.innerHTML}</body></html>`);
-    w.document.close();
-    w.focus();
-    w.print();
+  const downloadPdf = async () => {
+    try {
+      const canvases = permRef.current?.querySelectorAll('canvas.lvp-hidden-qr');
+      if (!canvases || canvases.length < 3) throw new Error('QR en cours de chargement, réessayez.');
+      const data = Array.from(canvases).map((c) => c.toDataURL('image/png'));
+      let logo = null;
+      try {
+        logo = await fetchImageAsDataUrl('/images/logo.png');
+      } catch {
+        /* logo optionnel */
+      }
+      await exportLivreurQrPdf({
+        siteLabel: qr.siteLabel || siteId,
+        logoDataUrl: logo,
+        items: [
+          { title: 'Arrivée de service', lead: 'Scannez pour marquer votre arrivée', qrDataUrl: data[0], steps: ['Scannez le QR avec votre téléphone', 'Choisissez votre nom puis prenez un selfie', 'Appuyez sur « Je suis présent »'] },
+          { title: 'Départ de service', lead: 'Scannez pour marquer votre départ', qrDataUrl: data[1], steps: ['Scannez le QR avec votre téléphone', 'Choisissez votre nom puis prenez un selfie', 'Appuyez sur « Je suis parti »'] },
+          { title: 'Début de livraison', lead: 'Scannez pour lancer votre 1re livraison', qrDataUrl: data[2], steps: ['Connectez-vous à votre espace livreur (PIN)', 'Scannez ce QR sur place : votre position est relevée', 'Les livraisons suivantes démarrent depuis l’appli'] },
+        ],
+      });
+    } catch (e) {
+      setErr(errMsg(e));
+    }
   };
 
   const loadStation = useCallback(async () => {
@@ -143,14 +160,14 @@ function StationTab({ sites }) {
           ['Début de livraison', qr.start?.path && `${window.location.origin}${qr.start.path}`],
         ].map(([label, value]) => (
           <div key={label} className="lvp-qr">
-            <h2 style={{ display: 'none' }}>{label}</h2>
             <h3>{label}</h3>
             {value ? <QRCodeSVG value={value} size={200} level="M" includeMargin /> : <p>…</p>}
+            {value ? <QRCodeCanvas className="lvp-hidden-qr" value={value} size={700} level="M" includeMargin={false} style={{ display: 'none' }} /> : null}
           </div>
         ))}
       </div>
       <div className="lvp-form">
-        <button type="button" className="lvp-btn lvp-btn--primary" onClick={printPermanent}>Imprimer les 3 QR</button>
+        <button type="button" className="lvp-btn lvp-btn--primary" onClick={downloadPdf}>Télécharger le PDF des 3 QR</button>
         <button type="button" className="lvp-btn lvp-btn--danger" onClick={regenerate}>Régénérer le QR de livraison</button>
       </div>
     </div>

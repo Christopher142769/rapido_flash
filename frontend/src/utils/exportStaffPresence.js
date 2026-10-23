@@ -809,3 +809,97 @@ export async function exportPresenceQrToPdf({
 
   doc.save(isExit ? 'qr-presence-sortie.pdf' : 'qr-presence-arrivee.pdf');
 }
+
+/**
+ * PDF A4 (1 page par QR) — QR permanents des livreurs : arrivée, départ, début de livraison.
+ * items: [{ title, lead, qrDataUrl, steps: string[], accent }]
+ */
+export async function exportLivreurQrPdf({ siteLabel = '', items = [], logoDataUrl = null, companyName = 'KING FISH' }) {
+  if (!items.length) throw new Error('QR indisponibles');
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const W = 210;
+  const H = 297;
+  const AMBER = [199, 109, 46];
+
+  items.forEach((it, idx) => {
+    if (idx > 0) doc.addPage();
+    // fond + bandeau haut
+    doc.setFillColor(...BRAND.cream);
+    doc.rect(0, 0, W, H, 'F');
+    doc.setFillColor(...BRAND.brown);
+    doc.rect(0, 0, W, 62, 'F');
+    doc.setFillColor(...AMBER);
+    doc.rect(0, 62, W, 2.2, 'F');
+
+    if (logoDataUrl) {
+      try {
+        doc.setFillColor(...BRAND.white);
+        doc.roundedRect(14, 10, 42, 42, 6, 6, 'F');
+        doc.addImage(logoDataUrl, detectImageFormat(logoDataUrl), 17, 13, 36, 36);
+      } catch {
+        /* logo optionnel */
+      }
+    }
+    doc.setTextColor(...BRAND.white);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text(String(companyName).toUpperCase(), logoDataUrl ? 64 : 16, 24);
+    doc.setFontSize(24);
+    doc.text(it.title, logoDataUrl ? 64 : 16, 37, { maxWidth: W - 80 });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.setTextColor(232, 201, 150);
+    doc.text(`Espace livreurs${siteLabel ? ` · ${siteLabel}` : ''}`, logoDataUrl ? 64 : 16, 50);
+
+    // accroche
+    doc.setTextColor(...BRAND.text);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(17);
+    doc.text(it.lead, W / 2, 80, { align: 'center', maxWidth: W - 40 });
+
+    // QR dans une carte blanche à bordure ambre
+    const qr = 104;
+    const qx = (W - qr) / 2;
+    const qy = 106;
+    doc.setFillColor(...BRAND.creamDark);
+    doc.roundedRect(qx - 12, qy - 12 + 1.5, qr + 24, qr + 24, 8, 8, 'F');
+    doc.setFillColor(...BRAND.white);
+    doc.setDrawColor(...AMBER);
+    doc.setLineWidth(1);
+    doc.roundedRect(qx - 12, qy - 12, qr + 24, qr + 24, 8, 8, 'FD');
+    doc.addImage(it.qrDataUrl, 'PNG', qx, qy, qr, qr);
+
+    // étapes
+    const sy = qy + qr + 26;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(...BRAND.brown);
+    doc.text('Comment faire ?', 24, sy);
+    doc.setDrawColor(...BRAND.line);
+    doc.setLineWidth(0.3);
+    doc.line(24, sy + 3, W - 24, sy + 3);
+    let y = sy + 12;
+    (it.steps || []).forEach((line, i) => {
+      doc.setFillColor(...AMBER);
+      doc.circle(28, y - 1.6, 3.4, 'F');
+      doc.setTextColor(...BRAND.white);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text(String(i + 1), 28, y - 0.4, { align: 'center' });
+      doc.setTextColor(...BRAND.text);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(12);
+      doc.text(line, 36, y, { maxWidth: W - 64 });
+      y += 10;
+    });
+
+    // pied de page
+    doc.setFillColor(...BRAND.brown);
+    doc.rect(0, H - 14, W, 14, 'F');
+    doc.setTextColor(232, 201, 150);
+    doc.setFontSize(9);
+    doc.text('Rapido · rapido.online — Ne pas photographier ni partager ce QR', W / 2, H - 5.5, { align: 'center' });
+  });
+
+  doc.save(`qr-livreurs${siteLabel ? `-${String(siteLabel).toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : ''}.pdf`);
+}
