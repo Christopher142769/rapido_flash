@@ -267,6 +267,7 @@ const CHANNEL_LABELS = {
   presence: 'Présence du personnel (arrivées / sorties)',
   livreur: 'Livreurs (début, fin, signature)',
   repas: 'Commandes Repas (nouvelle commande)',
+  commandes: 'Commandes Shop poisson et plateforme',
 };
 
 function EmailsTab() {
@@ -299,9 +300,23 @@ function EmailsTab() {
       setMsg(errMsg(e));
     }
   };
+  const sendTest = async (channel) => {
+    setMsg('Envoi du test…');
+    try {
+      const { data: r } = await axios.post(`${API_URL}/notification-recipients/test`, { channel }, authCfg());
+      if (r.dev) setMsg('⚠ Le serveur n’a pas de SMTP configuré (SMTP_HOST / SMTP_USER) : aucun e-mail réel ne part.');
+      else if (r.sent) setMsg(`Test envoyé à ${r.to.join(', ')}. Vérifiez la boîte de réception (et les spams).`);
+      else setMsg(`Échec d’envoi : ${r.error || 'erreur SMTP inconnue'}`);
+    } catch (e) {
+      setMsg(errMsg(e));
+    }
+  };
   if (!data) return <p>{msg || 'Chargement…'}</p>;
   return (
     <div>
+      <p className={data.smtp?.configured ? 'lvp-ok' : 'lvp-err'}>
+        {data.smtp?.configured ? `Serveur d’e-mail configuré (${data.smtp.host}).` : 'Serveur d’e-mail NON configuré : aucun e-mail ne peut partir. Ajoutez SMTP_HOST, SMTP_USER, SMTP_PASS (et MAIL_FROM) dans les variables du serveur.'}
+      </p>
       <p className="lvp-hint">Les adresses par défaut restent toujours actives ; ajoutez-en autant que nécessaire, elles reçoivent les e-mails immédiatement.</p>
       {msg ? <p className="lvp-hint">{msg}</p> : null}
       {Object.keys(CHANNEL_LABELS).map((ch) => (
@@ -317,6 +332,7 @@ function EmailsTab() {
           <form className="lvp-form" onSubmit={(e) => { e.preventDefault(); add(ch); }}>
             <input type="email" placeholder="nouvelle@adresse.com" value={draft[ch] || ''} onChange={(e) => setDraft({ ...draft, [ch]: e.target.value })} required />
             <button className="lvp-btn lvp-btn--primary">Ajouter</button>
+            <button type="button" className="lvp-btn" onClick={() => sendTest(ch)}>Envoyer un test</button>
           </form>
         </section>
       ))}

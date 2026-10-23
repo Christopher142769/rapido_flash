@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const CHANNELS = ['presence', 'livreur', 'repas'];
+const CHANNELS = ['presence', 'livreur', 'repas', 'commandes'];
 
 /** Destinataires e-mail ajoutés depuis le dashboard (s'ajoutent aux adresses par défaut). */
 const schema = new mongoose.Schema(

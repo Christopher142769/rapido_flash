@@ -44,8 +44,10 @@ const MODE_PAIEMENT_LABELS = {
 };
 
 async function sendToOrderInbox({ subject, html, text }) {
-  const to = getOrderNotifyRecipients();
-  return sendCustomFormNotification({ to, subject, text, html });
+  const to = await require('../utils/notificationRecipients').recipientsFor('commandes');
+  const result = await sendCustomFormNotification({ to, subject, text, html });
+  if (!result?.sent) console.error('E-mail commande NON envoyé:', result?.error, '→', to.join(', '));
+  return result;
 }
 
 /**
