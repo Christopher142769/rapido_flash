@@ -1,4 +1,5 @@
 const express = require('express');
+const { withDeliveryQr } = require('../utils/orderDeliveryQr');
 const User = require('../models/User');
 const MealProduct = require('../models/MealProduct');
 const MealOrder = require('../models/MealOrder');
@@ -211,7 +212,7 @@ router.post('/', async (req, res) => {
       }).catch(() => {});
     }
 
-    res.status(201).json(order);
+    res.status(201).json(withDeliveryQr(order, 'meal'));
   } catch (e) {
     res.status(500).json({ message: e.message });
   }

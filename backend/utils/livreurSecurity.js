@@ -97,6 +97,7 @@ function phoneDigits(v) {
 }
 
 module.exports = {
+  signPayload: sign,
   QR_TTL_MS,
   verify,
   newQrToken,

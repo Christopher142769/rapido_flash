@@ -16,6 +16,8 @@ const staffSiteSchema = new mongoose.Schema(
     active: { type: Boolean, default: true, index: true },
     sortOrder: { type: Number, default: 0 },
     /** Référence GPS du site (contrôle des scans livreurs). */
+    /** QR de livraison permanent (imprimable) — régénérable. */
+    deliveryQrCode: { type: String, default: '', index: true },
     lat: { type: Number, default: null },
     lng: { type: Number, default: null },
     radiusM: { type: Number, default: 300, min: 30, max: 5000 },

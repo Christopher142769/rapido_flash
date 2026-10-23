@@ -39,6 +39,11 @@ const livreurDeliverySchema = new mongoose.Schema(
     startGeo: { type: geoSchema, default: null },
     endGeo: { type: geoSchema, default: null },
     signGeo: { type: geoSchema, default: null },
+    /** 'order_qr' : QR du récapitulatif client scanné ; 'signature' : formulaire + signature. */
+    endVia: { type: String, enum: ['order_qr', 'signature', ''], default: '' },
+    orderKey: { type: String, default: undefined },
+    orderType: { type: String, default: '' },
+    orderSummary: { type: mongoose.Schema.Types.Mixed, default: null },
     clientName: { type: String, default: '', trim: true, maxlength: 120 },
     clientPhone: { type: String, default: '', trim: true, maxlength: 30 },
     signatureKey: { type: String, default: '', index: true },
@@ -61,5 +66,7 @@ livreurDeliverySchema.index(
   }
 );
 livreurDeliverySchema.index({ dateKey: 1, startedAt: -1 });
+/** Une commande ne peut clôturer qu'une seule livraison. */
+livreurDeliverySchema.index({ orderKey: 1 }, { unique: true, partialFilterExpression: { orderKey: { $type: 'string' } } });
 
 module.exports = mongoose.model('LivreurDelivery', livreurDeliverySchema);

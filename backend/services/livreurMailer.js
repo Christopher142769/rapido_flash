@@ -56,7 +56,8 @@ async function notifyLivreurEvent({ kind, delivery, signatureBuffer = null }) {
   const to = await recipientsFor('livreur');
   if (!to.length || !delivery) return { sent: false };
   const isSig = kind === 'signature';
-  const title = isSig ? 'Livraison terminée — signature client' : delivery.startVia === 'app' ? 'Nouvelle livraison démarrée' : 'Début de livraison (scan du QR)';
+  const o = delivery.orderSummary;
+  const title = isSig && delivery.endVia === 'order_qr' ? 'Livraison terminée — QR de commande scanné' : isSig ? 'Livraison terminée — signature client' : delivery.startVia === 'app' ? 'Nouvelle livraison démarrée' : 'Début de livraison (scan du QR)';
   const site = siteLabel(delivery.siteId);
   const flags = (delivery.flags || []).map((f) => FLAG_LABELS[f] || f);
   const attachments = [];
@@ -75,6 +76,8 @@ async function notifyLivreurEvent({ kind, delivery, signatureBuffer = null }) {
     delivery.orderRef ? ['Commande / réf.', esc(delivery.orderRef)] : null,
     delivery.note ? ['Note', esc(delivery.note)] : null,
     isSig ? ['Client', esc(`${delivery.clientName} — ${delivery.clientPhone}`)] : null,
+    o ? ['Commande', `${esc(o.typeLabel)} ${esc(o.number)}<br/>${(o.items || []).map(esc).join('<br/>')}<br/><strong>Total : ${Math.round(o.total || 0).toLocaleString('fr-FR')} FCFA</strong>`] : null,
+    o?.address ? ['Adresse', esc(o.address)] : null,
   ].filter(Boolean);
   const html = `
     <div style="font-family:Arial,sans-serif;color:#1c1712;max-width:560px">
@@ -95,6 +98,7 @@ async function notifyLivreurEvent({ kind, delivery, signatureBuffer = null }) {
     isSig ? `Durée: ${fmtDuration(delivery.durationSeconds)}` : '',
     delivery.orderRef ? `Réf: ${delivery.orderRef}` : '',
     isSig ? `Client: ${delivery.clientName} ${delivery.clientPhone}` : '',
+    o ? `Commande ${o.typeLabel} ${o.number}: ${(o.items || []).join(', ')} — Total ${Math.round(o.total || 0)} FCFA` : '',
     flags.length ? `Alertes: ${flags.join(', ')}` : '',
   ].filter(Boolean).join('\n');
   return sendStaffPresenceNotification({

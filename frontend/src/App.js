@@ -301,6 +301,7 @@ function AppRoutes() {
         <Route path="/invités/:code" element={<InvitesCheckPage />} />
         <Route path="/livreur" element={<LivreurApp />} />
         <Route path="/livreur/scan/:token" element={<LivreurApp />} />
+        <Route path="/livreur/livraison/:orderToken" element={<LivreurApp />} />
         <Route path="/présence/:code" element={<StaffPresencePage />} />
         <Route path="/presence/:code" element={<StaffPresencePage />} />
         <Route path="/présence-actif/:siteId" element={<StaffPresenceActivePage />} />

@@ -1,3 +1,4 @@
+import OrderDeliveryQr from '../../components/OrderDeliveryQr';
 import React, { useState, useEffect, useContext, useRef, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { FaChevronLeft, FaMapMarkerAlt, FaCheckCircle, FaWhatsapp } from 'react-icons/fa';
@@ -598,6 +599,8 @@ const Checkout = () => {
                 <span>{Number(completedOrder.total || 0).toFixed(0)} FCFA</span>
               </div>
             </div>
+
+            <OrderDeliveryQr value={completedOrder.deliveryQr} orderNumber={String(completedOrder._id || '').slice(-6).toUpperCase()} />
 
             <div className="checkout-success-actions">
               <button type="button" className="checkout-btn-whatsapp" onClick={openWhatsApp}>

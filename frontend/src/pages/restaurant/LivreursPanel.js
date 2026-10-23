@@ -42,6 +42,8 @@ const EVENT_LABELS = {
   delivery_start: 'Début livraison',
   delivery_context: 'Contexte modifié',
   delivery_signed: 'Signature client',
+  delivery_completed_qr: 'Fin par QR client',
+  admin_qr_regenerated: 'QR régénéré',
   admin_cancel: 'Annulation RH',
   admin_livreur_set: 'Livreur créé/PIN',
   admin_livreur_update: 'Livreur modifié',
@@ -76,7 +78,6 @@ function StationTab({ sites }) {
   const [qr, setQr] = useState({});
   const [err, setErr] = useState('');
   const [perm, setPerm] = useState(null);
-  const cur = useRef({});
   const permRef = useRef(null);
   useEffect(() => {
     if (!siteId && sites[0]) setSiteId(sites[0].id);
@@ -94,69 +95,63 @@ function StationTab({ sites }) {
   const printPermanent = () => {
     const w = window.open('', '_blank');
     if (!w || !permRef.current) return;
-    w.document.write(`<html><head><title>QR présence livreurs</title><style>body{font-family:Arial;text-align:center}div{display:inline-block;margin:24px;padding:16px;border:1px solid #ccc;border-radius:12px}h2{margin:0 0 8px}</style></head><body>${permRef.current.innerHTML}</body></html>`);
+    w.document.write(`<html><head><title>QR livreurs</title><style>body{font-family:Arial;text-align:center}div{display:inline-block;margin:24px;padding:16px;border:1px solid #ccc;border-radius:12px}h2{margin:0 0 8px}</style></head><body>${permRef.current.innerHTML}</body></html>`);
     w.document.close();
     w.focus();
     w.print();
   };
 
-  useEffect(() => {
-    if (!siteId) return undefined;
-    cur.current = {};
-    setQr({});
-    let stop = false;
-    const tick = async () => {
-      try {
-        const { data } = await get(`/admin/station/${siteId}`, { start: cur.current.start?.token });
-        if (stop) return;
-        ['start'].forEach((k) => {
-          if (!data[k].keep) cur.current[k] = data[k];
-        });
-        setQr({ ...cur.current });
-        setErr('');
-      } catch (e) {
-        setErr(errMsg(e));
-      }
-    };
-    tick();
-    const i = setInterval(tick, 3000);
-    return () => {
-      stop = true;
-      clearInterval(i);
-    };
+  const loadStation = useCallback(async () => {
+    try {
+      const { data } = await get(`/admin/station/${siteId}`);
+      setQr(data);
+      setErr('');
+    } catch (e) {
+      setErr(errMsg(e));
+    }
   }, [siteId]);
+
+  useEffect(() => {
+    if (siteId) loadStation();
+  }, [siteId, loadStation]);
+
+  const regenerate = async () => {
+    if (!window.confirm('Régénérer le QR de livraison ? Les QR déjà imprimés ne fonctionneront plus.')) return;
+    try {
+      const { data } = await send('post', `/admin/station/${siteId}/regenerate`);
+      setQr((q) => ({ ...q, start: data.start }));
+    } catch (e) {
+      setErr(errMsg(e));
+    }
+  };
 
   return (
     <div>
       <p className="lvp-hint">
-        Ce QR sert uniquement à lancer la <b>première livraison de la journée</b> (position relevée au scan). Les
-        livraisons suivantes se démarrent depuis l’espace livreur, sans QR. Les QR d’arrivée / sortie avec selfie
-        sont ceux de « Codes QR » (comme le personnel). Ce QR est signé, valable 60 s et à usage unique : il se
-        renouvelle seul après chaque scan, une capture d’écran ne sert à rien.
+        Les trois QR sont permanents : imprimez-les une fois et affichez-les au centre / au restaurant. Les deux QR
+        de présence (avec selfie) sont ceux du personnel ; le QR de livraison lance la première livraison de la
+        journée (scan accepté uniquement sur place, position vérifiée).
       </p>
       <select value={siteId} onChange={(e) => setSiteId(e.target.value)}>
         {sites.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
       </select>
       {err ? <p className="lvp-err">{err}</p> : null}
-      <h3>QR de présence (permanents) — arrivée et départ de service</h3>
-      <p className="lvp-hint">Avec selfie, comme le personnel. Ces QR ne changent pas : vous pouvez les imprimer et les afficher.</p>
       <div className="lvp-qrs" ref={permRef}>
-        {[['Arrivée de service', perm?.arrivalCode], ['Départ de service', perm?.exitCode]].map(([label, code]) => (
+        {[
+          ['Arrivée de service', perm?.arrivalCode && `${window.location.origin}/presence/${encodeURIComponent(perm.arrivalCode)}`],
+          ['Départ de service', perm?.exitCode && `${window.location.origin}/presence/${encodeURIComponent(perm.exitCode)}`],
+          ['Début de livraison', qr.start?.path && `${window.location.origin}${qr.start.path}`],
+        ].map(([label, value]) => (
           <div key={label} className="lvp-qr">
             <h2 style={{ display: 'none' }}>{label}</h2>
             <h3>{label}</h3>
-            {code ? <QRCodeSVG value={`${window.location.origin}/presence/${encodeURIComponent(code)}`} size={220} level="M" includeMargin /> : <p>…</p>}
+            {value ? <QRCodeSVG value={value} size={200} level="M" includeMargin /> : <p>…</p>}
           </div>
         ))}
       </div>
-      <button type="button" className="lvp-btn" onClick={printPermanent}>Imprimer les 2 QR de présence</button>
-
-      <h3>QR de livraison (renouvelé automatiquement)</h3>
-      <div className="lvp-qrs">
-        <div className="lvp-qr">
-          <h3>1re livraison de la journée</h3>
-          {qr.start?.path ? <QRCodeSVG value={`${window.location.origin}${qr.start.path}`} size={220} level="M" includeMargin /> : <p>…</p>}
-        </div>
+      <div className="lvp-form">
+        <button type="button" className="lvp-btn lvp-btn--primary" onClick={printPermanent}>Imprimer les 3 QR</button>
+        <button type="button" className="lvp-btn lvp-btn--danger" onClick={regenerate}>Régénérer le QR de livraison</button>
       </div>
     </div>
   );
@@ -449,6 +444,13 @@ export default function LivreursPanel() {
                       <span>{d.clientPhone}</span>
                     </div>
                     {d.hasSignature ? <SignatureThumb id={d._id} /> : null}
+                  </div>
+                ) : null}
+                {d.orderSummary ? (
+                  <div className="lvp-order">
+                    <small>{d.orderSummary.typeLabel} · {d.orderSummary.number} · QR client scanné</small>
+                    <ul>{(d.orderSummary.items || []).map((it) => <li key={it}>{it}</li>)}</ul>
+                    <strong>{Math.round(d.orderSummary.total || 0).toLocaleString('fr-FR')} FCFA</strong>
                   </div>
                 ) : null}
                 {d.note ? <p className="lvp-note">{d.note}</p> : null}

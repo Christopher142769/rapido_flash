@@ -73,3 +73,10 @@
 .lv-scanner{position:fixed;inset:0;background:#000;z-index:50;display:flex;flex-direction:column;gap:10px;padding:12px}
 .lv-scanner video{flex:1;min-height:0;width:100%;object-fit:cover;border-radius:24px}
 .lv-scanner .lv-hint{color:#fff}
+.lv-alt summary{cursor:pointer;font-weight:700;color:var(--navy2);font-size:14px}
+.lv-alt[open] summary{margin-bottom:14px}
+.lv-order h2{margin-bottom:2px}
+.lv-order-k{margin:0 0 6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy2)}
+.lv-order p{margin:0 0 6px}
+.lv-order ul{margin:8px 0;padding-left:18px;color:var(--ink)}
+.lv-order-total{font-weight:800;color:var(--navy)}

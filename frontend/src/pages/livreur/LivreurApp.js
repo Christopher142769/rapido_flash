@@ -70,8 +70,8 @@ function InAppScanner({ onToken, onClose }) {
           try {
             const codes = await det.detect(videoRef.current);
             const raw = codes[0]?.rawValue || '';
-            const m = raw.match(/\/livreur\/scan\/([^/?#]+)/);
-            if (m) return onToken(decodeURIComponent(m[1]));
+            const m = raw.match(/\/livreur\/(scan|livraison)\/([^/?#]+)/);
+            if (m) return onToken(m[1], decodeURIComponent(m[2]));
           } catch {
             /* ignore */
           }
@@ -99,7 +99,7 @@ function InAppScanner({ onToken, onClose }) {
 }
 
 export default function LivreurApp() {
-  const { token: scanToken } = useParams();
+  const { token: scanToken, orderToken } = useParams();
   const navigate = useNavigate();
   const [authed, setAuthed] = useState(!!localStorage.getItem(TOKEN_KEY));
   const [livreurs, setLivreurs] = useState([]);
@@ -112,6 +112,7 @@ export default function LivreurApp() {
   const [info, setInfo] = useState('');
   const [scanning, setScanning] = useState(false);
   const [tab, setTab] = useState('home');
+  const [doneOrder, setDoneOrder] = useState(null);
   const [ctx, setCtx] = useState({ orderRef: '', note: '' });
   const [client, setClient] = useState({ name: '', phone: '' });
   const padRef = useRef(null);
@@ -204,6 +205,36 @@ export default function LivreurApp() {
       setBusy(false);
     }
   };
+
+  const submitOrderScan = useCallback(
+    async (token) => {
+      setBusy(true);
+      setError('');
+      setInfo('');
+      setScanning(false);
+      try {
+        const { data } = await postWithGeo('/order-scan', { token });
+        setDoneOrder(data.order);
+        setInfo('Livraison terminée : commande confirmée par le QR du client.');
+        await loadMe();
+      } catch (e) {
+        setError(errMsg(e));
+      } finally {
+        setBusy(false);
+        if (orderToken) navigate('/livreur', { replace: true });
+      }
+    },
+    [loadMe, navigate, orderToken, postWithGeo]
+  );
+
+  const onScanned = (kind, token) => (kind === 'livraison' ? submitOrderScan(token) : submitScan(token));
+
+  useEffect(() => {
+    if (authed && me && orderToken && handledToken.current !== orderToken) {
+      handledToken.current = orderToken;
+      submitOrderScan(orderToken);
+    }
+  }, [authed, me, orderToken, submitOrderScan]);
 
   useEffect(() => {
     if (authed && me && scanToken && handledToken.current !== scanToken) {
@@ -348,40 +379,61 @@ export default function LivreurApp() {
                   <button type="button" className="lv-btn" disabled={busy} onClick={() => setScanning(true)}><FaQrcode /> Scanner le QR de livraison</button>
                 )}
               </section>
-            ) : !infoDone ? (
-              <form className="lv-panel lv-form" onSubmit={saveCtx}>
-                <h2>Informations de la commande</h2>
-                <p className="lv-hint">À remplir avant de pouvoir faire signer le client.</p>
-                <label>
-                  N° de commande
-                  <input value={ctx.orderRef} maxLength={80} onChange={(e) => setCtx({ ...ctx, orderRef: e.target.value })} required />
-                </label>
-                <label>
-                  Destination / adresse
-                  <input value={ctx.note} maxLength={300} onChange={(e) => setCtx({ ...ctx, note: e.target.value })} required />
-                </label>
-                <button className="lv-btn" disabled={busy}>Valider les informations</button>
-              </form>
             ) : (
-              <form className="lv-panel lv-form" onSubmit={finish}>
-                <div className="lv-recap">
-                  <span><FaClipboardList /> {me.current.orderRef}</span>
-                  <small>{me.current.note}</small>
-                </div>
-                <h2>Signature du client</h2>
-                <label>
-                  Nom du client
-                  <input value={client.name} onChange={(e) => setClient({ ...client, name: e.target.value })} maxLength={120} autoComplete="off" required />
-                </label>
-                <label>
-                  Téléphone du client
-                  <input type="tel" inputMode="tel" value={client.phone} onChange={(e) => setClient({ ...client, phone: e.target.value })} maxLength={20} autoComplete="off" required />
-                </label>
-                <p className="lv-label">Le client signe ci-dessous</p>
-                <SignaturePad ref={padRef} />
-                <button className="lv-btn" disabled={busy}>{busy ? 'Envoi…' : 'Émarger et terminer la livraison'}</button>
-              </form>
+              <>
+                <section className="lv-panel">
+                  <h2>Remise au client</h2>
+                  <p className="lv-hint">À la remise, scannez le QR du récapitulatif du client : la livraison est clôturée avec toutes les informations de la commande.</p>
+                  <button type="button" className="lv-btn" disabled={busy} onClick={() => setScanning(true)}><FaQrcode /> Scanner le QR du client</button>
+                </section>
+                <details className="lv-panel lv-alt">
+                  <summary>Le client n’a pas de QR ? Faire signer</summary>
+                  {!infoDone ? (
+                    <form className="lv-form" onSubmit={saveCtx}>
+                      <p className="lv-hint">Renseignez d’abord la commande avant la signature.</p>
+                      <label>
+                        N° de commande
+                        <input value={ctx.orderRef} maxLength={80} onChange={(e) => setCtx({ ...ctx, orderRef: e.target.value })} required />
+                      </label>
+                      <label>
+                        Destination / adresse
+                        <input value={ctx.note} maxLength={300} onChange={(e) => setCtx({ ...ctx, note: e.target.value })} required />
+                      </label>
+                      <button className="lv-btn" disabled={busy}>Valider les informations</button>
+                    </form>
+                  ) : (
+                    <form className="lv-form" onSubmit={finish}>
+                      <div className="lv-recap">
+                        <span><FaClipboardList /> {me.current.orderRef}</span>
+                        <small>{me.current.note}</small>
+                      </div>
+                      <label>
+                        Nom du client
+                        <input value={client.name} onChange={(e) => setClient({ ...client, name: e.target.value })} maxLength={120} autoComplete="off" required />
+                      </label>
+                      <label>
+                        Téléphone du client
+                        <input type="tel" inputMode="tel" value={client.phone} onChange={(e) => setClient({ ...client, phone: e.target.value })} maxLength={20} autoComplete="off" required />
+                      </label>
+                      <p className="lv-label">Le client signe ci-dessous</p>
+                      <SignaturePad ref={padRef} />
+                      <button className="lv-btn" disabled={busy}>{busy ? 'Envoi…' : 'Émarger et terminer la livraison'}</button>
+                    </form>
+                  )}
+                </details>
+              </>
             )}
+
+            {doneOrder && !status ? (
+              <section className="lv-panel lv-order">
+                <h2>Commande livrée</h2>
+                <p className="lv-order-k">{doneOrder.typeLabel} · {doneOrder.number}</p>
+                <p><strong>{doneOrder.clientName}</strong> · {doneOrder.clientPhone}</p>
+                {doneOrder.address ? <p className="lv-hint">{doneOrder.address}</p> : null}
+                <ul>{(doneOrder.items || []).map((it) => <li key={it}>{it}</li>)}</ul>
+                <p className="lv-order-total">Total : {Math.round(doneOrder.total || 0).toLocaleString('fr-FR')} FCFA</p>
+              </section>
+            ) : null}
 
             <section className="lv-overview">
               <header><h3>Aperçu du jour</h3></header>
@@ -421,7 +473,7 @@ export default function LivreurApp() {
           <button type="button" className={tab === 'account' ? 'is-on' : ''} onClick={() => setTab('account')}><FaUser /><span>Compte</span></button>
         </nav>
 
-        {scanning ? <InAppScanner onToken={submitScan} onClose={() => setScanning(false)} /> : null}
+        {scanning ? <InAppScanner onToken={onScanned} onClose={() => setScanning(false)} /> : null}
       </div>
     </div>
   );

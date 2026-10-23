@@ -1,3 +1,4 @@
+import OrderDeliveryQr from '../../components/OrderDeliveryQr';
 import React, { useEffect, useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
@@ -147,6 +148,8 @@ export default function ShopOrderConfirmation() {
             </p>
           </div>
         </article>
+
+        <OrderDeliveryQr value={order.deliveryQr} orderNumber={order.orderNumber} />
 
         <div className="shop-confirm-actions">
           <button

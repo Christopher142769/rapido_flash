@@ -280,7 +280,7 @@ export default function ShopProductLanding() {
     setSubmitting(true);
     try {
       const saved = await submitShopOrderToApi(order);
-      const orderForSession = { ...order, orderId: saved._id, orderNumber: saved.orderNumber };
+      const orderForSession = { ...order, orderId: saved._id, orderNumber: saved.orderNumber, deliveryQr: saved.deliveryQr };
       trackCtaClick(product.ctaLabel || 'Commander maintenant', {
         channel: 'shop',
         productId: product._id,

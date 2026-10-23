@@ -12,6 +12,7 @@ const { dateKeyBenin } = require('../utils/staffPresenceShifts');
 const { isValidSiteId, listSites, siteLabel, normalizeSiteId } = require('../utils/staffPresenceSites');
 const { publicAppBaseUrl } = require('../utils/publicAppUrl');
 const S = require('../utils/livreurSecurity');
+const { loadOrderSummary } = require('../utils/orderDeliveryQr');
 const { recordEvent, verifyChain } = require('../services/livreurAudit');
 const { notifyLivreurEvent } = require('../services/livreurMailer');
 
@@ -77,6 +78,8 @@ const publicDelivery = (d) =>
     orderRef: d.orderRef,
     note: d.note,
     clientName: d.clientName,
+    endVia: d.endVia,
+    order: d.orderSummary || null,
   };
 
 /* ───────────── Public / livreur ───────────── */
@@ -180,6 +183,10 @@ async function createStart(req, res, { via, now }) {
   if (!geo) {
     return res.status(400).json({ message: 'Position GPS requise : activez la localisation du téléphone puis réessayez.' });
   }
+  if (via === 'qr' && geo.inZone === false) {
+    await recordEvent({ type: 'scan_rejected', employeeId: e._id, livreurName: fullName(e), siteId: e.siteId, at: now, data: { reason: 'out_of_zone', geo } });
+    return res.status(403).json({ message: `Vous devez être sur le site pour scanner ce QR (vous êtes à environ ${geo.distanceM} m).` });
+  }
   const flags = [];
   geoFlags(geo, flags, { zone: via === 'qr' });
   clockSkewFlag(req.body, flags);
@@ -228,26 +235,26 @@ async function createStart(req, res, { via, now }) {
   return res.status(201).json({ ok: true, kind: 'start', delivery: publicDelivery(delivery) });
 }
 
-/** QR de livraison (signé, 60 s, usage unique) : lance la 1re livraison de la journée. */
+/** QR de livraison permanent (imprimé au centre / resto) : lance la 1re livraison de la journée. */
+async function resolveDeliveryQr(raw) {
+  const code = String(raw || '').trim();
+  if (!code) return null;
+  if (code.includes('.')) {
+    const payload = S.verify(code); // anciens QR signés
+    return payload && payload.t === 'qr' && payload.k === 'start' ? payload.s : null;
+  }
+  const site = await StaffSite.findOne({ deliveryQrCode: code, active: true }).select('id').lean();
+  return site?.id || null;
+}
+
 router.post('/scan', livreurAuth, async (req, res) => {
   try {
     const e = req.livreur;
-    const payload = S.verify(req.body?.token);
-    if (!payload || payload.t !== 'qr' || payload.k !== 'start') {
-      return res.status(400).json({ message: 'QR expiré ou invalide. Scannez le QR affiché à l’écran.' });
-    }
-    if (payload.s !== e.siteId) {
-      await recordEvent({ type: 'scan_rejected', employeeId: e._id, livreurName: fullName(e), siteId: e.siteId, data: { reason: 'wrong_site', qrSite: payload.s } });
+    const qrSite = await resolveDeliveryQr(req.body?.token);
+    if (!qrSite) return res.status(400).json({ message: 'QR de livraison invalide ou désactivé.' });
+    if (qrSite !== e.siteId) {
+      await recordEvent({ type: 'scan_rejected', employeeId: e._id, livreurName: fullName(e), siteId: e.siteId, data: { reason: 'wrong_site', qrSite } });
       return res.status(403).json({ message: 'Ce QR appartient à un autre site.' });
-    }
-    try {
-      await LivreurScanNonce.create({ nonce: payload.n });
-    } catch (err) {
-      if (err?.code === 11000) {
-        await recordEvent({ type: 'scan_rejected', employeeId: e._id, livreurName: fullName(e), siteId: e.siteId, data: { reason: 'qr_reused' } });
-        return res.status(409).json({ message: 'Ce QR a déjà été utilisé. Scannez le nouveau QR affiché.' });
-      }
-      throw err;
     }
     await createStart(req, res, { via: 'qr', now: new Date() });
   } catch (err) {
@@ -298,6 +305,81 @@ router.patch('/delivery/context', livreurAuth, async (req, res) => {
     res.json({ ok: true, delivery: publicDelivery(d) });
   } catch (e) {
     res.status(500).json({ message: e.message });
+  }
+});
+
+/** Le livreur scanne le QR du récapitulatif client : fin de livraison + récupération de la commande. */
+router.post('/order-scan', livreurAuth, async (req, res) => {
+  try {
+    const e = req.livreur;
+    const payload = S.verify(String(req.body?.token || '').split('/').pop());
+    if (!payload || payload.t !== 'ord' || !['meal', 'shop', 'commande'].includes(payload.ty)) {
+      return res.status(400).json({ message: 'QR de commande invalide ou expiré.' });
+    }
+    const delivery = await LivreurDelivery.findOne({ employeeId: e._id, status: 'active' });
+    if (!delivery) return res.status(409).json({ message: 'Aucune livraison en cours : démarrez d’abord une livraison.' });
+    const orderKey = `${payload.ty}:${payload.id}`;
+    if (await LivreurDelivery.exists({ orderKey, status: { $ne: 'cancelled' } })) {
+      return res.status(409).json({ message: 'Cette commande a déjà été marquée comme livrée.' });
+    }
+    const summary = await loadOrderSummary(payload.ty, payload.id);
+    if (!summary) return res.status(404).json({ message: 'Commande introuvable.' });
+
+    const now = new Date();
+    const site = await getSite(e.siteId);
+    const geo = await S.buildGeo(req.body, site);
+    if (!geo) {
+      return res.status(400).json({ message: 'Position GPS requise : activez la localisation du téléphone puis réessayez.' });
+    }
+    const flags = [];
+    geoFlags(geo, flags, { zone: false });
+    clockSkewFlag(req.body, flags);
+    const durationSeconds = Math.round((now - delivery.startedAt) / 1000);
+    if (durationSeconds < MIN_DURATION_S) flags.push('too_short');
+    if (durationSeconds > MAX_DURATION_S) flags.push('too_long');
+
+    let updated;
+    try {
+      updated = await LivreurDelivery.findOneAndUpdate(
+        { _id: delivery._id, status: 'active' },
+        {
+          $set: {
+            status: 'completed',
+            endVia: 'order_qr',
+            signedAt: now,
+            endScannedAt: now,
+            durationSeconds,
+            orderKey,
+            orderType: payload.ty,
+            orderSummary: summary,
+            orderRef: summary.number || delivery.orderRef,
+            note: summary.address || delivery.note,
+            clientName: summary.clientName,
+            clientPhone: String(summary.clientPhone || '').slice(0, 30),
+            endGeo: geo,
+          },
+          $addToSet: { flags: { $each: flags } },
+        },
+        { new: true }
+      );
+    } catch (err) {
+      if (err?.code === 11000) return res.status(409).json({ message: 'Cette commande a déjà été marquée comme livrée.' });
+      throw err;
+    }
+    if (!updated) return res.status(409).json({ message: 'Livraison déjà terminée.' });
+    await recordEvent({
+      type: 'delivery_completed_qr',
+      employeeId: e._id,
+      livreurName: fullName(e),
+      deliveryId: updated._id,
+      siteId: updated.siteId,
+      at: now,
+      data: { orderKey, order: { type: summary.type, number: summary.number, clientName: summary.clientName }, geo, flags, durationSeconds, ip: clientIp(req) },
+    });
+    mail({ kind: 'signature', delivery: updated.toObject() });
+    res.json({ ok: true, delivery: publicDelivery(updated), order: summary });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
@@ -389,34 +471,31 @@ function clientPhone(p) {
 
 const admin = [auth, isStaffPresence];
 
-/** Écran QR du site : jetons de 60 s à usage unique, renouvelés dès qu'ils sont consommés ou presque expirés. */
+/** QR de livraison permanent du site (créé une fois, imprimable ; régénérable). */
 router.get('/admin/station/:siteId', ...admin, async (req, res) => {
   try {
     const siteId = normalizeSiteId(req.params.siteId);
     if (!isValidSiteId(siteId)) return res.status(400).json({ message: 'Site invalide' });
-    const out = { siteId, siteLabel: siteLabel(siteId), serverTime: Date.now() };
-    for (const kind of ['start']) {
-      const cur = S.verify(req.query[kind]);
-      const reusable =
-        cur &&
-        cur.t === 'qr' &&
-        cur.k === kind &&
-        cur.s === siteId &&
-        cur.e - Date.now() > 20000 &&
-        !(await LivreurScanNonce.exists({ nonce: cur.n }));
-      if (reusable) {
-        out[kind] = { keep: true };
-      } else {
-        const { token } = S.newQrToken(siteId, kind);
-        out[kind] = {
-          token,
-          path: `/livreur/scan/${token}`,
-          url: `${publicAppBaseUrl()}/livreur/scan/${token}`,
-          expiresAt: S.verify(token).e,
-        };
-      }
+    let site = await StaffSite.findOne({ id: siteId });
+    if (!site) return res.status(404).json({ message: 'Site introuvable' });
+    if (!site.deliveryQrCode) {
+      site.deliveryQrCode = crypto.randomBytes(16).toString('hex');
+      await site.save();
     }
-    res.json(out);
+    res.json({ siteId, siteLabel: siteLabel(siteId), start: { code: site.deliveryQrCode, path: `/livreur/scan/${site.deliveryQrCode}` } });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+router.post('/admin/station/:siteId/regenerate', ...admin, async (req, res) => {
+  try {
+    const site = await StaffSite.findOne({ id: normalizeSiteId(req.params.siteId) });
+    if (!site) return res.status(404).json({ message: 'Site introuvable' });
+    site.deliveryQrCode = crypto.randomBytes(16).toString('hex');
+    await site.save();
+    await recordEvent({ type: 'admin_qr_regenerated', siteId: site.id, data: { by: req.user.email || String(req.user._id) } });
+    res.json({ start: { code: site.deliveryQrCode, path: `/livreur/scan/${site.deliveryQrCode}` } });
   } catch (e) {
     res.status(500).json({ message: e.message });
   }

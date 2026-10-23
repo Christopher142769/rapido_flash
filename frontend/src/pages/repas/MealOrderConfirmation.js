@@ -1,3 +1,4 @@
+import OrderDeliveryQr from '../../components/OrderDeliveryQr';
 import React, { useEffect, useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { loadMealOrder, openMealOrderWhatsAppTrack } from '../../utils/mealOrder';
@@ -164,6 +165,8 @@ export default function MealOrderConfirmation() {
             </p>
           </div>
         </article>
+
+        <OrderDeliveryQr value={order.deliveryQr} orderNumber={order.orderNumber} />
 
         <div className="shop-confirm-actions">
           <button type="button" className="shop-confirm-cta shop-confirm-cta--wa" onClick={handleTrack}>

@@ -1,4 +1,5 @@
 const express = require('express');
+const { withDeliveryQr } = require('../utils/orderDeliveryQr');
 const crypto = require('crypto');
 const Commande = require('../models/Commande');
 const ShopOrder = require('../models/ShopOrder');
@@ -252,7 +253,7 @@ router.post('/', auth, async (req, res) => {
       console.error('Notification e-mail commande:', err.message);
     });
 
-    res.status(201).json(commande);
+    res.status(201).json(withDeliveryQr(commande, 'commande'));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
