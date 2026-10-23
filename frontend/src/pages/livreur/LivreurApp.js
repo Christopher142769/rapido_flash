@@ -272,27 +272,30 @@ export default function LivreurApp() {
   if (!authed) {
     return (
       <div className="lv-page">
-        <div className="lv-phone">
-          <div className="lv-login-hero">
-            <span className="lv-logo"><FaMotorcycle /></span>
-            <h1>Espace livreur</h1>
-            <p>King Fish · Rapido</p>
-          </div>
-          <form onSubmit={login} className="lv-sheet lv-form">
-            {scanToken ? <p className="lv-hint">Connectez-vous pour valider le QR scanné (valable 1 minute).</p> : null}
+        <div className="lv-phone lv-login">
+          <header className="lv-login-hero">
+            <img src="/images/logo.png" alt="King Fish" />
+            <h1>King Fish</h1>
+            <p>Espace livreur</p>
+          </header>
+          <form onSubmit={login} className="lv-glass lv-form">
+            <div>
+              <h2>Connexion</h2>
+              <p className="lv-hint">{scanToken ? 'Connectez-vous pour valider le QR scanné (valable 1 minute).' : 'Choisissez votre nom et saisissez votre code PIN.'}</p>
+            </div>
             {error ? <p className="lv-msg lv-msg--err" role="alert">{error}</p> : null}
             <label>
               Livreur
               <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} required>
-                <option value="">Choisir…</option>
+                <option value="">Choisir mon nom…</option>
                 {livreurs.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
               </select>
             </label>
             <label>
               Code PIN
-              <input type="password" inputMode="numeric" autoComplete="off" maxLength={8} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} required />
+              <input type="password" inputMode="numeric" autoComplete="off" placeholder="••••" maxLength={8} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} required style={{ textAlign: 'center', letterSpacing: '0.4em', fontWeight: 800 }} />
             </label>
-            <button className="lv-btn" disabled={busy || !employeeId || pin.length < 4}>Se connecter</button>
+            <button className="lv-btn" disabled={busy || !employeeId || pin.length < 4}>{busy ? 'Connexion…' : 'Se connecter'}</button>
           </form>
         </div>
       </div>
