@@ -304,12 +304,27 @@ export function buildWhatsAppOrderUrl(order) {
   return `https://wa.me/${raw}?text=${text}`;
 }
 
+/**
+ * Numéro béninois au format actuel à 10 chiffres (01 XX XX XX XX), avec ou sans +229 / 00229.
+ * Renvoie un message d’erreur, ou '' si le numéro est valide. Les anciens numéros à 8 chiffres
+ * ne sont plus joignables depuis la migration de 2024 : on demande d’ajouter 01 devant.
+ */
+export function beninPhoneError(raw) {
+  let digits = String(raw || '').replace(/\D/g, '');
+  if (!digits) return 'Un numéro joignable est requis';
+  if (digits.startsWith('00')) digits = digits.slice(2);
+  if (digits.startsWith('229') && (digits.length === 13 || digits.length === 11)) digits = digits.slice(3);
+  if (digits.length === 10 && digits.startsWith('01')) return '';
+  if (digits.length === 8) return 'Ajoutez 01 devant votre numéro (10 chiffres, ex. 01 97 00 00 00)';
+  return 'Numéro à 10 chiffres, ex. 01 97 00 00 00 (avec ou sans +229)';
+}
+
 export function validateCustomerForm(customer) {
   const errors = {};
   if (!customer.firstName?.trim()) errors.firstName = 'Le prénom est requis';
   if (!customer.lastName?.trim()) errors.lastName = 'Le nom est requis';
-  const phone = String(customer.phone || '').replace(/\s/g, '');
-  if (!phone || phone.length < 8) errors.phone = 'Un numéro joignable est requis';
+  const phoneError = beninPhoneError(customer.phone);
+  if (phoneError) errors.phone = phoneError;
   if (!isValidShopCity(customer.city)) errors.city = 'Choisissez Cotonou ou Calavi';
   if (!customer.addressDescription?.trim()) {
     errors.addressDescription = 'Indiquez votre adresse complète de livraison';

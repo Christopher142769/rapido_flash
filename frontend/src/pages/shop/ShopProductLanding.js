@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { mealDeliveryFeeForCity } from '../../utils/mealShopSettings';
+import { loadMealCity } from '../../utils/mealDeliveryEta';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import PageLoader from '../../components/PageLoader';
@@ -35,8 +36,8 @@ import ShopUrgencyBar from '../../components/shop/ShopUrgencyBar';
 import { getShopAvailabilityState } from '../../utils/shopOrderLimit';
 import {
   trackCtaClick,
+  trackInitiateCheckout,
   trackProductView,
-  trackRapido,
 } from '../../utils/analyticsBeacon';
 import './shopTypography.css';
 import './ShopProductLanding.css';
@@ -46,6 +47,12 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const BASE_URL = getMediaBaseUrl();
 const CHECKOUT_FORM_ID = 'shop-checkout-form';
 
+/** Poisson frais du tunnel Repas : photos hébergées sur le site. */
+const LOCAL_FRESH_PHOTOS = {
+  tilapia: '/images/repas/refonte/tilapia-frais-photo.webp',
+  machoiron: '/images/repas/refonte/machoiron-frais-photo.webp',
+};
+
 export default function ShopProductLanding() {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -53,8 +60,10 @@ export default function ShopProductLanding() {
   const [shopSettings, setShopSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [quantity, setQuantity] = useState(0);
-  const [customer, setCustomer] = useState(() => emptyCustomerForm());
+  const [quantity, setQuantity] = useState(1);
+  const checkoutTrackedRef = useRef(false);
+  // Ville déjà choisie sur /repas : pré-remplie (modifiable).
+  const [customer, setCustomer] = useState(() => ({ ...emptyCustomerForm(), city: loadMealCity() }));
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [qtyModalOpen, setQtyModalOpen] = useState(false);
@@ -151,7 +160,10 @@ export default function ShopProductLanding() {
     promoState?.isPromoLive &&
     (promoState?.runUntilStopped || product?.published)
   );
-  const showCountdown = promoState?.isPromoLive && countdownEndsAt;
+  // Poisson frais (tunnel Repas) : pas de compte à rebours qui se relance tout seul.
+  const isFreshFish = !!LOCAL_FRESH_PHOTOS[String(slug || '').toLowerCase()];
+  const showCountdown =
+    promoState?.isPromoLive && countdownEndsAt && !(isFreshFish && countdownAutoRestart);
   const showOrderLimitBanner =
     availabilityState?.dailyOrderLimitEnabled &&
     !availabilityState?.isShopClosed &&
@@ -198,7 +210,13 @@ export default function ShopProductLanding() {
     );
   }, [product?._id, product?.name, product?.slug, product?.basePrice]);
 
-  const gallery = useMemo(() => (product ? getProductGallery(product) : []), [product]);
+  /** Poisson frais : photo hébergée sur le site en premier (les images Cloudinary peuvent être indisponibles). */
+  const gallery = useMemo(() => {
+    if (!product) return [];
+    const local = LOCAL_FRESH_PHOTOS[String(product.slug || '').toLowerCase()];
+    const urls = getProductGallery(product);
+    return local ? [local, ...urls.filter((u) => u !== local)] : urls;
+  }, [product]);
   const canOrder = !!getShopWhatsAppDigits();
   const unitPrice = promoState?.isPromoLive ? promoState.promoPrice : product?.basePrice;
   const unitBasePrice = product?.basePrice ?? 0;
@@ -287,13 +305,6 @@ export default function ShopProductLanding() {
         productName: product.name,
         productSlug: product.slug,
         ctaId: 'shop-order-submit',
-      });
-      trackRapido('begin_checkout', {
-        channel: 'shop',
-        productId: product._id,
-        productName: product.name,
-        productSlug: product.slug,
-        value: Number(order.totalPrice || grandTotal || 0) || 0,
       });
       if (!saveShopOrder(orderForSession)) {
         alert('Commande enregistrée, mais le récapitulatif local a échoué. Contactez Rapido sur WhatsApp.');
@@ -496,7 +507,7 @@ export default function ShopProductLanding() {
               onChange={handleQuantityChange}
               quantityUnit={quantityUnit}
               quantityLabel={quantityLabel}
-              min={0}
+              min={1}
               highlight={highlightQty && !hasQuantity}
             />
 
@@ -509,7 +520,18 @@ export default function ShopProductLanding() {
               />
             ) : null}
 
-            <div id="shop-order-fields">
+            <div
+              id="shop-order-fields"
+              onFocusCapture={() => {
+                if (checkoutTrackedRef.current) return;
+                checkoutTrackedRef.current = true;
+                trackInitiateCheckout({
+                  value: grandTotal,
+                  items: [{ productId: product._id, quantity }],
+                  channel: 'shop',
+                });
+              }}
+            >
               <ShopOrderForm
                 customer={customer}
                 errors={formErrors}

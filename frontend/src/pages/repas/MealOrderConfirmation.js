@@ -12,10 +12,7 @@ import { formatPriceXof } from '../../utils/shopPromo';
 import { mealCatalogPath, mealConfirmationPath, mealProductPath } from '../../utils/mealPaths';
 import ShopBrandHeader from '../../components/shop/ShopBrandHeader';
 import ShopPrivacyFooter from '../../components/shop/ShopPrivacyFooter';
-import ShopDeliveryNotice, {
-  DEFAULT_MEAL_DELIVERY_NOTICE_MESSAGE,
-} from '../../components/shop/ShopDeliveryNotice';
-import { getTodayDateKey } from '../../utils/shopDeliveryDate';
+import { MealDeliveryEtaNotice } from '../../components/shop/ShopDeliveryNotice';
 import { trackPurchase } from '../../utils/analyticsBeacon';
 import '../shop/shopTypography.css';
 import '../shop/ShopOrderConfirmation.css';
@@ -37,18 +34,24 @@ export default function MealOrderConfirmation() {
       return;
     }
     document.title = 'Commande confirmée | Rapido Repas';
-    const key = `rf_purchase_meal_${order.orderId || order._id || order.orderNumber || 'x'}`;
+    // Purchase une seule fois par commande (même après rechargement) ; eventID côté Meta en plus.
+    const orderId = order.orderId || order._id || order.orderNumber;
+    const key = `rf_purchase_meal_${orderId || 'x'}`;
+    let already = false;
     try {
-      if (!sessionStorage.getItem(key)) {
-        sessionStorage.setItem(key, '1');
-        trackPurchase(
-          { _id: order.orderId || order._id, total: order.totalPrice || order.total },
-          { channel: 'repas', orderModel: 'MealOrder', productSlug: order.slug || slug }
-        );
-      }
+      already = !!localStorage.getItem(key);
+      localStorage.setItem(key, '1');
     } catch {
+      /* stockage indisponible : l’eventID suffit à Meta pour dédoublonner */
+    }
+    if (!already) {
       trackPurchase(
-        { _id: order.orderId || order._id, total: order.totalPrice || order.total },
+        {
+          _id: orderId,
+          total: order.totalPrice || order.total,
+          orderNumber: order.orderNumber,
+          items: order.items,
+        },
         { channel: 'repas', orderModel: 'MealOrder', productSlug: order.slug || slug }
       );
     }
@@ -81,15 +84,11 @@ export default function MealOrderConfirmation() {
           <h1 className="shop-confirm-title">Commande confirmée</h1>
         </header>
 
-        <ShopDeliveryNotice
-          variant="confirm"
-          defaultMessage={DEFAULT_MEAL_DELIVERY_NOTICE_MESSAGE}
-          dateKey={getTodayDateKey()}
-        />
+        <MealDeliveryEtaNotice variant="confirm" />
 
         <article className="shop-confirm-card">
           <div className="shop-confirm-card-head">
-            <p className="shop-confirm-product">Shop repas</p>
+            <p className="shop-confirm-product">Rapido Repas</p>
             <p className="shop-confirm-qty">{order.orderNumber || ''}</p>
           </div>
 

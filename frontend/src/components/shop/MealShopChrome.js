@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { FaShoppingBag, FaArrowLeft } from 'react-icons/fa';
 import ShopBrandHeader from './ShopBrandHeader';
 import ShopUrgencyBar from './ShopUrgencyBar';
+import { mealCartPath } from '../../utils/mealPaths';
 import './MealShopChrome.css';
 
 const RAPIDO_LOGO = '/images/logo.png';
@@ -52,11 +53,11 @@ export default function MealShopChrome({
               <span>{backLabel}</span>
             </Link>
           ) : null}
-          <Link to="/repas" className="meal-shop-toolbar-logo-link" aria-label="Shop repas">
-            <img src={RAPIDO_LOGO} alt="Rapido Flash" className="meal-shop-toolbar-logo" />
+          <Link to="/repas" className="meal-shop-toolbar-logo-link" aria-label="Rapido Repas">
+            <img src={RAPIDO_LOGO} alt="Rapido Repas" width={1024} height={1024} className="meal-shop-toolbar-logo" />
           </Link>
         </div>
-        <Link to="/repas/panier" className="meal-shop-cart-link" aria-label="Panier">
+        <Link to={mealCartPath()} className="meal-shop-cart-link" aria-label="Panier">
           <FaShoppingBag />
           {cartCount > 0 ? <span>{cartCount}</span> : null}
         </Link>

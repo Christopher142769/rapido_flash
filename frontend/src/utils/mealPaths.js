@@ -4,8 +4,9 @@ export function mealCatalogPath() {
   return '/repas';
 }
 
+/** Panier : ouvre le panier latéral de /repas (qui mène directement au formulaire). */
 export function mealCartPath() {
-  return '/repas/panier';
+  return '/repas?panier';
 }
 
 /** Fiche plat : /repas/commandes/nom-du-plat */

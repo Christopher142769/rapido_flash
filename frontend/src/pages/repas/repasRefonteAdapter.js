@@ -57,34 +57,24 @@ function resolveProductImages(product, mediaBase, slug) {
   return { cardImg: own, heroImg: own };
 }
 
+/** Photo carte d’un plat (assets refonte locaux, sinon image du dashboard). */
+export function mealCardImage(product, mediaBase) {
+  if (!product) return '';
+  return resolveProductImages(product, mediaBase, String(product.slug || '').trim().toLowerCase()).cardImg;
+}
+
 /**
- * Prix catalogue : le prix affiché est le prix promo (−50 %).
- * Si la promo API est live avec un vrai basePrice > promoPrice → on l’utilise.
- * Sinon le basePrice stocké est déjà le prix promo → prix barré = ×2.
+ * Prix catalogue : prix barré et badge uniquement si une promo est réellement active dans le
+ * back-office (isPromoLive calculé par l’API, promoPrice < basePrice). Sinon, prix normal seul.
  */
 export function priceBundle(product) {
   const base = Math.max(0, Math.round(Number(product?.basePrice) || 0));
-  const live = !!product?.isPromoLive;
   const livePromo = Math.max(0, Math.round(Number(product?.promoPrice) || 0));
+  const promo = !!product?.isPromoLive && livePromo > 0 && livePromo < base;
 
-  let unit;
-  let compareAt;
-  let discountPercent = 50;
-
-  if (live && livePromo > 0 && base > livePromo) {
-    unit = livePromo;
-    compareAt = base;
-    discountPercent = Math.max(
-      1,
-      Math.round(Number(product?.discountPercent) || (1 - livePromo / base) * 100)
-    );
-  } else {
-    unit = live && livePromo > 0 ? livePromo : base;
-    compareAt = Math.round(unit * 2);
-    discountPercent = 50;
-  }
-
-  const promo = true;
+  const unit = promo ? livePromo : base;
+  const compareAt = promo ? base : null;
+  const discountPercent = promo ? Math.max(1, Math.round((1 - livePromo / base) * 100)) : 0;
 
   const sizeGroup = (product?.optionGroups || []).find((g) =>
     /taille|size|format|portion/i.test(String(g.name || ''))
@@ -236,9 +226,9 @@ export function buildHeroSlides(adaptedItems, settings) {
         prices: base.prices || [unit],
         sizes: base.sizes || null,
         unit,
-        compareAt: base.compareAt ?? (unit ? Math.round(unit * 2) : null),
-        promo: true,
-        discountPercent: base.discountPercent ?? 50,
+        compareAt: base.compareAt || null,
+        promo: !!base.promo,
+        discountPercent: base.discountPercent || 0,
         available: true,
         ctaLabel: slide.ctaLabel || 'Commander',
         bannerOnly: false,

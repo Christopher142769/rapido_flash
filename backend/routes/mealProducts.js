@@ -140,7 +140,7 @@ router.post('/', auth, isRestaurant, upload.fields([
       published: req.body.published === true || req.body.published === 'true',
       available: req.body.available !== false && req.body.available !== 'false',
       showDeliveryNotice:
-        req.body.showDeliveryNotice !== false && req.body.showDeliveryNotice !== 'false',
+        req.body.showDeliveryNotice === true || req.body.showDeliveryNotice === 'true',
       sortOrder: Number(req.body.sortOrder) || 0,
       accompagnements: normalizeAccompagnements(parseJsonField(req.body.accompagnements, [])),
       optionGroups: normalizeOptionGroups(parseJsonField(req.body.optionGroups, [])),

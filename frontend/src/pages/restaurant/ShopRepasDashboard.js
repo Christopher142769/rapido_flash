@@ -88,7 +88,7 @@ const emptyForm = () => ({
   optionGroups: [],
   allowSpecifications: true,
   allowExtras: true,
-  showDeliveryNotice: true,
+  showDeliveryNotice: false,
   promo: {
     active: false,
     priceMode: 'percent',
@@ -732,13 +732,13 @@ export default function ShopRepasDashboard() {
                 onChange={(e) => setSettings((s) => ({ ...s, deliveryNoticeMessage: e.target.value }))}
                 placeholder={
                   settings.deliveryNoticeMessageDefault ||
-                  'Commandez aujourd’hui — livraison dans les prochaines 24 h. Soyez joignable à l’adresse indiquée.'
+                  'Livré chaud en 30 à 45 min (livraisons de 09h à minuit). Soyez joignable au numéro indiqué.'
                 }
               />
               <p className="shop-dash-hint">
-                Par défaut : livraison dans les prochaines 24 h (pas le lendemain). Utilisez{' '}
-                <code>{'{date}'}</code> pour la date du jour de commande. Ce message s’affiche sur les
-                plats où le NB est activé.
+                Le délai « Livré chaud en 30 à 45 min » s’affiche toujours sur les plats. Ce message
+                vient en plus, uniquement sur les plats où le NB est coché. Utilisez{' '}
+                <code>{'{date}'}</code> pour la date du jour de commande.
               </p>
             </div>
             {products.length ? (

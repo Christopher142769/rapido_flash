@@ -8,10 +8,36 @@ function formatAmount(price) {
   return String(Math.round(Number(price) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
+/**
+ * Accompagnement : « Inclus » ou supplément de prix (« + 500 F », ex. frites à la place du riz).
+ * Supplément : portion en plus, prix complet (« + 1 000 F »).
+ */
 export function formatSidePriceLabel(price, role) {
   const value = Math.max(0, Math.round(Number(price) || 0));
   if (role === 'extra') return `+ ${formatAmount(value)} F`;
-  return value > 0 ? `${formatAmount(value)} F` : 'Gratuit';
+  return value > 0 ? `+ ${formatAmount(value)} F` : 'Inclus';
+}
+
+function sameSideName(a, b) {
+  const norm = (v) =>
+    String(v || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  return norm(a) && norm(a) === norm(b);
+}
+
+/** Accompagnement présélectionné : le premier inclus (sans supplément), sinon le premier. */
+export function defaultSideKey(product) {
+  const sides = productSideOptions(product);
+  return (sides.find((s) => s.price === 0) || sides[0])?.key || '';
+}
+
+/** Suppléments proposés : sans l’accompagnement déjà choisi. */
+export function supplementOptionsFor(product, sideKey) {
+  const side = productSideOptions(product).find((s) => s.key === sideKey);
+  return supplementOptions(product).filter((x) => !side || !sameSideName(x.name, side.name));
 }
 
 export function productSideOptions(product) {
@@ -48,7 +74,7 @@ export function buildSideLines(product, sideKey, extraQty) {
       role: 'side',
     });
   }
-  supplementOptions(product).forEach((extra) => {
+  supplementOptionsFor(product, sideKey).forEach((extra) => {
     const quantity = Math.min(5, Math.max(0, Math.round(Number(extraQty?.[extra.key]) || 0)));
     if (quantity < 1) return;
     lines.push({

@@ -3,7 +3,9 @@ import { getImageUrl } from '../../utils/imagePlaceholder';
 import './ShopProductGallery.css';
 
 export default function ShopProductGallery({ urls, baseUrl, productName, promoPercent }) {
-  const gallery = urls?.length ? urls : [];
+  /** Photos qui ne se chargent pas (ex. Cloudinary 401) : retirées de la galerie. */
+  const [broken, setBroken] = useState(() => new Set());
+  const gallery = (urls?.length ? urls : []).filter((u) => !broken.has(u));
   const [activeIndex, setActiveIndex] = useState(0);
   const trackRef = useRef(null);
 
@@ -67,6 +69,7 @@ export default function ShopProductGallery({ urls, baseUrl, productName, promoPe
                 alt={gallery.length > 1 ? `${productName} — photo ${i + 1}` : productName}
                 className="shop-pdp-gallery-slide-img"
                 draggable={false}
+                onError={() => setBroken((prev) => new Set(prev).add(url))}
               />
               {i === 0 && promoPercent ? (
                 <span className="shop-pdp-gallery-badge">-{promoPercent}%</span>

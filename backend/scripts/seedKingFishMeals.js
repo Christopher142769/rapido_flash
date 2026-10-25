@@ -249,7 +249,7 @@ async function upsertProduct(def) {
     optionGroups: def.optionGroups || [],
     published: true,
     available: true,
-    showDeliveryNotice: true,
+    showDeliveryNotice: false,
     allowSpecifications: true,
     allowExtras: def.allowExtras !== false,
     sortOrder: def.sortOrder,

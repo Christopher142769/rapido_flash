@@ -73,7 +73,6 @@ import RhRegistrePage from './pages/rh/RhRegistrePage';
 import ShopProductLanding from './pages/shop/ShopProductLanding';
 import ShopOrderConfirmation from './pages/shop/ShopOrderConfirmation';
 import MealShopPage from './pages/repas/MealShopPage';
-import MealCartPage from './pages/repas/MealCartPage';
 import MealProductLanding from './pages/repas/MealProductLanding';
 import MealOrderConfirmation from './pages/repas/MealOrderConfirmation';
 import CommercialOverviewPage from './pages/commercial/CommercialOverviewPage';
@@ -296,7 +295,8 @@ function AppRoutes() {
         <Route path="/repas/commandes/:slug" element={<MealProductLanding />} />
         <Route path="/repas/:slug/commande" element={<MealOrderConfirmation />} />
         <Route path="/repas/commande" element={<MealOrderConfirmation />} />
-        <Route path="/repas/panier" element={<MealCartPage />} />
+        {/* Ancienne page panier : le panier latéral de /repas mène directement au formulaire. */}
+        <Route path="/repas/panier" element={<Navigate to="/repas?panier" replace />} />
         <Route path="/invites/:code" element={<InvitesCheckPage />} />
         <Route path="/invités/:code" element={<InvitesCheckPage />} />
         <Route path="/livreur" element={<LivreurApp />} />

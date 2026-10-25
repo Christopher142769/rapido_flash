@@ -264,6 +264,16 @@ function metaForPath(pathname) {
       robots: 'index, follow',
     };
   }
+  if (pathname === '/repas' || pathname.startsWith('/repas/')) {
+    const isOrderStep = /\/commande$/.test(pathname);
+    return {
+      title: 'Rapido Repas · Poisson livré chaud à Cotonou & Calavi',
+      description:
+        'Rapido Repas : plats de poisson cuisinés par King Fish (braisés, frits, chawarma, salades), livrés chauds en 30 à 45 min à Cotonou et Calavi. Paiement à la livraison.',
+      robots: isOrderStep ? 'noindex, follow' : 'index, follow',
+      siteName: 'Rapido Repas',
+    };
+  }
   if (pathname.startsWith('/shop/bassin')) {
     return {
       title: 'Bassin hors-sol Rapido — Offre −50 % · 670 000 FCFA',
@@ -290,7 +300,7 @@ export default function SeoRouteMeta() {
 
     const origin = window.location.origin;
     const pathname = location.pathname || '/';
-    const { title, description, robots } = metaForPath(pathname);
+    const { title, description, robots, siteName } = metaForPath(pathname);
     const canonicalUrl = absoluteUrl(origin, pathname);
 
     document.title = title;
@@ -300,7 +310,7 @@ export default function SeoRouteMeta() {
     setCanonical(canonicalUrl);
 
     setMetaByProperty('og:type', 'website');
-    setMetaByProperty('og:site_name', 'Rapido Flash');
+    setMetaByProperty('og:site_name', siteName || 'Rapido Flash');
     setMetaByProperty('og:locale', 'fr_BJ');
     setMetaByProperty('og:title', title);
     setMetaByProperty('og:description', description);

@@ -3,6 +3,8 @@ import axios from 'axios';
 import PageLoader from '../../components/PageLoader';
 import MealAddToCartModal from '../../components/shop/MealAddToCartModal';
 import { addMealToCart } from '../../utils/mealCart';
+import { optionsPerUnitTotal } from '../../utils/mealOptions';
+import { trackAddToCart } from '../../utils/analyticsBeacon';
 import { getMediaBaseUrl } from '../../utils/mediaUrl';
 import RepasRefontePage from './RepasRefontePage';
 
@@ -49,7 +51,7 @@ export default function MealShopPage() {
   }, [loadPublic]);
 
   useEffect(() => {
-    document.title = 'Rapido Repas | King Fish';
+    document.title = 'Rapido Repas · Poisson livré chaud à Cotonou & Calavi';
   }, []);
 
   useEffect(() => {
@@ -69,6 +71,13 @@ export default function MealShopPage() {
   const confirmAddToCart = ({ quantity, accompagnements, options, specifications }) => {
     if (!atcProduct) return;
     addMealToCart(atcProduct, quantity, accompagnements, options, specifications);
+    const unit = atcProduct.isPromoLive ? atcProduct.promoPrice : atcProduct.basePrice;
+    const accTotal = accompagnements.reduce((s, a) => s + (Number(a.price) || 0) * (Number(a.quantity) || 0), 0);
+    trackAddToCart(atcProduct, {
+      value: ((Number(unit) || 0) + optionsPerUnitTotal(options)) * quantity + accTotal,
+      quantity,
+      channel: 'repas',
+    });
     setAtcProduct(null);
     setToast(`${atcProduct.name} ajouté au panier`);
   };
@@ -92,6 +101,7 @@ export default function MealShopPage() {
         product={atcProduct}
         onClose={() => setAtcProduct(null)}
         onConfirm={confirmAddToCart}
+        mediaBase={BASE_URL}
       />
       {toast ? (
         <div className="toast show" role="status" style={{ position: 'fixed', zIndex: 120 }}>

@@ -17,7 +17,7 @@ const DEFAULT_TRUST = [
 ];
 
 const DEFAULT_DELIVERY_NOTICE =
-  'Commandez aujourd’hui — livraison dans les prochaines 24 h. Soyez joignable à l’adresse indiquée.';
+  'Livré chaud en 30 à 45 min (livraisons de 09h à minuit). Soyez joignable au numéro indiqué.';
 
 const LEGACY_DELIVERY_NOTICE =
   'Commandez aujourd’hui, livraison un jour après, le {date}. Soyez joignable à l’adresse indiquée.';

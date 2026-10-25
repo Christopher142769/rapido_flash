@@ -247,3 +247,19 @@
   cursor: pointer;
   box-shadow: 0 10px 24px rgba(199, 109, 46, 0.28);
 }
+
+.meal-atc-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 16px;
+}
+.meal-atc-head .meal-atc-price { margin: 0; }
+.meal-atc-photo {
+  flex-shrink: 0;
+  width: 88px;
+  height: 88px;
+  border-radius: 16px;
+  object-fit: cover;
+  background: #f6f1ea;
+}

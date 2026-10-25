@@ -1134,3 +1134,26 @@ a.m-plus { color: #fff; }
   .rf-dstrip-hours strong { font-size: .76rem; }
   .rf-dstrip-cta { padding: 5px 11px; font-size: .6rem; }
 }
+
+/* ——— Panier latéral : nom, détail, quantité et total par ligne ——— */
+.drawer .lines .line { grid-template-columns: 56px 1fr; align-items: start; }
+.drawer .lines .line img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; grid-row: auto; }
+.drawer .lines .line small { display: block; margin-top: 2px; line-height: 1.35; }
+.line-ctrl { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.line-ctrl button {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  background: #fff;
+  cursor: pointer;
+  font-weight: 900;
+  font-family: inherit;
+}
+.line-ctrl span { min-width: 18px; text-align: center; font-weight: 800; font-size: .85rem; }
+.line-ctrl strong { margin-left: auto; font-size: .85rem; font-weight: 900; }
+.drawer .btn-yellow:disabled { opacity: .5; cursor: not-allowed; }
+.foot .link-u { background: none; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; text-decoration: underline; }
+
+/* Logo : place réservée avant chargement (pas de décalage de la barre). */
+.logo img { aspect-ratio: 451 / 480; }

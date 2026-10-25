@@ -77,7 +77,7 @@ const mealProductSchema = new mongoose.Schema(
     /** false = visible sur /repas mais grisé / non commandable. */
     available: { type: Boolean, default: true },
     /** Afficher le NB « livraison dans les prochaines 24 h » sur la fiche produit. */
-    showDeliveryNotice: { type: Boolean, default: true },
+    showDeliveryNotice: { type: Boolean, default: false },
     sortOrder: { type: Number, default: 0 },
     accompagnements: { type: [accompagnementSchema], default: [] },
     /** Groupes d'options (choix unique/multiple, payants ou gratuits). */

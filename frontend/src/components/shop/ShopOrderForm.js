@@ -45,13 +45,17 @@ export default function ShopOrderForm({ customer, errors, onFieldChange, idPrefi
           id={`${idPrefix}-phone`}
           type="tel"
           inputMode="tel"
-          placeholder="Ex. 229 97 00 00 00"
+          placeholder="Ex. 01 97 00 00 00"
           className={errors.phone ? 'has-error' : ''}
           value={customer.phone}
           onChange={(e) => setField('phone', e.target.value)}
           autoComplete="tel"
         />
-        {errors.phone ? <span className="shop-order-form-error">{errors.phone}</span> : null}
+        {errors.phone ? (
+          <span className="shop-order-form-error">{errors.phone}</span>
+        ) : (
+          <span className="shop-order-form-hint">10 chiffres, avec ou sans +229.</span>
+        )}
       </div>
 
       {/* Date de livraison — désactivée temporairement pour conversion rapide

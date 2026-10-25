@@ -7,6 +7,7 @@ import {
 import { displayOptionGroupName } from '../pages/repas/repasRefonteConstants';
 import { mealShopContact } from './mealShopSettings';
 import { formatPriceXof } from './shopPromo';
+import { MEAL_DELIVERY_ETA } from './mealDeliveryEta';
 
 export { emptyCustomerForm, validateCustomerForm };
 
@@ -62,7 +63,7 @@ export function buildMealWhatsAppMessage(order) {
   const name = formatCustomerFullName(order.customer);
   const addressLine = formatCustomerAddress(order.customer);
   const lines = [
-    'Bonjour Rapido, je souhaite suivre ma commande (Shop repas) :',
+    'Bonjour Rapido, je souhaite suivre ma commande Rapido Repas :',
     '',
     '',
   ];
@@ -99,7 +100,7 @@ export function buildMealWhatsAppMessage(order) {
   lines.push('', `*Total à payer :* ${formatPriceXof(order.totalPrice)}`);
   lines.push(
     '',
-    '*Livraison :* dans les prochaines 24 h',
+    `*Livraison :* ${MEAL_DELIVERY_ETA} (de 09h à minuit)`,
     'Restez joignable à l’adresse indiquée.',
     '',
     '',

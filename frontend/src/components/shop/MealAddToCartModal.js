@@ -2,7 +2,14 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { formatPriceXof } from '../../utils/shopPromo';
 import MealOptionGroups from './MealOptionGroups';
 import MealSidePicker from './MealSidePicker';
-import { buildSideLines, productSideOptions, supplementOptions } from '../../pages/repas/mealSides';
+import {
+  buildSideLines,
+  defaultSideKey,
+  productSideOptions,
+  supplementOptionsFor,
+} from '../../pages/repas/mealSides';
+import { mealCardImage } from '../../pages/repas/repasRefonteAdapter';
+import { trackProductView } from '../../utils/analyticsBeacon';
 import {
   buildOptionSelection,
   toggleOptionChoice,
@@ -18,6 +25,7 @@ export default function MealAddToCartModal({
   product,
   onConfirm,
   ctaLabel = 'Ajouter au panier',
+  mediaBase,
 }) {
   const sideOptions = productSideOptions(product);
   const hasAcc = sideOptions.length > 0;
@@ -36,11 +44,15 @@ export default function MealAddToCartModal({
   useEffect(() => {
     if (!open || !product) return;
     setQuantity(1);
-    setSideKey('');
+    setSideKey(defaultSideKey(product));
     setExtraQty({});
     setOptSelection(buildOptionSelection(product.optionGroups || []));
     setSpecifications('');
     setError('');
+    trackProductView(
+      { _id: product._id, name: product.name, slug: product.slug, price: product.isPromoLive ? product.promoPrice : product.basePrice },
+      { channel: 'repas' }
+    );
   }, [open, product]);
 
   useEffect(() => {
@@ -84,7 +96,7 @@ export default function MealAddToCartModal({
       return;
     }
     if (hasAcc && !selectedAcc.some((a) => a.role === 'side')) {
-      setError('Choisissez un seul accompagnement.');
+      setError('Choisissez votre accompagnement (1 au choix).');
       return;
     }
     const optError = validateOptionSelection(optionGroups, optSelection);
@@ -113,10 +125,15 @@ export default function MealAddToCartModal({
           ×
         </button>
 
-        <h2 id="meal-atc-title" className="meal-atc-title">
-          {product.name}
-        </h2>
-        <p className="meal-atc-price">{formatPriceXof(unitPrice)} / plat</p>
+        <div className="meal-atc-head">
+          <img className="meal-atc-photo" src={mealCardImage(product, mediaBase)} alt="" width={88} height={88} />
+          <div>
+            <h2 id="meal-atc-title" className="meal-atc-title">
+              {product.name}
+            </h2>
+            <p className="meal-atc-price">{formatPriceXof(unitPrice)} / plat</p>
+          </div>
+        </div>
 
         <div className="meal-atc-qty">
           <span>Quantité</span>
@@ -144,7 +161,7 @@ export default function MealAddToCartModal({
           }}
           extraQty={extraQty}
           onExtraQty={(key, next) => setExtraQty((current) => ({ ...current, [key]: next }))}
-          extras={supplementOptions(product)}
+          extras={supplementOptionsFor(product, sideKey)}
           highlightSide={false}
           sideError={hasAcc && error && !selectedAcc.some((a) => a.role === 'side') ? error : ''}
         />

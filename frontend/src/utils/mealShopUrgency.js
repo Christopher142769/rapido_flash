@@ -93,3 +93,24 @@ export function getMealProductPromoState(product, now = new Date()) {
 }
 
 export { formatCountdown, DEFAULT_COUNTDOWN_HOURS };
+
+/**
+ * Seule échéance affichée sur le tunnel Repas : la fin réelle d'une promo saisie dans le
+ * back-office (date fixe, sans relance automatique). Les compteurs « qui se relancent »
+ * (runUntilStopped) ne sont jamais affichés. Renvoie l'ISO la plus proche, ou null.
+ */
+export function getMealRealDeadline(settings, products = [], now = new Date()) {
+  const t = now.getTime();
+  const ends = [];
+  const u = settings?.urgency || {};
+  if (u.enabled && u.active && u.runUntilStopped === false && u.endsAt) {
+    ends.push(new Date(u.endsAt).getTime());
+  }
+  (products || []).forEach((p) => {
+    const state = getMealProductPromoState(p, now);
+    if (!state?.isPromoLive || state.runUntilStopped || !p?.promo?.endsAt) return;
+    ends.push(new Date(p.promo.endsAt).getTime());
+  });
+  const future = ends.filter((ms) => Number.isFinite(ms) && ms > t);
+  return future.length ? new Date(Math.min(...future)).toISOString() : null;
+}

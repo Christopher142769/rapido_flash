@@ -201,7 +201,7 @@ export function trackRapido(event, payload = {}, opts = {}) {
       lead: 'Lead',
       complete_registration: 'CompleteRegistration',
     };
-    trackMeta(metaEvent || map[event] || event, opts.metaParams || {});
+    trackMeta(metaEvent || map[event] || event, opts.metaParams || {}, opts.metaEventId);
   }
 }
 
@@ -209,18 +209,9 @@ export function trackPageView(extra = {}) {
   trackRapido('page_view', extra, { meta: false });
 }
 
+/** Clic CTA : statistiques internes seulement (plus de « Lead » Meta sur un simple clic). */
 export function trackCtaClick(ctaLabel, extra = {}) {
-  trackRapido(
-    'cta_click',
-    { ctaLabel, ctaId: extra.ctaId || '', ...extra },
-    {
-      meta: 'Lead',
-      metaParams: {
-        content_name: ctaLabel || 'CTA',
-        content_category: extra.channel || inferChannelFromPath(extra.path || window.location.pathname),
-      },
-    }
-  );
+  trackRapido('cta_click', { ctaLabel, ctaId: extra.ctaId || '', ...extra }, { meta: false });
 }
 
 export function trackProductView(product, extra = {}) {
@@ -259,21 +250,78 @@ export function trackProductClick(product, extra = {}) {
   );
 }
 
+export function trackAddToCart(product, { value = 0, quantity = 1, channel = '' } = {}) {
+  const id = String(product?._id || product?.slug || '');
+  trackRapido(
+    'add_to_cart',
+    {
+      productId: product?._id || '',
+      productName: product?.name || '',
+      productSlug: product?.slug || '',
+      value,
+      channel,
+    },
+    {
+      meta: 'AddToCart',
+      metaParams: {
+        content_name: product?.name || '',
+        content_ids: [id],
+        content_type: 'product',
+        contents: [{ id, quantity }],
+        value: Number(value) || 0,
+        currency: 'XOF',
+      },
+    }
+  );
+}
+
+/** Ouverture du formulaire de commande (une fois par ouverture). */
+export function trackInitiateCheckout({ value = 0, items = [], channel = '' } = {}) {
+  const contents = items.map((it) => ({
+    id: String(it.mealProductId || it.productId || it.slug || ''),
+    quantity: Number(it.quantity) || 1,
+  }));
+  trackRapido(
+    'begin_checkout',
+    { value, channel },
+    {
+      meta: 'InitiateCheckout',
+      metaParams: {
+        content_ids: contents.map((c) => c.id),
+        contents,
+        content_type: 'product',
+        num_items: contents.reduce((n, c) => n + c.quantity, 0),
+        value: Number(value) || 0,
+        currency: 'XOF',
+      },
+    }
+  );
+}
+
+/** Purchase : eventID = purchase_<id commande> pour que Meta ne compte chaque commande qu’une fois. */
 export function trackPurchase(order, extra = {}) {
+  const orderId = order?._id || order?.id || '';
+  const value = Number(order?.total || order?.montantTotal || extra.value || 0) || 0;
+  const contentIds = (order?.items || [])
+    .map((it) => String(it.mealProductId || it.productId || it.slug || ''))
+    .filter(Boolean);
   trackRapido(
     'purchase',
     {
-      orderId: order?._id || order?.id || '',
+      orderId,
       orderModel: extra.orderModel || '',
-      value: Number(order?.total || order?.montantTotal || extra.value || 0) || 0,
+      value,
       ...extra,
     },
     {
       meta: 'Purchase',
+      metaEventId: orderId ? `purchase_${orderId}` : undefined,
       metaParams: {
-        value: Number(order?.total || order?.montantTotal || extra.value || 0) || 0,
+        value,
         currency: 'XOF',
         content_name: extra.channel || 'purchase',
+        ...(contentIds.length ? { content_ids: contentIds, content_type: 'product' } : {}),
+        ...(order?.orderNumber ? { order_id: String(order.orderNumber) } : {}),
       },
     }
   );

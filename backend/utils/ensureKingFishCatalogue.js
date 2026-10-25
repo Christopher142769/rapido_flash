@@ -102,7 +102,7 @@ async function ensureKingFishCatalogue() {
       optionGroups: [taille([['Moyen', 0], ['Grand', 500]])],
       published: true,
       available: true,
-      showDeliveryNotice: true,
+      showDeliveryNotice: false,
       allowSpecifications: true,
       sortOrder: 65,
       currency: 'XOF',
@@ -150,6 +150,16 @@ async function ensureKingFishCatalogue() {
     await MealShopSettings.collection.updateOne(
       { key: 'default' },
       { $set: { extrasEpicerieDone: true } }
+    );
+  }
+  // Plats cuisinés livrés chauds en 30 à 45 min : le NB « livraison dans les 24 h » n'a plus lieu
+  // d'être. Une seule fois (marqueur), le dashboard peut ensuite le réactiver plat par plat.
+  const noticeOff = await MealShopSettings.collection.findOne({ key: 'default', deliveryNoticeOffV1: true });
+  if (!noticeOff) {
+    await MealProduct.collection.updateMany({}, { $set: { showDeliveryNotice: false } });
+    await MealShopSettings.collection.updateOne(
+      { key: 'default' },
+      { $set: { deliveryNoticeOffV1: true } }
     );
   }
   // Les options de taille précisent qu'il s'agit de la taille du poisson.

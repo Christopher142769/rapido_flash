@@ -7,7 +7,7 @@ const { resolveDeliveryFees } = require('../utils/mealShopConfig');
 const router = express.Router();
 
 const DEFAULT_MESSAGE =
-  'Commandez aujourd’hui, livraison un jour après, le {date}. Soyez joignable à l’adresse indiquée.';
+  'Commandé aujourd’hui, livré demain ({date}). Soyez joignable au numéro indiqué.';
 
 async function getOrCreate() {
   let doc = await ShopSettings.findOne({ key: 'default' });

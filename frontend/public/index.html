@@ -99,6 +99,9 @@
         s = b.getElementsByTagName(e)[0];
         s.parentNode.insertBefore(t, s);
       })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+      // Pas d'évènements automatiques (Meta déduisait des « Lead » de simples clics) :
+      // seuls les évènements envoyés par le site comptent (ViewContent, AddToCart, InitiateCheckout, Purchase).
+      fbq('set', 'autoConfig', false, '1536465181424806');
       fbq('init', '1536465181424806');
       fbq('track', 'PageView');
     </script>

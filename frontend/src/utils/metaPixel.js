@@ -1,9 +1,11 @@
 /** Pixel Meta RAPIDO (recrutement + site). */
 export const META_PIXEL_ID = '1536465181424806';
 
-export function trackMeta(event, params = {}) {
+/** eventId : identifiant stable (ex. purchase_<commande>) pour que Meta dédoublonne l’évènement. */
+export function trackMeta(event, params = {}, eventId) {
   if (typeof window === 'undefined' || typeof window.fbq !== 'function') return;
-  window.fbq('track', event, params);
+  if (eventId) window.fbq('track', event, params, { eventID: String(eventId) });
+  else window.fbq('track', event, params);
 }
 
 /** Évènements selon la route SPA (hors chargement initial index.html). */

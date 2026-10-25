@@ -9,11 +9,13 @@ export function optionChoiceKey(choice) {
   return String(choice?._id || choice?.label || '');
 }
 
-/** État initial : aucune sélection. */
+/** État initial : choix obligatoire unique présélectionné (premier disponible), sinon rien. */
 export function buildOptionSelection(groups = []) {
   const state = {};
   (groups || []).forEach((g) => {
-    state[optionGroupKey(g)] = [];
+    const first = (g.choices || []).find((c) => c.available !== false);
+    state[optionGroupKey(g)] =
+      g.required && g.selectionType !== 'multiple' && first ? [optionChoiceKey(first)] : [];
   });
   return state;
 }
