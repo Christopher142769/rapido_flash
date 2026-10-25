@@ -399,6 +399,11 @@ export default function RepasRefontePage({
     return `https://wa.me/${waDigits}?text=${encodeURIComponent(msg)}`;
   }, [waDigits, cartLines, cartDeliveryFee, cartGrandTotal, city]);
 
+  /** Contact WhatsApp : premier message pré-rempli pour que le client n'ait qu'à l'envoyer. */
+  const waContactHref = `https://wa.me/${waDigits}?text=${encodeURIComponent(
+    'Bonjour Rapido Repas, je souhaite passer une commande.'
+  )}`;
+
   const current = slideList[heroIdx] || slideList[0];
   const mCurrent = slideList[mIdx] || slideList[0];
 
@@ -649,7 +654,7 @@ export default function RepasRefontePage({
             {waDigits ? (
               <a
                 className="phone"
-                href={`https://wa.me/${waDigits}`}
+                href={waContactHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="WhatsApp"
@@ -684,7 +689,7 @@ export default function RepasRefontePage({
             {waDigits ? (
               <a
                 className="round-btn m-only"
-                href={`https://wa.me/${waDigits}`}
+                href={waContactHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Contact WhatsApp"
@@ -1203,7 +1208,7 @@ export default function RepasRefontePage({
         <button
           type="button"
           onClick={() => {
-            if (waDigits) window.open(`https://wa.me/${waDigits}`, '_blank', 'noopener,noreferrer');
+            if (waDigits) window.open(waContactHref, '_blank', 'noopener,noreferrer');
             else go('menu');
           }}
         >
