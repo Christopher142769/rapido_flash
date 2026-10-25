@@ -828,10 +828,10 @@ export default function ShopRepasDashboard() {
                 className="shop-dash-input"
                 value={settings.trackingWhatsAppNumber ?? ''}
                 onChange={(e) => setSettings((s) => ({ ...s, trackingWhatsAppNumber: e.target.value }))}
-                placeholder="Ex. 01 40 39 39 94"
+                placeholder="Ex. 01 40 31 75 68"
               />
               <p className="shop-dash-hint">
-                Laisser vide pour utiliser le numéro officiel (+229 01 40 39 39 94). Un seul numéro pour toute la
+                Laisser vide pour utiliser le numéro par défaut (+229 01 40 31 75 68). Un seul numéro pour toute la
                 boutique repas (indicatif +229 ajouté automatiquement).
               </p>
             </div>

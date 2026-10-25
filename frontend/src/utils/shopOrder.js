@@ -12,10 +12,8 @@ import {
 
 export const SHOP_ORDER_STORAGE_KEY = 'rapido_shop_order_pending';
 
-/** Numéro officiel de commande Rapido : 01 40 39 39 94 (Bénin, 10 chiffres depuis 2024). */
+/** WhatsApp poisson frais (shops tilapia / mâchoiron) : 01 40 39 39 94 (10 chiffres depuis 2024). */
 export const OFFICIAL_WHATSAPP_DIGITS = '2290140393994';
-/** Ancien défaut à 8 chiffres jamais personnalisé : remplacé par le numéro officiel. */
-const LEGACY_DEFAULT_WHATSAPP = '22940317568';
 
 /**
  * Normalise un numéro béninois en digits wa.me au format actuel (229 + 10 chiffres).
@@ -25,7 +23,6 @@ export function normalizeWhatsAppDigits(raw) {
   let digits = String(raw || '').replace(/\D/g, '');
   if (!digits) return '';
   if (digits.startsWith('00')) digits = digits.slice(2);
-  if (digits === LEGACY_DEFAULT_WHATSAPP) return OFFICIAL_WHATSAPP_DIGITS;
   let local = digits.startsWith('229') && digits.length >= 11 ? digits.slice(3) : digits;
   if (local.length === 8) local = `01${local}`;
   else if (local.length === 9 && local.startsWith('1')) local = `0${local}`;
