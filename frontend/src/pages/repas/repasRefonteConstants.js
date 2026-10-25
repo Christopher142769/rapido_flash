@@ -69,8 +69,8 @@ export const REFONTE_PRODUCT_DESCS = {
  */
 export const MEAL_SHOP_DEFAULTS = {
   deliveryFees: { Cotonou: 700, Calavi: 1000 },
-  whatsappDigits: '22940317568',
-  whatsappDisplay: '+229 40 31 75 68',
+  whatsappDigits: '2290140393994',
+  whatsappDisplay: '+229 01 40 39 39 94',
 };
 
 export function displayProductDesc(slug, fallback = '') {

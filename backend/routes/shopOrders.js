@@ -23,10 +23,11 @@ const { assertStaffShopOrderAccess, staffShopListFilter } = require('../utils/re
 const router = express.Router();
 
 const SHOP_CITIES = ['Cotonou', 'Calavi'];
-const DEFAULT_SHOP_WA = '22940317568';
+const { normalizeBeninDigits, DEFAULT_TRACKING_WHATSAPP } = require('../utils/mealShopConfig');
 
+/** Lien WhatsApp de suivi : numéro du produit au format actuel, sinon le numéro officiel. */
 function resolveProductTrackingWhatsApp(product) {
-  return normalizeBeninPhoneDigits(product?.whatsappNumber) || DEFAULT_SHOP_WA;
+  return normalizeBeninDigits(product?.whatsappNumber) || DEFAULT_TRACKING_WHATSAPP;
 }
 
 function validateShopCustomer(customer) {

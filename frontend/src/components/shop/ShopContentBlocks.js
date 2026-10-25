@@ -78,22 +78,28 @@ function VideoBlock({ section }) {
 }
 
 function ImageBlock({ section, baseUrl }) {
+  /** Image indisponible (ex. Cloudinary 401) : on garde le texte, sans visuel cassé. */
+  const [broken, setBroken] = useState(false);
   if (!section.mediaUrl) return null;
 
   const hasCopy = section.title || section.icon || section.body;
+  if (broken && !hasCopy) return null;
 
   return (
     <section className="shop-pdp-block shop-pdp-block--image">
-      <div className="shop-pdp-block-media">
-        <div className="shop-pdp-block-img-wrap">
-          <img
-            src={getImageUrl(section.mediaUrl, null, baseUrl)}
-            alt={section.title || 'Visuel produit'}
-            className="shop-pdp-block-img"
-            loading="lazy"
-          />
+      {broken ? null : (
+        <div className="shop-pdp-block-media">
+          <div className="shop-pdp-block-img-wrap">
+            <img
+              src={getImageUrl(section.mediaUrl, null, baseUrl)}
+              alt={section.title || 'Visuel produit'}
+              className="shop-pdp-block-img"
+              loading="lazy"
+              onError={() => setBroken(true)}
+            />
+          </div>
         </div>
-      </div>
+      )}
       {hasCopy ? (
         <div className="shop-pdp-block-inner shop-pdp-block-copy shop-pdp-block-copy--after-media">
           <BlockEyebrow icon={section.icon} />

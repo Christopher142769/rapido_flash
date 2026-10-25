@@ -65,7 +65,7 @@ const mealShopSettingsSchema = new mongoose.Schema(
       maxOrders: { type: Number, default: 0, min: 0 },
     },
     /** WhatsApp / téléphone boutique Repas (suivi, commande). Vide = défaut mealShopConfig. */
-    trackingWhatsAppNumber: { type: String, default: '22940317568', trim: true },
+    trackingWhatsAppNumber: { type: String, default: '2290140393994', trim: true },
     /**
      * Compteur / urgence de la page catalogue /repas uniquement.
      * Indépendant des promos Shop Express et des promos par plat.

@@ -1489,7 +1489,7 @@ export default function ShopDashboard() {
                 className="shop-dash-input"
                 value={form.whatsappNumber}
                 onChange={(e) => setForm((f) => ({ ...f, whatsappNumber: e.target.value }))}
-                placeholder="Ex. 40 31 75 68 ou 22940317568"
+                placeholder="Ex. 01 40 39 39 94"
               />
               <p className="shop-dash-hint">
                 Laisser vide pour le numéro Rapido par défaut. Ce numéro reçoit le récapitulatif WhatsApp du client.

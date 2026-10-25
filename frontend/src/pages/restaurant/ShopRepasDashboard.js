@@ -141,12 +141,31 @@ function applyUrgencyBoostDefaults(urgency, hours = DEFAULT_MEAL_COUNTDOWN_HOURS
   };
 }
 
+function formatPromoDate(iso) {
+  const d = iso ? new Date(iso) : null;
+  if (!d || Number.isNaN(d.getTime())) return '';
+  return d.toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+}
+
+/** État réel de la promo d’un plat, tel que le site l’applique. */
+function promoStatusLabel(p) {
+  if (!p?.promo?.active) return '';
+  const state = getShopPromoState(p);
+  if (state.isPromoLive) {
+    return state.runUntilStopped
+      ? 'Promo en ligne, sans date de fin.'
+      : `Promo en ligne jusqu’au ${formatPromoDate(p.promo.endsAt)}.`;
+  }
+  return `Promo expirée le ${formatPromoDate(p.promo.endsAt)} : le site affiche le prix normal. Cochez « Sans date de fin » et enregistrez pour la remettre en ligne.`;
+}
+
 export default function ShopRepasDashboard() {
   const [products, setProducts] = useState([]);
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [editingPromoStatus, setEditingPromoStatus] = useState('');
   const [showBoutique, setShowBoutique] = useState(false);
   const [showSides, setShowSides] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -208,6 +227,7 @@ export default function ShopRepasDashboard() {
     setShowForm(false);
     setEditingId(null);
     setForm(emptyForm());
+    setEditingPromoStatus('');
     setOk('');
     setError('');
     setUploadingBlockIndex(null);
@@ -216,6 +236,7 @@ export default function ShopRepasDashboard() {
   const openCreate = () => {
     setEditingId(null);
     setForm(emptyForm());
+    setEditingPromoStatus('');
     setShowForm(true);
     setShowBoutique(false);
     setOk('');
@@ -274,6 +295,7 @@ export default function ShopRepasDashboard() {
         boostHours: DEFAULT_BOOST_HOURS,
       },
     });
+    setEditingPromoStatus(promoStatusLabel(p));
     setShowForm(true);
     setShowBoutique(false);
     setOk('');
@@ -806,10 +828,10 @@ export default function ShopRepasDashboard() {
                 className="shop-dash-input"
                 value={settings.trackingWhatsAppNumber ?? ''}
                 onChange={(e) => setSettings((s) => ({ ...s, trackingWhatsAppNumber: e.target.value }))}
-                placeholder="Ex. 40 31 75 68 ou 22940317568"
+                placeholder="Ex. 01 40 39 39 94"
               />
               <p className="shop-dash-hint">
-                Laisser vide pour utiliser le numéro par défaut (+229 40 31 75 68). Un seul numéro pour toute la
+                Laisser vide pour utiliser le numéro officiel (+229 01 40 39 39 94). Un seul numéro pour toute la
                 boutique repas (indicatif +229 ajouté automatiquement).
               </p>
             </div>
@@ -1620,6 +1642,23 @@ export default function ShopRepasDashboard() {
               />
               Promo active
             </label>
+            <label className="shop-dash-check">
+              <input
+                type="checkbox"
+                checked={form.promo.runUntilStopped !== false}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, promo: { ...f.promo, runUntilStopped: e.target.checked } }))
+                }
+              />
+              Sans date de fin (la promo reste active jusqu’à ce que vous l’arrêtiez)
+            </label>
+            {form.promo.active && form.promo.runUntilStopped === false ? (
+              <p className="shop-dash-hint">
+                Sans cette case, la promo s’arrête toute seule {form.promo.boostHours || DEFAULT_BOOST_HOURS} h après
+                l’enregistrement et le site repasse au prix normal.
+              </p>
+            ) : null}
+            {editingPromoStatus ? <p className="shop-dash-hint">{editingPromoStatus}</p> : null}
             <div className="shop-dash-grid">
               <div>
                 <label>Réduction %</label>
@@ -1677,6 +1716,11 @@ export default function ShopRepasDashboard() {
                 <div className="shop-dash-product-card-img-wrap">
                   <img src={getImageUrl(p.mainImage || p.images?.[0], null, BASE_URL)} alt="" />
                   {promo.isPromoLive ? <span className="shop-dash-product-card-promo">Promo</span> : null}
+                  {!promo.isPromoLive && p.promo?.active ? (
+                    <span className="shop-dash-product-card-draft" title={promoStatusLabel(p)}>
+                      Promo expirée
+                    </span>
+                  ) : null}
                   {!p.published ? <span className="shop-dash-product-card-draft">Brouillon</span> : null}
                   {p.published && p.available === false ? (
                     <span className="shop-dash-product-card-draft">Indisponible</span>

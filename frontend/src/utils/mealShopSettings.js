@@ -1,3 +1,4 @@
+import { formatBeninWhatsAppDisplay, normalizeWhatsAppDigits } from './shopOrder';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { MEAL_SHOP_DEFAULTS } from '../pages/repas/repasRefonteConstants';
@@ -17,12 +18,9 @@ export function mealDeliveryFeeForCity(settings, city) {
 
 export function mealShopContact(settings) {
   const digits =
-    String(settings?.trackingWhatsAppDigits || settings?.trackingWhatsAppNumber || '').replace(/\D/g, '') ||
+    normalizeWhatsAppDigits(settings?.trackingWhatsAppDigits || settings?.trackingWhatsAppNumber) ||
     MEAL_SHOP_DEFAULTS.whatsappDigits;
-  return {
-    digits,
-    display: settings?.trackingWhatsAppDisplay || MEAL_SHOP_DEFAULTS.whatsappDisplay,
-  };
+  return { digits, display: formatBeninWhatsAppDisplay(digits) };
 }
 
 let cached = null;

@@ -12,25 +12,29 @@ import {
 
 export const SHOP_ORDER_STORAGE_KEY = 'rapido_shop_order_pending';
 
-/** Numéro WhatsApp Shop (suivi commande, support) — local Bénin 40317568 → +229 40 31 75 68. */
-export const SHOP_WHATSAPP_LOCAL = '40317568';
+/** Numéro officiel de commande Rapido : 01 40 39 39 94 (Bénin, 10 chiffres depuis 2024). */
+export const OFFICIAL_WHATSAPP_DIGITS = '2290140393994';
+/** Ancien défaut à 8 chiffres jamais personnalisé : remplacé par le numéro officiel. */
+const LEGACY_DEFAULT_WHATSAPP = '22940317568';
 
-export function getShopWhatsAppDigits() {
-  let digits = String(process.env.REACT_APP_SHOP_WHATSAPP || SHOP_WHATSAPP_LOCAL).replace(/\D/g, '');
-  if (digits.length === 8) digits = `229${digits}`;
-  if (digits.length === 10 && digits.startsWith('0')) digits = `229${digits.slice(1)}`;
-  return digits || `229${SHOP_WHATSAPP_LOCAL}`;
-}
-
-/** Normalise un numéro saisi (8 chiffres locaux, 0…, 229…) en digits wa.me. */
+/**
+ * Normalise un numéro béninois en digits wa.me au format actuel (229 + 10 chiffres).
+ * Les anciens numéros à 8 chiffres reçoivent le préfixe 01 (migration de 2024).
+ */
 export function normalizeWhatsAppDigits(raw) {
   let digits = String(raw || '').replace(/\D/g, '');
   if (!digits) return '';
   if (digits.startsWith('00')) digits = digits.slice(2);
-  if (digits.length === 8) digits = `229${digits}`;
-  else if (digits.length === 9 && digits.startsWith('0')) digits = `229${digits.slice(1)}`;
-  else if (digits.length === 10 && digits.startsWith('0')) digits = `229${digits.slice(1)}`;
+  if (digits === LEGACY_DEFAULT_WHATSAPP) return OFFICIAL_WHATSAPP_DIGITS;
+  let local = digits.startsWith('229') && digits.length >= 11 ? digits.slice(3) : digits;
+  if (local.length === 8) local = `01${local}`;
+  else if (local.length === 9 && local.startsWith('1')) local = `0${local}`;
+  if (local.length === 10 && local.startsWith('01')) return `229${local}`;
   return digits;
+}
+
+export function getShopWhatsAppDigits() {
+  return normalizeWhatsAppDigits(process.env.REACT_APP_SHOP_WHATSAPP) || OFFICIAL_WHATSAPP_DIGITS;
 }
 
 /** Numéro du bouton « Suivre ma commande » : shop > défaut Rapido. */
@@ -38,20 +42,19 @@ export function resolveTrackingWhatsAppDigits(preferred) {
   return normalizeWhatsAppDigits(preferred) || getShopWhatsAppDigits();
 }
 
+/** +229 01 40 39 39 94 */
+export function formatBeninWhatsAppDisplay(digits) {
+  const m = String(digits || '').match(/^229(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/);
+  if (m) return `+229 ${m.slice(1).join(' ')}`;
+  return digits ? `+${digits}` : '';
+}
+
 export function formatWhatsAppDisplay(digits) {
-  const d = resolveTrackingWhatsAppDigits(digits);
-  if (d.length === 11 && d.startsWith('229')) {
-    return `+229 ${d.slice(3, 5)} ${d.slice(5, 7)} ${d.slice(7, 9)} ${d.slice(9)}`;
-  }
-  return d ? `+${d}` : getShopWhatsAppDisplay();
+  return formatBeninWhatsAppDisplay(resolveTrackingWhatsAppDigits(digits));
 }
 
 export function getShopWhatsAppDisplay() {
-  const d = getShopWhatsAppDigits();
-  if (d.length === 11 && d.startsWith('229')) {
-    return `+229 ${d.slice(3, 5)} ${d.slice(5, 7)} ${d.slice(7, 9)} ${d.slice(9)}`;
-  }
-  return d ? `+${d}` : `+229 ${SHOP_WHATSAPP_LOCAL}`;
+  return formatBeninWhatsAppDisplay(getShopWhatsAppDigits());
 }
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
