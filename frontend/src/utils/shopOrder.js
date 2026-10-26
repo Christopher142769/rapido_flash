@@ -30,6 +30,18 @@ export function normalizeWhatsAppDigits(raw) {
   return digits;
 }
 
+/** Suivi des commandes de poisson frais livrées à Calavi : 01 96 16 30 89. */
+export const CALAVI_FISH_WHATSAPP_DIGITS = '2290196163089';
+const FRESH_FISH_SLUGS = ['tilapia', 'machoiron'];
+
+/** Numéro de suivi d'une commande Shop : numéro dédié pour le poisson frais livré à Calavi. */
+export function shopTrackingWhatsAppDigits(product, city) {
+  if (String(city || '').trim() === 'Calavi' && FRESH_FISH_SLUGS.includes(product?.slug)) {
+    return CALAVI_FISH_WHATSAPP_DIGITS;
+  }
+  return resolveTrackingWhatsAppDigits(product?.whatsappNumber);
+}
+
 export function getShopWhatsAppDigits() {
   return normalizeWhatsAppDigits(process.env.REACT_APP_SHOP_WHATSAPP) || OFFICIAL_WHATSAPP_DIGITS;
 }
@@ -120,7 +132,7 @@ export function buildShopOrderPayload(product, promoState, quantity, customer, o
     isPromoLive: !!promoState?.isPromoLive,
     discountPercent: promoState?.discountPercent || 0,
     freeDelivery: !!promoState?.freeDelivery,
-    whatsappNumber: resolveTrackingWhatsAppDigits(product.whatsappNumber),
+    whatsappNumber: shopTrackingWhatsAppDigits(product, customer.city),
     ctaLabel: product.ctaLabel || 'Commander',
     customer: {
       firstName: String(customer.firstName || '').trim(),

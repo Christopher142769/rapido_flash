@@ -8,6 +8,9 @@ const DEFAULT_DELIVERY_FEES = { Cotonou: 700, Calavi: 1000 };
 const DEFAULT_TRACKING_WHATSAPP = '2290140317568';
 /** WhatsApp poisson frais (shops tilapia / mâchoiron) : 01 40 39 39 94. */
 const DEFAULT_SHOP_WHATSAPP = '2290140393994';
+/** Suivi des commandes de poisson frais livrées à Calavi : 01 96 16 30 89. */
+const CALAVI_FISH_WHATSAPP = '2290196163089';
+const FRESH_FISH_SLUGS = ['tilapia', 'machoiron'];
 
 /**
  * Digits wa.me au format béninois actuel (229 + 10 chiffres). Les anciens numéros à
@@ -58,6 +61,8 @@ module.exports = {
   DEFAULT_DELIVERY_FEES,
   DEFAULT_TRACKING_WHATSAPP,
   DEFAULT_SHOP_WHATSAPP,
+  CALAVI_FISH_WHATSAPP,
+  FRESH_FISH_SLUGS,
   normalizeBeninDigits,
   resolveDeliveryFees,
   getMealDeliveryFee,

@@ -23,10 +23,21 @@ const { assertStaffShopOrderAccess, staffShopListFilter } = require('../utils/re
 const router = express.Router();
 
 const SHOP_CITIES = ['Cotonou', 'Calavi'];
-const { normalizeBeninDigits, DEFAULT_SHOP_WHATSAPP } = require('../utils/mealShopConfig');
+const {
+  normalizeBeninDigits,
+  DEFAULT_SHOP_WHATSAPP,
+  CALAVI_FISH_WHATSAPP,
+  FRESH_FISH_SLUGS,
+} = require('../utils/mealShopConfig');
 
-/** Lien WhatsApp de suivi : numéro du produit au format actuel, sinon celui du poisson frais. */
-function resolveProductTrackingWhatsApp(product) {
+/**
+ * Lien WhatsApp de suivi : poisson frais livré à Calavi → numéro dédié Calavi ; sinon numéro
+ * du produit au format actuel, sinon celui du poisson frais (Cotonou).
+ */
+function resolveProductTrackingWhatsApp(product, city) {
+  if (String(city || '').trim() === 'Calavi' && FRESH_FISH_SLUGS.includes(product?.slug)) {
+    return CALAVI_FISH_WHATSAPP;
+  }
   return normalizeBeninDigits(product?.whatsappNumber) || DEFAULT_SHOP_WHATSAPP;
 }
 
@@ -166,7 +177,7 @@ router.post('/', async (req, res) => {
         city: String(customer.city).trim(),
         addressDescription: String(customer.addressDescription).trim(),
       },
-      whatsappNumber: resolveProductTrackingWhatsApp(product),
+      whatsappNumber: resolveProductTrackingWhatsApp(product, customer.city),
       statut: 'en_attente',
       commercialStatus: 'commande',
       orderDate: new Date(),
