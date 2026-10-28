@@ -27,6 +27,8 @@ import StaffPresencePage from './pages/client/StaffPresencePage';
 import Settings from './pages/client/Settings';
 import AccountDeletion from './pages/AccountDeletion';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import MentionsLegalesPage from './pages/MentionsLegalesPage';
+import SiteLegalFooter from './components/SiteLegalFooter';
 import RecrutementPage from './pages/RecrutementPage';
 import BassinsPage from './pages/BassinsPage';
 import BassinsRemerciementsPage from './pages/BassinsRemerciementsPage';
@@ -203,6 +205,7 @@ function AppRoutes() {
         <Route path="/suppression-compte" element={<AccountDeletion />} />
         <Route path="/politique-confidentialite" element={<PrivacyPolicyPage />} />
         <Route path="/privacy" element={<Navigate to="/politique-confidentialite" replace />} />
+        <Route path="/mentions-legales" element={<MentionsLegalesPage />} />
 
         {/* Recrutement : HTML statique recrutement/carrieres.html */}
         <Route path="/recrutement/merci" element={<RecrutementPage page="merci" />} />
@@ -368,6 +371,7 @@ function AppRoutes() {
 
         <Route path="/" element={<Navigate to="/home" replace />} />
       </Routes>
+      <SiteLegalFooter />
     </MaintenanceGate>
   );
 }

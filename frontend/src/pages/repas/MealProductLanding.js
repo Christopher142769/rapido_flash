@@ -621,7 +621,7 @@ export default function MealProductLanding() {
 
             {otherDishes.length ? (
               <section className="meal-pdp-also" aria-label="Autres plats du menu">
-                <h2 className="meal-pdp-also-title">Le menu</h2>
+                <h2 className="meal-pdp-also-title">Autres produits Rapido</h2>
                 <div className="meal-pdp-also-row">
                   {otherDishes.map((dish) => (
                     <Link key={dish.id} to={mealProductPath(dish.id)} className="meal-pdp-also-card">

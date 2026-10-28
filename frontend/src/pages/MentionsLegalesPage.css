@@ -1,0 +1,17 @@
+.legal-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 28px 20px 80px;
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #2b1f17;
+  line-height: 1.6;
+}
+.legal-page h1 { font-size: 1.7rem; margin: 12px 0 18px; }
+.legal-page h2 { font-size: 1.05rem; margin: 26px 0 8px; }
+.legal-page dl { margin: 0; display: grid; gap: 6px; }
+.legal-page dl div { display: flex; gap: 10px; flex-wrap: wrap; }
+.legal-page dt { font-weight: 700; min-width: 190px; }
+.legal-page dd { margin: 0; }
+.legal-page a { color: #c76d2e; }
+.legal-back { display: inline-block; font-weight: 700; text-decoration: none; }
+.legal-links { margin-top: 28px; }

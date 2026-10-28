@@ -1157,3 +1157,4 @@ a.m-plus { color: #fff; }
 
 /* Logo : place réservée avant chargement (pas de décalage de la barre). */
 .logo img { aspect-ratio: 451 / 480; }
+.foot-bottom a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }

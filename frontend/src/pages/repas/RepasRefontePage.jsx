@@ -1174,7 +1174,10 @@ export default function RepasRefontePage({
         </div>
         <div className="foot-bottom">
           <div className="wrap">
-            <span>© Rapido Repas</span>
+            <span>
+              © Rapido Repas · <Link to="/mentions-legales">Mentions légales</Link> ·{' '}
+              <a href="/privacy.html">Politique de confidentialité</a>
+            </span>
             <span>Plats cuisinés par King Fish</span>
           </div>
         </div>
