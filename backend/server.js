@@ -197,32 +197,17 @@ app.get('/healthz', (req, res) => {
   });
 });
 
-// Frontend React (build) — même origine que l’API (Hostinger / futur .bj)
-const fs = require('fs');
-const clientBuildPath = path.join(__dirname, '..', 'frontend', 'build');
-if (fs.existsSync(path.join(clientBuildPath, 'index.html'))) {
-  app.use(express.static(clientBuildPath, { index: false, maxAge: '1h' }));
-  app.get('*', (req, res, next) => {
-    if (
-      req.method !== 'GET' &&
-      req.method !== 'HEAD'
-    ) {
-      return next();
-    }
-    const p = req.path || '';
-    if (
-      p.startsWith('/api') ||
-      p.startsWith('/uploads') ||
-      p === '/healthz' ||
-      p.startsWith('/socket')
-    ) {
-      return next();
-    }
-    res.sendFile(path.join(clientBuildPath, 'index.html'), (err) => {
-      if (err) next(err);
-    });
-  });
+// Route API inconnue → 404 JSON (jamais index.html)
+app.use('/api', (req, res) => {
+  res.status(404).json({ message: `Route API introuvable : ${req.method} ${req.originalUrl}` });
+});
+
+// Frontend React (build) — même origine que l’API (Hostinger : rapido.bj, rapido.online)
+const serveFrontend = require('./utils/serveFrontend');
+if (serveFrontend(app, path.join(__dirname, '..', 'frontend', 'build'))) {
   console.log('🌐 Frontend SPA servi depuis frontend/build');
+} else {
+  console.warn('⚠️ frontend/build/index.html absent : lancer « npm run build » à la racine');
 }
 
 // Gestionnaire d'erreur global pour Multer
