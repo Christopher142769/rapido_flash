@@ -17,6 +17,7 @@ import {
   submitShopOrderToApi,
   validateCustomerForm,
   getShopWhatsAppDigits,
+  formatWhatsAppDisplay,
   shopTrackingWhatsAppDigits,
 } from '../../utils/shopOrder';
 import ShopDeliveryNotice from '../../components/shop/ShopDeliveryNotice';
@@ -41,6 +42,12 @@ import {
 } from '../../utils/analyticsBeacon';
 import './shopTypography.css';
 import './ShopProductLanding.css';
+import '../repas/MealProductLanding.css';
+import MealProductPitch, { MealProductPitchMore } from '../repas/MealProductPitch';
+import { getRepasProductCopy } from '../repas/repasProductCopy';
+import OtherProductsRail from '../../components/shop/OtherProductsRail';
+import { adaptProducts } from '../repas/repasRefonteAdapter';
+import { mealProductPath } from '../../utils/mealPaths';
 import { getMediaBaseUrl } from '../../utils/mediaUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -129,7 +136,7 @@ export default function ShopProductLanding() {
 
   useEffect(() => {
     if (!product?.name) return;
-    document.title = `${product.name} | Rapido Shop`;
+    document.title = `${(LOCAL_FRESH_PHOTOS[String(slug).toLowerCase()] && getRepasProductCopy(slug)?.displayName) || product.name} | Rapido Shop`;
     const desc = product.shortDescription || product.name;
     let meta = document.querySelector('meta[name="description"]');
     if (!meta) {
@@ -138,7 +145,7 @@ export default function ShopProductLanding() {
       document.head.appendChild(meta);
     }
     meta.setAttribute('content', desc);
-  }, [product]);
+  }, [product, slug]);
 
   useEffect(() => {
     if (product && product.eviscerationEnabled === false) {
@@ -164,6 +171,42 @@ export default function ShopProductLanding() {
   const isFreshFish = !!LOCAL_FRESH_PHOTOS[String(slug || '').toLowerCase()];
   const showCountdown =
     promoState?.isPromoLive && countdownEndsAt && !(isFreshFish && countdownAutoRestart);
+  /** Poisson frais : même structure de fiche que les plats Repas (copywriting, « Autres produits Rapido »). */
+  const freshCopy = isFreshFish ? getRepasProductCopy(slug) : null;
+  const [otherItems, setOtherItems] = useState([]);
+  useEffect(() => {
+    if (!isFreshFish) return undefined;
+    let cancelled = false;
+    const otherFish = Object.keys(LOCAL_FRESH_PHOTOS).filter((s) => s !== String(slug).toLowerCase());
+    Promise.all([
+      axios.get(`${API_URL}/meal-products/public`).then((r) => (Array.isArray(r.data) ? r.data : [])).catch(() => []),
+      ...otherFish.map((s) =>
+        axios.get(`${API_URL}/shop-products/public/${s}`).then((r) => r.data).catch(() => null)
+      ),
+    ]).then(([meals, ...fish]) => {
+      if (cancelled) return;
+      const fishItems = fish
+        .filter(Boolean)
+        .map((f) => {
+          const st = getShopPromoState(f);
+          return {
+            id: `fish-${f.slug}`,
+            to: `/shop/${f.slug}`,
+            img: LOCAL_FRESH_PHOTOS[String(f.slug).toLowerCase()],
+            name: getRepasProductCopy(f.slug)?.displayName || f.name,
+            price: st.isPromoLive ? st.promoPrice : f.basePrice,
+            unit: 'kg',
+          };
+        });
+      const mealItems = adaptProducts(meals, BASE_URL)
+        .filter((d) => d.available)
+        .map((d) => ({ id: d.id, to: mealProductPath(d.id), img: d.cardImg, name: d.name, price: d.unit }));
+      setOtherItems([...fishItems, ...mealItems]);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isFreshFish, slug]);
   const showOrderLimitBanner =
     availabilityState?.dailyOrderLimitEnabled &&
     !availabilityState?.isShopClosed &&
@@ -248,12 +291,14 @@ export default function ShopProductLanding() {
       { id: 'shop-section-product', label: 'Produit' },
       { id: 'shop-section-order', label: 'Commander' },
     ];
-    if (product?.copySections?.length) {
+    if (freshCopy) {
+      items.push({ id: 'meal-section-pitch', label: 'Détails' });
+    } else if (product?.copySections?.length) {
       items.push({ id: 'shop-section-story', label: 'En savoir plus' });
     }
     items.push({ id: 'shop-section-trust', label: 'Avantages' });
     return items;
-  }, [product?.copySections?.length]);
+  }, [product?.copySections?.length, freshCopy]);
 
   useEffect(() => {
     if (!hasTopFixedBar || !topBarRef.current) return undefined;
@@ -420,8 +465,11 @@ export default function ShopProductLanding() {
         <div id="shop-section-order" className="shop-pdp-buy-col">
           <form id={CHECKOUT_FORM_ID} className="shop-pdp-checkout" onSubmit={requestOrder} noValidate>
             <p className="shop-pdp-buybox-brand">Rapido</p>
-            <h1 className="shop-pdp-buybox-title">{product.name}</h1>
-            {product.shortDescription ? <p className="shop-pdp-buybox-sub">{product.shortDescription}</p> : null}
+            <h1 className="shop-pdp-buybox-title">{freshCopy?.displayName || product.name}</h1>
+            {freshCopy?.hook ? <p className="meal-pdp-hook">{freshCopy.hook}</p> : null}
+            {freshCopy?.desc || product.shortDescription ? (
+              <p className="shop-pdp-buybox-sub">{freshCopy?.desc || product.shortDescription}</p>
+            ) : null}
 
             {product.showDeliveryNotice !== false ? (
               <ShopDeliveryNotice message={shopSettings?.deliveryNoticeMessage} />
@@ -461,7 +509,7 @@ export default function ShopProductLanding() {
                       Éviscération et nettoyage : {formatPriceXof(eviscerationFee)}
                     </span>
                   ) : null}
-                  {(deliveryFee > 0 || eviscerationFee > 0 || promoState?.freeDelivery) && hasQuantity ? (
+                  {!freshCopy && (deliveryFee > 0 || eviscerationFee > 0 || promoState?.freeDelivery) && hasQuantity ? (
                     <span className="shop-pdp-buybox-total-line">
                       Total : <strong>{grandTotalLabel}</strong>
                     </span>
@@ -496,6 +544,24 @@ export default function ShopProductLanding() {
                 </span>
               ) : null}
             </div>
+
+            {freshCopy && canOrder ? (
+              <button
+                type="button"
+                className="shop-pdp-cta shop-pdp-cta--primary meal-pdp-cta-top"
+                onClick={() =>
+                  document
+                    .getElementById('shop-quantity-section')
+                    ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                }
+              >
+                Commander maintenant
+              </button>
+            ) : null}
+
+            {freshCopy ? (
+              <MealProductPitch slug={slug} productName={freshCopy.displayName} heroImage={gallery[0]} />
+            ) : null}
 
             {!hasQuantity ? (
               <p className="shop-pdp-buybox-qty-hint">Sélectionnez une quantité avant de commander.</p>
@@ -548,11 +614,24 @@ export default function ShopProductLanding() {
                 Commande bientôt disponible
               </button>
             )}
+            {freshCopy && canOrder ? (
+              <p className="meal-pdp-microcopy">Paiement à la livraison · Cotonou &amp; Calavi</p>
+            ) : null}
+            {freshCopy ? <OtherProductsRail items={otherItems} /> : null}
           </form>
         </div>
       </div>
 
-      {product.copySections?.length ? (
+      {freshCopy ? (
+        <MealProductPitchMore
+          slug={slug}
+          settings={shopSettings}
+          whatsappDisplay={formatWhatsAppDisplay(shopTrackingWhatsAppDigits(product, customer.city))}
+          onOrderClick={() =>
+            document.getElementById('shop-section-order')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }
+        />
+      ) : product.copySections?.length ? (
         <div id="shop-section-story" className="shop-pdp-story-wrap">
           <ShopContentBlocks sections={product.copySections} baseUrl={BASE_URL} />
         </div>

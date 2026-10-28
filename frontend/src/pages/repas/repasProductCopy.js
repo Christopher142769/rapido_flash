@@ -180,14 +180,13 @@ export const REPAS_PRODUCT_COPY = {
   },
 
   'rillettes-de-poissons': {
-    images: [{ src: '/images/repas/refonte/rillettes.jpg', caption: 'Le pot de rillettes King Fish.' }],
-    hook: 'Le pot de rillettes de poisson King Fish, à tartiner et à partager.',
+    hook: 'Le pot de rillettes de poisson King Fish de 250 g, à tartiner et à partager.',
     pitch:
-      'Un pot de rillettes de poisson King Fish, « saveur authentique » comme l’annonce son étiquette. À étaler sur du pain, à poser sur la table de l’apéro, ou à garder pour les petites faims.',
+      'Un pot de 250 g de rillettes de poisson King Fish, « saveur authentique » comme l’annonce son étiquette. À étaler sur du pain, à poser sur la table de l’apéro, ou à garder pour les petites faims.',
     benefits: [
       { title: 'Prêt à servir', text: 'Vous ouvrez, vous tartinez : rien à cuire ni à préparer.' },
+      { title: 'Un pot de 250 g', text: 'De quoi régaler plusieurs personnes ou en profiter à plusieurs reprises.' },
       { title: 'Signé King Fish', text: 'Le savoir-faire poisson de King Fish, dans un pot qu’on garde à portée de main.' },
-      { title: 'À ajouter à votre commande', text: 'Mettez-le dans votre panier avec votre plat pour régaler vos invités.' },
     ],
     idealFor: 'Apéritif, goûter, tartines du petit-déjeuner, cadeau gourmand.',
     faq: {
@@ -246,8 +245,51 @@ export const REPAS_PRODUCT_COPY = {
   },
 };
 
+/**
+ * Poisson frais vendu au kilo (/shop/tilapia, /shop/machoiron) : même structure que les plats.
+ * `variant: 'fresh'` adapte « comment ça marche » et la FAQ (livraison à la date, pas de délai en minutes).
+ */
+export const FRESH_FISH_COPY = {
+  tilapia: {
+    variant: 'fresh',
+    displayName: 'Tilapia frais',
+    hook: 'Du tilapia frais, livré chez vous au kilo.',
+    desc: 'Fini le marché : vous choisissez votre poids, on vous livre le tilapia à la maison, prêt à braiser, griller ou cuisiner en sauce.',
+    pitch:
+      'Le tilapia s’adapte à toutes vos recettes : braisé, grillé ou en sauce. Vous le commandez depuis votre téléphone, au kilo, et il arrive à votre porte. Plus de déplacement, plus de négociation au marché.',
+    benefits: [
+      { title: 'Vous choisissez le poids', text: 'Commandez au kilo, à partir de 1 kg, selon le nombre de personnes à table.' },
+      { title: 'Nettoyé si vous le souhaitez', text: 'Ajoutez l’option « Éviscération et nettoyage » : le poisson arrive prêt à cuisiner.' },
+      { title: 'Livré à votre porte', text: 'À Cotonou et à Calavi, vous ne vous déplacez pas : vous payez à la réception.' },
+    ],
+    idealFor: 'Un repas de famille, un week-end braisé, ou chaque fois que vous voulez cuisiner du poisson frais sans aller au marché.',
+    faq: {
+      q: 'Puis-je faire nettoyer le poisson ?',
+      a: 'Oui : cochez « Éviscération et nettoyage » avant de commander. Le supplément s’affiche et se calcule selon le poids.',
+    },
+  },
+  machoiron: {
+    variant: 'fresh',
+    displayName: 'Mâchoiron frais',
+    hook: 'Du mâchoiron frais, livré chez vous au kilo.',
+    desc: 'Du mâchoiron d’élevage local, sélectionné et livré à votre porte : vous choisissez le poids, vous n’avez plus qu’à cuisiner.',
+    pitch:
+      'Le mâchoiron est un poisson à la chair blanche et presque sans arêtes : on le mange sans se méfier. Braisé, fumé, frit ou en sauce, il se prête à toutes les recettes. Commandé au kilo, il arrive chez vous sans passer par le marché.',
+    benefits: [
+      { title: 'Un poisson facile à manger', text: 'Une chair blanche et presque sans arêtes, pour des repas sans souci.' },
+      { title: 'Vous choisissez le poids', text: 'Commandez au kilo, à partir de 1 kg, selon votre appétit.' },
+      { title: 'Nettoyé si vous le souhaitez', text: 'Ajoutez l’option « Éviscération et nettoyage » et gagnez du temps en cuisine.' },
+    ],
+    idealFor: 'Les familles, les amateurs de poisson braisé ou fumé, et tous ceux qui veulent du poisson frais sans courir au marché.',
+    faq: {
+      q: 'Puis-je faire nettoyer le poisson ?',
+      a: 'Oui : cochez « Éviscération et nettoyage » avant de commander. Le supplément s’affiche et se calcule selon le poids.',
+    },
+  },
+};
+
 export function getRepasProductCopy(slug) {
   const key = String(slug || '').trim().toLowerCase();
   const alias = { shawarma: 'chawarma', 'filet-poele': 'filet-poisson-pouiller', brochette: 'brochette-de-poisson' };
-  return REPAS_PRODUCT_COPY[alias[key] || key] || null;
+  return REPAS_PRODUCT_COPY[alias[key] || key] || FRESH_FISH_COPY[key] || null;
 }

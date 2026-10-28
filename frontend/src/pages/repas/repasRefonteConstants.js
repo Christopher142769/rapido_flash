@@ -40,7 +40,12 @@ export function fixFrench(text) {
 /** Le nom saisi dans le dashboard prime ; les noms ci-dessus ne servent que de repli. */
 export function displayProductName(slug, fallback = '') {
   const key = String(slug || '').trim().toLowerCase();
-  return fixFrench(String(fallback || '').trim() || REFONTE_PRODUCT_NAMES[key] || key);
+  const name = fixFrench(String(fallback || '').trim() || REFONTE_PRODUCT_NAMES[key] || key);
+  // Le pot de rillettes vendu fait 250 g : le poids fait partie du nom affiché.
+  if ((key === 'rillettes' || key === 'rillettes-de-poissons') && !/\b250\s*g/i.test(name)) {
+    return `${name} 250 g`;
+  }
+  return name;
 }
 
 /** Descriptions affichées (prioritaires sur la base). */
