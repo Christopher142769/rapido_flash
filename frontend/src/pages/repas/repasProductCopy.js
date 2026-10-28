@@ -246,46 +246,12 @@ export const REPAS_PRODUCT_COPY = {
 };
 
 /**
- * Poisson frais vendu au kilo (/shop/tilapia, /shop/machoiron) : même structure que les plats.
- * `variant: 'fresh'` adapte « comment ça marche » et la FAQ (livraison à la date, pas de délai en minutes).
+ * Poisson frais vendu au kilo (/shop/tilapia, /shop/machoiron) : seul le nom d'affichage est défini ici ;
+ * le texte de vente reste celui du dashboard (copySections), remis en page comme les fiches plats.
  */
 export const FRESH_FISH_COPY = {
-  tilapia: {
-    variant: 'fresh',
-    displayName: 'Tilapia frais',
-    hook: 'Du tilapia frais, livré chez vous au kilo.',
-    desc: 'Fini le marché : vous choisissez votre poids, on vous livre le tilapia à la maison, prêt à braiser, griller ou cuisiner en sauce.',
-    pitch:
-      'Le tilapia s’adapte à toutes vos recettes : braisé, grillé ou en sauce. Vous le commandez depuis votre téléphone, au kilo, et il arrive à votre porte. Plus de déplacement, plus de négociation au marché.',
-    benefits: [
-      { title: 'Vous choisissez le poids', text: 'Commandez au kilo, à partir de 1 kg, selon le nombre de personnes à table.' },
-      { title: 'Nettoyé si vous le souhaitez', text: 'Ajoutez l’option « Éviscération et nettoyage » : le poisson arrive prêt à cuisiner.' },
-      { title: 'Livré à votre porte', text: 'À Cotonou et à Calavi, vous ne vous déplacez pas : vous payez à la réception.' },
-    ],
-    idealFor: 'Un repas de famille, un week-end braisé, ou chaque fois que vous voulez cuisiner du poisson frais sans aller au marché.',
-    faq: {
-      q: 'Puis-je faire nettoyer le poisson ?',
-      a: 'Oui : cochez « Éviscération et nettoyage » avant de commander. Le supplément s’affiche et se calcule selon le poids.',
-    },
-  },
-  machoiron: {
-    variant: 'fresh',
-    displayName: 'Mâchoiron frais',
-    hook: 'Du mâchoiron frais, livré chez vous au kilo.',
-    desc: 'Du mâchoiron d’élevage local, sélectionné et livré à votre porte : vous choisissez le poids, vous n’avez plus qu’à cuisiner.',
-    pitch:
-      'Le mâchoiron est un poisson à la chair blanche et presque sans arêtes : on le mange sans se méfier. Braisé, fumé, frit ou en sauce, il se prête à toutes les recettes. Commandé au kilo, il arrive chez vous sans passer par le marché.',
-    benefits: [
-      { title: 'Un poisson facile à manger', text: 'Une chair blanche et presque sans arêtes, pour des repas sans souci.' },
-      { title: 'Vous choisissez le poids', text: 'Commandez au kilo, à partir de 1 kg, selon votre appétit.' },
-      { title: 'Nettoyé si vous le souhaitez', text: 'Ajoutez l’option « Éviscération et nettoyage » et gagnez du temps en cuisine.' },
-    ],
-    idealFor: 'Les familles, les amateurs de poisson braisé ou fumé, et tous ceux qui veulent du poisson frais sans courir au marché.',
-    faq: {
-      q: 'Puis-je faire nettoyer le poisson ?',
-      a: 'Oui : cochez « Éviscération et nettoyage » avant de commander. Le supplément s’affiche et se calcule selon le poids.',
-    },
-  },
+  tilapia: { displayName: 'Tilapia frais' },
+  machoiron: { displayName: 'Mâchoiron frais' },
 };
 
 export function getRepasProductCopy(slug) {

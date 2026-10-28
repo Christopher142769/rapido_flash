@@ -414,3 +414,8 @@
 }
 .meal-pitch-figure figcaption { margin-top: 6px; font-size: 0.8rem; color: #6a5344; text-align: center; }
 .meal-pdp-cta-top { margin: 14px 0 4px; }
+
+/* Texte du dashboard (blocs) intégré dans la colonne d'achat des fiches poisson frais. */
+.meal-pitch--story { margin: 18px 0 22px; padding: 0; border-top: 1px solid var(--rf-border); }
+.meal-pitch--story .shop-pdp-block-inner { padding-left: 0; padding-right: 0; }
+.meal-pitch--story .shop-pdp-block { margin-bottom: 4px; }

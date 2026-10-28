@@ -77,25 +77,25 @@ function VideoBlock({ section }) {
   );
 }
 
-function ImageBlock({ section, baseUrl }) {
+function ImageBlock({ section, baseUrl, fallbackSrc }) {
   /** Image indisponible (ex. Cloudinary 401) : on garde le texte, sans visuel cassé. */
   const [broken, setBroken] = useState(false);
   if (!section.mediaUrl) return null;
 
   const hasCopy = section.title || section.icon || section.body;
-  if (broken && !hasCopy) return null;
+  if (broken && !hasCopy && !fallbackSrc) return null;
 
   return (
     <section className="shop-pdp-block shop-pdp-block--image">
-      {broken ? null : (
+      {broken && !fallbackSrc ? null : (
         <div className="shop-pdp-block-media">
           <div className="shop-pdp-block-img-wrap">
             <img
-              src={getImageUrl(section.mediaUrl, null, baseUrl)}
+              src={broken ? fallbackSrc : getImageUrl(section.mediaUrl, null, baseUrl)}
               alt={section.title || 'Visuel produit'}
               className="shop-pdp-block-img"
               loading="lazy"
-              onError={() => setBroken(true)}
+              onError={() => !broken && setBroken(true)}
             />
           </div>
         </div>
@@ -111,8 +111,13 @@ function ImageBlock({ section, baseUrl }) {
   );
 }
 
-export default function ShopContentBlocks({ sections, baseUrl }) {
+/**
+ * fallbackImages : photos de secours (dans l'ordre) pour les blocs image dont l'image du dashboard
+ * ne se charge pas (ex. Cloudinary indisponible) ; sans elles, le bloc garde son texte seul.
+ */
+export default function ShopContentBlocks({ sections, baseUrl, fallbackImages = [] }) {
   if (!sections?.length) return null;
+  let imageIndex = -1;
 
   return (
     <div className="shop-pdp-story">
@@ -131,7 +136,15 @@ export default function ShopContentBlocks({ sections, baseUrl }) {
         }
 
         if (type === 'image') {
-          return <ImageBlock key={section._id || i} section={section} baseUrl={baseUrl} />;
+          imageIndex += 1;
+          return (
+            <ImageBlock
+              key={section._id || i}
+              section={section}
+              baseUrl={baseUrl}
+              fallbackSrc={fallbackImages[imageIndex]}
+            />
+          );
         }
 
         if (type === 'video') {

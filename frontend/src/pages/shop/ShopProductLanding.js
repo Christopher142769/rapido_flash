@@ -17,7 +17,6 @@ import {
   submitShopOrderToApi,
   validateCustomerForm,
   getShopWhatsAppDigits,
-  formatWhatsAppDisplay,
   shopTrackingWhatsAppDigits,
 } from '../../utils/shopOrder';
 import ShopDeliveryNotice from '../../components/shop/ShopDeliveryNotice';
@@ -43,7 +42,6 @@ import {
 import './shopTypography.css';
 import './ShopProductLanding.css';
 import '../repas/MealProductLanding.css';
-import MealProductPitch, { MealProductPitchMore } from '../repas/MealProductPitch';
 import { getRepasProductCopy } from '../repas/repasProductCopy';
 import OtherProductsRail from '../../components/shop/OtherProductsRail';
 import { adaptProducts } from '../repas/repasRefonteAdapter';
@@ -58,6 +56,12 @@ const CHECKOUT_FORM_ID = 'shop-checkout-form';
 const LOCAL_FRESH_PHOTOS = {
   tilapia: '/images/repas/refonte/tilapia-frais-photo.webp',
   machoiron: '/images/repas/refonte/machoiron-frais-photo.webp',
+};
+
+/** Photos hébergées sur le site : complètent le défilé d'images et remplacent les visuels Cloudinary indisponibles. */
+const LOCAL_FRESH_EXTRAS = {
+  tilapia: ['/images/repas/refonte/tilapia-braise.jpg', '/images/repas/refonte/tilapia-frite.jpg'],
+  machoiron: ['/images/repas/refonte/machoiron-braise.jpg', '/images/repas/refonte/machoiron-braise-food.jpg'],
 };
 
 export default function ShopProductLanding() {
@@ -173,6 +177,11 @@ export default function ShopProductLanding() {
     promoState?.isPromoLive && countdownEndsAt && !(isFreshFish && countdownAutoRestart);
   /** Poisson frais : même structure de fiche que les plats Repas (copywriting, « Autres produits Rapido »). */
   const freshCopy = isFreshFish ? getRepasProductCopy(slug) : null;
+  const freshKey = String(slug || '').toLowerCase();
+  /** Texte du dashboard : avant la commande jusqu'à la FAQ, la FAQ et la suite après la commande. */
+  const faqIndex = (product?.copySections || []).findIndex((s) => s?.type === 'faq');
+  const storyBefore = faqIndex === -1 ? product?.copySections || [] : product.copySections.slice(0, faqIndex);
+  const storyAfter = faqIndex === -1 ? [] : product.copySections.slice(faqIndex);
   const [otherItems, setOtherItems] = useState([]);
   useEffect(() => {
     if (!isFreshFish) return undefined;
@@ -256,9 +265,10 @@ export default function ShopProductLanding() {
   /** Poisson frais : photo hébergée sur le site en premier (les images Cloudinary peuvent être indisponibles). */
   const gallery = useMemo(() => {
     if (!product) return [];
-    const local = LOCAL_FRESH_PHOTOS[String(product.slug || '').toLowerCase()];
+    const key = String(product.slug || '').toLowerCase();
+    const local = LOCAL_FRESH_PHOTOS[key];
     const urls = getProductGallery(product);
-    return local ? [local, ...urls.filter((u) => u !== local)] : urls;
+    return local ? [local, ...urls.filter((u) => u !== local), ...(LOCAL_FRESH_EXTRAS[key] || [])] : urls;
   }, [product]);
   const canOrder = !!getShopWhatsAppDigits();
   const unitPrice = promoState?.isPromoLive ? promoState.promoPrice : product?.basePrice;
@@ -291,14 +301,14 @@ export default function ShopProductLanding() {
       { id: 'shop-section-product', label: 'Produit' },
       { id: 'shop-section-order', label: 'Commander' },
     ];
-    if (freshCopy) {
-      items.push({ id: 'meal-section-pitch', label: 'Détails' });
+    if (freshCopy && storyBefore.length) {
+      items.push({ id: 'meal-section-pitch', label: 'En savoir plus' });
     } else if (product?.copySections?.length) {
       items.push({ id: 'shop-section-story', label: 'En savoir plus' });
     }
     items.push({ id: 'shop-section-trust', label: 'Avantages' });
     return items;
-  }, [product?.copySections?.length, freshCopy]);
+  }, [product?.copySections?.length, freshCopy, storyBefore.length]);
 
   useEffect(() => {
     if (!hasTopFixedBar || !topBarRef.current) return undefined;
@@ -466,10 +476,7 @@ export default function ShopProductLanding() {
           <form id={CHECKOUT_FORM_ID} className="shop-pdp-checkout" onSubmit={requestOrder} noValidate>
             <p className="shop-pdp-buybox-brand">Rapido</p>
             <h1 className="shop-pdp-buybox-title">{freshCopy?.displayName || product.name}</h1>
-            {freshCopy?.hook ? <p className="meal-pdp-hook">{freshCopy.hook}</p> : null}
-            {freshCopy?.desc || product.shortDescription ? (
-              <p className="shop-pdp-buybox-sub">{freshCopy?.desc || product.shortDescription}</p>
-            ) : null}
+            {product.shortDescription ? <p className="shop-pdp-buybox-sub">{product.shortDescription}</p> : null}
 
             {product.showDeliveryNotice !== false ? (
               <ShopDeliveryNotice message={shopSettings?.deliveryNoticeMessage} />
@@ -559,8 +566,14 @@ export default function ShopProductLanding() {
               </button>
             ) : null}
 
-            {freshCopy ? (
-              <MealProductPitch slug={slug} productName={freshCopy.displayName} heroImage={gallery[0]} />
+            {freshCopy && storyBefore.length ? (
+              <div id="meal-section-pitch" className="meal-pitch meal-pitch--story">
+                <ShopContentBlocks
+                  sections={storyBefore}
+                  baseUrl={BASE_URL}
+                  fallbackImages={[LOCAL_FRESH_PHOTOS[freshKey], ...(LOCAL_FRESH_EXTRAS[freshKey] || [])]}
+                />
+              </div>
             ) : null}
 
             {!hasQuantity ? (
@@ -623,14 +636,15 @@ export default function ShopProductLanding() {
       </div>
 
       {freshCopy ? (
-        <MealProductPitchMore
-          slug={slug}
-          settings={shopSettings}
-          whatsappDisplay={formatWhatsAppDisplay(shopTrackingWhatsAppDigits(product, customer.city))}
-          onOrderClick={() =>
-            document.getElementById('shop-section-order')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          }
-        />
+        storyAfter.length ? (
+          <div id="shop-section-story" className="shop-pdp-story-wrap">
+            <ShopContentBlocks
+              sections={storyAfter}
+              baseUrl={BASE_URL}
+              fallbackImages={[LOCAL_FRESH_EXTRAS[freshKey]?.[0]]}
+            />
+          </div>
+        ) : null
       ) : product.copySections?.length ? (
         <div id="shop-section-story" className="shop-pdp-story-wrap">
           <ShopContentBlocks sections={product.copySections} baseUrl={BASE_URL} />

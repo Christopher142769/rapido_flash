@@ -3,12 +3,6 @@ import { getRepasProductCopy } from './repasProductCopy';
 import { fmtXof } from './repasRefonteConstants';
 import { mealDeliveryFeeForCity } from '../../utils/mealShopSettings';
 
-const FRESH_STEPS = [
-  { n: '1', title: 'Vous choisissez le poids', text: 'En kilos, avec l’option nettoyage si vous le souhaitez.' },
-  { n: '2', title: 'On prépare votre commande', text: 'Votre poisson est sélectionné et préparé pour la livraison.' },
-  { n: '3', title: 'Vous payez à la livraison', text: 'Livré chez vous à Cotonou ou à Calavi : vous réglez à la réception, rien à payer en ligne.' },
-];
-
 const STEPS = [
   { n: '1', title: 'Vous choisissez', text: 'Votre plat, votre taille, votre accompagnement, en quelques touches.' },
   { n: '2', title: 'King Fish cuisine', text: 'Votre plat est préparé en cuisine, puis confié à un livreur Rapido.' },
@@ -66,19 +60,13 @@ export default function MealProductPitch({ slug, productName, heroImage }) {
 export function MealProductPitchMore({ slug, settings, whatsappDisplay, onOrderClick }) {
   const copy = getRepasProductCopy(slug);
   if (!copy) return null;
-  const fresh = copy.variant === 'fresh';
 
   const faq = [
     copy.faq,
-    fresh
-      ? {
-          q: 'Quand serai-je livré ?',
-          a: 'Vous commandez aujourd’hui, la livraison est prévue le lendemain. La date exacte est indiquée sur la fiche avant de commander.',
-        }
-      : {
-          q: 'En combien de temps suis-je livré ?',
-          a: 'Nous livrons à Cotonou et à Calavi, de 09h à minuit. Le délai dépend de la distance et de l’affluence ; vous pouvez suivre votre commande sur WhatsApp.',
-        },
+    {
+      q: 'En combien de temps suis-je livré ?',
+      a: 'Nous livrons à Cotonou et à Calavi, de 09h à minuit. Le délai dépend de la distance et de l’affluence ; vous pouvez suivre votre commande sur WhatsApp.',
+    },
     {
       q: 'Comment payer ?',
       a: 'À la livraison, en espèces ou en Mobile Money. Vous ne payez rien en ligne : vous réglez quand votre commande arrive.',
@@ -90,28 +78,22 @@ export function MealProductPitchMore({ slug, settings, whatsappDisplay, onOrderC
       )} F à Calavi. Le total exact s’affiche avant de confirmer.`,
     },
     {
-      q: fresh ? 'Comment suivre ma commande ?' : 'Puis-je demander une cuisson ou une préférence ?',
-      a: fresh
-        ? `Après la commande, le bouton « Suivre ma commande » ouvre WhatsApp vers l’équipe${
-            whatsappDisplay ? ` (${whatsappDisplay})` : ''
-          }.`
-        : 'Oui : écrivez-la dans « Spécifications du plat » (bien cuit, sans oignon, peu épicé…).',
+      q: 'Puis-je demander une cuisson ou une préférence ?',
+      a: 'Oui : écrivez-la dans « Spécifications du plat » (bien cuit, sans oignon, peu épicé…).',
     },
-    fresh
-      ? null
-      : {
-          q: 'Comment suivre ma commande ?',
-          a: `Après la commande, le bouton « Suivre ma commande » ouvre WhatsApp vers l’équipe${
-            whatsappDisplay ? ` (${whatsappDisplay})` : ''
-          }.`,
-        },
+    {
+      q: 'Comment suivre ma commande ?',
+      a: `Après la commande, le bouton « Suivre ma commande » ouvre WhatsApp vers l’équipe${
+        whatsappDisplay ? ` (${whatsappDisplay})` : ''
+      }.`,
+    },
   ].filter((f) => f && f.q && f.a);
 
   return (
     <section className="meal-pitch meal-pitch--more" aria-label="Comment ça marche et questions fréquentes">
       <h3 className="meal-pitch-sub">Comment ça marche</h3>
       <ol className="meal-pitch-steps">
-        {(fresh ? FRESH_STEPS : STEPS).map((s) => (
+        {STEPS.map((s) => (
           <li key={s.n}>
             <span className="meal-pitch-step-n" aria-hidden="true">
               {s.n}
@@ -137,11 +119,7 @@ export function MealProductPitchMore({ slug, settings, whatsappDisplay, onOrderC
       <button type="button" className="meal-pitch-cta" onClick={onOrderClick}>
         Commander maintenant
       </button>
-      <p className="meal-pitch-note">
-        {fresh
-          ? 'Paiement à la livraison · Cotonou & Calavi'
-          : 'Paiement à la livraison · Cotonou & Calavi · de 09h à minuit'}
-      </p>
+      <p className="meal-pitch-note">Paiement à la livraison · Cotonou &amp; Calavi · de 09h à minuit</p>
     </section>
   );
 }
