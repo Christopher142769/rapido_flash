@@ -33,8 +33,8 @@ export const REPAS_PRODUCT_COPY = {
 
   chawarma: {
     hook: 'Le chawarma au poisson fumé : croustillant, crémeux, irrésistible.',
-    desc: 'Un pain grillé bien chaud, du poisson fumé, des légumes croquants et une sauce crémeuse qui coule à chaque bouchée. Ça se mange à la main, sans rien préparer.',
-    images: [{ src: '/images/repas/refonte/shawarma.jpg', caption: 'Pain grillé, poisson fumé, sauce crémeuse.' }, { src: '/images/repas/products/shawarma-1.jpg', caption: 'Coupé en deux : tout est dans le pain.' }],
+    desc: 'Un pain grillé bien chaud, du poisson fumé, des légumes croquants et une sauce crémeuse qui coule à chaque bouchée.',
+    images: [{ src: '/images/repas/refonte/chawarma-copy-1.webp', caption: 'Le pain grillé, doré à souhait.' }, { src: '/images/repas/refonte/chawarma-copy-2.jpg', caption: 'Coupé en deux : poisson fumé, légumes et sauce crémeuse.' }],
     pitch:
       'Vous mordez dans le pain grillé, croustillant dehors, et la sauce crémeuse vous rejoint : poisson fumé, tomate, feuilles bien vertes, tout se mélange en bouche. Un chawarma qui ne ressemble pas aux autres, parce que le poisson fumé lui donne un goût qu’on n’oublie pas.',
     benefits: [

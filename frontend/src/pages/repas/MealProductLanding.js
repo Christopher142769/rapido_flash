@@ -456,6 +456,10 @@ export default function MealProductLanding() {
                     <span className="shop-pdp-buybox-delivery-info shop-pdp-buybox-delivery-info--free">
                       Livraison gratuite
                     </span>
+                  ) : deliveryFee > 0 ? (
+                    <span className="shop-pdp-buybox-delivery-info">
+                      Frais de livraison : {formatPriceXof(deliveryFee)}
+                    </span>
                   ) : null}
                 </>
               ) : (
@@ -491,6 +495,8 @@ export default function MealProductLanding() {
               ) : null}
               {promoState?.freeDelivery ? (
                 <span className="shop-pdp-tag shop-pdp-tag--ship">Livraison gratuite</span>
+              ) : deliveryFee > 0 ? (
+                <span className="shop-pdp-tag shop-pdp-tag--ship">Livraison {formatPriceXof(deliveryFee)}</span>
               ) : null}
             </div>
 
@@ -680,7 +686,7 @@ export default function MealProductLanding() {
       <div className="shop-pdp-sticky">
         <div className="shop-pdp-sticky-inner">
           <span className="shop-pdp-sticky-price">
-            {hasQuantity ? formatPriceXof(subtotalPrice) : formatPriceXof(unitPrice)}
+            {hasQuantity ? formatPriceXof(grandTotal) : formatPriceXof(unitPrice)}
           </span>
           {canOrder ? (
             <button
