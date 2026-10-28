@@ -9,12 +9,12 @@ et le frontend React (`frontend/build`). Render n’est plus nécessaire.
 |---|---|
 | Dépôt / branche | `Christopher142769/rapido_flash`, `main` |
 | Framework | Express / Other |
-| Version Node | 20.x (ou 22.x) |
+| Version Node | 22 |
 | Commande d’installation | `npm install` |
-| Commande de build | `npm run build` |
-| Fichier d’entrée | `server.js` |
+| Script de build (`build_script`) | `build` (= `npm run build`) |
+| Fichier d’entrée | `backend/server.js` (ou `server.js`) |
 
-`npm run build` (racine) installe le frontend avec ses devDependencies (`react-scripts`) et le construit
+`npm run build` (racine, `scripts/buildFrontend.js`) charge le `.env` écrit par Hostinger, installe le frontend avec ses devDependencies (`react-scripts`) et le construit
 avec `REACT_APP_API_URL=/api` : le site appelle l’API **sur sa propre origine**, quel que soit le domaine
 (rapido.bj, rapido.online, sous-domaine Hostinger).
 
@@ -22,14 +22,9 @@ avec `REACT_APP_API_URL=/api` : le site appelle l’API **sur sa propre origine*
 
 Runtime (déjà en place pour l’API) : `MONGODB_URI`, `JWT_SECRET`, `NODE_ENV=production`, SMTP, FCM, etc.
 
-À **ajouter** (lues au build par React — refaire un build après modification) :
-
-- `REACT_APP_GOOGLE_CLIENT_ID` (connexion Google)
-- `REACT_APP_FEDAPAY_PUBLIC_KEY`
-- `REACT_APP_SITE_URL=https://www.rapido.bj`
-- `REACT_APP_SITE_URL_ALT=https://www.rapido.online`
-- optionnels : `REACT_APP_RAPIDO_WHATSAPP`, `REACT_APP_SHOP_WHATSAPP`, `REACT_APP_SUPPORT_EMAIL`,
-  `REACT_APP_GOOGLE_CLIENT_ID_CAPACITOR`, `REACT_APP_FIREBASE_VAPID_KEY`
+Rien à ajouter : `REACT_APP_GOOGLE_CLIENT_ID` reprend `GOOGLE_CLIENT_ID` (même client OAuth Web),
+la clé publique FedaPay a une valeur par défaut dans `Checkout.js`, les domaines SEO ont leurs défauts.
+On peut surcharger au besoin avec `REACT_APP_*` (relancer un build ensuite).
 
 Ne pas définir `REACT_APP_API_URL` / `REACT_APP_BASE_URL` sur Hostinger : le script de build les force.
 

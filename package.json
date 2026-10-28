@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node backend/server.js",
-    "build": "npm install --include=dev --prefix frontend && CI=false GENERATE_SOURCEMAP=false REACT_APP_API_URL=/api REACT_APP_BASE_URL= PUBLIC_URL=/ npm run build --prefix frontend",
+    "build": "node scripts/buildFrontend.js",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "nodemon backend/server.js",
     "client": "cd frontend && npm start",
