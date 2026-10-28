@@ -5,6 +5,7 @@
  * (descriptions, tailles, accompagnements). Aucun prix en dur (les promos changent), aucun avis,
  * aucune garantie ni ingrédient inventés. Les textes du dashboard (copySections) priment s'ils existent.
  *
+ * images    : photos supplémentaires { src, caption } (à défaut, la photo principale du plat est utilisée)
  * hook      : accroche affichée sous le titre
  * pitch     : description sensorielle (2-3 phrases)
  * benefits  : 3 bénéfices { title, text }
@@ -13,6 +14,7 @@
  */
 export const REPAS_PRODUCT_COPY = {
   'tilapia-braise': {
+    images: [{ src: '/images/repas/products/tilapia-braise-1.jpg', caption: 'Tilapia entier braisé, légumes et concombre.' }, { src: '/images/repas/refonte/tilapia-frite.jpg', caption: 'La peau grillée, de près.' }],
     hook: 'Le tilapia braisé entier, livré encore fumant.',
     pitch:
       'Un tilapia entier, la peau grillée par la braise, couché sur un lit de carottes, de haricots verts et de rondelles de concombre. Le repas du dimanche, sans allumer le feu ni faire la queue au maquis.',
@@ -29,6 +31,7 @@ export const REPAS_PRODUCT_COPY = {
   },
 
   chawarma: {
+    images: [{ src: '/images/repas/refonte/shawarma.jpg', caption: 'Pain grillé, poisson fumé, sauce crémeuse.' }, { src: '/images/repas/products/shawarma-1.jpg', caption: 'Coupé en deux : tout est dans le pain.' }],
     hook: 'Le wrap qui se mange à deux mains.',
     pitch:
       'Un pain grillé bien roulé, garni de poisson fumé, de tomate et de feuilles vertes, le tout nappé d’une sauce crémeuse qui déborde à la première bouchée.',
@@ -61,6 +64,7 @@ export const REPAS_PRODUCT_COPY = {
   },
 
   'brochette-de-poisson': {
+    images: [{ src: '/images/repas/refonte/brochette-2.jpg', caption: 'La croûte dorée et épicée des brochettes.' }, { src: '/images/repas/products/brochette-3.jpg', caption: 'Grillées sur leur pique.' }],
     hook: 'Marinées, grillées, dorées : on s’arrête rarement à une.',
     pitch:
       'Des morceaux de poisson marinés puis grillés au feu, à la croûte dorée et épicée, enfilés sur leur pique. Le parfum du grill, livré chez vous.',
@@ -125,6 +129,7 @@ export const REPAS_PRODUCT_COPY = {
   },
 
   'machoiron-braise': {
+    images: [{ src: '/images/repas/refonte/machoiron-braise-food.jpg', caption: 'Mâchoiron braisé, riz et sauce verte.' }],
     hook: 'Mâchoiron braisé entier, avec ses légumes.',
     pitch:
       'Un mâchoiron entier braisé à la peau grillée, servi avec ses légumes et une sauce verte pimentée à côté. Du poisson comme on le cuisine pour le plaisir.',
@@ -173,6 +178,7 @@ export const REPAS_PRODUCT_COPY = {
   },
 
   'rillettes-de-poissons': {
+    images: [{ src: '/images/repas/refonte/rillettes.jpg', caption: 'Le pot de rillettes King Fish.' }],
     hook: 'Le pot de rillettes de poisson King Fish, à tartiner et à partager.',
     pitch:
       'Un pot de rillettes de poisson King Fish, « saveur authentique » comme l’annonce son étiquette. À étaler sur du pain, à poser sur la table de l’apéro, ou à garder pour les petites faims.',
@@ -189,6 +195,7 @@ export const REPAS_PRODUCT_COPY = {
   },
 
   'salade-king-fish': {
+    images: [{ src: '/images/repas/products/salade-4.jpg', caption: 'Poisson fumé, œufs, concombre et oignon.' }, { src: '/images/repas/products/salade-1.jpg', caption: 'Servie avec sa sauce.' }],
     hook: 'La salade qui rassasie vraiment.',
     pitch:
       'Une salade fraîche et croquante : poisson fumé effiloché, œufs durs, tomate, carotte, concombre et oignon, relevée d’une sauce maison.',

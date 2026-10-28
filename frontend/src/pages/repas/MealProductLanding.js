@@ -36,7 +36,7 @@ import {
   refonteGalleryUrls,
 } from './repasRefonteConstants';
 import { adaptProducts, patchMealProduct } from './repasRefonteAdapter';
-import MealProductPitch from './MealProductPitch';
+import MealProductPitch, { MealProductPitchMore } from './MealProductPitch';
 import { getRepasProductCopy } from './repasProductCopy';
 import { buildSideLines, defaultSideKey, productSideOptions, supplementOptionsFor } from './mealSides';
 import {
@@ -503,20 +503,13 @@ export default function MealProductLanding() {
               ) : null}
             </div>
 
-            {otherDishes.length ? (
-              <section className="meal-pdp-also" aria-label="Autres plats du menu">
-                <h2 className="meal-pdp-also-title">Le menu</h2>
-                <div className="meal-pdp-also-row">
-                  {otherDishes.map((dish) => (
-                    <Link key={dish.id} to={mealProductPath(dish.id)} className="meal-pdp-also-card">
-                      <img src={dish.cardImg} alt="" />
-                      <strong>{dish.name}</strong>
-                      <span>{fmtXof(dish.unit)} F</span>
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            ) : null}
+            {product.copySections?.length ? null : (
+              <MealProductPitch
+                slug={product.slug}
+                productName={productDisplayName}
+                heroImage={gallery[0]}
+              />
+            )}
 
             {!hasQuantity ? (
               <p className="shop-pdp-buybox-qty-hint">Sélectionnez une quantité avant de commander.</p>
@@ -568,20 +561,6 @@ export default function MealProductLanding() {
               </div>
             ) : null}
 
-            {product.allowSpecifications !== false ? (
-              <div className="meal-pdp-spec meal-spec-field">
-                <label htmlFor="meal-pdp-spec-input">Spécifications du plat (facultatif)</label>
-                <textarea
-                  id="meal-pdp-spec-input"
-                  value={specifications}
-                  maxLength={500}
-                  placeholder="Ex : bien cuit, sans oignon, peu épicé…"
-                  onChange={(e) => setSpecifications(e.target.value)}
-                />
-                <p className="meal-spec-hint">Précisez vos préférences pour ce plat.</p>
-              </div>
-            ) : null}
-
             <div
               id="shop-order-fields"
               onFocusCapture={() => {
@@ -602,6 +581,20 @@ export default function MealProductLanding() {
               />
             </div>
 
+            {product.allowSpecifications !== false ? (
+              <div className="meal-pdp-spec meal-spec-field">
+                <label htmlFor="meal-pdp-spec-input">Spécifications du plat (facultatif)</label>
+                <textarea
+                  id="meal-pdp-spec-input"
+                  value={specifications}
+                  maxLength={500}
+                  placeholder="Ex : bien cuit, sans oignon, peu épicé…"
+                  onChange={(e) => setSpecifications(e.target.value)}
+                />
+                <p className="meal-spec-hint">Précisez vos préférences pour ce plat.</p>
+              </div>
+            ) : null}
+
             {canOrder ? (
               <button type="submit" className="shop-pdp-cta shop-pdp-cta--primary" disabled={submitting}>
                 {submitting ? 'Enregistrement…' : 'Commander maintenant'}
@@ -614,6 +607,21 @@ export default function MealProductLanding() {
             {canOrder ? (
               <p className="meal-pdp-microcopy">Paiement à la livraison · livré chaud en {MEAL_DELIVERY_ETA}</p>
             ) : null}
+
+            {otherDishes.length ? (
+              <section className="meal-pdp-also" aria-label="Autres plats du menu">
+                <h2 className="meal-pdp-also-title">Le menu</h2>
+                <div className="meal-pdp-also-row">
+                  {otherDishes.map((dish) => (
+                    <Link key={dish.id} to={mealProductPath(dish.id)} className="meal-pdp-also-card">
+                      <img src={dish.cardImg} alt="" />
+                      <strong>{dish.name}</strong>
+                      <span>{fmtXof(dish.unit)} F</span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            ) : null}
           </form>
         </div>
       </div>
@@ -623,7 +631,7 @@ export default function MealProductLanding() {
           <ShopContentBlocks sections={product.copySections} baseUrl={BASE_URL} />
         </div>
       ) : (
-        <MealProductPitch
+        <MealProductPitchMore
           slug={product.slug}
           settings={shopSettings}
           whatsappDisplay={mealShopContact(shopSettings).display}

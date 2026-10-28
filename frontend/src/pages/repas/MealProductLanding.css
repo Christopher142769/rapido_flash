@@ -394,3 +394,22 @@
   font-size: 0.8rem;
   color: #6a5344;
 }
+
+.meal-pitch--top {
+  max-width: none;
+  margin: 18px 0 22px;
+  padding: 18px 0 0;
+}
+.meal-pitch--top .meal-pitch-title { font-size: 1.25rem; }
+.meal-pitch--top .meal-pitch-lead { font-size: 0.95rem; margin-bottom: 14px; }
+.meal-pitch--more { padding-top: 28px; }
+.meal-pitch-figure { margin: 0 0 14px; }
+.meal-pitch-figure img {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+  border-radius: 16px;
+  background: #f6f1ea;
+}
+.meal-pitch-figure figcaption { margin-top: 6px; font-size: 0.8rem; color: #6a5344; text-align: center; }
