@@ -1,0 +1,98 @@
+import React from 'react';
+import { getRepasProductCopy } from './repasProductCopy';
+import { fmtXof } from './repasRefonteConstants';
+import { MEAL_DELIVERY_ETA } from '../../utils/mealDeliveryEta';
+import { mealDeliveryFeeForCity } from '../../utils/mealShopSettings';
+
+const STEPS = [
+  { n: '1', title: 'Vous choisissez', text: 'Votre plat, votre taille, votre accompagnement, en quelques touches.' },
+  { n: '2', title: 'King Fish cuisine', text: 'Votre plat est préparé en cuisine, puis confié à un livreur Rapido.' },
+  { n: '3', title: 'Vous payez à la livraison', text: `Livré chaud en ${MEAL_DELIVERY_ETA} : espèces ou Mobile Money, rien à payer en ligne.` },
+];
+
+/** Section de vente de la fiche plat : accroche, bénéfices, comment ça marche, FAQ, dernier appel à l'action. */
+export default function MealProductPitch({ slug, settings, whatsappDisplay, onOrderClick }) {
+  const copy = getRepasProductCopy(slug);
+  if (!copy) return null;
+
+  const faq = [
+    copy.faq,
+    {
+      q: 'En combien de temps suis-je livré ?',
+      a: `En général ${MEAL_DELIVERY_ETA}, de 09h à minuit, à Cotonou et à Calavi.`,
+    },
+    {
+      q: 'Comment payer ?',
+      a: 'À la livraison, en espèces ou en Mobile Money. Vous ne payez rien en ligne : vous réglez quand le plat arrive.',
+    },
+    {
+      q: 'Combien coûte la livraison ?',
+      a: `${fmtXof(mealDeliveryFeeForCity(settings, 'Cotonou'))} F à Cotonou et ${fmtXof(
+        mealDeliveryFeeForCity(settings, 'Calavi')
+      )} F à Calavi. Le total exact s’affiche avant de confirmer.`,
+    },
+    {
+      q: 'Puis-je demander une cuisson ou une préférence ?',
+      a: 'Oui : écrivez-la dans « Spécifications du plat » (bien cuit, sans oignon, peu épicé…).',
+    },
+    {
+      q: 'Comment suivre ma commande ?',
+      a: `Après la commande, le bouton « Suivre ma commande » ouvre WhatsApp vers l’équipe${
+        whatsappDisplay ? ` (${whatsappDisplay})` : ''
+      }.`,
+    },
+  ].filter((f) => f && f.q && f.a);
+
+  return (
+    <section id="meal-section-pitch" className="meal-pitch" aria-label="Pourquoi commander ce plat">
+      <div className="meal-pitch-inner">
+        <h2 className="meal-pitch-title">Pourquoi vous allez l’aimer</h2>
+        <p className="meal-pitch-lead">{copy.pitch}</p>
+
+        <ul className="meal-pitch-benefits">
+          {copy.benefits.map((b) => (
+            <li key={b.title}>
+              <strong>{b.title}</strong>
+              <span>{b.text}</span>
+            </li>
+          ))}
+        </ul>
+        {copy.idealFor ? (
+          <p className="meal-pitch-ideal">
+            <b>Idéal pour :</b> {copy.idealFor}
+          </p>
+        ) : null}
+
+        <h3 className="meal-pitch-sub">Comment ça marche</h3>
+        <ol className="meal-pitch-steps">
+          {STEPS.map((s) => (
+            <li key={s.n}>
+              <span className="meal-pitch-step-n" aria-hidden="true">
+                {s.n}
+              </span>
+              <div>
+                <strong>{s.title}</strong>
+                <span>{s.text}</span>
+              </div>
+            </li>
+          ))}
+        </ol>
+
+        <h3 className="meal-pitch-sub">Questions fréquentes</h3>
+        <div className="meal-pitch-faq">
+          {faq.map((f) => (
+            <details key={f.q}>
+              <summary>{f.q}</summary>
+              <p>{f.a}</p>
+            </details>
+          ))}
+        </div>
+
+        <button type="button" className="meal-pitch-cta" onClick={onOrderClick}>
+          Je commande — livré chaud en {MEAL_DELIVERY_ETA}
+        </button>
+        <p className="meal-pitch-note">Paiement à la livraison · Cotonou &amp; Calavi · de 09h à minuit</p>
+      </div>
+    </section>
+  );
+}

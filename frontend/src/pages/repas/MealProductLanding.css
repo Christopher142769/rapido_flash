@@ -276,3 +276,121 @@
   font-weight: 800;
   color: var(--rf-amber, #c76d2e);
 }
+
+/* ——— Section de vente de la fiche plat ——— */
+.meal-pitch {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 36px var(--shop-pdp-gutter-wide, 20px) 48px;
+  border-top: 1px solid var(--rf-border);
+}
+.meal-pitch-kicker {
+  margin: 0 0 6px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rf-amber);
+}
+.meal-pitch-title {
+  margin: 0 0 12px;
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--rf-text-dark);
+}
+.meal-pitch-lead {
+  margin: 0 0 22px;
+  font-size: 1.02rem;
+  line-height: 1.6;
+  color: #4a382c;
+}
+.meal-pitch-benefits {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.meal-pitch-benefits li {
+  display: grid;
+  gap: 2px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #fbf5ed;
+  border: 1px solid #f0e4d4;
+}
+.meal-pitch-benefits strong { font-size: 0.98rem; color: var(--rf-text-dark); }
+.meal-pitch-benefits span { font-size: 0.9rem; line-height: 1.5; color: #6a5344; }
+.meal-pitch-ideal { margin: 0 0 26px; font-size: 0.92rem; line-height: 1.5; color: #4a382c; }
+.meal-pitch-sub {
+  margin: 28px 0 12px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--rf-text-dark);
+}
+.meal-pitch-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.meal-pitch-steps li { display: flex; gap: 12px; align-items: flex-start; }
+.meal-pitch-steps div { display: grid; gap: 1px; }
+.meal-pitch-steps strong { font-size: 0.95rem; }
+.meal-pitch-steps span { font-size: 0.88rem; line-height: 1.45; color: #6a5344; }
+.meal-pitch-step-n {
+  flex: none;
+  display: inline-grid !important;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--rf-amber);
+  color: #fff !important;
+  font-weight: 800;
+  font-size: 0.85rem !important;
+}
+.meal-pitch-faq { display: grid; gap: 8px; }
+.meal-pitch-faq details {
+  border: 1px solid #eadfd4;
+  border-radius: 12px;
+  padding: 0 14px;
+  background: #fff;
+}
+.meal-pitch-faq summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 13px 0;
+  font-weight: 700;
+  font-size: 0.93rem;
+}
+.meal-pitch-faq summary::-webkit-details-marker { display: none; }
+.meal-pitch-faq summary::after { content: '+'; float: right; font-weight: 800; color: var(--rf-amber); }
+.meal-pitch-faq details[open] summary::after { content: '−'; }
+.meal-pitch-faq p { margin: 0 0 14px; font-size: 0.9rem; line-height: 1.55; color: #6a5344; }
+.meal-pitch-cta {
+  display: block;
+  width: 100%;
+  margin-top: 26px;
+  padding: 16px 20px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--rf-amber);
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(199, 109, 46, 0.32);
+}
+.meal-pitch-note { margin: 10px 0 0; text-align: center; font-size: 0.8rem; color: #6a5344; }
+.meal-pdp-hook {
+  margin: 0 0 10px;
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--rf-text-dark);
+}
+.meal-pdp-microcopy {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #6a5344;
+}

@@ -6,7 +6,7 @@ import MealShopChrome from '../../components/shop/MealShopChrome';
 import ShopProductGallery from '../../components/shop/ShopProductGallery';
 import ShopOrderForm from '../../components/shop/ShopOrderForm';
 import ShopDeliveryNotice, { MealDeliveryEtaNotice } from '../../components/shop/ShopDeliveryNotice';
-import { loadMealCity, saveMealCity } from '../../utils/mealDeliveryEta';
+import { MEAL_DELIVERY_ETA, loadMealCity, saveMealCity } from '../../utils/mealDeliveryEta';
 import { getTodayDateKey } from '../../utils/shopDeliveryDate';
 import { mealDeliveryFeeForCity, mealShopContact } from '../../utils/mealShopSettings';
 import ShopQuantityPicker from '../../components/shop/ShopQuantityPicker';
@@ -36,6 +36,8 @@ import {
   refonteGalleryUrls,
 } from './repasRefonteConstants';
 import { adaptProducts, patchMealProduct } from './repasRefonteAdapter';
+import MealProductPitch from './MealProductPitch';
+import { getRepasProductCopy } from './repasProductCopy';
 import { buildSideLines, defaultSideKey, productSideOptions, supplementOptionsFor } from './mealSides';
 import {
   trackCtaClick,
@@ -257,10 +259,14 @@ export default function MealProductLanding() {
     () => [
       { id: 'shop-section-product', label: 'Plat' },
       { id: 'shop-section-order', label: 'Commander' },
-      ...(product?.copySections?.length ? [{ id: 'meal-section-content', label: 'Détails' }] : []),
+      ...(product?.copySections?.length
+        ? [{ id: 'meal-section-content', label: 'Détails' }]
+        : getRepasProductCopy(product?.slug)
+          ? [{ id: 'meal-section-pitch', label: 'Détails' }]
+          : []),
       { id: 'shop-section-trust', label: 'Avantages' },
     ],
-    [product?.copySections?.length]
+    [product?.copySections?.length, product?.slug]
   );
 
   const handleFieldChange = (field, value) => {
@@ -418,6 +424,9 @@ export default function MealProductLanding() {
           <form id={CHECKOUT_FORM_ID} className="shop-pdp-checkout" onSubmit={requestOrder} noValidate>
             <p className="shop-pdp-buybox-brand">Rapido Repas</p>
             <h1 className="shop-pdp-buybox-title">{productDisplayName}</h1>
+            {getRepasProductCopy(product.slug)?.hook ? (
+              <p className="meal-pdp-hook">{getRepasProductCopy(product.slug).hook}</p>
+            ) : null}
             {displayProductDesc(product.slug, product.shortDescription) ? (
               <p className="shop-pdp-buybox-sub">
                 {displayProductDesc(product.slug, product.shortDescription)}
@@ -602,6 +611,9 @@ export default function MealProductLanding() {
                 {product?.available === false ? 'Plat indisponible' : 'Commande bientôt disponible'}
               </button>
             )}
+            {canOrder ? (
+              <p className="meal-pdp-microcopy">Paiement à la livraison · livré chaud en {MEAL_DELIVERY_ETA}</p>
+            ) : null}
           </form>
         </div>
       </div>
@@ -610,7 +622,16 @@ export default function MealProductLanding() {
         <div id="meal-section-content" className="shop-pdp-story-wrap">
           <ShopContentBlocks sections={product.copySections} baseUrl={BASE_URL} />
         </div>
-      ) : null}
+      ) : (
+        <MealProductPitch
+          slug={product.slug}
+          settings={shopSettings}
+          whatsappDisplay={mealShopContact(shopSettings).display}
+          onOrderClick={() =>
+            document.getElementById('shop-section-order')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }
+        />
+      )}
 
       <div id="shop-section-trust">
         <ShopTrustCards whatsappNumber={mealShopContact(shopSettings).digits} />
