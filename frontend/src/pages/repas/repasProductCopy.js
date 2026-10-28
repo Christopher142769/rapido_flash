@@ -7,6 +7,7 @@
  *
  * images    : photos supplémentaires { src, caption } (à défaut, la photo principale du plat est utilisée)
  * hook      : accroche affichée sous le titre
+ * desc      : (optionnel) description sous l'accroche, prioritaire sur celle du dashboard
  * pitch     : description sensorielle (2-3 phrases)
  * benefits  : 3 bénéfices { title, text }
  * idealFor  : moment / occasion
@@ -31,14 +32,15 @@ export const REPAS_PRODUCT_COPY = {
   },
 
   chawarma: {
+    hook: 'Le chawarma au poisson fumé : croustillant, crémeux, irrésistible.',
+    desc: 'Un pain grillé bien chaud, du poisson fumé, des légumes croquants et une sauce crémeuse qui coule à chaque bouchée. Ça se mange à la main, sans rien préparer.',
     images: [{ src: '/images/repas/refonte/shawarma.jpg', caption: 'Pain grillé, poisson fumé, sauce crémeuse.' }, { src: '/images/repas/products/shawarma-1.jpg', caption: 'Coupé en deux : tout est dans le pain.' }],
-    hook: 'Le wrap qui se mange à deux mains.',
     pitch:
-      'Un pain grillé bien roulé, garni de poisson fumé, de tomate et de feuilles vertes, le tout nappé d’une sauce crémeuse qui déborde à la première bouchée.',
+      'Vous mordez dans le pain grillé, croustillant dehors, et la sauce crémeuse vous rejoint : poisson fumé, tomate, feuilles bien vertes, tout se mélange en bouche. Un chawarma qui ne ressemble pas aux autres, parce que le poisson fumé lui donne un goût qu’on n’oublie pas.',
     benefits: [
-      { title: 'Un repas complet dans la main', text: 'Tout est dans le pain : pas d’assiette, pas de couverts, rien à préparer.' },
-      { title: 'Du poisson fumé, pas le wrap habituel', text: 'Une saveur fumée que vous ne trouvez pas dans un chawarma classique.' },
-      { title: 'Livré chaud', text: 'Le pain grillé et la sauce arrivent comme sortis de la cuisine.' },
+      { title: 'Croustillant dehors, crémeux dedans', text: 'Le pain grillé et la sauce font la différence dès la première bouchée.' },
+      { title: 'Du poisson fumé, pas le chawarma habituel', text: 'Une saveur fumée qu’on ne trouve pas dans un chawarma classique.' },
+      { title: 'Un repas complet, prêt à manger', text: 'Tout est dans le pain : pas d’assiette, pas de couverts, rien à préparer.' },
     ],
     idealFor: 'Pause de midi, soirée devant un match, repas rapide quand on n’a pas le temps de cuisiner.',
     faq: {

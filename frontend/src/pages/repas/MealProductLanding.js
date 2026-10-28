@@ -6,7 +6,7 @@ import MealShopChrome from '../../components/shop/MealShopChrome';
 import ShopProductGallery from '../../components/shop/ShopProductGallery';
 import ShopOrderForm from '../../components/shop/ShopOrderForm';
 import ShopDeliveryNotice, { MealDeliveryEtaNotice } from '../../components/shop/ShopDeliveryNotice';
-import { MEAL_DELIVERY_ETA, loadMealCity, saveMealCity } from '../../utils/mealDeliveryEta';
+import { loadMealCity, saveMealCity } from '../../utils/mealDeliveryEta';
 import { getTodayDateKey } from '../../utils/shopDeliveryDate';
 import { mealDeliveryFeeForCity, mealShopContact } from '../../utils/mealShopSettings';
 import ShopQuantityPicker from '../../components/shop/ShopQuantityPicker';
@@ -427,9 +427,11 @@ export default function MealProductLanding() {
             {getRepasProductCopy(product.slug)?.hook ? (
               <p className="meal-pdp-hook">{getRepasProductCopy(product.slug).hook}</p>
             ) : null}
-            {displayProductDesc(product.slug, product.shortDescription) ? (
+            {(getRepasProductCopy(product.slug)?.desc ||
+              displayProductDesc(product.slug, product.shortDescription)) ? (
               <p className="shop-pdp-buybox-sub">
-                {displayProductDesc(product.slug, product.shortDescription)}
+                {getRepasProductCopy(product.slug)?.desc ||
+                  displayProductDesc(product.slug, product.shortDescription)}
               </p>
             ) : null}
 
@@ -453,15 +455,6 @@ export default function MealProductLanding() {
                   {promoState?.freeDelivery ? (
                     <span className="shop-pdp-buybox-delivery-info shop-pdp-buybox-delivery-info--free">
                       Livraison gratuite
-                    </span>
-                  ) : deliveryFee > 0 ? (
-                    <span className="shop-pdp-buybox-delivery-info">
-                      Frais de livraison : {formatPriceXof(deliveryFee)}
-                    </span>
-                  ) : null}
-                  {(deliveryFee > 0 || accTotal > 0 || promoState?.freeDelivery) && hasQuantity ? (
-                    <span className="shop-pdp-buybox-total-line">
-                      Total : <strong>{formatPriceXof(grandTotal)}</strong>
                     </span>
                   ) : null}
                 </>
@@ -498,10 +491,22 @@ export default function MealProductLanding() {
               ) : null}
               {promoState?.freeDelivery ? (
                 <span className="shop-pdp-tag shop-pdp-tag--ship">Livraison gratuite</span>
-              ) : deliveryFee > 0 ? (
-                <span className="shop-pdp-tag shop-pdp-tag--ship">Livraison {formatPriceXof(deliveryFee)}</span>
               ) : null}
             </div>
+
+            {canOrder ? (
+              <button
+                type="button"
+                className="shop-pdp-cta shop-pdp-cta--primary meal-pdp-cta-top"
+                onClick={() =>
+                  document
+                    .getElementById('meal-quantity-section')
+                    ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                }
+              >
+                Commander maintenant
+              </button>
+            ) : null}
 
             {product.copySections?.length ? null : (
               <MealProductPitch
@@ -605,7 +610,7 @@ export default function MealProductLanding() {
               </button>
             )}
             {canOrder ? (
-              <p className="meal-pdp-microcopy">Paiement à la livraison · livré chaud en {MEAL_DELIVERY_ETA}</p>
+              <p className="meal-pdp-microcopy">Paiement à la livraison · livraison de 09h à minuit</p>
             ) : null}
 
             {otherDishes.length ? (
@@ -675,7 +680,7 @@ export default function MealProductLanding() {
       <div className="shop-pdp-sticky">
         <div className="shop-pdp-sticky-inner">
           <span className="shop-pdp-sticky-price">
-            {hasQuantity ? formatPriceXof(grandTotal) : formatPriceXof(unitPrice)}
+            {hasQuantity ? formatPriceXof(subtotalPrice) : formatPriceXof(unitPrice)}
           </span>
           {canOrder ? (
             <button

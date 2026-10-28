@@ -1037,7 +1037,7 @@ export default function RepasRefontePage({
           <div className="best-head">
             <p className="kicker">Vos envies, livrées</p>
             <h2 className="h2">Nos plats les plus demandés</h2>
-            <p className="lead">Cuisinés par King Fish, livrés chauds en 30 à 45 min — paiement à la livraison.</p>
+            <p className="lead">Cuisinés par King Fish, livrés chauds chez vous — paiement à la livraison.</p>
           </div>
           <div className="filters" role="tablist">
             {REFONTE_CATS.map((c) => (
@@ -1149,7 +1149,7 @@ export default function RepasRefontePage({
           <div>
             <img src={LOGO} alt="Rapido Repas" width={451} height={480} loading="lazy" />
             <p style={{ marginTop: 14, maxWidth: '36ch' }}>
-              Rapido Repas livre chauds, en 30 à 45 min, les plats de poisson cuisinés par King Fish à Cotonou et
+              Rapido Repas livre chauds les plats de poisson cuisinés par King Fish à Cotonou et
               Calavi. Commande en ligne, paiement à la livraison.
             </p>
           </div>

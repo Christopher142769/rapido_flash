@@ -152,7 +152,7 @@ async function ensureKingFishCatalogue() {
       { $set: { extrasEpicerieDone: true } }
     );
   }
-  // Plats cuisinés livrés chauds en 30 à 45 min : le NB « livraison dans les 24 h » n'a plus lieu
+  // Plats cuisinés livrés chauds, sans date : le NB « livraison dans les 24 h » n'a plus lieu
   // d'être. Une seule fois (marqueur), le dashboard peut ensuite le réactiver plat par plat.
   const noticeOff = await MealShopSettings.collection.findOne({ key: 'default', deliveryNoticeOffV1: true });
   if (!noticeOff) {

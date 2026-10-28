@@ -269,7 +269,7 @@ function metaForPath(pathname) {
     return {
       title: 'Rapido Repas · Poisson livré chaud à Cotonou & Calavi',
       description:
-        'Rapido Repas : plats de poisson cuisinés par King Fish (braisés, frits, chawarma, salades), livrés chauds en 30 à 45 min à Cotonou et Calavi. Paiement à la livraison.',
+        'Rapido Repas : plats de poisson cuisinés par King Fish (braisés, frits, chawarma, salades), livrés chauds à Cotonou et Calavi. Paiement à la livraison.',
       robots: isOrderStep ? 'noindex, follow' : 'index, follow',
       siteName: 'Rapido Repas',
     };

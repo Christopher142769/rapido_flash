@@ -7,7 +7,6 @@ import {
 import { displayOptionGroupName } from '../pages/repas/repasRefonteConstants';
 import { mealShopContact } from './mealShopSettings';
 import { formatPriceXof } from './shopPromo';
-import { MEAL_DELIVERY_ETA } from './mealDeliveryEta';
 
 export { emptyCustomerForm, validateCustomerForm };
 
@@ -100,7 +99,7 @@ export function buildMealWhatsAppMessage(order) {
   lines.push('', `*Total à payer :* ${formatPriceXof(order.totalPrice)}`);
   lines.push(
     '',
-    `*Livraison :* ${MEAL_DELIVERY_ETA} (de 09h à minuit)`,
+    '*Livraison :* rapide, de 09h à minuit',
     'Restez joignable à l’adresse indiquée.',
     '',
     '',

@@ -1,13 +1,12 @@
 import React from 'react';
 import { getRepasProductCopy } from './repasProductCopy';
 import { fmtXof } from './repasRefonteConstants';
-import { MEAL_DELIVERY_ETA } from '../../utils/mealDeliveryEta';
 import { mealDeliveryFeeForCity } from '../../utils/mealShopSettings';
 
 const STEPS = [
   { n: '1', title: 'Vous choisissez', text: 'Votre plat, votre taille, votre accompagnement, en quelques touches.' },
   { n: '2', title: 'King Fish cuisine', text: 'Votre plat est préparé en cuisine, puis confié à un livreur Rapido.' },
-  { n: '3', title: 'Vous payez à la livraison', text: `Livré chaud en ${MEAL_DELIVERY_ETA} : espèces ou Mobile Money, rien à payer en ligne.` },
+  { n: '3', title: 'Vous payez à la livraison', text: 'Livré chez vous, de 09h à minuit. Espèces ou Mobile Money, rien à payer en ligne.' },
 ];
 
 function PitchImage({ src, alt, caption }) {
@@ -66,7 +65,7 @@ export function MealProductPitchMore({ slug, settings, whatsappDisplay, onOrderC
     copy.faq,
     {
       q: 'En combien de temps suis-je livré ?',
-      a: `En général ${MEAL_DELIVERY_ETA}, de 09h à minuit, à Cotonou et à Calavi.`,
+      a: 'Nous livrons à Cotonou et à Calavi, de 09h à minuit. Le délai dépend de la distance et de l’affluence ; vous pouvez suivre votre commande sur WhatsApp.',
     },
     {
       q: 'Comment payer ?',
@@ -118,7 +117,7 @@ export function MealProductPitchMore({ slug, settings, whatsappDisplay, onOrderC
       </div>
 
       <button type="button" className="meal-pitch-cta" onClick={onOrderClick}>
-        Je commande — livré chaud en {MEAL_DELIVERY_ETA}
+        Commander maintenant
       </button>
       <p className="meal-pitch-note">Paiement à la livraison · Cotonou &amp; Calavi · de 09h à minuit</p>
     </section>

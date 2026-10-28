@@ -1,5 +1,4 @@
-/** Délai de livraison des plats cuisinés (Shop Repas) — livrés chauds, de 09h à minuit. */
-export const MEAL_DELIVERY_ETA = '30 à 45 min';
+/** Plats cuisinés (Shop Repas) : livraison rapide de 09h à minuit, sans engagement de durée chiffrée. */
 export const MEAL_OPEN_HOUR = 9;
 
 function beninHour(now = new Date()) {
@@ -15,11 +14,11 @@ export function isMealDeliveryOpen(now = new Date()) {
   return beninHour(now) >= MEAL_OPEN_HOUR;
 }
 
-/** Texte court : « Livré en 30 à 45 min » (ou reprise à 9 h la nuit). */
+/** Texte court de livraison (reprise à 9 h la nuit). */
 export function mealDeliveryEtaText(now = new Date()) {
   return isMealDeliveryOpen(now)
-    ? `Livré chaud en ${MEAL_DELIVERY_ETA}`
-    : `Livraisons de 09h à minuit — votre commande part dès 09h, livrée en ${MEAL_DELIVERY_ETA}`;
+    ? 'Livraison rapide à Cotonou et Calavi, de 09h à minuit'
+    : 'Livraisons de 09h à minuit : votre commande part dès 09h';
 }
 
 /** Ville choisie en haut de /repas, réutilisée dans le formulaire. */
