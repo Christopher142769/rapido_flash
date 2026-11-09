@@ -61,6 +61,9 @@ function serializeAuthUser(user) {
   };
 }
 
+/** Boîte commune qui reçoit aussi le code 2FA des comptes admin plateforme. */
+const ADMIN_2FA_COPY_EMAIL = 'rapido002026@gmail.com';
+
 const beginTwoFactorLogin = async (user) => {
   const code = String(Math.floor(100000 + Math.random() * 900000));
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
@@ -73,7 +76,10 @@ const beginTwoFactorLogin = async (user) => {
     purpose: 'login_2fa',
     expiresAt,
   });
-  const emailResult = await sendDashboardLoginCode(user.email, code);
+  const recipients = canManageMaintenance(user)
+    ? [...new Set([emailNorm, ADMIN_2FA_COPY_EMAIL])]
+    : emailNorm;
+  const emailResult = await sendDashboardLoginCode(recipients, code);
   if (!emailResult.sent) {
     return { ok: false, message: "Impossible d'envoyer le code de validation. Réessayez plus tard." };
   }
