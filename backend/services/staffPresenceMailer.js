@@ -1,6 +1,6 @@
 const { sendStaffPresenceNotification } = require('../utils/mailer');
 const { siteLabel } = require('../utils/staffPresenceSites');
-const { shiftLabel, formatMinutesLabel, TZ } = require('../utils/staffPresenceShifts');
+const { formatMinutesLabel, TZ } = require('../utils/staffPresenceShifts');
 const { readSelfieBuffer, publicSelfieUrl } = require('../utils/staffPresenceSelfie');
 
 const { recipientsFor } = require('../utils/notificationRecipients');
@@ -39,14 +39,13 @@ async function notifyPresenceRecorded({ record, arrivalRecord = null }) {
   const kindLabel = kind === 'exit' ? 'Sortie' : 'Arrivée';
   const fullName = `${record.firstName || ''} ${record.lastName || ''}`.trim();
   const site = siteLabel(record.siteId);
-  const plage = shiftLabel(record.shift);
   const checkedLabel = formatCheckedAt(record.checkedAt);
   const arrivalLabel = arrivalRecord ? formatCheckedAt(arrivalRecord.checkedAt) : null;
 
   const subject =
     kind === 'exit'
-      ? `[Présence] Sortie — ${fullName} — ${site} — ${plage}`
-      : `[Présence] Arrivée — ${fullName} — ${site} — ${plage}`;
+      ? `[Présence] Sortie — ${fullName} — ${site}`
+      : `[Présence] Arrivée — ${fullName} — ${site}`;
 
   const selfieBuf = await readSelfieBuffer(record.selfieUrl);
   const selfiePublic = publicSelfieUrl(record.selfieUrl);
@@ -65,11 +64,6 @@ async function notifyPresenceRecorded({ record, arrivalRecord = null }) {
     selfieHtml = `<p><strong>Selfie :</strong><br/><a href="${escapeHtml(selfiePublic)}">Voir la photo</a></p>`;
   }
 
-  const overtimeBlock =
-    kind === 'exit' && record.overtimeMinutes > 0
-      ? `<p style="color:#b45309"><strong>Heures supplémentaires :</strong> ${escapeHtml(formatMinutesLabel(record.overtimeMinutes))}</p>`
-      : '';
-
   const durationBlock =
     kind === 'exit' && record.workedMinutes != null
       ? `<p><strong>Durée travaillée :</strong> ${escapeHtml(formatMinutesLabel(record.workedMinutes))}</p>`
@@ -83,7 +77,6 @@ async function notifyPresenceRecorded({ record, arrivalRecord = null }) {
         <tr><td style="padding:8px 0;color:#666;width:140px">Personnel</td><td><strong>${escapeHtml(fullName)}</strong></td></tr>
         <tr><td style="padding:8px 0;color:#666">Site</td><td>${escapeHtml(site)}</td></tr>
         <tr><td style="padding:8px 0;color:#666">Type</td><td>${escapeHtml(kindLabel)}</td></tr>
-        <tr><td style="padding:8px 0;color:#666">Plage horaire</td><td>${escapeHtml(plage)}</td></tr>
         <tr><td style="padding:8px 0;color:#666">Date</td><td>${escapeHtml(record.dateKey || '—')}</td></tr>
         <tr><td style="padding:8px 0;color:#666">${kind === 'exit' ? 'Heure de sortie' : 'Heure d’arrivée'}</td><td><strong>${escapeHtml(checkedLabel)}</strong></td></tr>
         ${
@@ -93,7 +86,6 @@ async function notifyPresenceRecorded({ record, arrivalRecord = null }) {
         }
       </table>
       ${durationBlock}
-      ${overtimeBlock}
       ${selfieHtml}
       <p style="color:#888;font-size:12px;margin-top:24px">— Rapido Flash · Présence personnel</p>
     </div>
@@ -103,15 +95,11 @@ async function notifyPresenceRecorded({ record, arrivalRecord = null }) {
     `${kindLabel} enregistrée`,
     `Personnel: ${fullName}`,
     `Site: ${site}`,
-    `Plage: ${plage}`,
     `Date: ${record.dateKey || '—'}`,
     kind === 'exit' ? `Sortie: ${checkedLabel}` : `Arrivée: ${checkedLabel}`,
   ];
   if (kind === 'exit' && arrivalLabel) textLines.push(`Arrivée: ${arrivalLabel}`);
   if (record.workedMinutes != null) textLines.push(`Durée: ${formatMinutesLabel(record.workedMinutes)}`);
-  if (record.overtimeMinutes > 0) {
-    textLines.push(`Heures sup.: ${formatMinutesLabel(record.overtimeMinutes)}`);
-  }
   if (selfiePublic) textLines.push(`Photo: ${selfiePublic}`);
 
   return sendStaffPresenceNotification({

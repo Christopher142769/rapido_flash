@@ -6,7 +6,7 @@ export default function RhRegistrePage() {
     <div className="rh-presence-wrap">
       <header className="rh-page-head">
         <h1>Registre</h1>
-        <p>Consultez les arrivées et sorties, filtrez les heures sup. et exportez en PDF ou Excel.</p>
+        <p>Consultez les arrivées et sorties (heure serveur, selfie), la durée de présence et exportez en PDF ou Excel.</p>
       </header>
       <StaffPresenceDashboard variant="rh" section="records" photosPath="/rh/photos" hidePageTitle />
     </div>

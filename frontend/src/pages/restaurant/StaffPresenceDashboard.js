@@ -25,12 +25,6 @@ import StaffPresencePlanning, {
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const MEDIA_BASE = getMediaBaseUrl();
 
-const SHIFT_LABELS = {
-  morning: 'Matin (08h – 16h)',
-  afternoon: 'Soir (16h – 00h)',
-  night: 'Nuit (00h – 08h)',
-};
-
 function absoluteMediaUrl(path) {
   return resolveMediaUrl(path, MEDIA_BASE);
 }
@@ -53,9 +47,9 @@ function formatCheckedAt(d) {
   });
 }
 
-function formatOvertime(mins) {
+function formatWorked(mins) {
+  if (mins == null) return '—';
   const m = Math.max(0, Math.round(Number(mins) || 0));
-  if (!m) return '—';
   const h = Math.floor(m / 60);
   const r = m % 60;
   if (h <= 0) return `${r} min`;
@@ -139,7 +133,6 @@ export default function StaffPresenceDashboard({
   const [records, setRecords] = useState([]);
   const [activeSite, setActiveSite] = useState('gbegamey');
   const [listKind, setListKind] = useState('arrival');
-  const [viewMode, setViewMode] = useState('all');
   const [dateFrom, setDateFrom] = useState(() => todayKey());
   const [dateTo, setDateTo] = useState(() => todayKey());
   const [busy, setBusy] = useState(false);
@@ -206,13 +199,12 @@ export default function StaffPresenceDashboard({
 
   const loadRecords = useCallback(async () => {
     const params = { dateFrom, dateTo, kind: listKind, site: activeSite };
-    if (viewMode === 'overtime') params.overtimeOnly = 'true';
     const res = await axios.get(`${API_URL}/staff-presence/records`, {
       ...authHeaders(),
       params,
     });
     setRecords(Array.isArray(res.data) ? res.data : []);
-  }, [dateFrom, dateTo, listKind, activeSite, viewMode]);
+  }, [dateFrom, dateTo, listKind, activeSite]);
 
   const loadAll = useCallback(async () => {
     try {
@@ -241,7 +233,7 @@ export default function StaffPresenceDashboard({
     loadEmployees().catch(() => {});
     loadRecords().catch(() => {});
     loadSchedule().catch(() => {});
-  }, [activeSite, listKind, viewMode, loadEmployees, loadRecords, loadSchedule]);
+  }, [activeSite, listKind, loadEmployees, loadRecords, loadSchedule]);
 
   const arrivalUrl = useMemo(
     () => buildPublicUrl(siteSettings?.arrivalCode) || siteSettings?.arrivalUrl || '',
@@ -534,7 +526,7 @@ export default function StaffPresenceDashboard({
   );
 
   const deleteRecord = async (record) => {
-    const label = `${formatStaffPerson(record)} · ${record.dateKey} · ${SHIFT_LABELS[record.shift] || record.shift}`;
+    const label = `${formatStaffPerson(record)} · ${record.kind === 'exit' ? 'Sortie' : 'Arrivée'} · ${formatCheckedAt(record.checkedAt)}`;
     if (!window.confirm(`Supprimer cet enregistrement ?\n\n${label}`)) return;
     setBusy(true);
     try {
@@ -570,9 +562,9 @@ export default function StaffPresenceDashboard({
                 : section === 'employees'
                   ? 'Ajoutez, modifiez ou retirez le personnel de chaque site.'
                   : section === 'planning'
-                    ? 'Planning hebdomadaire, plages et règles par site.'
+                    ? 'Planning hebdomadaire indicatif : il ne limite plus le pointage.'
                     : section === 'records'
-                      ? 'Arrivées, sorties, heures supplémentaires et exports.'
+                      ? 'Arrivées, sorties (heure serveur, selfie obligatoire), durées et exports.'
                       : 'QR actifs du jour, personnel, planning et registres par site.'}
             </p>
           ) : null}
@@ -847,13 +839,6 @@ export default function StaffPresenceDashboard({
           >
             Sorties
           </button>
-          <button
-            type="button"
-            className={`staff-presence-tab${viewMode === 'overtime' ? ' is-active' : ''}`}
-            onClick={() => setViewMode(viewMode === 'overtime' ? 'all' : 'overtime')}
-          >
-            Heures sup.
-          </button>
         </div>
 
         <div className="commercial-filters">
@@ -878,7 +863,7 @@ export default function StaffPresenceDashboard({
 
         <p className="commercial-lead" style={{ marginTop: 0 }}>
           <strong>{records.length}</strong>{' '}
-          {viewMode === 'overtime' ? 'sortie(s) avec heures sup.' : `${listLabel}(s)`} ·{' '}
+          {`${listLabel}(s)`} ·{' '}
           {siteLabelOf(activeSite)}
         </p>
 
@@ -889,10 +874,9 @@ export default function StaffPresenceDashboard({
                 <th>#</th>
                 <th>Date</th>
                 <th>Personnel</th>
-                <th>Plage</th>
                 <th>{isExitList ? 'Sortie' : 'Arrivée'}</th>
                 <th>Selfie</th>
-                {isExitList || viewMode === 'overtime' ? <th>Heures sup.</th> : null}
+                {isExitList ? <th>Durée</th> : null}
                 <th />
               </tr>
             </thead>
@@ -902,7 +886,6 @@ export default function StaffPresenceDashboard({
                   <td>{i + 1}</td>
                   <td>{r.dateKey}</td>
                   <td>{formatStaffPerson(r)}</td>
-                  <td>{SHIFT_LABELS[r.shift] || r.shift || '—'}</td>
                   <td>{formatCheckedAt(r.checkedAt)}</td>
                   <td>
                     {r.selfieUrl ? (
@@ -913,11 +896,7 @@ export default function StaffPresenceDashboard({
                       '—'
                     )}
                   </td>
-                  {isExitList || viewMode === 'overtime' ? (
-                    <td className={r.overtimeMinutes > 0 ? 'staff-presence-ot' : ''}>
-                      {formatOvertime(r.overtimeMinutes)}
-                    </td>
-                  ) : null}
+                  {isExitList ? <td>{formatWorked(r.workedMinutes)}</td> : null}
                   <td>
                     <button
                       type="button"

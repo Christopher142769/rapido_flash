@@ -7,7 +7,15 @@ import './StaffPresencePage.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-const STEPS = ['selfie', 'employee', 'shift', 'done'];
+const STEPS = ['selfie', 'employee', 'done'];
+
+function formatWorked(mins) {
+  const m = Math.max(0, Math.round(Number(mins) || 0));
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  if (h <= 0) return `${r} min`;
+  return `${h} h ${String(r).padStart(2, '0')}`;
+}
 
 export default function StaffPresencePage() {
   const { code } = useParams();
@@ -20,15 +28,12 @@ export default function StaffPresencePage() {
   const [kind, setKind] = useState('arrival');
   const [siteLabel, setSiteLabel] = useState('');
   const [employees, setEmployees] = useState([]);
-  const [shifts, setShifts] = useState([]);
-  const [suggestedShift, setSuggestedShift] = useState('morning');
   const [error, setError] = useState('');
   const [step, setStep] = useState('selfie');
   const [selfieBlob, setSelfieBlob] = useState(null);
   const [selfiePreview, setSelfiePreview] = useState('');
   const [cameraOn, setCameraOn] = useState(false);
   const [employeeId, setEmployeeId] = useState('');
-  const [shift, setShift] = useState('morning');
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
 
@@ -57,10 +62,6 @@ export default function StaffPresencePage() {
         setKind(res.data?.kind === 'exit' ? 'exit' : 'arrival');
         setSiteLabel(res.data?.siteLabel || '');
         setEmployees(Array.isArray(res.data?.employees) ? res.data.employees : []);
-        setShifts(Array.isArray(res.data?.shifts) ? res.data.shifts : []);
-        const sug = res.data?.suggestedShift || 'morning';
-        setSuggestedShift(sug);
-        setShift(sug);
       } catch (err) {
         if (!cancelled) {
           setError(err.response?.data?.message || err.message || 'QR invalide');
@@ -135,25 +136,12 @@ export default function StaffPresencePage() {
     setStep('employee');
   };
 
-  const selectedEmployee = employees.find((e) => String(e._id) === String(employeeId));
-  const allowedShifts = useMemo(() => {
-    const raw = selectedEmployee?.assignedShifts;
-    return Array.isArray(raw) ? raw.map(String) : null;
-  }, [selectedEmployee]);
+  const hasSelfie = !!(selfieBlob && selfieBlob.size > 0);
 
-  const pickAllowedShift = (current, assigned, suggested) => {
-    const list = Array.isArray(assigned) ? assigned : null;
-    if (!list) return current || suggested;
-    if (list.includes(current)) return current;
-    if (list.includes(suggested)) return suggested;
-    return list[0] || '';
-  };
-
-  const goToShiftStep = () => {
-    const emp = employees.find((e) => String(e._id) === String(employeeId));
-    setShift(pickAllowedShift(shift, emp?.assignedShifts, suggestedShift));
-    setStep('shift');
-  };
+  // Selfie obligatoire : impossible d'atteindre l'étape suivante sans photo.
+  useEffect(() => {
+    if (!hasSelfie && step === 'employee') setStep('selfie');
+  }, [hasSelfie, step]);
 
   const formatCheckedAt = (d) => {
     try {
@@ -169,9 +157,10 @@ export default function StaffPresencePage() {
   };
 
   const handleSubmit = async () => {
-    if (submitting || !selfieBlob || !employeeId || !shift) return;
-    if (allowedShifts && !allowedShifts.includes(shift)) {
-      setError('Cette plage horaire ne vous est pas attribuée aujourd’hui.');
+    if (submitting || !employeeId) return;
+    if (!hasSelfie) {
+      setError('Le selfie est obligatoire : prenez une photo avant de continuer.');
+      setStep('selfie');
       return;
     }
     setSubmitting(true);
@@ -180,7 +169,6 @@ export default function StaffPresencePage() {
       const fd = new FormData();
       fd.append('selfie', selfieBlob, 'selfie.jpg');
       fd.append('employeeId', employeeId);
-      fd.append('shift', shift);
       const res = await axios.post(
         `${API_URL}/staff-presence/public/${encodeURIComponent(encodedCode)}/check`,
         fd,
@@ -207,9 +195,6 @@ export default function StaffPresencePage() {
   const tag = isExit ? 'Fin de service' : 'Début de service';
   const cta = isExit ? 'Confirmer ma sortie' : 'Confirmer ma présence';
   const successNew = isExit ? 'Sortie enregistrée' : 'Arrivée enregistrée';
-  const successAlready = isExit
-    ? 'Sortie déjà enregistrée pour cette plage'
-    : 'Arrivée déjà enregistrée pour cette plage';
 
   const stepIndex = STEPS.indexOf(step);
 
@@ -237,7 +222,7 @@ export default function StaffPresencePage() {
 
           {!result ? (
             <div className="staff-presence-steps" aria-label="Étapes">
-              {['Selfie', 'Personnel', 'Plage', 'OK'].map((label, i) => (
+              {['Selfie', 'Personnel', 'OK'].map((label, i) => (
                 <span
                   key={label}
                   className={`staff-presence-step${i <= stepIndex ? ' is-active' : ''}${
@@ -261,21 +246,24 @@ export default function StaffPresencePage() {
               <div className="staff-presence-success-icon" aria-hidden>
                 ✓
               </div>
-              <strong>{result.alreadyPresent ? successAlready : successNew}</strong>
+              <strong>{successNew}</strong>
               <p>{formatStaffPerson(result)}</p>
-              {result.shiftLabel ? (
-                <p className="staff-presence-time">Plage : {result.shiftLabel}</p>
+              {isExit && result.arrivalAt ? (
+                <p className="staff-presence-time">Arrivée : {formatCheckedAt(result.arrivalAt)}</p>
               ) : null}
               <p className="staff-presence-time">
-                {isExit ? 'Parti à' : 'Arrivé à'} {formatCheckedAt(result.checkedAt)}
+                {isExit ? 'Sortie' : 'Arrivée'} : {formatCheckedAt(result.checkedAt)}
               </p>
+              {isExit && result.workedMinutes != null ? (
+                <p className="staff-presence-time">Durée : {formatWorked(result.workedMinutes)}</p>
+              ) : null}
             </div>
           ) : null}
 
           {valid && !result && step === 'selfie' ? (
             <div className="staff-presence-selfie">
               <p className="staff-presence-lead">
-                Prenez un selfie avec la caméra avant pour confirmer votre identité.
+                Selfie obligatoire : prenez une photo avec la caméra avant pour confirmer votre identité.
               </p>
               {!selfiePreview ? (
                 <>
@@ -310,6 +298,7 @@ export default function StaffPresencePage() {
                   <button
                     type="button"
                     className="staff-presence-cta"
+                    disabled={!hasSelfie}
                     onClick={() => setStep('employee')}
                   >
                     Continuer
@@ -352,61 +341,7 @@ export default function StaffPresencePage() {
                 <button
                   type="button"
                   className="staff-presence-cta"
-                  disabled={!employeeId}
-                  onClick={goToShiftStep}
-                >
-                  Continuer
-                </button>
-              </div>
-            </div>
-          ) : null}
-
-          {valid && !result && step === 'shift' ? (
-            <div className="staff-presence-form">
-              <p className="staff-presence-lead">
-                {selectedEmployee
-                  ? `${formatStaffPerson(selectedEmployee)} — votre plage du jour.`
-                  : 'Choisissez votre plage horaire.'}
-              </p>
-              <div className="staff-presence-shifts">
-                {(shifts.length ? shifts : [{ id: 'morning', label: '08h – 16h' }]).map((s) => {
-                  const locked = Array.isArray(allowedShifts);
-                  const allowed = !locked || allowedShifts.includes(s.id);
-                  return (
-                    <label
-                      key={s.id}
-                      className={`staff-presence-shift${shift === s.id ? ' is-selected' : ''}${
-                        allowed ? '' : ' is-disabled'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="shift"
-                        value={s.id}
-                        checked={shift === s.id}
-                        disabled={!allowed}
-                        onChange={() => setShift(s.id)}
-                      />
-                      <span>{s.label}</span>
-                      {allowed && s.id === suggestedShift ? <small>Suggéré</small> : null}
-                      {!allowed ? <small>Non attribué</small> : null}
-                    </label>
-                  );
-                })}
-              </div>
-              {allowedShifts && allowedShifts.length === 0 ? (
-                <p className="staff-presence-error">
-                  Aucune plage ne vous est attribuée aujourd’hui (repos ou hors planning).
-                </p>
-              ) : null}
-              <div className="staff-presence-actions">
-                <button type="button" className="staff-presence-cta staff-presence-cta--ghost" onClick={() => setStep('employee')}>
-                  Retour
-                </button>
-                <button
-                  type="button"
-                  className="staff-presence-cta"
-                  disabled={submitting || !shift || (allowedShifts && !allowedShifts.includes(shift))}
+                  disabled={submitting || !employeeId || !hasSelfie}
                   onClick={handleSubmit}
                 >
                   {submitting ? 'Enregistrement…' : cta}
@@ -414,6 +349,7 @@ export default function StaffPresencePage() {
               </div>
             </div>
           ) : null}
+
         </div>
       </div>
     </div>

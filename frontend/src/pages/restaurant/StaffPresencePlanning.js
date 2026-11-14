@@ -90,8 +90,8 @@ export default function StaffPresencePlanning({
           </h2>
           <p className="commercial-lead" style={{ margin: 0, fontSize: '0.88rem' }}>
             {planningOn
-              ? 'Planning actif — seules les plages attribuées sont sélectionnables au scan.'
-              : 'Planning désactivé — scan libre (toutes les plages) · employés conservés.'}
+              ? 'Planning indicatif — le pointage est libre : chacun scanne à tout moment (selfie obligatoire).'
+              : 'Planning désactivé — le pointage reste libre (selfie obligatoire).'}
           </p>
         </div>
         <div className="staff-presence-planning-actions">
@@ -125,7 +125,7 @@ export default function StaffPresencePlanning({
           />
           <span>
             <strong>Activer le planning hebdomadaire</strong>
-            <small>Désactivé = tout le personnel peut scanner toutes les plages</small>
+            <small>Organisation interne uniquement : n’empêche jamais un employé de scanner</small>
           </span>
         </label>
         <label className="staff-presence-planning-check">

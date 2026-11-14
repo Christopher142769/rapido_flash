@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const StaffPresenceSettings = require('../models/StaffPresenceSettings');
@@ -32,13 +33,7 @@ const {
   SHIFTS,
   SHIFT_IDS,
   dateKeyBenin,
-  isoWeekdayBenin,
-  suggestShift,
-  isValidShift,
   shiftLabel,
-  shiftWindowKey,
-  computeOvertimeMinutes,
-  formatMinutesLabel,
 } = require('../utils/staffPresenceShifts');
 const {
   WEEKDAYS,
@@ -49,10 +44,6 @@ const {
   seedZogboPlanning,
   seedSitePlanning,
   serializeSchedule,
-  assignedShiftsForEmployee,
-  scheduleHasAssignments,
-  isPlanningActive,
-  isShiftAllowedForEmployee,
 } = require('../utils/staffPresencePlanning');
 
 const router = express.Router();
@@ -288,10 +279,45 @@ function kindLabel(kind) {
   return kind === 'exit' ? 'sortie' : 'arrivée';
 }
 
-function alreadyMessage(kind) {
-  return kind === 'exit'
-    ? 'Sortie déjà enregistrée pour cette plage'
-    : 'Arrivée déjà enregistrée pour cette plage';
+/**
+ * Pointage libre : aucune plage horaire. Une arrivée ouvre une session, la sortie suivante la ferme.
+ * Une arrivée restée sans sortie au-delà de ce délai est considérée comme oubliée : elle ne bloque
+ * plus une nouvelle arrivée et ne peut plus être fermée par une sortie.
+ */
+const OPEN_SESSION_MAX_MS = 20 * 60 * 60 * 1000;
+
+function formatTimeBenin(d) {
+  try {
+    return new Date(d).toLocaleTimeString('fr-FR', {
+      timeZone: 'Africa/Porto-Novo',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return '';
+  }
+}
+
+/** Dernière arrivée de l'employé sur ce site encore sans sortie (et pas trop ancienne). */
+async function findOpenArrival({ siteId, employeeId, now }) {
+  const lastArrival = await StaffPresenceRecord.findOne({ siteId, employeeId, kind: 'arrival' })
+    .sort({ checkedAt: -1, _id: -1 })
+    .lean();
+  if (!lastArrival?.checkedAt) return null;
+  if (now.getTime() - new Date(lastArrival.checkedAt).getTime() > OPEN_SESSION_MAX_MS) return null;
+  const exit = await StaffPresenceRecord.findOne({
+    siteId,
+    employeeId,
+    kind: 'exit',
+    shiftWindowKey: lastArrival.shiftWindowKey,
+  })
+    .select('_id')
+    .lean();
+  return exit ? null : lastArrival;
+}
+
+function newSessionKey(dateKey) {
+  return `${dateKey}-libre-${Date.now().toString(36)}${crypto.randomBytes(3).toString('hex')}`;
 }
 
 function successMessage(kind) {
@@ -306,28 +332,7 @@ function parseCheckBody(req) {
   const body = req.body || {};
   return {
     employeeId: String(body.employeeId || '').trim(),
-    shift: String(body.shift || '').trim().toLowerCase(),
-    firstName: normalizeNamePart(body.firstName || body.prenom),
-    lastName: normalizeNamePart(body.lastName || body.nom),
   };
-}
-
-async function computeExitMetrics({ siteId, employeeId, shiftWindowKey, exitAt }) {
-  const arrival = await StaffPresenceRecord.findOne({
-    siteId,
-    employeeId,
-    shiftWindowKey,
-    kind: 'arrival',
-  })
-    .sort({ checkedAt: -1 })
-    .lean();
-  if (!arrival?.checkedAt) {
-    return { workedMinutes: null, overtimeMinutes: null, arrivalRecord: null };
-  }
-  const workedMinutes = Math.round((exitAt.getTime() - new Date(arrival.checkedAt).getTime()) / 60000);
-  const shift = shiftWindowKey.split('-').pop();
-  const overtimeMinutes = computeOvertimeMinutes(workedMinutes, shift);
-  return { workedMinutes, overtimeMinutes, arrivalRecord: arrival };
 }
 
 function buildPhotosFilter(req) {
@@ -656,21 +661,10 @@ router.get('/public/:code', async (req, res) => {
     if (!kind) return res.status(404).json({ message: 'QR code invalide' });
 
     const siteId = settings.key || DEFAULT_SITE_ID;
-    const weekday = isoWeekdayBenin();
-    const schedule = await getScheduleForSite(siteId);
-    const restrictShifts = isPlanningActive(schedule);
-
     const employees = await StaffEmployee.find({ siteId, active: true })
       .sort({ lastName: 1, firstName: 1 })
       .select('_id firstName lastName siteId')
       .lean();
-
-    const employeesOut = employees.map((e) => ({
-      ...e,
-      assignedShifts: restrictShifts
-        ? assignedShiftsForEmployee(schedule, e._id, weekday)
-        : SHIFT_IDS.slice(),
-    }));
 
     res.json({
       ok: true,
@@ -680,25 +674,23 @@ router.get('/public/:code', async (req, res) => {
       siteId,
       siteLabel: siteLabel(siteId),
       todayKey: dateKeyBenin(),
-      weekday,
-      restrictShifts,
-      planningEnabled: schedule?.rules?.planningEnabled !== false,
-      suggestedShift: suggestShift(),
-      shifts: shiftsPayload(),
-      employees: employeesOut,
+      selfieRequired: true,
+      employees,
     });
   } catch (e) {
     res.status(500).json({ message: e.message });
   }
 });
 
-/** Public : selfie + employé + plage → présence. */
+/** Public : selfie (obligatoire) + employé → arrivée ou sortie, à toute heure. */
 router.post('/public/:code/check', uploadStaffPresence.single('selfie'), async (req, res) => {
   try {
     await ensureRecordIndexes();
     const code = String(req.params.code || '').trim();
     if (!code) return res.status(400).json({ message: 'Code manquant' });
-    if (!req.file) return res.status(400).json({ message: 'Selfie requis' });
+    if (!req.file?.buffer?.length) {
+      return res.status(400).json({ message: 'Selfie obligatoire : prenez une photo pour pointer.' });
+    }
 
     const settings = await findSettingsByCode(code);
     if (!settings) return res.status(404).json({ message: 'QR code invalide' });
@@ -706,68 +698,43 @@ router.post('/public/:code/check', uploadStaffPresence.single('selfie'), async (
     if (!kind) return res.status(404).json({ message: 'QR code invalide' });
 
     const siteId = settings.key || DEFAULT_SITE_ID;
-    const { employeeId, shift } = parseCheckBody(req);
+    const { employeeId } = parseCheckBody(req);
     if (!employeeId) return res.status(400).json({ message: 'Employé requis' });
-    if (!isValidShift(shift)) {
-      return res.status(400).json({ message: 'Plage horaire invalide' });
-    }
 
-    const employee = await StaffEmployee.findOne({ _id: employeeId, siteId, active: true }).lean();
+    const employee = await StaffEmployee.findOne({ _id: employeeId, siteId, active: true })
+      .lean()
+      .catch(() => null);
     if (!employee) {
       return res.status(400).json({ message: 'Employé introuvable pour ce site' });
     }
 
-    const schedule = await getScheduleForSite(siteId);
-    if (!isShiftAllowedForEmployee(schedule, employee._id, shift, isoWeekdayBenin())) {
-      return res.status(400).json({
-        message: 'Cette plage horaire ne vous est pas attribuée aujourd’hui.',
-      });
-    }
-
     const now = new Date();
     const dateKey = dateKeyBenin(now);
-    const windowKey = shiftWindowKey(dateKey, shift);
-    const existing = await StaffPresenceRecord.findOne({
-      siteId,
-      shiftWindowKey: windowKey,
-      kind,
-      employeeId: employee._id,
-    }).lean();
+    const openArrival = await findOpenArrival({ siteId, employeeId: employee._id, now });
 
-    if (existing) {
-      return res.json({
-        ok: true,
-        alreadyPresent: true,
-        kind,
-        kindLabel: kindLabel(kind),
-        siteId,
-        siteLabel: siteLabel(siteId),
-        shift,
-        shiftLabel: shiftLabel(shift),
-        firstName: existing.firstName,
-        lastName: existing.lastName,
-        checkedAt: existing.checkedAt,
-        dateKey: existing.dateKey,
-        message: alreadyMessage(kind),
+    if (kind === 'arrival' && openArrival) {
+      return res.status(409).json({
+        ok: false,
+        code: 'ARRIVAL_ALREADY_OPEN',
+        message: `Arrivée déjà enregistrée à ${formatTimeBenin(openArrival.checkedAt)}. Scannez le QR de sortie avant une nouvelle arrivée.`,
+        checkedAt: openArrival.checkedAt,
+      });
+    }
+    if (kind === 'exit' && !openArrival) {
+      return res.status(409).json({
+        ok: false,
+        code: 'NO_OPEN_ARRIVAL',
+        message: 'Aucune arrivée en cours pour vous. Scannez d’abord le QR d’arrivée.',
       });
     }
 
     const storedSelfie = await persistStaffSelfie(req.file);
 
-    let workedMinutes = null;
-    let overtimeMinutes = null;
-    let arrivalRecord = null;
-    if (kind === 'exit') {
-      const metrics = await computeExitMetrics({
-        siteId,
-        employeeId: employee._id,
-        shiftWindowKey: windowKey,
-        exitAt: now,
-      });
-      workedMinutes = metrics.workedMinutes;
-      overtimeMinutes = metrics.overtimeMinutes;
-      arrivalRecord = metrics.arrivalRecord;
-    }
+    const windowKey = kind === 'exit' ? openArrival.shiftWindowKey : newSessionKey(dateKey);
+    const workedMinutes =
+      kind === 'exit'
+        ? Math.max(0, Math.round((now.getTime() - new Date(openArrival.checkedAt).getTime()) / 60000))
+        : null;
 
     const record = await StaffPresenceRecord.create({
       firstName: employee.firstName,
@@ -776,7 +743,6 @@ router.post('/public/:code/check', uploadStaffPresence.single('selfie'), async (
       normalizedName: employee.normalizedName,
       employeeId: employee._id,
       siteId,
-      shift,
       shiftWindowKey: windowKey,
       kind,
       dateKey,
@@ -786,7 +752,7 @@ router.post('/public/:code/check', uploadStaffPresence.single('selfie'), async (
       selfieMime: storedSelfie.mime || '',
       ...(storedSelfie.data ? { selfieData: storedSelfie.data } : {}),
       workedMinutes,
-      overtimeMinutes,
+      overtimeMinutes: null,
       code,
       checkedIp: clientIp(req),
       userAgent: String(req.headers['user-agent'] || '').slice(0, 500),
@@ -799,24 +765,24 @@ router.post('/public/:code/check', uploadStaffPresence.single('selfie'), async (
       kindLabel: kindLabel(kind),
       siteId,
       siteLabel: siteLabel(siteId),
-      shift,
-      shiftLabel: shiftLabel(shift),
       firstName: record.firstName,
       lastName: record.lastName,
       checkedAt: record.checkedAt,
+      arrivalAt: kind === 'exit' ? openArrival.checkedAt : record.checkedAt,
+      workedMinutes,
       dateKey: record.dateKey,
       message: successMessage(kind),
     });
 
     notifyPresenceRecorded({
       record: record.toObject ? record.toObject() : record,
-      arrivalRecord,
+      arrivalRecord: kind === 'exit' ? openArrival : null,
     }).catch((err) => {
       console.error('Alerte email présence:', err?.message || err);
     });
   } catch (e) {
     if (e?.code === 11000) {
-      return res.status(409).json({ message: alreadyMessage('arrival') });
+      return res.status(409).json({ message: 'Pointage déjà enregistré, réessayez dans un instant.' });
     }
     res.status(500).json({ message: e.message });
   }
@@ -1034,7 +1000,7 @@ router.get('/photos/export-zip', auth, isStaffPresence, async (req, res) => {
         siteId: record.siteId,
         siteLabel: siteLabel(record.siteId),
         shift: record.shift,
-        shiftLabel: shiftLabel(record.shift),
+        shiftLabel: record.shift ? shiftLabel(record.shift) : '',
         kind: record.kind,
         kindLabel: kindLabel(record.kind),
         dateKey: record.dateKey,

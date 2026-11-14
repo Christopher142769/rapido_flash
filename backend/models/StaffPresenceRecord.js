@@ -11,7 +11,9 @@ const staffPresenceRecordSchema = new mongoose.Schema(
     normalizedName: { type: String, required: true, trim: true, lowercase: true },
     employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'StaffEmployee', index: true },
     siteId: { type: String, default: 'gbegamey', index: true },
-    shift: { type: String, enum: SHIFT_IDS, required: true, index: true },
+    /** Ancienne plage horaire (historique). Le pointage libre n'en a plus : champ vide. */
+    shift: { type: String, enum: SHIFT_IDS, index: true },
+    /** Clé de session : partagée par une arrivée et la sortie qui la ferme. */
     shiftWindowKey: { type: String, required: true, trim: true, index: true },
     kind: {
       type: String,

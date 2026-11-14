@@ -233,8 +233,8 @@ export default function StaffPresencePhotosPage({
                   <strong>{fullName}</strong>
                   <span>{formatCheckedAt(p.checkedAt)}</span>
                   <span className="staff-presence-photo-sub">
-                    {SITES.find((s) => s.id === p.siteId)?.label || p.siteId} ·{' '}
-                    {SHIFT_LABELS[p.shift] || p.shift}
+                    {SITES.find((s) => s.id === p.siteId)?.label || p.siteId}
+                    {p.shift && SHIFT_LABELS[p.shift] ? ` · ${SHIFT_LABELS[p.shift]}` : ''}
                   </span>
                 </div>
               </article>

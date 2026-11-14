@@ -6,7 +6,7 @@ export default function RhPlanningPage() {
     <div className="rh-presence-wrap">
       <header className="rh-page-head">
         <h1>Planning</h1>
-        <p>Activez ou désactivez le planning, attribuez les plages et le binôme par jour.</p>
+        <p>Planning indicatif (plages, binômes, repos). Il ne bloque pas le pointage : chacun scanne librement, selfie obligatoire.</p>
       </header>
       <StaffPresenceDashboard variant="rh" section="planning" photosPath="/rh/photos" hidePageTitle />
     </div>

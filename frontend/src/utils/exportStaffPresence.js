@@ -384,7 +384,7 @@ export function preparePresenceExport(records, meta = {}) {
 }
 
 export function exportPresenceToExcel(exportData) {
-  const headers = ['N°', 'Personnel', 'Date', 'Plage', 'Arrivée', 'Sortie', 'Durée', 'Heures sup.'];
+  const headers = ['N°', 'Personnel', 'Date', 'Arrivée', 'Sortie', 'Durée'];
   const body = (exportData.rows || [])
     .map(
       (r) =>
@@ -392,11 +392,9 @@ export function exportPresenceToExcel(exportData) {
           <td>${r.n}</td>
           <td>${escapeHtml(r.fullName || formatStaffName(r.firstName, r.lastName))}</td>
           <td>${escapeHtml(r.date)}</td>
-          <td>${escapeHtml(r.shift || '—')}</td>
           <td>${escapeHtml(r.arrival || '—')}</td>
           <td>${escapeHtml(r.exit || '—')}</td>
           <td>${escapeHtml(r.duration || '—')}</td>
-          <td>${escapeHtml(r.overtime || '—')}</td>
         </tr>`
     )
     .join('');
@@ -426,11 +424,9 @@ export function exportPresenceToWord(exportData) {
           (d) =>
             `<tr>
               <td>${escapeHtml(d.dateLabel)}</td>
-              <td>${escapeHtml(d.shiftLabel)}</td>
               <td>${escapeHtml(d.arrivalLabel)}</td>
               <td>${escapeHtml(d.exitLabel)}</td>
               <td>${escapeHtml(d.durationLabel)}</td>
-              <td>${escapeHtml(d.overtimeLabel)}</td>
             </tr>`
         )
         .join('');
@@ -445,11 +441,9 @@ export function exportPresenceToWord(exportData) {
           <thead>
             <tr>
               <th>Date</th>
-              <th>Plage</th>
               <th>Arrivée</th>
               <th>Sortie</th>
               <th>Durée</th>
-              <th>Heures sup.</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -515,12 +509,10 @@ export function exportPresenceToPdf(exportData) {
 
   const colPad = 1.5;
   const cols = [
-    { key: 'date', label: 'Date', w: 44, align: 'left' },
-    { key: 'shift', label: 'Plage', w: 34, align: 'center' },
-    { key: 'arrival', label: 'Arrivée', w: 34, align: 'center' },
-    { key: 'exit', label: 'Sortie', w: 34, align: 'center' },
-    { key: 'duration', label: 'Durée', w: 24, align: 'center' },
-    { key: 'overtime', label: 'H. sup.', w: contentW - 44 - 34 - 34 - 34 - 24, align: 'center' },
+    { key: 'date', label: 'Date', w: 54, align: 'left' },
+    { key: 'arrival', label: 'Arrivée', w: 42, align: 'center' },
+    { key: 'exit', label: 'Sortie', w: 42, align: 'center' },
+    { key: 'duration', label: 'Durée', w: contentW - 54 - 42 - 42, align: 'center' },
   ];
 
   const drawFooter = (d) => {
@@ -669,19 +661,15 @@ export function exportPresenceToPdf(exportData) {
       x = margin;
       const values = [
         day.dateLabel,
-        day.shiftLabel,
         day.arrivalLabel,
         day.exitLabel,
         day.durationLabel,
-        day.overtimeLabel,
       ];
       const colors = [
-        BRAND.text,
         BRAND.text,
         day.arrivalAt ? BRAND.success : BRAND.muted,
         day.exitAt ? BRAND.brownMid : BRAND.muted,
         BRAND.text,
-        day.overtimeMinutes > 0 ? [180, 83, 9] : BRAND.muted,
       ];
 
       cols.forEach((col, ci) => {
