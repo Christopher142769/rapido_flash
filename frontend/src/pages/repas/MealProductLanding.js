@@ -28,14 +28,13 @@ import {
   saveMealOrder,
   submitMealOrderToApi,
 } from '../../utils/mealOrder';
-import { mealConfirmationPath, mealProductPath } from '../../utils/mealPaths';
+import { mealConfirmationPath } from '../../utils/mealPaths';
 import {
   displayProductDesc,
   displayProductName,
-  fmtXof,
   refonteGalleryUrls,
 } from './repasRefonteConstants';
-import { adaptProducts, patchMealProduct } from './repasRefonteAdapter';
+import { patchMealProduct } from './repasRefonteAdapter';
 import MealProductPitch, { MealProductPitchMore } from './MealProductPitch';
 import { getRepasProductCopy } from './repasProductCopy';
 import { buildSideLines, defaultSideKey, productSideOptions, supplementOptionsFor } from './mealSides';
@@ -173,11 +172,6 @@ export default function MealProductLanding() {
     () => (product ? displayProductName(product.slug, product.name) : ''),
     [product]
   );
-
-  const otherDishes = useMemo(() => {
-    const current = String(product?.slug || '').trim().toLowerCase();
-    return adaptProducts(catalogue, BASE_URL).filter((dish) => dish.id !== current && dish.available);
-  }, [catalogue, product?.slug]);
 
   useEffect(() => {
     if (!productDisplayName) return;
@@ -364,6 +358,9 @@ export default function MealProductLanding() {
     void completeOrder(quantity);
   };
 
+  const scrollToOrderForm = () =>
+    document.getElementById('meal-quantity-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
   if (loading) return <PageLoader />;
 
   if (error || !product) {
@@ -489,7 +486,6 @@ export default function MealProductLanding() {
             ) : null}
 
             <div className="shop-pdp-buybox-tags">
-              {product.category ? <span className="shop-pdp-tag">{product.category}</span> : null}
               {promoState?.isPromoLive && promoState.discountPercent ? (
                 <span className="shop-pdp-tag shop-pdp-tag--sale">-{promoState.discountPercent}%</span>
               ) : null}
@@ -499,28 +495,6 @@ export default function MealProductLanding() {
                 <span className="shop-pdp-tag shop-pdp-tag--ship">Livraison {formatPriceXof(deliveryFee)}</span>
               ) : null}
             </div>
-
-            {canOrder ? (
-              <button
-                type="button"
-                className="shop-pdp-cta shop-pdp-cta--primary meal-pdp-cta-top"
-                onClick={() =>
-                  document
-                    .getElementById('meal-quantity-section')
-                    ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                }
-              >
-                Commander maintenant
-              </button>
-            ) : null}
-
-            {product.copySections?.length ? null : (
-              <MealProductPitch
-                slug={product.slug}
-                productName={productDisplayName}
-                heroImage={gallery[0]}
-              />
-            )}
 
             {!hasQuantity ? (
               <p className="shop-pdp-buybox-qty-hint">Sélectionnez une quantité avant de commander.</p>
@@ -619,36 +593,32 @@ export default function MealProductLanding() {
               <p className="meal-pdp-microcopy">Paiement à la livraison · livraison de 09h à minuit</p>
             ) : null}
 
-            {otherDishes.length ? (
-              <section className="meal-pdp-also" aria-label="Autres plats du menu">
-                <h2 className="meal-pdp-also-title">Autres produits Rapido</h2>
-                <div className="meal-pdp-also-row">
-                  {otherDishes.map((dish) => (
-                    <Link key={dish.id} to={mealProductPath(dish.id)} className="meal-pdp-also-card">
-                      <img src={dish.cardImg} alt="" />
-                      <strong>{dish.name}</strong>
-                      <span>{fmtXof(dish.unit)} F</span>
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            ) : null}
           </form>
+
+          {/* Copywriting après le formulaire de commande. */}
+          {product.copySections?.length ? null : (
+            <MealProductPitch slug={product.slug} productName={productDisplayName} heroImage={gallery[0]} />
+          )}
         </div>
       </div>
 
       {product.copySections?.length ? (
         <div id="meal-section-content" className="shop-pdp-story-wrap">
           <ShopContentBlocks sections={product.copySections} baseUrl={BASE_URL} />
+          {canOrder ? (
+            <div className="shop-pdp-after-copy-cta shop-pdp-after-copy-cta--inline">
+              <button type="button" className="shop-pdp-cta shop-pdp-cta--primary" onClick={scrollToOrderForm}>
+                Commander maintenant
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : (
         <MealProductPitchMore
           slug={product.slug}
           settings={shopSettings}
           whatsappDisplay={mealShopContact(shopSettings).display}
-          onOrderClick={() =>
-            document.getElementById('shop-section-order')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          }
+          onOrderClick={scrollToOrderForm}
         />
       )}
 

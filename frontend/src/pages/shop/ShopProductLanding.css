@@ -516,3 +516,14 @@
     height: 44px;
   }
 }
+
+/* Bouton « Commander » placé après le copywriting : ramène au formulaire. */
+.shop-pdp-after-copy-cta {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 8px var(--shop-pdp-gutter-wide, 16px) 32px;
+}
+.shop-pdp-after-copy-cta--inline {
+  padding-left: 0;
+  padding-right: 0;
+}

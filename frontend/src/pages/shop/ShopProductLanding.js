@@ -43,9 +43,6 @@ import './shopTypography.css';
 import './ShopProductLanding.css';
 import '../repas/MealProductLanding.css';
 import { getRepasProductCopy } from '../repas/repasProductCopy';
-import OtherProductsRail from '../../components/shop/OtherProductsRail';
-import { adaptProducts } from '../repas/repasRefonteAdapter';
-import { mealProductPath } from '../../utils/mealPaths';
 import { getMediaBaseUrl } from '../../utils/mediaUrl';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -175,47 +172,13 @@ export default function ShopProductLanding() {
   const isFreshFish = !!LOCAL_FRESH_PHOTOS[String(slug || '').toLowerCase()];
   const showCountdown =
     promoState?.isPromoLive && countdownEndsAt && !(isFreshFish && countdownAutoRestart);
-  /** Poisson frais : même structure de fiche que les plats Repas (copywriting, « Autres produits Rapido »). */
+  /** Poisson frais : même structure de fiche que les plats Repas (copywriting du dashboard). */
   const freshCopy = isFreshFish ? getRepasProductCopy(slug) : null;
   const freshKey = String(slug || '').toLowerCase();
   /** Texte du dashboard : avant la commande jusqu'à la FAQ, la FAQ et la suite après la commande. */
   const faqIndex = (product?.copySections || []).findIndex((s) => s?.type === 'faq');
   const storyBefore = faqIndex === -1 ? product?.copySections || [] : product.copySections.slice(0, faqIndex);
   const storyAfter = faqIndex === -1 ? [] : product.copySections.slice(faqIndex);
-  const [otherItems, setOtherItems] = useState([]);
-  useEffect(() => {
-    if (!isFreshFish) return undefined;
-    let cancelled = false;
-    const otherFish = Object.keys(LOCAL_FRESH_PHOTOS).filter((s) => s !== String(slug).toLowerCase());
-    Promise.all([
-      axios.get(`${API_URL}/meal-products/public`).then((r) => (Array.isArray(r.data) ? r.data : [])).catch(() => []),
-      ...otherFish.map((s) =>
-        axios.get(`${API_URL}/shop-products/public/${s}`).then((r) => r.data).catch(() => null)
-      ),
-    ]).then(([meals, ...fish]) => {
-      if (cancelled) return;
-      const fishItems = fish
-        .filter(Boolean)
-        .map((f) => {
-          const st = getShopPromoState(f);
-          return {
-            id: `fish-${f.slug}`,
-            to: `/shop/${f.slug}`,
-            img: LOCAL_FRESH_PHOTOS[String(f.slug).toLowerCase()],
-            name: getRepasProductCopy(f.slug)?.displayName || f.name,
-            price: st.isPromoLive ? st.promoPrice : f.basePrice,
-            unit: 'kg',
-          };
-        });
-      const mealItems = adaptProducts(meals, BASE_URL)
-        .filter((d) => d.available)
-        .map((d) => ({ id: d.id, to: mealProductPath(d.id), img: d.cardImg, name: d.name, price: d.unit }));
-      setOtherItems([...fishItems, ...mealItems]);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [isFreshFish, slug]);
   const showOrderLimitBanner =
     availabilityState?.dailyOrderLimitEnabled &&
     !availabilityState?.isShopClosed &&
@@ -397,6 +360,9 @@ export default function ShopProductLanding() {
     if (nextQty >= 1) setHighlightQty(false);
   };
 
+  const scrollToOrderForm = () =>
+    document.getElementById('shop-quantity-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
   if (loading) return <PageLoader />;
   if (error || !product) {
     return (
@@ -552,30 +518,6 @@ export default function ShopProductLanding() {
               ) : null}
             </div>
 
-            {freshCopy && canOrder ? (
-              <button
-                type="button"
-                className="shop-pdp-cta shop-pdp-cta--primary meal-pdp-cta-top"
-                onClick={() =>
-                  document
-                    .getElementById('shop-quantity-section')
-                    ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                }
-              >
-                Commander maintenant
-              </button>
-            ) : null}
-
-            {freshCopy && storyBefore.length ? (
-              <div id="meal-section-pitch" className="meal-pitch meal-pitch--story">
-                <ShopContentBlocks
-                  sections={storyBefore}
-                  baseUrl={BASE_URL}
-                  fallbackImages={[LOCAL_FRESH_PHOTOS[freshKey], ...(LOCAL_FRESH_EXTRAS[freshKey] || [])]}
-                />
-              </div>
-            ) : null}
-
             {!hasQuantity ? (
               <p className="shop-pdp-buybox-qty-hint">Sélectionnez une quantité avant de commander.</p>
             ) : null}
@@ -630,8 +572,18 @@ export default function ShopProductLanding() {
             {freshCopy && canOrder ? (
               <p className="meal-pdp-microcopy">Paiement à la livraison · Cotonou &amp; Calavi</p>
             ) : null}
-            {freshCopy ? <OtherProductsRail items={otherItems} /> : null}
           </form>
+
+          {/* Copywriting après le formulaire de commande. */}
+          {freshCopy && storyBefore.length ? (
+            <div id="meal-section-pitch" className="meal-pitch meal-pitch--story">
+              <ShopContentBlocks
+                sections={storyBefore}
+                baseUrl={BASE_URL}
+                fallbackImages={[LOCAL_FRESH_PHOTOS[freshKey], ...(LOCAL_FRESH_EXTRAS[freshKey] || [])]}
+              />
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -648,6 +600,14 @@ export default function ShopProductLanding() {
       ) : product.copySections?.length ? (
         <div id="shop-section-story" className="shop-pdp-story-wrap">
           <ShopContentBlocks sections={product.copySections} baseUrl={BASE_URL} />
+        </div>
+      ) : null}
+
+      {canOrder ? (
+        <div className="shop-pdp-after-copy-cta">
+          <button type="button" className="shop-pdp-cta shop-pdp-cta--primary" onClick={scrollToOrderForm}>
+            {product.ctaLabel || 'Commander maintenant'}
+          </button>
         </div>
       ) : null}
 
