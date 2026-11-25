@@ -34,6 +34,7 @@ import BassinsPage from './pages/BassinsPage';
 import BassinsRemerciementsPage from './pages/BassinsRemerciementsPage';
 import CustomFormsDashboard from './pages/restaurant/CustomFormsDashboard';
 import PublicCustomFormPage from './pages/public/PublicCustomFormPage';
+import RecruitmentApplyPage from './pages/public/RecruitmentApplyPage';
 
 // Pages Restaurant
 import DashboardIndexRedirect from './components/DashboardIndexRedirect';
@@ -209,6 +210,9 @@ function AppRoutes() {
 
         {/* Recrutement : HTML statique recrutement/carrieres.html */}
         <Route path="/recrutement/merci" element={<RecrutementPage page="merci" />} />
+        {/* Campagnes Meta : formulaires courts mobile (CV stocké en base) */}
+        <Route path="/recrutement/livreur" element={<RecruitmentApplyPage role="livreur" />} />
+        <Route path="/recrutement/cuisinier" element={<RecruitmentApplyPage role="cuisinier" />} />
         <Route path="/recrutement" element={<RecrutementPage page="index" />} />
         <Route path="/bassins" element={<BassinsPage />} />
         <Route path="/bassins-remerciements" element={<BassinsRemerciementsPage />} />

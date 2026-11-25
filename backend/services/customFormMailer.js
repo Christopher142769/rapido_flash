@@ -49,16 +49,37 @@ function buildAnswersHtml(answers) {
     .join('');
 }
 
-async function notifyFormSubmission({ form, submission }) {
-  const emails = (form.notifyEmails || []).filter(Boolean);
+/** Gmail refuse au-delà de ~25 Mo : on joint les fichiers tant que le total reste sous 18 Mo. */
+const MAX_ATTACH_BYTES = 18 * 1024 * 1024;
+
+function pickAttachments(list) {
+  let total = 0;
+  const kept = [];
+  for (const a of list || []) {
+    const size = a.content?.length || 0;
+    if (!size || total + size > MAX_ATTACH_BYTES) continue;
+    total += size;
+    kept.push(a);
+  }
+  return kept;
+}
+
+async function notifyFormSubmission({ form, submission, extraRecipients = [], attachments = [] }) {
+  const emails = [
+    ...new Set([...(form.notifyEmails || []), ...extraRecipients].map((e) => String(e).trim().toLowerCase()).filter(Boolean)),
+  ];
   if (!emails.length) return { sent: false, reason: 'no_recipients' };
 
   const slug = String(form.slug || '').toLowerCase();
   const isBassins = slug.includes('bassin');
+  const isCandidature = slug.startsWith('candidature-');
   const name = String(submission.respondentName || '').trim() || 'Prospect';
   const subject = isBassins
     ? `🔥 LEAD BASSIN HOT — ${name} vient de demander son devis Rapido`
-    : `[Rapido] Nouvelle réponse — ${form.title}`;
+    : isCandidature
+      ? `[Rapido] ${form.title} — ${name}`
+      : `[Rapido] Nouvelle réponse — ${form.title}`;
+  const joined = pickAttachments(attachments);
   const html = `
     <h2 style="color:#381808">${isBassins ? 'Nouvelle demande bassin (chaud)' : 'Nouvelle réponse au formulaire'}</h2>
     <p><strong>Formulaire :</strong> ${escapeHtml(form.title)}</p>
@@ -66,6 +87,7 @@ async function notifyFormSubmission({ form, submission }) {
     <p><strong>Email :</strong> ${escapeHtml(submission.respondentEmail || '—')}</p>
     <hr/>
     ${buildAnswersHtml(submission.answers)}
+    ${joined.length ? `<p style="color:#381808"><strong>📎 ${joined.length} fichier(s) joint(s) à cet e-mail.</strong></p>` : ''}
     <p style="color:#666;font-size:12px;margin-top:24px">— Rapido Flash</p>
   `;
   const textLines = [
@@ -91,6 +113,7 @@ async function notifyFormSubmission({ form, submission }) {
     subject,
     html,
     text: textLines.join('\n'),
+    attachments: joined,
   });
 }
 

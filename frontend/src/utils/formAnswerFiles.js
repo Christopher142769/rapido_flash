@@ -21,15 +21,14 @@ export function getAnswerFiles(answer) {
 }
 
 export function inferFileKind(file) {
-  const fieldType = file?.fieldType;
-  if (fieldType === 'image') return 'image';
-  if (fieldType === 'pdf') return 'pdf';
-
+  // Le nom du fichier prime : un champ « CV » accepte PDF et photos.
   const name = String(file?.fileName || '').toLowerCase();
   const url = String(file?.fileUrl || '').toLowerCase();
   const probe = `${name} ${url}`;
-  if (/\.(jpe?g|png|gif|webp|bmp|svg)(\?|#|$)/i.test(probe)) return 'image';
-  if (/\.pdf(\?|#|$)/i.test(probe)) return 'pdf';
+  if (/\.(jpe?g|png|gif|webp|bmp|svg)(\?|#|$|\s)/i.test(probe)) return 'image';
+  if (/\.pdf(\?|#|$|\s)/i.test(probe)) return 'pdf';
+  if (file?.fieldType === 'image') return 'image';
+  if (file?.fieldType === 'pdf') return 'pdf';
   return 'file';
 }
 
@@ -49,7 +48,8 @@ export async function downloadFormFile(fileUrl, fileName) {
     URL.revokeObjectURL(objectUrl);
   } catch {
     const a = document.createElement('a');
-    a.href = fileUrl;
+    // Fichiers stockés en base : ?download=1 force le téléchargement côté serveur.
+    a.href = /\/api\/custom-forms\/files\//.test(fileUrl) ? `${fileUrl}?download=1` : fileUrl;
     a.download = name;
     a.target = '_blank';
     a.rel = 'noopener noreferrer';

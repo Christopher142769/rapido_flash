@@ -7,7 +7,7 @@ const DEFAULT_PRESENCE = ['florencechanca@gmail.com', 'christopherguidibi@gmail.
 function defaultRecipients(channel) {
   const raw = String(process.env.STAFF_PRESENCE_NOTIFY_EMAILS || '').trim();
   const staff = raw ? raw.split(/[,;]/).map((e) => e.trim().toLowerCase()).filter(Boolean) : DEFAULT_PRESENCE;
-  if (channel === 'presence' || channel === 'livreur') return staff;
+  if (channel === 'presence' || channel === 'livreur' || channel === 'recrutement') return staff;
   // Commandes (repas, shop, plateforme) : l'équipe + les admins plateforme (ou l'adresse historique).
   const admins = getPlatformAdminEmails().map((e) => e.toLowerCase());
   return [...new Set([...staff, ...(admins.length ? admins : ['rapido002026@gmail.com'])])];

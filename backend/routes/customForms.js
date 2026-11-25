@@ -7,6 +7,8 @@ const { auth, isRestaurant } = require('../middleware/auth');
 const uploadCustomForm = require('../middleware/uploadCustomForm');
 const { notifyFormSubmission } = require('../services/customFormMailer');
 const { collectBlockFiles, validateBlockUploads } = require('../utils/customFormFiles');
+const formFileStore = require('../utils/formFileStore');
+const { recipientsFor } = require('../utils/notificationRecipients');
 
 const router = express.Router();
 
@@ -24,20 +26,32 @@ function slugify(title) {
     .slice(0, 80) || `form-${uid()}`;
 }
 
-/** URL locale legacy (fichiers déjà en base avant Cloudinary). */
-function filePublicUrl(req, filename) {
-  const base = process.env.API_PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
-  return `${base.replace(/\/$/, '')}/uploads/custom-forms/${filename}`;
+/** Multer → réponse JSON lisible (fichier trop lourd, type refusé…). */
+function withUpload(mw) {
+  return (req, res, next) =>
+    mw(req, res, (err) => {
+      if (!err) return next();
+      const message =
+        err.code === 'LIMIT_FILE_SIZE'
+          ? 'Fichier trop lourd (20 Mo maximum). Prenez une photo moins lourde ou un PDF plus léger.'
+          : err.message || 'Fichier refusé';
+      return res.status(400).json({ message });
+    });
 }
 
-/** Cloudinary : req.file.path = secure_url ; disque : nom de fichier local. */
-function fileUrlFromUpload(req, file) {
-  if (!file) return '';
-  const stored = String(file.path || '').trim();
-  if (stored.startsWith('http://') || stored.startsWith('https://')) return stored;
-  if (file.filename) return filePublicUrl(req, file.filename);
-  return stored;
+/** Numéro béninois à 10 chiffres (01 XX XX XX XX), avec ou sans +229. */
+function normalizeBjPhone(raw) {
+  let d = String(raw || '').replace(/[^\d]/g, '');
+  if (d.startsWith('00229')) d = d.slice(5);
+  else if (d.startsWith('229') && d.length === 13) d = d.slice(3);
+  return /^01\d{8}$/.test(d) ? d : null;
 }
+
+function formatBjPhone(d) {
+  return d.replace(/^(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/, '$1 $2 $3 $4 $5');
+}
+
+const INPUT_FORMATS = ['bj-phone'];
 
 const FIELD_TYPES = ['text', 'textarea', 'email', 'number', 'date', 'image', 'pdf', 'choice', 'checkbox'];
 
@@ -96,6 +110,7 @@ function normalizeSections(sections) {
         label: String(b.label || '').trim().slice(0, 300),
         required: !!b.required,
       };
+      if (INPUT_FORMATS.includes(b.inputFormat)) block.inputFormat = b.inputFormat;
       if (fieldType === 'choice' || fieldType === 'checkbox') {
         const options = normalizeOptions(b.options);
         block.options = options.length ? options : [{ id: uid(), label: 'Option 1' }];
@@ -107,6 +122,11 @@ function normalizeSections(sections) {
       return block;
     }),
   }));
+}
+
+function findBlock(form, sectionId, blockId) {
+  const sec = (form.sections || []).find((s) => s.id === sectionId);
+  return (sec?.blocks || []).find((b) => b.id === blockId) || null;
 }
 
 function validateSubmission(form, payload, fileMap) {
@@ -144,6 +164,15 @@ function validateSubmission(form, payload, fileMap) {
       if (block.fieldType === 'image' || block.fieldType === 'pdf') {
         const uploadErr = validateBlockUploads(block, sec.id, block.id, fileMap, block.required);
         if (uploadErr) return uploadErr;
+        continue;
+      }
+
+      if (block.inputFormat === 'bj-phone') {
+        const tv = String(a.textValue || '').trim();
+        if (!tv && !block.required) continue;
+        if (!normalizeBjPhone(tv)) {
+          return `« ${block.label} » : entrez un numéro béninois à 10 chiffres (01 XX XX XX XX)`;
+        }
         continue;
       }
 
@@ -254,13 +283,40 @@ router.get('/submissions/:id', auth, isRestaurant, async (req, res) => {
   }
 });
 
-router.post('/upload', auth, isRestaurant, uploadCustomForm.single('file'), (req, res) => {
+router.post('/upload', auth, isRestaurant, withUpload(uploadCustomForm.single('file')), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: 'Fichier requis' });
-    const url = filePublicUrl(req, req.file.filename);
+    const { url } = await formFileStore.saveUpload(req, req.file, { kind: 'form-asset' });
     res.json({ url, fileName: req.file.originalname });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Erreur upload' });
+  }
+});
+
+/** Fichier stocké en base (CV, photo) — lien direct, ?download=1 pour forcer le téléchargement. */
+router.get('/files/:id/:token', async (req, res) => {
+  try {
+    const doc = await formFileStore.findFile(req.params.id, req.params.token);
+    if (!doc) return res.status(404).json({ message: 'Fichier introuvable' });
+    const name = formFileStore.safeName(doc.filename);
+    const disposition = req.query.download ? 'attachment' : 'inline';
+    res.setHeader('Content-Type', doc.contentType || 'application/octet-stream');
+    res.setHeader('Content-Length', String(doc.length));
+    res.setHeader(
+      'Content-Disposition',
+      `${disposition}; filename="${name.replace(/[^\x20-\x7e]/g, '_')}"; filename*=UTF-8''${encodeURIComponent(name)}`
+    );
+    res.setHeader('Cache-Control', 'private, max-age=86400');
+    res.setHeader('X-Robots-Tag', 'noindex');
+    formFileStore
+      .openDownload(req.params.id)
+      .on('error', () => {
+        if (!res.headersSent) res.status(500).end();
+        else res.end();
+      })
+      .pipe(res);
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Erreur serveur' });
   }
 });
 
@@ -274,7 +330,7 @@ router.get('/public/:slug', async (req, res) => {
   }
 });
 
-router.post('/public/:slug/submit', uploadCustomForm.any(), async (req, res) => {
+router.post('/public/:slug/submit', withUpload(uploadCustomForm.any()), async (req, res) => {
   try {
     const form = await CustomForm.findOne({ slug: req.params.slug.toLowerCase(), isPublished: true });
     if (!form) return res.status(404).json({ message: 'Formulaire introuvable ou non publié' });
@@ -292,16 +348,19 @@ router.post('/public/:slug/submit', uploadCustomForm.any(), async (req, res) => 
 
     const fileMap = {};
     (req.files || []).forEach((f) => {
-      fileMap[f.fieldname] = {
-        url: fileUrlFromUpload(req, f),
-        fileName: f.originalname,
-        size: f.size,
-      };
+      fileMap[f.fieldname] = { url: '', fileName: f.originalname, size: f.size, upload: f };
     });
 
     const validationError = validateSubmission(form, payload, fileMap);
     if (validationError) {
       return res.status(400).json({ message: validationError });
+    }
+
+    // Écriture en base AVANT d'enregistrer la candidature : si le stockage échoue,
+    // le candidat voit une erreur et peut réessayer (aucun CV perdu en silence).
+    for (const entry of Object.values(fileMap)) {
+      const saved = await formFileStore.saveUpload(req, entry.upload, { formSlug: form.slug });
+      entry.url = saved.url;
     }
 
     const answers = rawAnswers.map((a) => {
@@ -313,7 +372,7 @@ router.post('/public/:slug/submit', uploadCustomForm.any(), async (req, res) => 
         blockId: a.blockId,
         label: String(a.label || ''),
         fieldType: a.fieldType || 'text',
-        textValue: String(a.textValue || ''),
+        textValue: String(a.textValue || '').slice(0, 8000),
         selectedValues,
         fileUrl: '',
         fileName: '',
@@ -321,6 +380,11 @@ router.post('/public/:slug/submit', uploadCustomForm.any(), async (req, res) => 
       };
       if (selectedValues.length) {
         base.textValue = selectedValues.join(', ');
+      }
+      const block = findBlock(form, a.sectionId, a.blockId);
+      if (block?.inputFormat === 'bj-phone') {
+        const phone = normalizeBjPhone(base.textValue);
+        if (phone) base.textValue = formatBjPhone(phone);
       }
       const attachments = collectBlockFiles(fileMap, a.sectionId, a.blockId).map((f) => ({
         fileUrl: f.url,
@@ -334,6 +398,33 @@ router.post('/public/:slug/submit', uploadCustomForm.any(), async (req, res) => 
       return base;
     });
 
+    // Libellés repris du formulaire ; fichiers reçus sans réponse associée → réponse ajoutée
+    // (un CV ne doit jamais rester orphelin, invisible dans le dashboard).
+    answers.forEach((a) => {
+      const block = findBlock(form, a.sectionId, a.blockId);
+      if (block && !a.label) a.label = block.label;
+    });
+    for (const sec of form.sections || []) {
+      for (const block of sec.blocks || []) {
+        if (block.fieldType !== 'pdf' && block.fieldType !== 'image') continue;
+        if (answers.some((a) => a.sectionId === sec.id && a.blockId === block.id)) continue;
+        const files = collectBlockFiles(fileMap, sec.id, block.id);
+        if (!files.length) continue;
+        const fileAttachments = files.map((f) => ({ fileUrl: f.url, fileName: f.fileName }));
+        answers.push({
+          sectionId: sec.id,
+          blockId: block.id,
+          label: block.label,
+          fieldType: block.fieldType,
+          textValue: '',
+          selectedValues: [],
+          fileAttachments,
+          fileUrl: fileAttachments[0].fileUrl,
+          fileName: fileAttachments[0].fileName,
+        });
+      }
+    }
+
     const submission = await CustomFormSubmission.create({
       form: form._id,
       formTitle: form.title,
@@ -343,7 +434,20 @@ router.post('/public/:slug/submit', uploadCustomForm.any(), async (req, res) => 
       answers,
     });
 
-    const mailResult = await notifyFormSubmission({ form, submission });
+    let extraRecipients = [];
+    if (form.notifyChannel) {
+      try {
+        extraRecipients = await recipientsFor(form.notifyChannel);
+      } catch (e) {
+        console.error('[customForms] destinataires', e.message);
+      }
+    }
+    const attachments = Object.values(fileMap).map((f) => ({
+      filename: f.fileName || 'fichier',
+      content: f.upload.buffer,
+      contentType: f.upload.mimetype,
+    }));
+    const mailResult = await notifyFormSubmission({ form, submission, extraRecipients, attachments });
     submission.emailSent = !!mailResult.sent;
     submission.emailError = mailResult.error || '';
     await submission.save();

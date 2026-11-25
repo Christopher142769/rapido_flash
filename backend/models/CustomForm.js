@@ -26,6 +26,8 @@ const customFormSectionSchema = new mongoose.Schema(
         },
         label: { type: String, default: '' },
         required: { type: Boolean, default: false },
+        /** Contrôle de saisie : 'bj-phone' = numéro béninois 01 XX XX XX XX */
+        inputFormat: { type: String, default: '' },
         options: [customFormOptionSchema],
         /** PDF uniquement : nombre max de fichiers (1–10) */
         pdfMaxCount: { type: Number, default: 1, min: 1, max: 10 },
@@ -60,6 +62,8 @@ const customFormSchema = new mongoose.Schema(
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
     description: { type: String, default: '' },
     notifyEmails: [{ type: String, trim: true, lowercase: true }],
+    /** Canal de destinataires du dashboard (ex. 'recrutement') ajouté à notifyEmails */
+    notifyChannel: { type: String, default: '' },
     /** URL absolue ou chemin relatif (/recrutement/merci) après envoi réussi */
     redirectUrl: { type: String, default: '/recrutement/merci' },
     isPublished: { type: Boolean, default: false },

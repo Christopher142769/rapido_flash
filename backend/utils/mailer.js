@@ -78,7 +78,7 @@ const sendDashboardLoginCode = async (email, code) => {
   return { sent: true };
 };
 
-const sendCustomFormNotification = async ({ to, subject, text, html }) => {
+const sendCustomFormNotification = async ({ to, subject, text, html, attachments = [] }) => {
   const recipients = Array.isArray(to) ? to.filter(Boolean) : [to].filter(Boolean);
   if (!recipients.length) return { sent: false, error: 'no_recipients' };
 
@@ -97,7 +97,7 @@ const sendCustomFormNotification = async ({ to, subject, text, html }) => {
         },
       });
       const from = process.env.MAIL_FROM || process.env.SMTP_USER;
-      await transporter.sendMail({ from, to: recipients.join(','), subject, text, html });
+      await transporter.sendMail({ from, to: recipients.join(','), subject, text, html, attachments });
       return { sent: true };
     } catch (err) {
       console.error('Erreur envoi email formulaire:', err.message);
@@ -108,6 +108,9 @@ const sendCustomFormNotification = async ({ to, subject, text, html }) => {
   console.log('📧 [DEV] Notification formulaire →', recipients.join(', '));
   console.log(subject);
   console.log(text);
+  if (attachments.length) {
+    console.log('📎 [DEV] Pièces jointes :', attachments.map((a) => `${a.filename} (${a.content?.length || 0} o)`).join(', '));
+  }
   return { sent: true };
 };
 

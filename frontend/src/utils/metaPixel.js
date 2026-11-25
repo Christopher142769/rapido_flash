@@ -28,6 +28,14 @@ export function trackMetaForRoute(pathname) {
     return;
   }
 
+  if (p === '/recrutement/livreur' || p === '/recrutement/cuisinier') {
+    trackMeta('ViewContent', {
+      content_name: p.endsWith('livreur') ? 'Candidature Livreur' : 'Candidature Cuisinier',
+      content_category: 'Recrutement',
+    });
+    return;
+  }
+
   if (p.startsWith('/recrutement')) {
     trackMeta('ViewContent', {
       content_name: 'Page Carrières',

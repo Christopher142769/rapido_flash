@@ -234,6 +234,7 @@ const ensureAppSettings = require('./utils/ensureAppSettings');
 const ensurePlatformLineCodes = require('./utils/ensurePlatformLineCodes');
 const ensureShopOrderDates = require('./utils/ensureShopOrderDates');
 const ensureBassinsFunnel = require('./utils/ensureBassinsFunnel');
+const ensureRecruitmentForms = require('./utils/ensureRecruitmentForms');
 const ensureDrhUser = require('./utils/ensureDrhUser');
 
 // MongoDB : par défaut instance locale (voir backend/.env ou .env racine pour Atlas)
@@ -267,6 +268,11 @@ async function connectMongoWithRetry() {
         await ensureBassinsFunnel();
       } catch (e) {
         console.error('⚠️ ensureBassinsFunnel:', e.message);
+      }
+      try {
+        await ensureRecruitmentForms();
+      } catch (e) {
+        console.error('⚠️ ensureRecruitmentForms:', e.message);
       }
       try {
         const { ensureKingFishCatalogue } = require('./utils/ensureKingFishCatalogue');

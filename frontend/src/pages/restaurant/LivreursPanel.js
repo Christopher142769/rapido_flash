@@ -268,6 +268,7 @@ const CHANNEL_LABELS = {
   livreur: 'Livreurs (début, fin, signature)',
   repas: 'Commandes Repas (nouvelle commande)',
   commandes: 'Commandes Shop poisson et plateforme',
+  recrutement: 'Candidatures (livreurs, cuisiniers) avec CV joint',
 };
 
 function EmailsTab() {
