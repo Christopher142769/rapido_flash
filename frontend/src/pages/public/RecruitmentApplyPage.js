@@ -17,6 +17,7 @@ export const ROLES = {
     salaryNote: 'par mois pendant les 3 mois d’essai, puis davantage ensuite',
     perks: ['Paiement chaque mois', 'Missions dans votre zone', 'Équipe sérieuse et respectueuse'],
     contentName: 'Candidature Livreur',
+    other: 'cuisinier',
   },
   cuisinier: {
     slug: 'candidature-cuisinier',
@@ -26,6 +27,7 @@ export const ROLES = {
     salaryNote: 'par mois, selon diplôme et expérience',
     perks: ['Diplôme de cuisine exigé', 'Cuisine professionnelle moderne', 'Évolution selon vos résultats'],
     contentName: 'Candidature Cuisinier',
+    other: 'livreur',
   },
 };
 
@@ -322,8 +324,9 @@ export default function RecruitmentApplyPage({ role = 'livreur' }) {
               </p>
               <p>{form?.settings?.confirmationMessage || 'Nous vous appelons au numéro indiqué si votre profil est retenu.'}</p>
               <p className="rap-done-phone">📞 {formatPhone(phone)}</p>
-              <a className="rap-btn rap-btn--ghost" href="/recrutement">
-                Voir les autres postes
+              {/* « Autres postes » = l'autre formulaire de campagne (livreur ↔ cuisinier). */}
+              <a className="rap-btn rap-btn--ghost" href={`/recrutement/${cfg.other}`}>
+                Postuler aussi : {ROLES[cfg.other].title} →
               </a>
             </div>
           </section>
