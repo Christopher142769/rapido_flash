@@ -23,7 +23,7 @@ export const ROLES = {
     eyebrow: 'Rapido recrute · Cotonou',
     title: 'Cuisinier·ère',
     salary: '70 000 F CFA',
-    salaryNote: 'par mois, à partir de — selon diplôme et expérience',
+    salaryNote: 'par mois, selon diplôme et expérience',
     perks: ['Diplôme de cuisine exigé', 'Cuisine professionnelle moderne', 'Évolution selon vos résultats'],
     contentName: 'Candidature Cuisinier',
   },
@@ -88,6 +88,9 @@ function FieldError({ msg }) {
   );
 }
 
+
+const isNoneLabel = (label) => /^ni |^aucun/i.test(String(label));
+
 export default function RecruitmentApplyPage({ role = 'livreur' }) {
   const cfg = ROLES[role] || ROLES.livreur;
   const [form, setForm] = useState(null);
@@ -96,13 +99,16 @@ export default function RecruitmentApplyPage({ role = 'livreur' }) {
   const [phone, setPhone] = useState('');
   const [choices, setChoices] = useState({});
   const [files, setFiles] = useState([]);
-  const [errors, setErrors] = useState({});
+  const [error, setError] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [progress, setProgress] = useState(null);
   const [done, setDone] = useState(false);
+  const [step, setStep] = useState(0);
+  const [dir, setDir] = useState('next');
   const cameraRef = useRef(null);
   const pickerRef = useRef(null);
-  const formTopRef = useRef(null);
+  const stepRef = useRef(null);
+  const advanceTimer = useRef(null);
 
   useEffect(() => {
     document.title = `Postuler · ${cfg.title} · RAPIDO`;
@@ -113,6 +119,7 @@ export default function RecruitmentApplyPage({ role = 'livreur' }) {
       .catch(() => alive && setLoadError('Le formulaire est momentanément indisponible. Réessayez dans quelques minutes.'));
     return () => {
       alive = false;
+      clearTimeout(advanceTimer.current);
     };
   }, [cfg.slug, cfg.title]);
 
@@ -120,19 +127,75 @@ export default function RecruitmentApplyPage({ role = 'livreur' }) {
   const blocks = useMemo(() => section?.blocks || [], [section]);
   const phoneBlock = blocks.find((b) => b.inputFormat === 'bj-phone');
   const cvBlock = blocks.find((b) => b.fieldType === 'pdf' || b.fieldType === 'image');
-  const choiceBlocks = blocks.filter((b) => b.fieldType === 'choice' || b.fieldType === 'checkbox');
   const maxFiles = cvBlock?.pdfMaxCount || 4;
 
+  /** Une question par écran, dans l'ordre du formulaire (nom en premier). */
+  const steps = useMemo(() => {
+    const out = [{ key: 'name', label: 'Nom et prénom' }];
+    blocks.forEach((b) => {
+      if (b === phoneBlock) out.push({ key: 'phone', label: b.label, block: b });
+      else if (b === cvBlock) out.push({ key: 'cv', label: b.label, block: b });
+      else if (b.fieldType === 'choice' || b.fieldType === 'checkbox') out.push({ key: b.id, label: b.label, block: b });
+    });
+    return out;
+  }, [blocks, phoneBlock, cvBlock]);
+
+  const current = steps[Math.min(step, steps.length - 1)];
+  const isLast = step >= steps.length - 1;
+  const sending = progress !== null;
+
+  // Focus sur le champ de l'étape (clavier ouvert directement sur mobile pour nom / téléphone).
+  useEffect(() => {
+    if (!form || done) return;
+    const el = stepRef.current?.querySelector('input:not([type=file])');
+    if (el) el.focus({ preventScroll: true });
+  }, [step, form, done]);
+
+  const stepError = (s) => {
+    if (!s) return '';
+    if (s.key === 'name') return name.trim().length < 3 ? 'Entrez votre nom et prénom' : '';
+    if (s.key === 'phone') return phoneError(phone);
+    if (s.key === 'cv') return cvBlock?.required && !files.length ? 'Ajoutez votre CV (PDF ou photo)' : '';
+    if (s.block?.required && !(choices[s.block.id] || []).length) return 'Choisissez une réponse';
+    return '';
+  };
+
+  const goTo = (n, direction) => {
+    clearTimeout(advanceTimer.current);
+    setDir(direction);
+    setError('');
+    setStep(Math.max(0, Math.min(steps.length - 1, n)));
+  };
+
+  const next = () => {
+    const e = stepError(current);
+    if (e) {
+      setError(e);
+      return;
+    }
+    if (isLast) submit();
+    else goTo(step + 1, 'next');
+  };
+
+  const back = () => {
+    if (step > 0 && !sending) goTo(step - 1, 'back');
+  };
+
   const toggleChoice = (block, label) => {
-    setErrors((e) => ({ ...e, [block.id]: '' }));
+    setError('');
+    if (block.fieldType === 'choice') {
+      setChoices((prev) => ({ ...prev, [block.id]: [label] }));
+      // Choix unique : on passe tout seul à la question suivante.
+      clearTimeout(advanceTimer.current);
+      advanceTimer.current = setTimeout(() => goTo(step + 1, 'next'), 280);
+      return;
+    }
     setChoices((prev) => {
-      if (block.fieldType === 'choice') return { ...prev, [block.id]: [label] };
       const cur = prev[block.id] || [];
-      const isNone = /^ni |^aucun/i.test(label);
-      let next = cur.includes(label) ? cur.filter((v) => v !== label) : [...cur, label];
+      let nextSel = cur.includes(label) ? cur.filter((v) => v !== label) : [...cur, label];
       // « Ni moto ni permis » exclut les autres cases (et inversement).
-      next = isNone ? (cur.includes(label) ? [] : [label]) : next.filter((v) => !/^ni |^aucun/i.test(v));
-      return { ...prev, [block.id]: next };
+      nextSel = isNoneLabel(label) ? (cur.includes(label) ? [] : [label]) : nextSel.filter((v) => !isNoneLabel(v));
+      return { ...prev, [block.id]: nextSel };
     });
   };
 
@@ -140,22 +203,23 @@ export default function RecruitmentApplyPage({ role = 'livreur' }) {
     async (list) => {
       const incoming = Array.from(list || []);
       if (!incoming.length) return;
-      setErrors((e) => ({ ...e, cv: '' }));
+      setError('');
       const room = maxFiles - files.length;
       if (room <= 0) {
-        setErrors((e) => ({ ...e, cv: `${maxFiles} fichiers maximum` }));
+        setError(`${maxFiles} fichiers maximum`);
         return;
       }
       const accepted = [];
       for (const f of incoming.slice(0, room)) {
-        const okType = f.type.startsWith('image/') || f.type === 'application/pdf' || /\.(pdf|jpe?g|png|webp|heic|heif)$/i.test(f.name);
+        const okType =
+          f.type.startsWith('image/') || f.type === 'application/pdf' || /\.(pdf|jpe?g|png|webp|heic|heif)$/i.test(f.name);
         if (!okType) {
-          setErrors((e) => ({ ...e, cv: 'Envoyez un PDF ou une photo (JPG, PNG).' }));
+          setError('Envoyez un PDF ou une photo (JPG, PNG).');
           continue;
         }
         const small = await shrinkImage(f);
         if (small.size > MAX_FILE_MB * 1024 * 1024) {
-          setErrors((e) => ({ ...e, cv: `« ${f.name} » dépasse ${MAX_FILE_MB} Mo.` }));
+          setError(`« ${f.name} » dépasse ${MAX_FILE_MB} Mo.`);
           continue;
         }
         accepted.push(small);
@@ -165,31 +229,16 @@ export default function RecruitmentApplyPage({ role = 'livreur' }) {
     [files.length, maxFiles]
   );
 
-  const validate = () => {
-    const e = {};
-    if (name.trim().length < 3) e.name = 'Entrez votre nom et prénom';
-    if (phoneBlock) {
-      const pe = phoneError(phone);
-      if (pe) e.phone = pe;
-    }
-    choiceBlocks.forEach((b) => {
-      if (b.required && !(choices[b.id] || []).length) e[b.id] = 'Choisissez une réponse';
-    });
-    if (cvBlock?.required && !files.length) e.cv = 'Ajoutez votre CV (PDF ou photo)';
-    return e;
-  };
-
-  const submit = async (ev) => {
-    ev.preventDefault();
-    if (progress !== null) return;
-    const e = validate();
-    setErrors(e);
-    setSubmitError('');
-    if (Object.keys(e).length) {
-      const first = document.querySelector(`[data-field="${Object.keys(e)[0]}"]`);
-      if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  async function submit() {
+    if (sending) return;
+    // Revalide tout (au cas où) et renvoie à la première étape incomplète.
+    const badIndex = steps.findIndex((s) => stepError(s));
+    if (badIndex !== -1) {
+      goTo(badIndex, 'back');
+      setError(stepError(steps[badIndex]));
       return;
     }
+    setSubmitError('');
 
     const answers = blocks
       .filter((b) => b.kind === 'field' && b !== cvBlock)
@@ -205,9 +254,7 @@ export default function RecruitmentApplyPage({ role = 'livreur' }) {
 
     const fd = new FormData();
     fd.append('payload', JSON.stringify({ respondentName: name.trim(), respondentEmail: '', answers }));
-    if (cvBlock) {
-      files.forEach((f, i) => fd.append(`file_${section.id}_${cvBlock.id}_${i}`, f, f.name));
-    }
+    if (cvBlock) files.forEach((f, i) => fd.append(`file_${section.id}_${cvBlock.id}_${i}`, f, f.name));
 
     setProgress(0);
     try {
@@ -219,11 +266,7 @@ export default function RecruitmentApplyPage({ role = 'livreur' }) {
       });
       setProgress(100);
       // Lead uniquement après un envoi réussi (jamais au clic).
-      trackMeta(
-        'Lead',
-        { content_name: cfg.contentName, content_category: 'Recrutement' },
-        `lead_${cfg.slug}_${Date.now()}`
-      );
+      trackMeta('Lead', { content_name: cfg.contentName, content_category: 'Recrutement' }, `lead_${cfg.slug}_${Date.now()}`);
       setDone(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
@@ -235,217 +278,275 @@ export default function RecruitmentApplyPage({ role = 'livreur' }) {
       setSubmitError(msg);
       setProgress(null);
     }
+  }
+
+  const onKeyDown = (e) => {
+    if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+      e.preventDefault();
+      next();
+    }
   };
+
+  const hero = (
+    <aside className={`rap-hero ${step > 0 && !done ? 'is-compact' : ''}`}>
+      <p className="rap-eyebrow">{cfg.eyebrow}</p>
+      <h1>{cfg.title}</h1>
+      <div className="rap-salary">
+        <span className="rap-salary-from">À partir de</span>
+        <span className="rap-salary-amount">{cfg.salary}</span>
+        <span className="rap-salary-note">{cfg.salaryNote}</span>
+      </div>
+      <ul className="rap-perks">
+        {cfg.perks.map((p) => (
+          <li key={p}>{p}</li>
+        ))}
+      </ul>
+      <p className="rap-time">⏱ 1 minute · {steps.length} questions</p>
+    </aside>
+  );
 
   if (done) {
     return (
       <div className="rap-root">
         <Header />
-        <main className="rap-main">
-          <section className="rap-done" aria-live="polite">
-            <div className="rap-done-icon" aria-hidden="true">✓</div>
-            <h1>Candidature envoyée</h1>
-            <p>
-              Merci {name.trim().split(' ')[0]} ! Votre candidature <strong>{cfg.title}</strong> est bien reçue.
-            </p>
-            <p>
-              {form?.settings?.confirmationMessage ||
-                'Nous vous appelons au numéro indiqué si votre profil est retenu.'}
-            </p>
-            <p className="rap-done-phone">📞 {formatPhone(phone)}</p>
-            <a className="rap-btn rap-btn--ghost" href="/recrutement">
-              Voir les autres postes
-            </a>
+        <main className="rap-layout">
+          {hero}
+          <section className="rap-panel">
+            <div className="rap-card rap-done" aria-live="polite">
+              <div className="rap-done-icon" aria-hidden="true">
+                ✓
+              </div>
+              <h2>Candidature envoyée</h2>
+              <p>
+                Merci {name.trim().split(' ')[0]} ! Votre candidature <strong>{cfg.title}</strong> est bien reçue.
+              </p>
+              <p>{form?.settings?.confirmationMessage || 'Nous vous appelons au numéro indiqué si votre profil est retenu.'}</p>
+              <p className="rap-done-phone">📞 {formatPhone(phone)}</p>
+              <a className="rap-btn rap-btn--ghost" href="/recrutement">
+                Voir les autres postes
+              </a>
+            </div>
           </section>
         </main>
       </div>
     );
   }
 
-  const sending = progress !== null;
+  const pct = steps.length ? Math.round(((step + (sending ? 1 : 0)) / steps.length) * 100) : 0;
+  const block = current?.block;
 
   return (
     <div className="rap-root">
       <Header />
-      <main className="rap-main">
-        <section className="rap-hero">
-          <p className="rap-eyebrow">{cfg.eyebrow}</p>
-          <h1>{cfg.title}</h1>
-          <div className="rap-salary">
-            <span className="rap-salary-from">À partir de</span>
-            <span className="rap-salary-amount">{cfg.salary}</span>
-            <span className="rap-salary-note">{cfg.salaryNote}</span>
-          </div>
-          <ul className="rap-perks">
-            {cfg.perks.map((p) => (
-              <li key={p}>{p}</li>
-            ))}
-          </ul>
-          <p className="rap-time">⏱ 1 minute pour postuler</p>
-        </section>
+      <main className="rap-layout">
+        {hero}
+        <section className="rap-panel">
+          {loadError ? <p className="rap-banner rap-banner--err">{loadError}</p> : null}
+          {!form && !loadError ? <p className="rap-loading">Chargement du formulaire…</p> : null}
 
-        {loadError ? <p className="rap-banner rap-banner--err">{loadError}</p> : null}
-        {!form && !loadError ? <p className="rap-loading">Chargement du formulaire…</p> : null}
-
-        {form ? (
-          <form className="rap-card" onSubmit={submit} noValidate ref={formTopRef}>
-            <div className="rap-field" data-field="name">
-              <label htmlFor="rap-name">Nom et prénom</label>
-              <input
-                id="rap-name"
-                type="text"
-                autoComplete="name"
-                autoCapitalize="words"
-                placeholder="Ex. Koffi Adjovi"
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  setErrors((x) => ({ ...x, name: '' }));
-                }}
-                aria-invalid={!!errors.name}
-                maxLength={120}
-              />
-              <FieldError msg={errors.name} />
-            </div>
-
-            {phoneBlock ? (
-              <div className="rap-field" data-field="phone">
-                <label htmlFor="rap-phone">{phoneBlock.label}</label>
-                <div className={`rap-phone ${errors.phone ? 'is-invalid' : ''}`}>
-                  <span className="rap-phone-prefix">🇧🇯 +229</span>
-                  <input
-                    id="rap-phone"
-                    type="tel"
-                    inputMode="numeric"
-                    autoComplete="tel-national"
-                    placeholder="01 XX XX XX XX"
-                    value={formatPhone(phone)}
-                    onChange={(e) => {
-                      setPhone(cleanPhoneInput(e.target.value));
-                      setErrors((x) => ({ ...x, phone: '' }));
-                    }}
-                    onBlur={() => phone && setErrors((x) => ({ ...x, phone: phoneError(phone) }))}
-                    aria-invalid={!!errors.phone}
-                  />
-                </div>
-                <FieldError msg={errors.phone} />
-              </div>
-            ) : null}
-
-            {choiceBlocks.map((b) => (
-              <fieldset className="rap-field" key={b.id} data-field={b.id}>
-                <legend>
-                  {b.label}
-                  {b.fieldType === 'checkbox' ? <span className="rap-hint"> · plusieurs réponses possibles</span> : null}
-                </legend>
-                <div className="rap-options">
-                  {(b.options || []).map((o) => {
-                    const on = (choices[b.id] || []).includes(o.label);
-                    return (
-                      <button
-                        type="button"
-                        key={o.id}
-                        className={`rap-option ${on ? 'is-on' : ''} ${b.fieldType === 'checkbox' ? 'is-check' : ''}`}
-                        aria-pressed={on}
-                        onClick={() => toggleChoice(b, o.label)}
-                      >
-                        <span className="rap-option-mark" aria-hidden="true" />
-                        {o.label}
-                      </button>
-                    );
-                  })}
-                </div>
-                <FieldError msg={errors[b.id]} />
-              </fieldset>
-            ))}
-
-            {cvBlock ? (
-              <div className="rap-field" data-field="cv">
-                <span className="rap-label">
-                  {cvBlock.label}
-                  {!cvBlock.required ? <span className="rap-hint"> · facultatif</span> : null}
+          {form && current ? (
+            <form
+              className="rap-card"
+              onSubmit={(e) => {
+                e.preventDefault();
+                next();
+              }}
+              onKeyDown={onKeyDown}
+              noValidate
+            >
+              <div className="rap-steps-head">
+                <span className="rap-steps-count">
+                  Question {step + 1} / {steps.length}
                 </span>
-                <p className="rap-sub">PDF, ou photo de votre CV prise avec le téléphone{maxFiles > 1 ? ` (jusqu’à ${maxFiles} pages)` : ''}.</p>
+                <div className="rap-steps-bar" aria-hidden="true">
+                  <span style={{ width: `${Math.max(pct, 4)}%` }} />
+                </div>
+              </div>
 
-                {files.length ? (
-                  <ul className="rap-files">
-                    {files.map((f, i) => (
-                      <li key={`${f.name}-${i}`}>
-                        <span className="rap-file-icon" aria-hidden="true">
-                          {f.type === 'application/pdf' ? 'PDF' : 'IMG'}
-                        </span>
-                        <span className="rap-file-name">{f.name}</span>
-                        <span className="rap-file-size">{formatSize(f.size)}</span>
-                        {!sending ? (
-                          <button
-                            type="button"
-                            className="rap-file-remove"
-                            aria-label={`Retirer ${f.name}`}
-                            onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
-                          >
-                            ×
-                          </button>
-                        ) : null}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-
-                {files.length < maxFiles && !sending ? (
-                  <div className="rap-upload">
-                    <button type="button" className="rap-upload-btn" onClick={() => cameraRef.current?.click()}>
-                      <span aria-hidden="true">📷</span> {files.length ? 'Ajouter une page' : 'Prendre en photo'}
-                    </button>
-                    <button type="button" className="rap-upload-btn" onClick={() => pickerRef.current?.click()}>
-                      <span aria-hidden="true">📄</span> Choisir un fichier
-                    </button>
+              <div className={`rap-step rap-step--${dir}`} key={current.key} ref={stepRef}>
+                {current.key === 'name' ? (
+                  <div className="rap-field">
+                    <label htmlFor="rap-name" className="rap-q">
+                      Quel est votre nom et prénom ?
+                    </label>
+                    <input
+                      id="rap-name"
+                      type="text"
+                      autoComplete="name"
+                      autoCapitalize="words"
+                      enterKeyHint="next"
+                      placeholder="Ex. Koffi Adjovi"
+                      value={name}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        setError('');
+                      }}
+                      aria-invalid={!!error}
+                      maxLength={120}
+                    />
                   </div>
                 ) : null}
-                <input
-                  ref={cameraRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  hidden
-                  onChange={(e) => {
-                    addFiles(e.target.files);
-                    e.target.value = '';
-                  }}
-                />
-                <input
-                  ref={pickerRef}
-                  type="file"
-                  accept="application/pdf,image/*"
-                  multiple
-                  hidden
-                  onChange={(e) => {
-                    addFiles(e.target.files);
-                    e.target.value = '';
-                  }}
-                />
-                <FieldError msg={errors.cv} />
+
+                {current.key === 'phone' ? (
+                  <div className="rap-field">
+                    <label htmlFor="rap-phone" className="rap-q">
+                      {current.label}
+                    </label>
+                    <p className="rap-sub">Le numéro où nous pouvons vous appeler.</p>
+                    <div className={`rap-phone ${error ? 'is-invalid' : ''}`}>
+                      <span className="rap-phone-prefix">🇧🇯 +229</span>
+                      <input
+                        id="rap-phone"
+                        type="tel"
+                        inputMode="numeric"
+                        autoComplete="tel-national"
+                        enterKeyHint="next"
+                        placeholder="01 XX XX XX XX"
+                        value={formatPhone(phone)}
+                        onChange={(e) => {
+                          setPhone(cleanPhoneInput(e.target.value));
+                          setError('');
+                        }}
+                        aria-invalid={!!error}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+
+                {block && (block.fieldType === 'choice' || block.fieldType === 'checkbox') ? (
+                  <fieldset className="rap-field">
+                    <legend className="rap-q">{block.label}</legend>
+                    {block.fieldType === 'checkbox' ? <p className="rap-sub">Cochez tout ce qui vous correspond.</p> : null}
+                    <div className="rap-options">
+                      {(block.options || []).map((o) => {
+                        const on = (choices[block.id] || []).includes(o.label);
+                        return (
+                          <button
+                            type="button"
+                            key={o.id}
+                            className={`rap-option ${on ? 'is-on' : ''} ${block.fieldType === 'checkbox' ? 'is-check' : ''}`}
+                            aria-pressed={on}
+                            onClick={() => toggleChoice(block, o.label)}
+                          >
+                            <span className="rap-option-mark" aria-hidden="true" />
+                            {o.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+                ) : null}
+
+                {current.key === 'cv' ? (
+                  <div className="rap-field">
+                    <span className="rap-q">
+                      {current.label}
+                      {!cvBlock.required ? <span className="rap-hint"> · facultatif</span> : null}
+                    </span>
+                    <p className="rap-sub">
+                      Un PDF, ou une photo de votre CV prise avec le téléphone
+                      {maxFiles > 1 ? ` (jusqu’à ${maxFiles} pages)` : ''}.
+                    </p>
+
+                    {files.length ? (
+                      <ul className="rap-files">
+                        {files.map((f, i) => (
+                          <li key={`${f.name}-${i}`}>
+                            <span className="rap-file-icon" aria-hidden="true">
+                              {f.type === 'application/pdf' ? 'PDF' : 'IMG'}
+                            </span>
+                            <span className="rap-file-name">{f.name}</span>
+                            <span className="rap-file-size">{formatSize(f.size)}</span>
+                            {!sending ? (
+                              <button
+                                type="button"
+                                className="rap-file-remove"
+                                aria-label={`Retirer ${f.name}`}
+                                onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
+                              >
+                                ×
+                              </button>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+
+                    {files.length < maxFiles && !sending ? (
+                      <div className="rap-upload">
+                        <button type="button" className="rap-upload-btn rap-upload-btn--camera" onClick={() => cameraRef.current?.click()}>
+                          <span aria-hidden="true">📷</span> {files.length ? 'Ajouter une page' : 'Prendre en photo'}
+                        </button>
+                        <button type="button" className="rap-upload-btn" onClick={() => pickerRef.current?.click()}>
+                          <span aria-hidden="true">📄</span> Choisir un fichier
+                        </button>
+                      </div>
+                    ) : null}
+                    <input
+                      ref={cameraRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      hidden
+                      onChange={(e) => {
+                        addFiles(e.target.files);
+                        e.target.value = '';
+                      }}
+                    />
+                    <input
+                      ref={pickerRef}
+                      type="file"
+                      accept="application/pdf,image/*"
+                      multiple
+                      hidden
+                      onChange={(e) => {
+                        addFiles(e.target.files);
+                        e.target.value = '';
+                      }}
+                    />
+                  </div>
+                ) : null}
+
+                <FieldError msg={error} />
               </div>
-            ) : null}
 
-            {submitError ? <p className="rap-banner rap-banner--err" role="alert">{submitError}</p> : null}
+              {submitError ? (
+                <p className="rap-banner rap-banner--err" role="alert">
+                  {submitError}
+                </p>
+              ) : null}
 
-            {sending ? (
-              <div className="rap-progress" aria-live="polite">
-                <div className="rap-progress-bar">
-                  <span style={{ width: `${progress}%` }} />
+              {sending ? (
+                <div className="rap-progress" aria-live="polite">
+                  <div className="rap-progress-bar">
+                    <span style={{ width: `${progress}%` }} />
+                  </div>
+                  <p>{progress < 100 ? `Envoi en cours… ${progress} %` : 'Finalisation…'}</p>
                 </div>
-                <p>{progress < 100 ? `Envoi en cours… ${progress} %` : 'Finalisation…'}</p>
-              </div>
-            ) : null}
+              ) : null}
 
-            <button type="submit" className="rap-btn rap-submit" disabled={sending}>
-              {sending ? 'Envoi…' : 'Envoyer ma candidature'}
-            </button>
-            <p className="rap-legal">
-              Vos informations servent uniquement à étudier votre candidature chez RAPIDO.
-            </p>
-          </form>
-        ) : null}
+              <div className="rap-nav">
+                {step > 0 ? (
+                  <button type="button" className="rap-back" onClick={back} disabled={sending} aria-label="Question précédente">
+                    ←
+                  </button>
+                ) : null}
+                <button type="submit" className="rap-btn rap-next" disabled={sending}>
+                  {sending
+                    ? 'Envoi…'
+                    : isLast
+                      ? 'Envoyer ma candidature'
+                      : current.key === 'cv' && !files.length && !cvBlock?.required
+                        ? 'Passer'
+                        : 'Suivant →'}
+                </button>
+              </div>
+              {isLast ? (
+                <p className="rap-legal">Vos informations servent uniquement à étudier votre candidature chez RAPIDO.</p>
+              ) : null}
+            </form>
+          ) : null}
+        </section>
       </main>
     </div>
   );
