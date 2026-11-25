@@ -211,6 +211,8 @@ function AppRoutes() {
         {/* Recrutement : HTML statique recrutement/carrieres.html */}
         <Route path="/recrutement/merci" element={<RecrutementPage page="merci" />} />
         {/* Campagnes Meta : formulaires courts mobile (CV stocké en base) */}
+        <Route path="/recrutement/livreur/merci" element={<RecruitmentApplyPage role="livreur" thanks />} />
+        <Route path="/recrutement/cuisinier/merci" element={<RecruitmentApplyPage role="cuisinier" thanks />} />
         <Route path="/recrutement/livreur" element={<RecruitmentApplyPage role="livreur" />} />
         <Route path="/recrutement/cuisinier" element={<RecruitmentApplyPage role="cuisinier" />} />
         <Route path="/recrutement" element={<RecrutementPage page="index" />} />

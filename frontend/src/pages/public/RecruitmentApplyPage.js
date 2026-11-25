@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { trackMeta } from '../../utils/metaPixel';
 import './RecruitmentApplyPage.css';
 
@@ -93,8 +94,21 @@ function FieldError({ msg }) {
 
 const isNoneLabel = (label) => /^ni |^aucun/i.test(String(label));
 
-export default function RecruitmentApplyPage({ role = 'livreur' }) {
+const recapKey = (role) => `rap_recap_${role}`;
+
+function readRecap(role, location) {
+  if (location?.state?.recap) return location.state.recap;
+  try {
+    return JSON.parse(sessionStorage.getItem(recapKey(role)) || 'null');
+  } catch {
+    return null;
+  }
+}
+
+export default function RecruitmentApplyPage({ role = 'livreur', thanks = false }) {
   const cfg = ROLES[role] || ROLES.livreur;
+  const navigate = useNavigate();
+  const location = useLocation();
   const [form, setForm] = useState(null);
   const [loadError, setLoadError] = useState('');
   const [name, setName] = useState('');
@@ -104,7 +118,7 @@ export default function RecruitmentApplyPage({ role = 'livreur' }) {
   const [error, setError] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [progress, setProgress] = useState(null);
-  const [done, setDone] = useState(false);
+  const done = thanks;
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState('next');
   const cameraRef = useRef(null);
@@ -113,7 +127,7 @@ export default function RecruitmentApplyPage({ role = 'livreur' }) {
   const advanceTimer = useRef(null);
 
   useEffect(() => {
-    document.title = `Postuler · ${cfg.title} · RAPIDO`;
+    document.title = thanks ? `Candidature envoyée · ${cfg.title} · RAPIDO` : `Postuler · ${cfg.title} · RAPIDO`;
     let alive = true;
     axios
       .get(`${API_URL}/custom-forms/public/${cfg.slug}`)
@@ -123,7 +137,7 @@ export default function RecruitmentApplyPage({ role = 'livreur' }) {
       alive = false;
       clearTimeout(advanceTimer.current);
     };
-  }, [cfg.slug, cfg.title]);
+  }, [cfg.slug, cfg.title, thanks]);
 
   const section = form?.sections?.[0];
   const blocks = useMemo(() => section?.blocks || [], [section]);
@@ -269,8 +283,23 @@ export default function RecruitmentApplyPage({ role = 'livreur' }) {
       setProgress(100);
       // Lead uniquement après un envoi réussi (jamais au clic).
       trackMeta('Lead', { content_name: cfg.contentName, content_category: 'Recrutement' }, `lead_${cfg.slug}_${Date.now()}`);
-      setDone(true);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Récapitulatif → page de remerciement dédiée (URL suivable : /recrutement/<poste>/merci).
+      const recap = {
+        name: name.trim(),
+        phone: formatPhone(phone),
+        answers: blocks
+          .filter((b) => (b.fieldType === 'choice' || b.fieldType === 'checkbox') && (choices[b.id] || []).length)
+          .map((b) => ({ label: b.label, value: choices[b.id].join(', ') })),
+        files: files.map((f) => f.name),
+        at: new Date().toISOString(),
+      };
+      try {
+        sessionStorage.setItem(recapKey(role), JSON.stringify(recap));
+      } catch {
+        /* navigation privée : le state du routeur suffit */
+      }
+      navigate(`/recrutement/${role}/merci`, { state: { recap } });
+      window.scrollTo({ top: 0 });
     } catch (err) {
       const msg =
         err.response?.data?.message ||
@@ -290,7 +319,7 @@ export default function RecruitmentApplyPage({ role = 'livreur' }) {
   };
 
   const hero = (
-    <aside className={`rap-hero ${step > 0 && !done ? 'is-compact' : ''}`}>
+    <aside className={`rap-hero ${step > 0 || done ? 'is-compact' : ''}`}>
       <p className="rap-eyebrow">{cfg.eyebrow}</p>
       <h1>{cfg.title}</h1>
       <div className="rap-salary">
@@ -303,11 +332,12 @@ export default function RecruitmentApplyPage({ role = 'livreur' }) {
           <li key={p}>{p}</li>
         ))}
       </ul>
-      <p className="rap-time">⏱ 1 minute · {steps.length} questions</p>
+      {!done && <p className="rap-time">⏱ 1 minute · {steps.length} questions</p>}
     </aside>
   );
 
   if (done) {
+    const recap = readRecap(role, location);
     return (
       <div className="rap-root">
         <Header />
@@ -320,10 +350,35 @@ export default function RecruitmentApplyPage({ role = 'livreur' }) {
               </div>
               <h2>Candidature envoyée</h2>
               <p>
-                Merci {name.trim().split(' ')[0]} ! Votre candidature <strong>{cfg.title}</strong> est bien reçue.
+                Merci{recap?.name ? ` ${recap.name.split(' ')[0]}` : ''} ! Votre candidature <strong>{cfg.title}</strong> est bien reçue.
               </p>
               <p>{form?.settings?.confirmationMessage || 'Nous vous appelons au numéro indiqué si votre profil est retenu.'}</p>
-              <p className="rap-done-phone">📞 {formatPhone(phone)}</p>
+              {recap && (
+                <dl className="rap-recap">
+                  <div>
+                    <dt>Poste</dt>
+                    <dd>{cfg.title}</dd>
+                  </div>
+                  <div>
+                    <dt>Nom</dt>
+                    <dd>{recap.name}</dd>
+                  </div>
+                  <div>
+                    <dt>Téléphone</dt>
+                    <dd>{recap.phone}</dd>
+                  </div>
+                  {(recap.answers || []).map((a) => (
+                    <div key={a.label}>
+                      <dt>{a.label}</dt>
+                      <dd>{a.value}</dd>
+                    </div>
+                  ))}
+                  <div>
+                    <dt>CV</dt>
+                    <dd>{recap.files?.length ? recap.files.join(', ') : 'Non joint'}</dd>
+                  </div>
+                </dl>
+              )}
               {/* « Autres postes » = l'autre formulaire de campagne (livreur ↔ cuisinier). */}
               <a className="rap-btn rap-btn--ghost" href={`/recrutement/${cfg.other}`}>
                 Postuler aussi : {ROLES[cfg.other].title} →

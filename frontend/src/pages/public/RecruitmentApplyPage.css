@@ -713,6 +713,43 @@
   margin-bottom: 22px !important;
 }
 
+.rap-recap {
+  margin: 18px 0 22px;
+  padding: 4px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.02);
+  text-align: left;
+}
+
+.rap-recap > div {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.rap-recap > div:last-child {
+  border-bottom: 0;
+}
+
+.rap-recap dt {
+  flex: 0 0 38%;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.rap-recap dd {
+  margin: 0;
+  flex: 1;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
 /* ——— Tablette ——— */
 @media (min-width: 600px) and (max-width: 899px) {
   .rap-hero {

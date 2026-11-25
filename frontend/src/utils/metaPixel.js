@@ -20,6 +20,14 @@ export function trackMetaForRoute(pathname) {
     return;
   }
 
+  if (p === '/recrutement/livreur/merci' || p === '/recrutement/cuisinier/merci') {
+    trackMeta('CompleteRegistration', {
+      content_name: p.includes('livreur') ? 'Candidature Livreur reçue' : 'Candidature Cuisinier reçue',
+      content_category: 'Recrutement',
+    });
+    return;
+  }
+
   if (p === '/recrutement/merci') {
     trackMeta('CompleteRegistration', {
       content_name: 'Candidature reçue',
