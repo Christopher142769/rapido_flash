@@ -73,7 +73,7 @@ import RhQrPage from './pages/rh/RhQrPage';
 import RhPersonnelPage from './pages/rh/RhPersonnelPage';
 import RhPlanningPage from './pages/rh/RhPlanningPage';
 import RhRegistrePage from './pages/rh/RhRegistrePage';
-import ShopProductLanding from './pages/shop/ShopProductLanding';
+import ShopProductRoute from './pages/shop/ShopProductRoute';
 import ShopOrderConfirmation from './pages/shop/ShopOrderConfirmation';
 import MealShopPage from './pages/repas/MealShopPage';
 import MealProductLanding from './pages/repas/MealProductLanding';
@@ -300,7 +300,7 @@ function AppRoutes() {
         <Route path="/zones/livraison-porto-novo" element={<SeoLandingPage />} />
         <Route path="/restaurant/:id" element={<RestaurantDetail />} />
         <Route path="/shop/:slug/commande" element={<ShopOrderConfirmation />} />
-        <Route path="/shop/:slug" element={<ShopProductLanding />} />
+        <Route path="/shop/:slug" element={<ShopProductRoute />} />
         <Route path="/repas/commandes/:slug" element={<MealProductLanding />} />
         <Route path="/repas/:slug/commande" element={<MealOrderConfirmation />} />
         <Route path="/repas/commande" element={<MealOrderConfirmation />} />

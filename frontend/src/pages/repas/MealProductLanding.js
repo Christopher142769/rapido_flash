@@ -60,8 +60,10 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const BASE_URL = getMediaBaseUrl();
 const CHECKOUT_FORM_ID = 'meal-checkout-form';
 
-export default function MealProductLanding() {
-  const { slug } = useParams();
+/** `mealSlug` : plat Repas affiché sous une autre adresse (ex. /shop/chawarma → shawarma). */
+export default function MealProductLanding({ mealSlug } = {}) {
+  const { slug: routeSlug } = useParams();
+  const slug = mealSlug || routeSlug;
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [shopSettings, setShopSettings] = useState(null);
