@@ -7,7 +7,7 @@ import { shopMealSlugFor } from './shopMealAliases';
 /** /shop/:slug — produit Shop classique, ou plat Repas vendu dans le Shop (ex. Chawarma). */
 export default function ShopProductRoute() {
   const { slug } = useParams();
-  const mealSlug = shopMealSlugFor(slug);
-  if (mealSlug) return <MealProductLanding key={mealSlug} mealSlug={mealSlug} />;
+  const mealSlugs = shopMealSlugFor(slug);
+  if (mealSlugs) return <MealProductLanding key={slug} mealSlugs={mealSlugs} />;
   return <ShopProductLanding />;
 }

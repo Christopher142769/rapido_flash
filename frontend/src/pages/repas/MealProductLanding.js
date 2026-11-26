@@ -60,10 +60,13 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const BASE_URL = getMediaBaseUrl();
 const CHECKOUT_FORM_ID = 'meal-checkout-form';
 
-/** `mealSlug` : plat Repas affiché sous une autre adresse (ex. /shop/chawarma → shawarma). */
-export default function MealProductLanding({ mealSlug } = {}) {
+/**
+ * `mealSlugs` : plat Repas affiché sous une autre adresse (ex. /shop/chawarma). Liste de slugs
+ * essayés dans l'ordre : le slug d'un plat peut changer dans le dashboard (shawarma → chawarma).
+ */
+export default function MealProductLanding({ mealSlugs } = {}) {
   const { slug: routeSlug } = useParams();
-  const slug = mealSlug || routeSlug;
+  const slugKey = (mealSlugs && mealSlugs.length ? mealSlugs : [routeSlug]).join('|');
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [shopSettings, setShopSettings] = useState(null);
@@ -100,10 +103,17 @@ export default function MealProductLanding({ mealSlug } = {}) {
   }, [refreshCart]);
 
   const fetchProduct = useCallback(() => {
-    return axios
-      .get(`${API_URL}/meal-products/public/${encodeURIComponent(slug)}`, {
-        params: { _t: Date.now() },
-      })
+    const candidates = slugKey.split('|').filter(Boolean);
+    const load = (i) =>
+      axios
+        .get(`${API_URL}/meal-products/public/${encodeURIComponent(candidates[i] || '')}`, {
+          params: { _t: Date.now() },
+        })
+        .catch((err) => {
+          if (err.response?.status === 404 && i + 1 < candidates.length) return load(i + 1);
+          throw err;
+        });
+    return load(0)
       .then((res) => {
         setProduct(patchMealProduct(res.data));
         setError('');
@@ -119,7 +129,7 @@ export default function MealProductLanding({ mealSlug } = {}) {
         setProduct(null);
         return null;
       });
-  }, [slug]);
+  }, [slugKey]);
 
   useEffect(() => {
     if (!product?._id) return;
@@ -335,7 +345,7 @@ export default function MealProductLanding({ mealSlug } = {}) {
         ctaId: 'meal-order-submit',
       });
       setQtyModalOpen(false);
-      navigate(mealConfirmationPath(slug));
+      navigate(mealConfirmationPath(product.slug));
     } catch (err) {
       alert(err.message || 'Impossible d’enregistrer la commande. Réessayez.');
     } finally {
